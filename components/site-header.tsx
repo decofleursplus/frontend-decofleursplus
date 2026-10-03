@@ -30,14 +30,10 @@ export function SiteHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
-  const isAuthRoute =
-    pathname.startsWith('/connexion') ||
-    pathname.startsWith('/inscription') ||
-    pathname.startsWith('/mot-de-passe-oublie');
-
-  if (isAuthRoute) {
-    return null;
-  }
+  const authRoutes = ['/connexion', '/inscription', '/mot-de-passe-oublie'];
+  const isAuthRoute = authRoutes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/';
@@ -151,21 +147,35 @@ export function SiteHeader() {
         <div className="header-actions">
           <Link href="/favoris" className="action-icon-link" aria-label="Mes favoris">
             <div className="icon-with-badge">
-              <Heart size={22} />
+              <Heart size={20} />
               {favorites.length > 0 && <span className="action-badge">{favorites.length}</span>}
             </div>
+            <span className="action-label-text">Favoris</span>
+          </Link>
+          <Link
+            href={isAuthenticated ? '/compte' : '/connexion'}
+            className="action-icon-link"
+            aria-label="Mon compte"
+          >
+            <div className="icon-with-badge">
+              <UserRound size={20} />
+            </div>
+            <span className="action-label-text">
+              {isAuthenticated ? (user?.name?.split(' ')[0] || 'Mon compte') : 'Mon compte'}
+            </span>
           </Link>
           <Link href="/panier" className="action-icon-link cart-pill-link" aria-label="Mon panier">
             <div className="icon-with-badge">
-              <ShoppingCart size={22} />
+              <ShoppingCart size={20} className="text-pink-600" />
               <span className="action-badge pink-badge">{count}</span>
             </div>
           </Link>
         </div>
       </div>
 
-      {/* 3. Navigation Bar with Dropdowns */}
-      <nav className="main-nav-bar" aria-label="Navigation principale">
+      {/* 3. Navigation Bar with Dropdowns (hidden on auth routes) */}
+      {!isAuthRoute && (
+        <nav className="main-nav-bar" aria-label="Navigation principale">
         <div className="content-width main-nav-inner">
           <Link href="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>
             Accueil
@@ -267,6 +277,7 @@ export function SiteHeader() {
           </Link>
         </div>
       </nav>
+      )}
 
       {/* 4. Mobile Drawer Overlay */}
       {mobileMenuOpen && (
@@ -329,34 +340,36 @@ export function SiteHeader() {
       )}
 
       {/* 5. Mobile Bottom Navigation Bar (as shown in phone mockup!) */}
-      <div className="mobile-bottom-bar">
-        <Link href="/" className={`bottom-tab ${pathname === '/' ? 'active' : ''}`}>
-          <span className="bottom-tab-icon">🏠</span>
-          <span className="bottom-tab-label">Accueil</span>
-        </Link>
-        <Link href="/boutique" className={`bottom-tab ${pathname.startsWith('/boutique') ? 'active' : ''}`}>
-          <span className="bottom-tab-icon">🌸</span>
-          <span className="bottom-tab-label">Catégories</span>
-        </Link>
-        <Link href="/favoris" className={`bottom-tab ${pathname === '/favoris' ? 'active' : ''}`}>
-          <div className="bottom-tab-icon-wrap">
-            <Heart size={20} />
-            {favorites.length > 0 && <span className="bottom-badge">{favorites.length}</span>}
-          </div>
-          <span className="bottom-tab-label">Favoris</span>
-        </Link>
-        <Link href="/panier" className={`bottom-tab ${pathname === '/panier' ? 'active' : ''}`}>
-          <div className="bottom-tab-icon-wrap">
-            <ShoppingCart size={20} />
-            {count > 0 && <span className="bottom-badge pink">{count}</span>}
-          </div>
-          <span className="bottom-tab-label">Panier</span>
-        </Link>
-        <Link href="/compte" className={`bottom-tab ${pathname.startsWith('/compte') ? 'active' : ''}`}>
-          <UserRound size={20} />
-          <span className="bottom-tab-label">Compte</span>
-        </Link>
-      </div>
+      {!isAuthRoute && (
+        <div className="mobile-bottom-bar">
+          <Link href="/" className={`bottom-tab ${pathname === '/' ? 'active' : ''}`}>
+            <span className="bottom-tab-icon">🏠</span>
+            <span className="bottom-tab-label">Accueil</span>
+          </Link>
+          <Link href="/boutique" className={`bottom-tab ${pathname.startsWith('/boutique') ? 'active' : ''}`}>
+            <span className="bottom-tab-icon">🌸</span>
+            <span className="bottom-tab-label">Catégories</span>
+          </Link>
+          <Link href="/favoris" className={`bottom-tab ${pathname === '/favoris' ? 'active' : ''}`}>
+            <div className="bottom-tab-icon-wrap">
+              <Heart size={20} />
+              {favorites.length > 0 && <span className="bottom-badge">{favorites.length}</span>}
+            </div>
+            <span className="bottom-tab-label">Favoris</span>
+          </Link>
+          <Link href="/panier" className={`bottom-tab ${pathname === '/panier' ? 'active' : ''}`}>
+            <div className="bottom-tab-icon-wrap">
+              <ShoppingCart size={20} />
+              {count > 0 && <span className="bottom-badge pink">{count}</span>}
+            </div>
+            <span className="bottom-tab-label">Panier</span>
+          </Link>
+          <Link href="/compte" className={`bottom-tab ${pathname.startsWith('/compte') ? 'active' : ''}`}>
+            <UserRound size={20} />
+            <span className="bottom-tab-label">Compte</span>
+          </Link>
+        </div>
+      )}
     </header>
   );
 }

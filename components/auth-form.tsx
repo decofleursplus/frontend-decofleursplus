@@ -149,7 +149,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
                   <input
                     required
                     autoComplete="name"
-                    placeholder="ex. Fatou Ba"
+                    placeholder="Votre nom complet (ex. Fatou Ba)"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                   />
@@ -163,7 +163,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
                     type="tel"
                     required
                     autoComplete="tel"
-                    placeholder="+221 77 123 45 67"
+                    placeholder="Votre numéro (ex. +221 77 123 45 67)"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                   />
@@ -179,7 +179,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
                     type="email"
                     required
                     autoComplete="email"
-                    placeholder="ex. fatou.ba@email.com"
+                    placeholder="vous@exemple.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
@@ -193,7 +193,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
                     type="password"
                     required
                     minLength={8}
-                    placeholder="••••••••"
+                    placeholder="8 caractères minimum"
                     autoComplete="new-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -218,7 +218,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
                   type="email"
                   required
                   autoComplete="email"
-                  placeholder="ex. fatou.ba@email.com"
+                  placeholder="vous@exemple.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -233,7 +233,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
                     type="password"
                     required
                     minLength={8}
-                    placeholder="••••••••"
+                    placeholder="Saisissez votre mot de passe"
                     autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}

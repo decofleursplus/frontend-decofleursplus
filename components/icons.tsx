@@ -63,4 +63,72 @@ export function GoogleIcon({ size = 18, className = '' }: { size?: number; class
   );
 }
 
+export function FacebookColorIcon({ size = 20, className = '' }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className}>
+      <circle cx="12" cy="12" r="12" fill="#1877F2" />
+      <path
+        d="M16.5 12.05h-2.73v7.95h-3.29v-7.95H8.72V9.26h1.76V7.47c0-2.32 1.39-3.47 3.53-3.47 1.02 0 1.9.08 2.16.11v2.5h-1.48c-1.12 0-1.34.53-1.34 1.32v1.33h2.77l-.62 2.79z"
+        fill="#ffffff"
+      />
+    </svg>
+  );
+}
+
+export function FloralMotifIcon({ size = 38, className = '' }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" className={className}>
+      {/* Delicate floral motif matching mockup header */}
+      <path
+        d="M20 38C20 38 23 29 30 25C37 21 44 24 44 24C44 24 37 31 30 32C24 33 20 38 20 38Z"
+        fill="#82a578"
+        opacity="0.85"
+      />
+      <path
+        d="M16 32C16 32 19 25 24 23C29 21 34 23 34 23C34 23 29 28 24 29C19 30 16 32 16 32Z"
+        fill="#4d7c0f"
+        opacity="0.6"
+      />
+      <path
+        d="M14 26C10 24 7 19 8 13C9 7 15 5 21 8C27 11 29 17 27 23C25 28 19 29 14 26Z"
+        fill="#f43f5e"
+      />
+      <path
+        d="M22 19C19 18 17 15 18 11C19 7 23 6 27 8C31 10 32 14 31 18C29 21 25 21 22 19Z"
+        fill="#fb7185"
+      />
+      <path
+        d="M17 17C15 16 14 13 15 11C16 9 18 8 20 9C22 10 23 13 22 15C21 17 19 17 17 17Z"
+        fill="#ffe4e6"
+      />
+      <path
+        d="M12 40C14 34 18 29 23 26"
+        stroke="#4d7c0f"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function FloralHeartDivider({ className = '' }: { className?: string }) {
+  return (
+    <div className={`auth-floral-divider ${className}`}>
+      <span className="auth-divider-line" />
+      <span className="auth-heart-ornament">
+        <svg width="24" height="20" viewBox="0 0 24 20" fill="none">
+          <path
+            d="M12 17.5C12 17.5 3 12 3 6.5C3 3.5 5.5 1.5 8.5 1.5C10.5 1.5 11.5 2.5 12 3.5C12.5 2.5 13.5 1.5 15.5 1.5C18.5 1.5 21 3.5 21 6.5C21 12 12 17.5 12 17.5Z"
+            stroke="#fb7185"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
+      <span className="auth-divider-line" />
+    </div>
+  );
+}
+
 
