@@ -19,14 +19,25 @@ import {
 } from 'lucide-react';
 import { FacebookIcon, InstagramIcon, TikTokIcon } from '@/components/icons';
 import { useCart } from '@/components/cart-provider';
+import { useAuth } from '@/components/auth-provider';
 
 export function SiteHeader() {
   const { count, favorites } = useCart();
+  const { user, isAuthenticated } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+
+  const isAuthRoute =
+    pathname.startsWith('/connexion') ||
+    pathname.startsWith('/inscription') ||
+    pathname.startsWith('/mot-de-passe-oublie');
+
+  if (isAuthRoute) {
+    return null;
+  }
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/';
@@ -82,10 +93,17 @@ export function SiteHeader() {
                 <TikTokIcon size={14} />
               </a>
             </div>
-            <Link href="/compte" className="topbar-account">
-              <UserRound size={14} />
-              <span>Mon compte</span>
-            </Link>
+            {isAuthenticated ? (
+              <Link href="/compte" className="topbar-account" title={`Connecté en tant que ${user?.name}`}>
+                <UserRound size={14} />
+                <span>{user?.name || 'Mon compte'}</span>
+              </Link>
+            ) : (
+              <Link href="/connexion" className="topbar-account">
+                <UserRound size={14} />
+                <span>Connexion</span>
+              </Link>
+            )}
           </div>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { AuthProvider } from '@/components/auth-provider';
 import { CartProvider } from '@/components/cart-provider';
 import { SiteHeader } from '@/components/site-header';
 
@@ -12,10 +13,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="fr">
       <body className="min-h-screen">
-        <CartProvider>
-          <SiteHeader />
-          {children}
-        </CartProvider>
+        <AuthProvider>
+          <CartProvider>
+            <SiteHeader />
+            {children}
+          </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   );

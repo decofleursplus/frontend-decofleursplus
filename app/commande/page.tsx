@@ -12,8 +12,14 @@ import {
   Plus,
   ShieldCheck,
   Search,
+  UserRound,
+  Mail,
+  Phone,
+  UserCheck,
 } from 'lucide-react';
 import { useCart } from '@/components/cart-provider';
+import { useAuth } from '@/components/auth-provider';
+import { GoogleIcon } from '@/components/icons';
 import { formatPrice } from '@/lib/products';
 import { SiteFooter } from '@/components/site-footer';
 
@@ -30,11 +36,35 @@ type PaymentMethod =
 
 export default function CheckoutPage() {
   const { items, subtotal } = useCart();
+  const { user, isAuthenticated, login, loginWithGoogle, register, logout } = useAuth();
+
   const [delivery, setDelivery] = useState<DeliveryMode>('standard');
   const [payment, setPayment] = useState<PaymentMethod>('wave');
   const [promo, setPromo] = useState('');
   const [promoFeedback, setPromoFeedback] = useState('');
   const [notice, setNotice] = useState('');
+
+  // Step 1: Auth state
+  const [isEditingAuth, setIsEditingAuth] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.has('auth');
+    }
+    return false;
+  });
+  const [authTab, setAuthTab] = useState<'login' | 'register'>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('auth') === 'register') return 'register';
+    }
+    return 'login';
+  });
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authName, setAuthName] = useState('');
+  const [authPhone, setAuthPhone] = useState('+221 77 123 45 67');
+  const [authError, setAuthError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
 
   const shipping = delivery === 'standard' ? 2000 : 5000;
 
@@ -82,10 +112,54 @@ export default function CheckoutPage() {
 
   const calculatedTotal = calculatedSubtotal + shipping;
 
+  async function handleGoogleLogin() {
+    setAuthLoading(true);
+    setAuthError('');
+    await loginWithGoogle();
+    setIsEditingAuth(false);
+    setAuthLoading(false);
+  }
+
+  async function handleEmailLogin() {
+    if (!authEmail.trim()) {
+      setAuthError('Veuillez renseigner votre adresse e-mail.');
+      return;
+    }
+    setAuthLoading(true);
+    setAuthError('');
+    await login(authEmail, authPassword);
+    setIsEditingAuth(false);
+    setAuthLoading(false);
+  }
+
+  async function handleRegister() {
+    if (!authName.trim() || !authEmail.trim() || !authPhone.trim()) {
+      setAuthError('Veuillez renseigner votre nom, e-mail et numéro de téléphone.');
+      return;
+    }
+    setAuthLoading(true);
+    setAuthError('');
+    await register({
+      name: authName,
+      email: authEmail,
+      phone: authPhone,
+      password: authPassword,
+    });
+    setIsEditingAuth(false);
+    setAuthLoading(false);
+  }
+
   function submitOrder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!isAuthenticated) {
+      setIsEditingAuth(true);
+      setNotice(
+        'Veuillez vous identifier ou créer votre compte à l’étape 1 avant de finaliser la commande.'
+      );
+      return;
+    }
     setNotice(
-      'Vos informations sont enregistrées avec succès pour cette démonstration. Redirection vers la confirmation...'
+      'Vos informations sont enregistrées avec succès pour cette commande. Redirection vers la confirmation...'
     );
   }
 
@@ -109,12 +183,252 @@ export default function CheckoutPage() {
         </div>
 
         <form className="checkout-layout-grid" onSubmit={submitOrder}>
-          {/* LEFT COLUMN: Steps 1, 2, 3, 4 */}
+          {/* LEFT COLUMN: Steps 1, 2, 3, 4, 5 */}
           <div className="checkout-steps-column">
-            {/* 1. Adresse de livraison */}
+            {/* 1. Identification & Compte Client */}
+            {isAuthenticated && !isEditingAuth ? (
+              <section className="checkout-panel checkout-step-panel checkout-step-verified">
+                <div className="step-panel-heading">
+                  <div className="step-heading-left">
+                    <div className="step-badge-check" aria-label="Étape validée">
+                      <Check size={14} strokeWidth={3} />
+                    </div>
+                    <h2>1. Identification &amp; Compte client</h2>
+                  </div>
+                  <div className="auth-step-actions-row">
+                    <button
+                      type="button"
+                      className="link-button-pink"
+                      onClick={() => setIsEditingAuth(true)}
+                    >
+                      Changer de compte
+                    </button>
+                    <span className="bullet-sep">•</span>
+                    <button
+                      type="button"
+                      className="link-button-muted"
+                      onClick={() => {
+                        logout();
+                        setIsEditingAuth(true);
+                      }}
+                    >
+                      Déconnexion
+                    </button>
+                  </div>
+                </div>
+
+                <div className="checkout-auth-verified-card">
+                  <div className="auth-avatar-circle">
+                    {user?.name ? user.name.slice(0, 2).toUpperCase() : 'FB'}
+                  </div>
+                  <div className="auth-verified-info">
+                    <div className="auth-verified-name-row">
+                      <strong>{user?.name}</strong>
+                      <span className="badge-verified-client">
+                        <UserCheck size={12} /> Compte vérifié
+                      </span>
+                    </div>
+                    <p className="auth-verified-contact">
+                      <span>{user?.email}</span>
+                      {user?.phone && (
+                        <>
+                          <span className="bullet-sep">•</span>
+                          <span>{user.phone}</span>
+                        </>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </section>
+            ) : (
+              <section className="checkout-panel checkout-step-panel checkout-step-active">
+                <div className="step-panel-heading">
+                  <div className="step-heading-left">
+                    <span className="step-num-badge">1</span>
+                    <h2>1. Identification &amp; Compte client</h2>
+                  </div>
+                  {isAuthenticated && (
+                    <button
+                      type="button"
+                      className="link-button-pink"
+                      onClick={() => setIsEditingAuth(false)}
+                    >
+                      Conserver {user?.name?.split(' ')[0]}
+                    </button>
+                  )}
+                </div>
+
+                <p className="step-panel-intro">
+                  Connectez-vous ou créez votre compte client pour cumuler vos points fidélité et suivre votre livraison en temps réel.
+                </p>
+
+                {/* Segmented Switcher */}
+                <div className="checkout-auth-tabs">
+                  <button
+                    type="button"
+                    className={`checkout-auth-tab ${authTab === 'login' ? 'active' : ''}`}
+                    onClick={() => {
+                      setAuthTab('login');
+                      setAuthError('');
+                    }}
+                  >
+                    <UserRound size={15} /> J’ai déjà un compte (Connexion)
+                  </button>
+                  <button
+                    type="button"
+                    className={`checkout-auth-tab ${authTab === 'register' ? 'active' : ''}`}
+                    onClick={() => {
+                      setAuthTab('register');
+                      setAuthError('');
+                    }}
+                  >
+                    <Plus size={15} /> Nouveau client (Créer un compte)
+                  </button>
+                </div>
+
+                {/* Prominent Google Quick Login */}
+                <div className="checkout-google-row">
+                  <button
+                    type="button"
+                    className="btn-google-auth"
+                    onClick={handleGoogleLogin}
+                    disabled={authLoading}
+                  >
+                    <GoogleIcon size={20} />
+                    <span>
+                      {authTab === 'login'
+                        ? 'Se connecter avec Google'
+                        : "S'inscrire rapidement avec Google"}
+                    </span>
+                  </button>
+                </div>
+
+                <div className="auth-separator">
+                  <span>ou avec votre adresse e-mail</span>
+                </div>
+
+                {authTab === 'login' ? (
+                  <div className="checkout-auth-fields">
+                    <div className="form-group">
+                      <label htmlFor="chk-email">
+                        <Mail size={13} /> Adresse e-mail
+                      </label>
+                      <input
+                        id="chk-email"
+                        type="email"
+                        placeholder="ex. fatou.ba@email.com"
+                        value={authEmail}
+                        onChange={(e) => setAuthEmail(e.target.value)}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="chk-pwd">
+                        <LockKeyhole size={13} /> Mot de passe
+                      </label>
+                      <input
+                        id="chk-pwd"
+                        type="password"
+                        placeholder="••••••••"
+                        value={authPassword}
+                        onChange={(e) => setAuthPassword(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="checkout-auth-actions">
+                      <button
+                        type="button"
+                        className="button-pill-pink button-small"
+                        onClick={handleEmailLogin}
+                        disabled={authLoading}
+                      >
+                        Se connecter et continuer
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="checkout-auth-fields">
+                    <div className="checkout-auth-row-2">
+                      <div className="form-group">
+                        <label htmlFor="chk-reg-name">
+                          <UserRound size={13} /> Nom complet
+                        </label>
+                        <input
+                          id="chk-reg-name"
+                          type="text"
+                          placeholder="ex. Fatou Ba"
+                          value={authName}
+                          onChange={(e) => setAuthName(e.target.value)}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="chk-reg-phone">
+                          <Phone size={13} /> Téléphone (Sénégal)
+                        </label>
+                        <input
+                          id="chk-reg-phone"
+                          type="tel"
+                          placeholder="+221 77 123 45 67"
+                          value={authPhone}
+                          onChange={(e) => setAuthPhone(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="checkout-auth-row-2">
+                      <div className="form-group">
+                        <label htmlFor="chk-reg-email">
+                          <Mail size={13} /> Adresse e-mail
+                        </label>
+                        <input
+                          id="chk-reg-email"
+                          type="email"
+                          placeholder="ex. fatou.ba@email.com"
+                          value={authEmail}
+                          onChange={(e) => setAuthEmail(e.target.value)}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="chk-reg-pwd">
+                          <LockKeyhole size={13} /> Mot de passe (min. 8 car.)
+                        </label>
+                        <input
+                          id="chk-reg-pwd"
+                          type="password"
+                          placeholder="••••••••"
+                          value={authPassword}
+                          onChange={(e) => setAuthPassword(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <label className="auth-terms-small">
+                      <input type="checkbox" defaultChecked />
+                      <span>
+                        J’accepte la création de mon compte client Décofleur Plus et la politique de confidentialité.
+                      </span>
+                    </label>
+
+                    <div className="checkout-auth-actions">
+                      <button
+                        type="button"
+                        className="button-pill-pink button-small"
+                        onClick={handleRegister}
+                        disabled={authLoading}
+                      >
+                        Créer mon compte et continuer
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {authError && <p className="auth-error-badge">{authError}</p>}
+              </section>
+            )}
+
+            {/* 2. Adresse de livraison */}
             <section className="checkout-panel checkout-step-panel">
               <div className="step-panel-heading">
-                <h2>1. Adresse de livraison</h2>
+                <h2>2. Adresse de livraison</h2>
                 <button type="button" className="link-button-pink">
                   Modifier
                 </button>
@@ -141,9 +455,9 @@ export default function CheckoutPage() {
               </button>
             </section>
 
-            {/* 2. Mode de livraison with Map Preview */}
+            {/* 3. Mode de livraison with Map Preview */}
             <section className="checkout-panel checkout-step-panel">
-              <h2>2. Mode de livraison</h2>
+              <h2>3. Mode de livraison</h2>
 
               <div className="checkout-delivery-options-grid">
                 <div className="delivery-radio-list">
@@ -198,20 +512,20 @@ export default function CheckoutPage() {
                     <Search size={14} />
                     <input
                       type="text"
-                      placeholder="Rechercher une adresse…"
+                      placeholder="Rechercher une adresse..."
                       defaultValue="Saly Portudal"
+                      readOnly
                     />
                   </div>
                   <div className="map-embed-container">
                     <Image
                       src="/images/order-map.jpg"
-                      alt="Carte de couverture Saly et Mbour"
+                      alt="Carte de livraison Saly & Mbour"
                       fill
-                      sizes="300px"
                       className="map-embed-img"
                     />
                     <div className="map-user-pin">
-                      <MapPin size={16} />
+                      <MapPin size={13} />
                       <span>Votre adresse</span>
                     </div>
                   </div>
@@ -219,133 +533,232 @@ export default function CheckoutPage() {
               </div>
             </section>
 
-            {/* 3. Date et heure de livraison */}
+            {/* 4. Date et heure de livraison */}
             <section className="checkout-panel checkout-step-panel">
-              <h2>3. Date et heure de livraison</h2>
-              <div className="checkout-fields-2col">
-                <label className="checkout-field-label">
-                  <span>Date de livraison</span>
-                  <div className="input-with-icon">
-                    <Calendar size={16} />
-                    <input type="date" defaultValue="2024-05-10" required />
-                  </div>
-                </label>
-
-                <label className="checkout-field-label">
-                  <span>Créneau horaire</span>
-                  <div className="input-with-icon">
-                    <Clock size={16} />
-                    <select defaultValue="Entre 10h et 14h">
-                      <option>Entre 10h et 14h</option>
-                      <option>Entre 14h et 18h</option>
-                    </select>
-                  </div>
-                </label>
+              <h2>4. Date et heure de livraison</h2>
+              <div className="delivery-datetime-grid">
+                <div className="datetime-field">
+                  <label htmlFor="deliveryDate">
+                    <Calendar size={15} /> Date de livraison
+                  </label>
+                  <input
+                    type="date"
+                    id="deliveryDate"
+                    defaultValue="2024-05-10"
+                    className="datetime-input"
+                  />
+                </div>
+                <div className="datetime-field">
+                  <label htmlFor="deliverySlot">
+                    <Clock size={15} /> Créneau horaire
+                  </label>
+                  <select id="deliverySlot" defaultValue="10h-14h" className="datetime-select">
+                    <option value="9h-12h">Matinée (09h00 - 12h00)</option>
+                    <option value="10h-14h">Entre 10h et 14h (Recommandé)</option>
+                    <option value="14h-18h">Après-midi (14h00 - 18h00)</option>
+                    <option value="18h-20h">Soirée (18h00 - 20h00)</option>
+                  </select>
+                </div>
               </div>
             </section>
 
-            {/* 4. Instructions (optionnel) */}
+            {/* 5. Instructions (optionnel) */}
             <section className="checkout-panel checkout-step-panel">
-              <h2>4. Instructions (optionnel)</h2>
-              <input
-                type="text"
-                className="checkout-text-input"
-                placeholder="Ex: Laisser à la réception, appeler avant l’arrivée…"
+              <h2>5. Instructions (optionnel)</h2>
+              <textarea
+                rows={3}
+                placeholder="Ex: Laisser à la réception, appeler avant l’arrivée, message pour le portail..."
+                className="checkout-instructions-textarea"
+                defaultValue="Ex: Laisser à la réception, appeler avant l'arrivée..."
               />
             </section>
           </div>
 
-          {/* RIGHT COLUMN: Step 5 Mode de paiement & Récapitulatif */}
-          <div className="checkout-sidebar-column">
-            {/* 5. Mode de paiement */}
+          {/* RIGHT COLUMN: 6. Mode de paiement + Récapitulatif */}
+          <div className="checkout-summary-column">
+            {/* 6. Mode de paiement */}
             <section className="checkout-panel checkout-step-panel">
               <div className="step-panel-heading">
-                <h2>5. Mode de paiement</h2>
-                <Link href="/panier" className="link-button-pink">
+                <h2>6. Mode de paiement</h2>
+                <button type="button" className="link-button-pink">
                   Modifier le panier
-                </Link>
+                </button>
               </div>
 
-              <div className="payment-methods-stack">
-                {[
-                  { id: 'wave', label: 'Wave', badge: 'W' },
-                  { id: 'orange', label: 'Orange Money', badge: 'OM' },
-                  { id: 'free', label: 'Free Money', badge: 'FM' },
-                  { id: 'card', label: 'Carte bancaire (Visa, Mastercard)', badge: 'VISA' },
-                  { id: 'apple', label: 'Apple Pay', badge: '' },
-                  { id: 'google', label: 'Google Pay', badge: 'G' },
-                  { id: 'paypal', label: 'PayPal', badge: 'P' },
-                  { id: 'delivery', label: 'Paiement à la livraison', sub: 'Espèces uniquement' },
-                ].map((item) => (
-                  <label
-                    key={item.id}
-                    className={`payment-method-row ${payment === item.id ? 'selected' : ''}`}
-                  >
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value={item.id}
-                      checked={payment === item.id}
-                      onChange={() => setPayment(item.id as PaymentMethod)}
-                    />
-                    <span className={`payment-logo-badge ${item.id}`}>
-                      {item.badge ?? '•'}
-                    </span>
-                    <div className="payment-label-meta">
-                      <strong>{item.label}</strong>
-                      {item.sub && <small>{item.sub}</small>}
-                    </div>
-                    {payment === item.id && (
-                      <Check size={16} className="payment-check-mark" />
-                    )}
-                  </label>
-                ))}
+              <div className="checkout-payment-methods-list">
+                {/* Wave */}
+                <label className={`payment-method-row ${payment === 'wave' ? 'selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="wave"
+                    checked={payment === 'wave'}
+                    onChange={() => setPayment('wave')}
+                  />
+                  <div className="payment-brand-badge wave">
+                    <span className="payment-brand-logo">🌊</span>
+                  </div>
+                  <strong>Wave</strong>
+                </label>
+
+                {/* Orange Money */}
+                <label className={`payment-method-row ${payment === 'orange' ? 'selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="orange"
+                    checked={payment === 'orange'}
+                    onChange={() => setPayment('orange')}
+                  />
+                  <div className="payment-brand-badge orange">
+                    <span className="payment-brand-logo">🍊</span>
+                  </div>
+                  <strong>Orange Money</strong>
+                </label>
+
+                {/* Free Money */}
+                <label className={`payment-method-row ${payment === 'free' ? 'selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="free"
+                    checked={payment === 'free'}
+                    onChange={() => setPayment('free')}
+                  />
+                  <div className="payment-brand-badge free">
+                    <span className="payment-brand-logo">🆓</span>
+                  </div>
+                  <strong>Free Money</strong>
+                </label>
+
+                {/* Carte bancaire */}
+                <label className={`payment-method-row ${payment === 'card' ? 'selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="card"
+                    checked={payment === 'card'}
+                    onChange={() => setPayment('card')}
+                  />
+                  <div className="payment-brand-badge card">
+                    <span className="payment-brand-logo">💳</span>
+                  </div>
+                  <div className="payment-method-text">
+                    <strong>Carte bancaire</strong>
+                    <span className="payment-subtext">Visa, Mastercard</span>
+                  </div>
+                </label>
+
+                {/* Apple Pay */}
+                <label className={`payment-method-row ${payment === 'apple' ? 'selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="apple"
+                    checked={payment === 'apple'}
+                    onChange={() => setPayment('apple')}
+                  />
+                  <div className="payment-brand-badge apple">
+                    <span className="payment-brand-logo"></span>
+                  </div>
+                  <strong>Apple Pay</strong>
+                </label>
+
+                {/* Google Pay */}
+                <label className={`payment-method-row ${payment === 'google' ? 'selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="google"
+                    checked={payment === 'google'}
+                    onChange={() => setPayment('google')}
+                  />
+                  <div className="payment-brand-badge gpay">
+                    <span className="payment-brand-logo">G</span>
+                  </div>
+                  <strong>Google Pay</strong>
+                </label>
+
+                {/* PayPal */}
+                <label className={`payment-method-row ${payment === 'paypal' ? 'selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="paypal"
+                    checked={payment === 'paypal'}
+                    onChange={() => setPayment('paypal')}
+                  />
+                  <div className="payment-brand-badge paypal">
+                    <span className="payment-brand-logo">P</span>
+                  </div>
+                  <strong>PayPal</strong>
+                </label>
+
+                {/* Paiement à la livraison */}
+                <label className={`payment-method-row ${payment === 'delivery' ? 'selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="delivery"
+                    checked={payment === 'delivery'}
+                    onChange={() => setPayment('delivery')}
+                  />
+                  <div className="payment-brand-badge delivery">
+                    <span className="payment-brand-logo">💵</span>
+                  </div>
+                  <div className="payment-method-text">
+                    <strong>Paiement à la livraison</strong>
+                    <span className="payment-subtext">Espèces uniquement</span>
+                  </div>
+                </label>
               </div>
             </section>
 
             {/* Récapitulatif de la commande */}
-            <aside className="checkout-panel checkout-recap-panel">
+            <aside className="checkout-panel checkout-order-summary">
               <h2>Récapitulatif de la commande</h2>
 
-              <div className="recap-products-list">
-                {displayItems.map(({ product, quantity, lineId, options }) => (
-                  <div key={lineId} className="recap-product-row">
-                    <div className="recap-product-thumb">
+              {/* Items List */}
+              <div className="checkout-items-list">
+                {displayItems.map((item) => (
+                  <div key={item.lineId} className="checkout-item-row">
+                    <div className="checkout-item-thumb">
                       <Image
-                        src={product.image}
-                        alt={product.name}
-                        fill
-                        sizes="56px"
-                        className="recap-thumb-img"
+                        src={item.product.image}
+                        alt={item.product.name}
+                        width={64}
+                        height={64}
+                        className="item-thumb-img"
                       />
                     </div>
-                    <div className="recap-product-info">
-                      <strong>{product.name}</strong>
-                      <span className="recap-product-meta">
-                        {options?.size && `Taille : ${options.size} • `}
-                        {options?.cardMessage && 'Message personnalisé • '}
-                        Quantité : {quantity}
+                    <div className="checkout-item-info">
+                      <strong>{item.product.name}</strong>
+                      <span className="item-meta-desc">
+                        {item.options?.size ? `Taille : ${item.options.size}` : null}
+                        {item.options?.cardMessage ? `Message : ${item.options.cardMessage}` : null}
+                      </span>
+                      <span className="item-qty-tag">Quantité : {item.quantity}</span>
+                      <span className="item-price-tag">
+                        {formatPrice(item.product.price * item.quantity)}
                       </span>
                     </div>
-                    <strong className="recap-product-price">
-                      {formatPrice(product.price * quantity)}
-                    </strong>
                   </div>
                 ))}
               </div>
 
-              <div className="recap-totals-breakdown">
-                <div className="recap-row">
+              {/* Cost Breakdown */}
+              <div className="checkout-cost-breakdown">
+                <div className="cost-row">
                   <span>Sous-total</span>
-                  <strong>{formatPrice(calculatedSubtotal)}</strong>
+                  <span>{formatPrice(calculatedSubtotal)}</span>
                 </div>
-                <div className="recap-row">
-                  <span>Livraison ({delivery === 'standard' ? 'Standard' : 'Express'})</span>
-                  <strong>{formatPrice(shipping)}</strong>
+                <div className="cost-row">
+                  <span>Livraison ({delivery === 'standard' ? 'Saly' : 'Express'})</span>
+                  <span>{formatPrice(shipping)}</span>
                 </div>
-                <div className="recap-row total-row">
-                  <span>Total</span>
-                  <strong className="pink-total-highlight">
+                <div className="cost-row total-row">
+                  <strong>Total</strong>
+                  <strong className="total-amount-highlight">
                     {formatPrice(calculatedTotal)}
                   </strong>
                 </div>
