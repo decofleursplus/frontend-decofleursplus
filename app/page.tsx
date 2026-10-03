@@ -1,23 +1,256 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, Flower2, Gift, Heart, Leaf, ShieldCheck, Sparkles, Sprout, Truck } from 'lucide-react';
+import {
+  ArrowRight,
+  Flower2,
+  Heart,
+  Truck,
+  ShieldCheck,
+  Gift,
+  Home,
+  ShoppingBag,
+  UtensilsCrossed,
+  Headphones,
+} from 'lucide-react';
 import { products } from '@/lib/products';
 import { ProductGrid } from '@/components/product-grid';
 import { SiteFooter } from '@/components/site-footer';
+import { TestimonialCarousel } from '@/components/testimonial-carousel';
+import { HomeFaq } from '@/components/home-faq';
 
-const categories = [
-  { name: 'Bouquets', sub: 'Fleurs fraîches', image: '/images/bouquet-passion.webp', icon: Flower2 },
-  { name: 'Plantes', sub: 'Intérieur & extérieur', image: '/images/plante.webp', icon: Sprout },
-  { name: 'Paniers de fruits', sub: 'Frais et gourmands', image: '/images/fruits.webp', icon: Leaf },
-  { name: 'Mariages', sub: 'Cérémonies & réceptions', image: '/images/mariage.webp', icon: Heart },
-  { name: 'Cadeaux', sub: 'Pour toutes occasions', image: '/images/cadeau.webp', icon: Gift },
+// 7 quick categories strictly from the prototype mockup
+const mockupCategories = [
+  {
+    title: 'Bouquets élégants',
+    subtitle: 'Fleurs fraîches et raffinées',
+    href: '/bouquets',
+    icon: Flower2,
+  },
+  {
+    title: 'Décoration sur mesure',
+    subtitle: 'Espaces, maisons, bureaux',
+    href: '/decoration',
+    icon: Home,
+  },
+  {
+    title: 'Mariages & événements',
+    subtitle: 'Cérémonies, réceptions',
+    href: '/mariages',
+    icon: Heart,
+  },
+  {
+    title: 'Livraison à domicile',
+    subtitle: 'Rapide et fiable à Saly & Mbour',
+    href: '/livraison',
+    icon: Truck,
+  },
+  {
+    title: 'Paniers de fruits',
+    subtitle: 'Frais et gourmands',
+    href: '/paniers-de-fruits',
+    icon: ShoppingBag,
+  },
+  {
+    title: 'Cadeaux',
+    subtitle: 'Pour toutes occasions',
+    href: '/cadeaux',
+    icon: Gift,
+  },
+  {
+    title: 'Location de vaisselle & matériel',
+    subtitle: 'Pour vos réceptions',
+    href: '/evenements',
+    icon: UtensilsCrossed,
+  },
 ];
 
 export default function HomePage() {
-  return <><main>
-    <section className="home-hero"><Image className="hero-photo" src="/images/hero.webp" alt="Bouquet de fleurs fraîches aux tons roses et crème" fill priority sizes="100vw" /><div className="hero-wash" /><div className="hero-copy"><span className="eyebrow"><Sparkles size={14} /> Fleuriste à Saly</span><h1>Des fleurs, des idées,<br />des <em>émotions</em></h1><p>Fleuriste à Saly – Bouquets, plantes, décoration événementielle, paniers de fruits, cadeaux et plus encore.</p><Link className="button button-primary" href="/boutique">Découvrir nos produits <ArrowRight size={17} /></Link></div><p className="hero-script">L’élégance de la nature<br /><em>à chaque instant</em><Heart size={19} /></p></section>
-    <section className="service-strip" aria-label="Nos services"><div><Truck /><span><b>Livraison rapide</b><small>à Saly & Mbour</small></span></div><div><ShieldCheck /><span><b>Paiement sécurisé</b><small>Wave · Orange Money</small></span></div><div><Flower2 /><span><b>Fleurs fraîches</b><small>et de qualité</small></span></div><div><Leaf /><span><b>Service client</b><small>à votre écoute</small></span></div></section>
-    <section className="category-section content-width"><div className="category-grid">{categories.map(({ name, sub, image, icon: Icon }) => <Link className="category-card" key={name} href={`/boutique?category=${encodeURIComponent(name)}`}><div className="category-image"><Image src={image} alt="" fill sizes="160px" /></div><div className="category-label"><Icon size={14} /><b>{name}</b></div><span>{sub}</span></Link>)}</div></section>
-    <section className="featured-section content-width"><aside className="event-feature"><Image src="/images/mariage.webp" alt="Décoration florale pour un mariage" fill sizes="300px" /><div><span className="eyebrow">Vos beaux moments</span><h2>Événements<br />& mariages</h2><p>Une décoration florale sur mesure pour les plus beaux moments.</p><Link className="button button-primary button-small" href="/evenements">En savoir plus <ArrowRight size={14} /></Link></div></aside><div className="featured-products"><div className="section-heading"><h2><Flower2 size={20} /> Nos produits phares</h2><Link href="/boutique">Voir tout <ArrowRight size={14} /></Link></div><ProductGrid products={products.slice(0, 4)} /></div></section>
-  </main><SiteFooter /></>;
+  // First 4 featured products as seen in prototype
+  const featured = products.slice(0, 4);
+
+  return (
+    <>
+      <main className="homepage-main">
+        {/* 1. Hero Section with Floral Background */}
+        <section className="prototype-hero hero-with-bg">
+          <div className="hero-bg-media" aria-hidden="true">
+            <Image
+              src="/images/hero.jpg"
+              alt=""
+              fill
+              priority
+              className="hero-bg-img"
+              sizes="100vw"
+            />
+            <div className="hero-bg-overlay" />
+          </div>
+
+          <div className="content-width hero-inner">
+            <div className="hero-content-left">
+              <div className="hero-eyebrow">
+                <Flower2 size={16} className="eyebrow-flower" />
+                <span>Bienvenue chez Décofleur Plus</span>
+              </div>
+
+              <h1 className="hero-headline">
+                Des fleurs, des idées,<br />
+                <span className="headline-em">des émotions</span>
+              </h1>
+
+              <p className="hero-subline">
+                Fleuriste • Décoration événementielle • Paniers de fruits • Cadeaux • Location de matériel
+              </p>
+
+              <div className="hero-actions">
+                <Link href="/boutique" className="button-pill-pink">
+                  Découvrir nos produits <ArrowRight size={17} />
+                </Link>
+                <div className="hero-script-tag-inline">
+                  <span>L’élégance de la nature <em>à chaque instant</em></span>
+                  <Heart size={14} fill="var(--pink)" color="var(--pink)" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 2. 7-Category Horizontal Strip */}
+        <section className="category-strip-section" aria-label="Catégories principales">
+          <div className="content-width">
+            <div className="category-strip-container">
+              {mockupCategories.map((cat, idx) => {
+                const Icon = cat.icon;
+                return (
+                  <Link href={cat.href} key={idx} className="category-strip-item">
+                    <div className="category-strip-icon-circle">
+                      <Icon size={20} />
+                    </div>
+                    <div className="category-strip-text">
+                      <h2 className="cat-title">{cat.title}</h2>
+                      <span className="cat-subtitle">{cat.subtitle}</span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* 3. Featured Row: Events Feature on Left + Products Grid on Right */}
+        <section className="featured-row-section content-width">
+          {/* Left Event Banner Card */}
+          <aside className="event-tall-card">
+            <div className="event-tall-header">
+              <h2>Événements & Mariages</h2>
+              <p>Une décoration florale sur mesure pour vos plus beaux moments.</p>
+              <Link href="/evenements" className="button-pill-pink button-small">
+                En savoir plus <ArrowRight size={14} />
+              </Link>
+            </div>
+            <div className="event-tall-image">
+              <Image
+                src="/images/mariage.jpg"
+                alt="Décoration de table pour mariage par Décofleur Plus"
+                fill
+                sizes="(max-width: 990px) 100vw, 320px"
+              />
+            </div>
+          </aside>
+
+          {/* Right Featured Products Grid */}
+          <div className="featured-products-col">
+            <div className="products-section-header">
+              <div className="header-title-wrap">
+                <Flower2 size={20} className="title-icon" />
+                <h2>Nos produits phares</h2>
+              </div>
+              <Link href="/boutique" className="view-all-link">
+                Voir tout <ArrowRight size={14} />
+              </Link>
+            </div>
+
+            <ProductGrid products={featured} />
+          </div>
+        </section>
+
+        {/* 4. Trust Badges & Gift Card Banner */}
+        <section className="trust-and-gift-section content-width">
+          {/* Left: 4 Trust Badges */}
+          <div className="trust-badges-grid">
+            <div className="trust-badge-card">
+              <div className="trust-icon-box">
+                <Truck size={20} />
+              </div>
+              <div className="trust-text">
+                <strong>Livraison rapide</strong>
+                <span>à Saly & Mbour</span>
+              </div>
+            </div>
+
+            <div className="trust-badge-card">
+              <div className="trust-icon-box">
+                <ShieldCheck size={20} />
+              </div>
+              <div className="trust-text">
+                <strong>Paiement sécurisé</strong>
+                <span>Wave & Orange Money</span>
+              </div>
+            </div>
+
+            <div className="trust-badge-card">
+              <div className="trust-icon-box">
+                <Flower2 size={20} />
+              </div>
+              <div className="trust-text">
+                <strong>Fleurs fraîches</strong>
+                <span>et de qualité</span>
+              </div>
+            </div>
+
+            <div className="trust-badge-card">
+              <div className="trust-icon-box">
+                <Headphones size={20} />
+              </div>
+              <div className="trust-text">
+                <strong>Service client</strong>
+                <span>à votre écoute</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Gift Card Promo Banner */}
+          <div className="gift-card-banner">
+            <div className="gift-banner-content">
+              <div className="gift-icon-tag">
+                <Gift size={24} />
+              </div>
+              <div>
+                <h3>Offrez des émotions avec nos cartes cadeaux</h3>
+                <Link href="/compte/cartes-cadeaux" className="button-pill-pink button-small">
+                  Acheter une carte cadeau <ArrowRight size={14} />
+                </Link>
+              </div>
+            </div>
+            <div className="gift-banner-image">
+              <Image
+                src="/images/cadeau.jpg"
+                alt="Carte cadeau et coffret Décofleur Plus"
+                fill
+                sizes="(max-width: 900px) 100vw, 240px"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* 5. Interactive Testimonials Carousel ("Ils nous font confiance") */}
+        <TestimonialCarousel />
+
+        {/* 6. Homepage FAQ Section */}
+        <HomeFaq />
+      </main>
+
+      <SiteFooter />
+    </>
+  );
 }
+

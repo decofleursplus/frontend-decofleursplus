@@ -16,5 +16,5 @@ export default async function CategoryRoute({ params }: { params: Promise<{ slug
   const { slug } = await params;
   const category = categories[slug];
   if (!category) notFound();
-  return <><main className="content-width page-main"><section className="page-banner shop-banner"><Image src="/images/hero.webp" alt="Bouquet Décofleur Plus" fill sizes="100vw" /><div><h1>{category}</h1><p>Découvrez les créations Décofleur Plus pour cette catégorie.</p></div></section><div className="breadcrumbs"><Link href="/">Accueil</Link><span>›</span><Link href="/boutique">Boutique</Link><span>›</span><span>{category}</span></div><CatalogClient initialCategory={category} /></main><SiteFooter /></>;
+  return <><main className="content-width page-main"><section className="page-banner shop-banner"><Image src="/images/hero.jpg" alt="Bouquet Décofleur Plus" fill sizes="100vw" /><div><h1>{category}</h1><p>Découvrez les créations Décofleur Plus pour cette catégorie.</p></div></section><div className="breadcrumbs"><Link href="/">Accueil</Link><span>›</span><Link href="/boutique">Boutique</Link><span>›</span><span>{category}</span></div><CatalogClient initialCategory={category} /></main><SiteFooter /></>;
 }
