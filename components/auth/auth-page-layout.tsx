@@ -187,17 +187,8 @@ export function AuthPageLayout({ mode, children }: AuthPageLayoutProps) {
 
         {/* Right Column: Interactive White Form Card */}
         <main className="auth-card-column">
-          {/* Mobile decorative floral garland banner (above card) */}
-          <div className="auth-mobile-floral-arch" aria-hidden="true">
-            <Image
-              src="/images/auth/auth-floral-garland-mobile.jpg"
-              alt=""
-              width={320}
-              height={120}
-              priority
-              className="auth-mobile-floral-arch-img"
-            />
-          </div>
+          {/* Mobile floral background behind the top of the form card */}
+          <div className="auth-mobile-floral-arch" aria-hidden="true" />
 
           {/* Main Card */}
           <div className="auth-white-card">

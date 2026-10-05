@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Search,
   Heart,
@@ -16,6 +16,8 @@ import {
   Menu,
   X,
   ChevronDown,
+  House,
+  Flower2,
 } from 'lucide-react';
 import { FacebookIcon, InstagramIcon, TikTokIcon } from '@/components/icons';
 import { useCart } from '@/components/cart-provider';
@@ -29,6 +31,40 @@ export function SiteHeader() {
   const [query, setQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
+  const menuCloseRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    const focusReturnTarget = menuTriggerRef.current;
+    document.body.style.overflow = 'hidden';
+    const focusCloseButton = window.requestAnimationFrame(() => menuCloseRef.current?.focus());
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobileMenuOpen(false);
+      if (event.key === 'Tab') {
+        const drawer = document.getElementById('mobile-navigation-drawer');
+        const focusable = drawer?.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled])');
+        if (!focusable?.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.cancelAnimationFrame(focusCloseButton);
+      window.removeEventListener('keydown', closeOnEscape);
+      focusReturnTarget?.focus();
+    };
+  }, [mobileMenuOpen]);
 
   const authRoutes = ['/connexion', '/inscription', '/mot-de-passe-oublie'];
   const isAuthRoute = authRoutes.some(
@@ -63,7 +99,7 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="site-header">
+    <header className={`site-header${isAuthRoute ? ' auth-route-header' : ''}`}>
       {/* 1. Top Announcement Bar */}
       <div className="topbar">
         <div className="content-width topbar-inner">
@@ -108,9 +144,12 @@ export function SiteHeader() {
       <div className="content-width header-main">
         {/* Mobile menu button */}
         <button
+          ref={menuTriggerRef}
           className="mobile-menu-trigger"
           onClick={() => setMobileMenuOpen(true)}
           aria-label="Ouvrir le menu"
+          aria-expanded={mobileMenuOpen}
+          aria-controls="mobile-navigation-drawer"
         >
           <Menu size={24} />
         </button>
@@ -128,30 +167,34 @@ export function SiteHeader() {
         </Link>
 
         {/* Centered Search Bar */}
-        <form className="search-box" onSubmit={search} role="search">
-          <label className="sr-only" htmlFor="site-search">
-            Rechercher un produit, une catégorie ou un événement
-          </label>
-          <input
-            id="site-search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Rechercher un produit, une catégorie, un événement…"
-          />
-          <button type="submit" aria-label="Rechercher">
-            <Search size={18} />
-          </button>
-        </form>
+        {!isAuthRoute && (
+          <form className="search-box" onSubmit={search} role="search">
+            <label className="sr-only" htmlFor="site-search">
+              Rechercher un produit, une catégorie ou un événement
+            </label>
+            <input
+              id="site-search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Rechercher un produit, une catégorie, un événement…"
+            />
+            <button type="submit" aria-label="Rechercher">
+              <Search size={18} />
+            </button>
+          </form>
+        )}
 
         {/* Header Action Icons */}
         <div className="header-actions">
-          <Link href="/favoris" className="action-icon-link" aria-label="Mes favoris">
-            <div className="icon-with-badge">
-              <Heart size={20} />
-              {favorites.length > 0 && <span className="action-badge">{favorites.length}</span>}
-            </div>
-            <span className="action-label-text">Favoris</span>
-          </Link>
+          {!isAuthRoute && (
+            <Link href="/favoris" className="action-icon-link" aria-label="Mes favoris">
+              <div className="icon-with-badge">
+                <Heart size={20} />
+                {favorites.length > 0 && <span className="action-badge">{favorites.length}</span>}
+              </div>
+              <span className="action-label-text">Favoris</span>
+            </Link>
+          )}
           <Link
             href={isAuthenticated ? '/compte' : '/connexion'}
             className="action-icon-link"
@@ -164,12 +207,14 @@ export function SiteHeader() {
               {isAuthenticated ? (user?.name?.split(' ')[0] || 'Mon compte') : 'Mon compte'}
             </span>
           </Link>
-          <Link href="/panier" className="action-icon-link cart-pill-link" aria-label="Mon panier">
-            <div className="icon-with-badge">
-              <ShoppingCart size={20} className="text-pink-600" />
-              <span className="action-badge pink-badge">{count}</span>
-            </div>
-          </Link>
+          {!isAuthRoute && (
+            <Link href="/panier" className="action-icon-link cart-pill-link" aria-label="Mon panier">
+              <div className="icon-with-badge">
+                <ShoppingCart size={20} className="text-pink-600" />
+                <span className="action-badge pink-badge">{count}</span>
+              </div>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -282,8 +327,8 @@ export function SiteHeader() {
       {/* 4. Mobile Drawer Overlay */}
       {mobileMenuOpen && (
         <div className="mobile-drawer-overlay" onClick={() => setMobileMenuOpen(false)}>
-          <div className="mobile-drawer" onClick={(e) => e.stopPropagation()}>
-            <div className="mobile-drawer-header">
+          <div id="mobile-navigation-drawer" className="mobile-drawer" role="dialog" aria-modal="true" aria-label="Menu de navigation" onClick={(e) => e.stopPropagation()}>
+            <div className="mobile-drawer-header mt-16 pb-8">
               <Image
                 src="/logo_decofleur.jpeg"
                 alt="Décofleur Plus"
@@ -291,7 +336,9 @@ export function SiteHeader() {
                 height={50}
                 className="drawer-logo"
               />
+            
               <button
+                ref={menuCloseRef}
                 className="drawer-close"
                 onClick={() => setMobileMenuOpen(false)}
                 aria-label="Fermer le menu"
@@ -299,17 +346,6 @@ export function SiteHeader() {
                 <X size={24} />
               </button>
             </div>
-
-            <form className="drawer-search" onSubmit={search}>
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Rechercher…"
-              />
-              <button type="submit" aria-label="Rechercher">
-                <Search size={18} />
-              </button>
-            </form>
 
             <nav className="mobile-drawer-links">
               <Link href="/" onClick={() => setMobileMenuOpen(false)}>Accueil</Link>
@@ -341,34 +377,27 @@ export function SiteHeader() {
 
       {/* 5. Mobile Bottom Navigation Bar (as shown in phone mockup!) */}
       {!isAuthRoute && (
-        <div className="mobile-bottom-bar">
-          <Link href="/" className={`bottom-tab ${pathname === '/' ? 'active' : ''}`}>
-            <span className="bottom-tab-icon">🏠</span>
+        <nav className="mobile-bottom-bar" aria-label="Navigation rapide">
+          <Link href="/" aria-current={pathname === '/' ? 'page' : undefined} className={`bottom-tab ${pathname === '/' ? 'active' : ''}`}>
+            <span className="bottom-tab-icon-wrap"><House size={20} /></span>
             <span className="bottom-tab-label">Accueil</span>
           </Link>
-          <Link href="/boutique" className={`bottom-tab ${pathname.startsWith('/boutique') ? 'active' : ''}`}>
-            <span className="bottom-tab-icon">🌸</span>
+          <Link href="/boutique" aria-current={isActive('/boutique') ? 'page' : undefined} className={`bottom-tab ${isActive('/boutique') ? 'active' : ''}`}>
+            <span className="bottom-tab-icon-wrap"><Flower2 size={20} /></span>
             <span className="bottom-tab-label">Catégories</span>
           </Link>
-          <Link href="/favoris" className={`bottom-tab ${pathname === '/favoris' ? 'active' : ''}`}>
-            <div className="bottom-tab-icon-wrap">
-              <Heart size={20} />
-              {favorites.length > 0 && <span className="bottom-badge">{favorites.length}</span>}
-            </div>
-            <span className="bottom-tab-label">Favoris</span>
-          </Link>
-          <Link href="/panier" className={`bottom-tab ${pathname === '/panier' ? 'active' : ''}`}>
-            <div className="bottom-tab-icon-wrap">
+          <Link href="/panier" aria-current={pathname === '/panier' ? 'page' : undefined} className={`bottom-tab ${pathname === '/panier' ? 'active' : ''}`}>
+            <span className="bottom-tab-icon-wrap">
               <ShoppingCart size={20} />
               {count > 0 && <span className="bottom-badge pink">{count}</span>}
-            </div>
+            </span>
             <span className="bottom-tab-label">Panier</span>
           </Link>
-          <Link href="/compte" className={`bottom-tab ${pathname.startsWith('/compte') ? 'active' : ''}`}>
-            <UserRound size={20} />
+          <Link href={isAuthenticated ? '/compte' : '/connexion'} aria-current={pathname.startsWith('/compte') ? 'page' : undefined} className={`bottom-tab ${pathname.startsWith('/compte') || pathname === '/connexion' ? 'active' : ''}`}>
+            <span className="bottom-tab-icon-wrap"><UserRound size={20} /></span>
             <span className="bottom-tab-label">Compte</span>
           </Link>
-        </div>
+        </nav>
       )}
     </header>
   );

@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 import {
   Check,
@@ -28,20 +29,15 @@ type PaymentMethod =
   | 'wave'
   | 'orange'
   | 'free'
-  | 'card'
-  | 'apple'
-  | 'google'
-  | 'paypal'
-  | 'delivery';
+  | 'card';
 
 export default function CheckoutPage() {
   const { items, subtotal } = useCart();
   const { user, isAuthenticated, login, loginWithGoogle, register, logout } = useAuth();
+  const router = useRouter();
 
   const [delivery, setDelivery] = useState<DeliveryMode>('standard');
   const [payment, setPayment] = useState<PaymentMethod>('wave');
-  const [promo, setPromo] = useState('');
-  const [promoFeedback, setPromoFeedback] = useState('');
   const [notice, setNotice] = useState('');
 
   // Step 1: Auth state
@@ -158,9 +154,7 @@ export default function CheckoutPage() {
       );
       return;
     }
-    setNotice(
-      'Vos informations sont enregistrées avec succès pour cette commande. Redirection vers la confirmation...'
-    );
+    router.push('/commande/confirmation');
   }
 
   return (
@@ -596,7 +590,7 @@ export default function CheckoutPage() {
                     onChange={() => setPayment('wave')}
                   />
                   <div className="payment-brand-badge wave">
-                    <span className="payment-brand-logo">🌊</span>
+                    <Image src="/payment/wave.png" alt="" width={22} height={32} />
                   </div>
                   <strong>Wave</strong>
                 </label>
@@ -611,7 +605,7 @@ export default function CheckoutPage() {
                     onChange={() => setPayment('orange')}
                   />
                   <div className="payment-brand-badge orange">
-                    <span className="payment-brand-logo">🍊</span>
+                    <Image src="/payment/orange-money.svg" alt="" width={28} height={28} />
                   </div>
                   <strong>Orange Money</strong>
                 </label>
@@ -626,7 +620,7 @@ export default function CheckoutPage() {
                     onChange={() => setPayment('free')}
                   />
                   <div className="payment-brand-badge free">
-                    <span className="payment-brand-logo">🆓</span>
+                    <Image src="/payment/free-money.png" alt="" width={42} height={32} />
                   </div>
                   <strong>Free Money</strong>
                 </label>
@@ -641,74 +635,12 @@ export default function CheckoutPage() {
                     onChange={() => setPayment('card')}
                   />
                   <div className="payment-brand-badge card">
-                    <span className="payment-brand-logo">💳</span>
+                    <Image src="/payment/visa.svg" alt="Visa" width={27} height={18} />
+                    <Image src="/payment/mastercard.svg" alt="Mastercard" width={24} height={18} />
                   </div>
                   <div className="payment-method-text">
                     <strong>Carte bancaire</strong>
                     <span className="payment-subtext">Visa, Mastercard</span>
-                  </div>
-                </label>
-
-                {/* Apple Pay */}
-                <label className={`payment-method-row ${payment === 'apple' ? 'selected' : ''}`}>
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="apple"
-                    checked={payment === 'apple'}
-                    onChange={() => setPayment('apple')}
-                  />
-                  <div className="payment-brand-badge apple">
-                    <span className="payment-brand-logo"></span>
-                  </div>
-                  <strong>Apple Pay</strong>
-                </label>
-
-                {/* Google Pay */}
-                <label className={`payment-method-row ${payment === 'google' ? 'selected' : ''}`}>
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="google"
-                    checked={payment === 'google'}
-                    onChange={() => setPayment('google')}
-                  />
-                  <div className="payment-brand-badge gpay">
-                    <span className="payment-brand-logo">G</span>
-                  </div>
-                  <strong>Google Pay</strong>
-                </label>
-
-                {/* PayPal */}
-                <label className={`payment-method-row ${payment === 'paypal' ? 'selected' : ''}`}>
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="paypal"
-                    checked={payment === 'paypal'}
-                    onChange={() => setPayment('paypal')}
-                  />
-                  <div className="payment-brand-badge paypal">
-                    <span className="payment-brand-logo">P</span>
-                  </div>
-                  <strong>PayPal</strong>
-                </label>
-
-                {/* Paiement à la livraison */}
-                <label className={`payment-method-row ${payment === 'delivery' ? 'selected' : ''}`}>
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="delivery"
-                    checked={payment === 'delivery'}
-                    onChange={() => setPayment('delivery')}
-                  />
-                  <div className="payment-brand-badge delivery">
-                    <span className="payment-brand-logo">💵</span>
-                  </div>
-                  <div className="payment-method-text">
-                    <strong>Paiement à la livraison</strong>
-                    <span className="payment-subtext">Espèces uniquement</span>
                   </div>
                 </label>
               </div>
@@ -734,13 +666,15 @@ export default function CheckoutPage() {
                     <div className="checkout-item-info">
                       <strong>{item.product.name}</strong>
                       <span className="item-meta-desc">
-                        {item.options?.size ? `Taille : ${item.options.size}` : null}
-                        {item.options?.cardMessage ? `Message : ${item.options.cardMessage}` : null}
+                        {item.options?.size && <span>Taille : {item.options.size}</span>}
+                        {item.options?.cardMessage && <span>Message : {item.options.cardMessage}</span>}
                       </span>
-                      <span className="item-qty-tag">Quantité : {item.quantity}</span>
-                      <span className="item-price-tag">
-                        {formatPrice(item.product.price * item.quantity)}
-                      </span>
+                      <div className="checkout-item-footer">
+                        <span className="item-qty-tag">Quantité : {item.quantity}</span>
+                        <strong className="item-price-tag">
+                          {formatPrice(item.product.price * item.quantity)}
+                        </strong>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -763,36 +697,6 @@ export default function CheckoutPage() {
                   </strong>
                 </div>
               </div>
-
-              {/* Code Promo */}
-              <div className="checkout-promo-box">
-                <label htmlFor="promoInput" className="visually-hidden">Code promo</label>
-                <input
-                  id="promoInput"
-                  placeholder="Entrer votre code"
-                  value={promo}
-                  onChange={(e) => setPromo(e.target.value)}
-                  className="promo-input-field"
-                />
-                <button
-                  type="button"
-                  className="button-pill-pink button-small"
-                  onClick={() =>
-                    setPromoFeedback(
-                      promo
-                        ? 'Code promo GOLD15 appliqué (-15% de réduction) !'
-                        : 'Veuillez saisir un code promo.'
-                    )
-                  }
-                >
-                  Appliquer
-                </button>
-              </div>
-              {promoFeedback && (
-                <p className="promo-feedback-note" role="status">
-                  {promoFeedback}
-                </p>
-              )}
 
               {/* Terms Checkbox */}
               <label className="terms-checkbox-label">
@@ -820,10 +724,7 @@ export default function CheckoutPage() {
 
               {notice && (
                 <p className="checkout-submit-notice" role="status">
-                  {notice}{' '}
-                  <Link href="/commande/confirmation">
-                    Voir la confirmation de commande →
-                  </Link>
+                  {notice}
                 </p>
               )}
             </aside>

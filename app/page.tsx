@@ -17,51 +17,17 @@ import { ProductGrid } from '@/components/product-grid';
 import { SiteFooter } from '@/components/site-footer';
 import { TestimonialCarousel } from '@/components/testimonial-carousel';
 import { HomeFaq } from '@/components/home-faq';
+import { AutoScrollStrip } from '@/components/auto-scroll-strip';
 
 // 7 quick categories strictly from the prototype mockup
 const mockupCategories = [
-  {
-    title: 'Bouquets élégants',
-    subtitle: 'Fleurs fraîches et raffinées',
-    href: '/bouquets',
-    icon: Flower2,
-  },
-  {
-    title: 'Décoration sur mesure',
-    subtitle: 'Espaces, maisons, bureaux',
-    href: '/decoration',
-    icon: Home,
-  },
-  {
-    title: 'Mariages & événements',
-    subtitle: 'Cérémonies, réceptions',
-    href: '/mariages',
-    icon: Heart,
-  },
-  {
-    title: 'Livraison à domicile',
-    subtitle: 'Rapide et fiable à Saly & Mbour',
-    href: '/livraison',
-    icon: Truck,
-  },
-  {
-    title: 'Paniers de fruits',
-    subtitle: 'Frais et gourmands',
-    href: '/paniers-de-fruits',
-    icon: ShoppingBag,
-  },
-  {
-    title: 'Cadeaux',
-    subtitle: 'Pour toutes occasions',
-    href: '/cadeaux',
-    icon: Gift,
-  },
-  {
-    title: 'Location de vaisselle & matériel',
-    subtitle: 'Pour vos réceptions',
-    href: '/evenements',
-    icon: UtensilsCrossed,
-  },
+  { title: 'Bouquets élégants', subtitle: 'Fleurs fraîches et raffinées', href: '/bouquets', icon: Flower2 },
+  { title: 'Décoration sur mesure', subtitle: 'Espaces, maisons, bureaux', href: '/decoration', icon: Home },
+  { title: 'Mariages & événements', subtitle: 'Cérémonies, réceptions', href: '/mariages', icon: Heart },
+  { title: 'Livraison à domicile', subtitle: 'Rapide et fiable à Saly & Mbour', href: '/livraison', icon: Truck },
+  { title: 'Paniers de fruits', subtitle: 'Frais et gourmands', href: '/paniers-de-fruits', icon: ShoppingBag },
+  { title: 'Cadeaux', subtitle: 'Pour toutes occasions', href: '/cadeaux', icon: Gift },
+  { title: 'Location de vaisselle & matériel', subtitle: 'Pour vos réceptions', href: '/evenements', icon: UtensilsCrossed },
 ];
 
 export default function HomePage() {
@@ -117,7 +83,7 @@ export default function HomePage() {
         {/* 2. 7-Category Horizontal Strip */}
         <section className="category-strip-section" aria-label="Catégories principales">
           <div className="content-width">
-            <div className="category-strip-container">
+            <AutoScrollStrip className="category-strip-container">
               {mockupCategories.map((cat, idx) => {
                 const Icon = cat.icon;
                 return (
@@ -132,7 +98,7 @@ export default function HomePage() {
                   </Link>
                 );
               })}
-            </div>
+            </AutoScrollStrip>
           </div>
         </section>
 
@@ -253,4 +219,3 @@ export default function HomePage() {
     </>
   );
 }
-

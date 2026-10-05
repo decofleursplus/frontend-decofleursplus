@@ -9,6 +9,7 @@ import {
   Crown,
   ArrowRight,
   UserRound,
+  LogOut,
 } from 'lucide-react';
 import { demoOrders } from '@/lib/account-data';
 import { formatPrice } from '@/lib/products';
@@ -37,6 +38,9 @@ export default function AccountDashboard() {
           </div>
           <Link href="/compte/informations" className="button-profile-edit">
             <UserRound size={13} /> Modifier mon profil
+          </Link>
+          <Link href="/connexion" className="dashboard-mobile-signout">
+            <LogOut size={14} /> Déconnexion
           </Link>
         </div>
       </div>

@@ -1,5 +1,42 @@
 # Décofleur Plus — Implementation Status
 
+## Phase 2 — User Responsive / PWA
+
+**Statut : implémentation réalisée — vérification visuelle des appareils en attente.** Le périmètre est exclusivement la partie USER mobile/PWA, selon `mockups/Décofleur Plus Mobile App Showcase.png`. La phase 2 ne remplace pas les réalisations antérieures documentées ci-dessous ; elle constitue un audit et une adaptation au nouveau mockup.
+
+### Terminé
+
+- Lecture de `docs/IMPLEMENTATION_PLAN.md` et `docs/IMPLEMENTATION_STATUS.md`.
+- Vérification de la présence de `rules.md` : absent à la racine.
+- Checklist Phase 2 ajoutée au plan avant tout changement du code applicatif.
+- Audit du mockup et du shell existant : recherche absente sur mobile, navigation basse en emojis, navigation tablette trop dense, et safe areas/zone de scroll non protégées.
+- Header mobile : recherche disponible, boutons tactiles plus grands, navigation par icônes avec état actif, tiroir avec fermeture Échap et verrouillage du défilement arrière.
+- Adaptation responsive CSS des pages d’accueil, boutique/filtres, fiche produit, panier/checkout, authentification, compte/commandes, contenu et footer ; tiroirs/sections défilants et mise en page simple colonne selon la largeur.
+- Métadonnées et manifeste PWA ajoutés (`app/manifest.ts`, `app/layout.tsx`) avec icônes SVG/PNG 192, 512 et Apple 180 px.
+- Invite d’installation Android et aide d’ajout à l’écran d’accueil pour Safari iOS.
+- Service worker ajouté : cache des ressources statiques, revalidation réseau des images/icônes, repli hors ligne ; pages HTML, compte, panier et transactions ne sont jamais stockés.
+- Ajout d’une page hors ligne lisible et d’un thème/status bar mobile assorti à la marque.
+- Vérifications réussies : `pnpm exec tsc --noEmit`, `pnpm lint`, parsing PostCSS des styles et `pnpm build` (70 pages/routes, manifeste inclus).
+- Captures Firefox : accueil à 360 px et 1440 px, catalogue à 390 px et 768 px, fiche produit et checkout à 390 px, panier vide, connexion, compte, commandes et contact à 390 px. Le premier contrôle du catalogue a révélé un panneau de catégories trop haut et celui du compte a repéré des cartes qui débordaient/se chevauchaient ; les deux vues ont été corrigées et recapturées.
+
+### En cours
+
+- Inspection des routes USER restantes (confirmation, suivi, blog, événements et pages légales) et contrôle d’interactions réelles du service worker restent à réaliser.
+
+### Restant
+
+- Compléter l’inspection visuelle des parcours USER non capturés et corriger les écarts éventuels.
+- Vérifier l’installation PWA et les scénarios hors ligne dans Chrome Android et Safari iOS sur appareil/navigateur compatible.
+- Compléter la non-régression desktop sur les pages autres que l’accueil.
+- Évaluer les notifications : aucune infrastructure serveur/web-push n’existe dans ce frontend ; aucune permission ni notification n’est sollicitée côté client.
+- Ne cocher dans `docs/IMPLEMENTATION_PLAN.md` qu’après les vérifications visuelles et responsive prévues par la règle de validation.
+
+### Problèmes connus / décisions
+
+- `rules.md` est absent ; aucune règle additionnelle de ce fichier n’a pu être appliquée.
+- Les captures d’écran confirment uniquement les dimensions/routes listées dans « En cours » ; elles ne valident pas chaque interaction ni l’ensemble des pages USER.
+- Les consignes iOS et l’installation/hors ligne sur un appareil réel restent à vérifier.
+
 ## Statut général : 100% Conforme au Prototype & au Cahier des Charges
 
 Toutes les étapes du plan d'implémentation et les demandes utilisateur ont été intégralement réalisées et validées.
@@ -90,5 +127,3 @@ Toutes les étapes du plan d'implémentation et les demandes utilisateur ont ét
   - `finaliser_commande.png` (Cadran Bas-Gauche : Checkout 5 étapes & récapitulatif)
   - `programme_fidelite.png` (Cadran Bas-Droit : Gold 28 500 pts, 4 paliers, coupons & parrainage)
   - `carousel_faq_home.png` (Titre centré, flèches alignées et FAQ 5 questions centrée)
-
-

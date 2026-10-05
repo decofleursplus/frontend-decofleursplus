@@ -220,7 +220,7 @@ export function ProductDetail({ product }: { product: Product }) {
             onClick={addItem}
             disabled={!product.inStock}
           >
-            {product.inStock ? `Ajouter au panier • ${formatPrice(totalPrice)}` : 'Indisponible'}
+            {product.inStock ? `Ajouter au panier` : 'Indisponible'}
           </button>
 
           <button

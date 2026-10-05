@@ -1,5 +1,36 @@
 # Décofleur Plus — Implementation Plan
 
+## Phase 2 — User Responsive / PWA
+
+**Objectif :** adapter les pages USER existantes au mockup `mockups/Décofleur Plus Mobile App Showcase.png` et ajouter les capacités PWA, sans modifier la direction artistique desktop ni toucher au back-office.
+
+**État initial observé (3 octobre 2026) :** le dépôt contient déjà des règles responsive et un tiroir/bottom navigation dans `components/site-header.tsx` / `app/globals.css`. Ces éléments sont à auditer contre le nouveau mockup avant d’être considérés conformes. `app/layout.tsx` n’expose actuellement qu’un titre et une description ; aucun manifeste, service worker ou flux d’installation n’a été repéré. `rules.md` n’est pas présent à la racine.
+
+### Plan et checklist
+
+- [x] Lire le plan, le statut et rechercher `rules.md` — `rules.md` absent ; plan établi avant toute modification du code applicatif.
+- [ ] Auditer le shell mobile — Header avec recherche et actions, tiroir/menu, navigation basse à 5 entrées, zones tactiles, safe areas, scroll et comportement sur routes auth ; comparer au mockup.
+- [ ] Définir et vérifier les seuils responsive — Téléphones étroits, mobiles courants, tablettes et desktop ; repérer débordements et éléments desktop qui ne se réorganisent pas correctement.
+- [ ] Accueil mobile — Adapter hero, catégories, cartes produit, sections éditoriales et footer selon la maquette.
+- [ ] Boutique, catégories et recherche — Grille produit mobile, filtres/tri utilisables au pouce, recherche, états vides et pagination/chargement.
+- [ ] Fiche produit et favoris — Galerie/carrousel, variantes, personnalisation, prix et CTA accessibles sans masquer le contenu.
+- [ ] Panier — Lignes produit, quantité/suppression, code promo, récapitulatif et passage au checkout.
+- [ ] Checkout, livraison, paiement et confirmation — Étapes, formulaires, options, récapitulatif et confirmation adaptés au mobile.
+- [ ] Connexion et inscription — Contrôler les formulaires, clavier virtuel, viewport et mise en page mobile existante.
+- [ ] Compte, commandes, détails et suivi — Navigation de compte, cartes, statuts, adresses, fidélité, coupons et suivi.
+- [ ] Blog, article, événements, à propos, contact et pages légales — Mise en page, médias, formulaires et navigation mobile.
+- [ ] États système — Chargement, erreurs, vide, hors ligne et succès sur petits écrans.
+- [ ] Micro-interactions et accessibilité — Feedback tactile, tiroirs/feuilles, transitions et `prefers-reduced-motion`.
+- [ ] PWA manifest et métadonnées — Nom, icônes, couleurs, orientation et mode standalone cohérents avec la marque.
+- [ ] Icônes PWA — Produire les tailles requises et vérifier les rendus installés Android/iOS.
+- [ ] Installation et lancement — Vérifier prompt/consignes d’installation compatibles navigateur, Android et iOS ; expérience de démarrage adaptée.
+- [ ] Service worker et cache — Choisir une stratégie prudente pour les ressources statiques, sans mettre en cache les données personnelles ou transactions ; gérer mise à jour et échec réseau.
+- [ ] Expérience hors ligne — État hors ligne explicite et repli utile pour les pages/ressources non disponibles.
+- [ ] Notifications — Évaluer les capacités et le support déjà présents ; n’activer que si l’architecture existante le permet réellement.
+- [ ] QA responsive et non-régression — Vérifier visuellement les parcours USER aux tailles cibles, interactions, accessibilité et rendu desktop avant de cocher les tâches.
+
+**Règle de validation :** les cases d’implémentation ne seront cochées qu’après réalisation, vérification visuelle mobile, contrôle responsive et vérification de l’absence de régression desktop. Toute limite ou décision sera consignée dans `docs/IMPLEMENTATION_STATUS.md`.
+
 ## Portée et références
 
 - [x] Inspecter le dépôt — Dépôt initial sans code applicatif ; prompt, règles, maquettes, logo et PDF présents.
@@ -64,6 +95,5 @@
 - [x] 8.6. Finaliser ma Commande (`/commande`) : reproduire les 5 étapes numérotées du cadran inférieur gauche (1. Adresse de livraison enregistrée, 2. Mode de livraison Standard/Express avec recherche cartographique Saly/Mbour, 3. Date et créneau horaire, 4. Instructions livreur, 5. Mode de paiement avec badges officiels Wave, Orange Money, Carte Bancaire et Espèces), récapitulatif détaillé avec code promo et bouton de paiement sécurisé.
 - [x] 8.7. Programme de Fidélité (`/compte/fidelite`) : reproduire fidèlement le cadran inférieur droit (citation calligraphiée fleurie, carte héro Gold 28 500 pts avec jauge vers Platinum, grille des 4 statuts avec pourcentages de remise, liste des 5 avantages Gold exclusifs, historique de points, coupons actifs `GOLD15` et `LIVRAISON`, et bloc parrainage avec code et partage direct).
 - [x] 8.8. Validation technique et captures d'écran Chromium : validation sans faute de `tsc` et `eslint`, génération de 69/69 routes statiques sous Next.js Turbopack, et captures d'écran Chromium validées pour chaque section.
-
 
 

@@ -8,7 +8,7 @@ export const faqList = [
   },
   {
     q: 'Quels sont les modes de paiement acceptés ?',
-    a: 'Nous acceptons Wave, Orange Money, Free Money, les cartes bancaires internationales (Visa, Mastercard), Apple Pay, ainsi que le paiement en espèces à la livraison pour les commandes confirmées.',
+    a: 'Nous acceptons Wave, Orange Money, Free Money et les cartes bancaires Visa ou Mastercard.',
   },
   {
     q: 'Puis-je joindre une carte avec un message personnalisé ?',
