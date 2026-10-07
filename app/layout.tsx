@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
-import { AuthProvider } from '@/components/auth-provider';
-import { CartProvider } from '@/components/cart-provider';
-import { SiteHeader } from '@/components/site-header';
-import { PwaRegistration } from '@/components/pwa-registration';
+import { RootShell } from '@/components/root-shell';
+import { Geist } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: 'Décofleur Plus — Nature en élégance',
@@ -27,16 +28,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="fr">
+    <html lang="fr" className={cn("font-sans", geist.variable)}>
       <body className="min-h-screen">
-        <AuthProvider>
-          <CartProvider>
-            <SiteHeader />
-            <PwaRegistration />
-            {children}
-          </CartProvider>
-        </AuthProvider>
+        <RootShell>{children}</RootShell>
       </body>
     </html>
   );
 }
+

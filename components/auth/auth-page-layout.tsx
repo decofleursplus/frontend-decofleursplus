@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { FloralHeartDivider } from '@/components/icons';
 
-type AuthLayoutMode = 'connexion' | 'inscription' | 'mot-de-passe-oublie';
+type AuthLayoutMode = 'connexion' | 'inscription' | 'mot-de-passe-oublie' | 'admin-connexion';
 
 interface AuthPageLayoutProps {
   mode: AuthLayoutMode;
@@ -47,6 +47,33 @@ const leftColumnContent = {
         icon: Sparkles,
         title: 'Profitez d’offres exclusives',
         subtitle: 'et de promotions',
+      },
+    ],
+  },
+  'admin-connexion': {
+    welcome: 'Administration',
+    brand: 'Décofleur Plus',
+    intro: 'Connectez-vous pour accéder au panneau de gestion de votre boutique.',
+    perks: [
+      {
+        icon: ShoppingBag,
+        title: 'Gérez vos commandes',
+        subtitle: 'et expéditions en temps réel',
+      },
+      {
+        icon: PackageCheck,
+        title: 'Mettez à jour le catalogue',
+        subtitle: 'et le suivi des stocks',
+      },
+      {
+        icon: Heart,
+        title: 'Fidélisez vos clients',
+        subtitle: 'avec le CRM intégré',
+      },
+      {
+        icon: ShieldCheck,
+        title: 'Accès restreint & sécurisé',
+        subtitle: 'réservé à l\'équipe',
       },
     ],
   },
