@@ -20,6 +20,7 @@ export type AdminProduct = {
   promoPrice?: number;
   sku: string;
   stock: number;
+  minStock?: number;
   status: ProductStatus;
   image: string;
   images: string[];
@@ -29,6 +30,23 @@ export type AdminProduct = {
   rating: number;
   reviews: number;
 };
+
+export type StockMovementType = 'entree' | 'sortie' | 'ajustement';
+
+export type StockMovement = {
+  id: string;
+  productId: string;
+  productName: string;
+  productSku: string;
+  type: StockMovementType;
+  quantity: number;
+  previousStock: number;
+  newStock: number;
+  reason: string;
+  date: string;
+  author: string;
+};
+
 
 export type OrderItem = {
   productId: string;

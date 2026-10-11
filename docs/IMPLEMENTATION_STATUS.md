@@ -21,16 +21,18 @@ Phase 3 — Back-office
 - Create `/admin/clients/[id]` Customer Profile & CRM History Page
 - Create `/admin/categories` page layout and Categories DataTable (Maquette 09)
 - Implement Category Add/Edit Dialog and secure deletion logic
+- Create `/admin/stock` page layout and Stock DataTable with Status Tabs (Tous, Stock faible, Rupture — Maquette 10)
+- Implement Stock Quick-adjustment modal with real-time preview and movement trail
+- Implement Movement History tab with audit trail for stock movements
 
 ## Currently Working On
-Validation de la gestion des catégories et cadrage de la Gestion du Stock (`/admin/stock` - Maquette 10).
+Validation de la gestion du stock et passage à la Gestion des Livraisons (`/admin/livraisons` — Maquette 11).
 
 ## Next Tasks
-- Cadrer les détails de la Gestion du Stock avec l'utilisateur (/grill-me).
-- Implémenter `/admin/stock` avec onglets de statut (Tous, Stock faible, Rupture), tableau de bord des niveaux, alertes et ajustement rapide.
+- Cadrer les détails de la Gestion des Livraisons avec l'utilisateur (/grill-me).
+- Implémenter `/admin/livraisons` avec onglets de statut (Toutes, À livrer, En cours, Livrées), assignation des livreurs et suivi.
 
 ## Remaining
-- Gestion du stock (`/admin/stock` - Maquette 10)
 - Gestion des livraisons (`/admin/livraisons` - Maquette 11)
 - Marketing & Promotions (`/admin/marketing` - Maquette 12/13)
 - Blog & Contenu (`/admin/blog`)
@@ -47,14 +49,17 @@ Validation de la gestion des catégories et cadrage de la Gestion du Stock (`/ad
 - **Routing:** French URL paths for the admin section (`/admin/tableau-de-bord`, etc.) to match public routing.
 
 ## Files Recently Modified
-- `app/admin/(protected)/categories/page.tsx`
-- `lib/admin/mock-data/categories.ts`
-- `lib/admin/mock-data/index.ts`
-- `docs/IMPLEMENTATION_PLAN.md`
-- `docs/IMPLEMENTATION_STATUS.md`
+- `app/admin/(protected)/clients/page.tsx`
+- `app/admin/(protected)/clients/[id]/page.tsx`
+- `components/admin/send-email-dialog.tsx`
+- `lib/admin/mock-data/customers.ts`
+- `app/globals.css`
+- `app/admin/(protected)/stock/page.tsx`
 
 ## Last Completed Task
-Gestion des catégories (`/admin/categories` — Maquette 09 avec ajout, édition modale, bascule statut et suppression sécurisée)
+Refonte et perfectionnement de `/admin/clients` (suppression du bouton export CSV, refonte complète des filtres avec pilules de segments et drawer avancé, logique d'envoi d'e-mail avec modale interactive `SendEmailDialog`).
+Gestion du stock (`/admin/stock` — Maquette 10 avec onglets de statut, alertes de rupture, historique des mouvements et modale d'ajustement)
 
 ## Recommended Next Task
-Gestion du stock (`/admin/stock` — Maquette 10)
+Gestion des livraisons (`/admin/livraisons` — Maquette 11)
+

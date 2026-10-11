@@ -56,10 +56,12 @@
 
 
 ### Gestion du stock (Stock — Maquette 10)
-- [ ] Create `/admin/stock` page layout with tabs (Tous, Stock faible, Rupture)
-- [ ] Implement Stock DataTable (Produit avec image, Stock actuel, Stock minimum, Statut badge, Actions)
-- [ ] Implement Stock quick-adjust modal or inline update
-- [ ] Implement Stock filter by category and search
+- [x] Create `/admin/stock` page layout with tabs (Tous, Stock faible, Rupture)
+- [x] Implement Stock DataTable (Produit avec image, Stock actuel, Stock minimum, Statut badge, Actions)
+- [x] Implement Stock quick-adjust modal or inline update
+- [x] Implement Stock filter by category and search
+- [x] Implement Movement history tab with full audit trail
+
 
 ### Gestion des livraisons (Deliveries — Maquette 11)
 - [ ] Create `/admin/livraisons` page layout with status tabs (Toutes, À livrer, En cours, Livrées)

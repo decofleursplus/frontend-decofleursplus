@@ -1,6 +1,6 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState } from 'react';
 import { adminCustomers } from '@/lib/admin/mock-data/customers';
 import { adminOrders } from '@/lib/admin/mock-data/orders';
 import { Button } from '@/components/ui/button';
@@ -10,9 +10,11 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Mail, Phone, MapPin, Calendar, Star, ShoppingBag, Gift } from 'lucide-react';
 import Link from 'next/link';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { SendEmailDialog } from '@/components/admin/send-email-dialog';
 
 export default function CustomerProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const customer = adminCustomers.find(c => c.id === id);
 
   if (!customer) {
@@ -76,9 +78,14 @@ export default function CustomerProfilePage({ params }: { params: Promise<{ id: 
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="border-[#e7e4dd] text-gray-600">
-            <Mail className="mr-2 h-4 w-4" />
-            Contacter
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setIsEmailModalOpen(true)}
+            className="border-[#e7e4dd] text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef] hover:border-[#24582d]/30"
+          >
+            <Mail className="mr-2 h-4 w-4 text-[#24582d]" />
+            Contacter par e-mail
           </Button>
         </div>
       </div>
@@ -214,6 +221,13 @@ export default function CustomerProfilePage({ params }: { params: Promise<{ id: 
           </Card>
         </div>
       </div>
+
+      {/* Send Email Modal */}
+      <SendEmailDialog
+        open={isEmailModalOpen}
+        onOpenChange={setIsEmailModalOpen}
+        customer={customer}
+      />
     </div>
   );
 }
