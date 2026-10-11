@@ -1,0 +1,491 @@
+'use client';
+
+import { useState, useMemo } from 'react';
+import Link from 'next/link';
+import { adminCategories } from '@/lib/admin/mock-data/categories';
+import type { AdminCategory } from '@/lib/admin/mock-data/types';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuGroup,
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Search,
+  Plus,
+  MoreHorizontal,
+  Edit2,
+  Trash2,
+  ExternalLink,
+  Power,
+  FolderTree,
+  AlertTriangle,
+  X,
+  PackageCheck,
+} from 'lucide-react';
+import { toast } from 'sonner';
+
+export default function AdminCategoriesPage() {
+  const [categories, setCategories] = useState<AdminCategory[]>(adminCategories);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'actif' | 'inactif'>('all');
+
+  // Create / Edit modal state
+  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<AdminCategory | null>(null);
+  const [formName, setFormName] = useState('');
+  const [formDescription, setFormDescription] = useState('');
+  const [formStatus, setFormStatus] = useState<'actif' | 'inactif'>('actif');
+
+  // Delete modal state
+  const [categoryToDelete, setCategoryToDelete] = useState<AdminCategory | null>(null);
+
+  // Filtered categories
+  const filteredCategories = useMemo(() => {
+    return categories.filter((cat) => {
+      const matchesSearch =
+        searchQuery.trim() === '' ||
+        cat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        cat.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || cat.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [categories, searchQuery, statusFilter]);
+
+  // Open Form Dialog for Create
+  const handleOpenCreateDialog = () => {
+    setEditingCategory(null);
+    setFormName('');
+    setFormDescription('');
+    setFormStatus('actif');
+    setIsFormDialogOpen(true);
+  };
+
+  // Open Form Dialog for Edit
+  const handleOpenEditDialog = (category: AdminCategory) => {
+    setEditingCategory(category);
+    setFormName(category.name);
+    setFormDescription(category.description);
+    setFormStatus(category.status);
+    setIsFormDialogOpen(true);
+  };
+
+  // Save (Create or Update)
+  const handleSaveCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formName.trim()) {
+      toast.error('Le nom de la catégorie est requis');
+      return;
+    }
+
+    if (editingCategory) {
+      // Update
+      setCategories((prev) =>
+        prev.map((cat) =>
+          cat.id === editingCategory.id
+            ? {
+                ...cat,
+                name: formName.trim(),
+                description: formDescription.trim(),
+                status: formStatus,
+              }
+            : cat
+        )
+      );
+      toast.success('Catégorie mise à jour avec succès');
+    } else {
+      // Create
+      const newCategory: AdminCategory = {
+        id: `cat-${Date.now()}`,
+        name: formName.trim(),
+        description: formDescription.trim(),
+        productCount: 0,
+        status: formStatus,
+      };
+      setCategories((prev) => [newCategory, ...prev]);
+      toast.success('Catégorie créée avec succès');
+    }
+
+    setIsFormDialogOpen(false);
+  };
+
+  // Toggle status
+  const handleToggleStatus = (category: AdminCategory) => {
+    const newStatus = category.status === 'actif' ? 'inactif' : 'actif';
+    setCategories((prev) =>
+      prev.map((cat) => (cat.id === category.id ? { ...cat, status: newStatus } : cat))
+    );
+    toast.success(
+      `Statut mis à jour : "${category.name}" est désormais ${newStatus === 'actif' ? 'active' : 'inactive'}.`
+    );
+  };
+
+  // Confirm delete
+  // Confirm delete
+  const handleConfirmDelete = () => {
+    if (!categoryToDelete) return;
+
+    const count = categoryToDelete.productCount;
+    setCategories((prev) => prev.filter((cat) => cat.id !== categoryToDelete.id));
+
+    if (count > 0) {
+      toast.success(`Catégorie « ${categoryToDelete.name} » supprimée`, {
+        description: `Les ${count} produit(s) associés ont été dissociés de cette catégorie.`,
+      });
+    } else {
+      toast.success(`La catégorie « ${categoryToDelete.name} » a été supprimée.`);
+    }
+
+    setCategoryToDelete(null);
+  };
+
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="admin-page-header">
+        <div>
+          <h1 className="admin-page-title text-[#1e2a1f] font-bold">Gestion des catégories</h1>
+          <p className="admin-page-subtitle text-gray-500 mt-1">
+            Gérez les catégories de votre catalogue pour organiser vos produits.
+          </p>
+        </div>
+        <Button
+          onClick={handleOpenCreateDialog}
+          variant="cta"
+          className="bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs font-medium"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Ajouter une catégorie
+        </Button>
+      </div>
+
+      {/* Filter & Search Bar */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border border-[#e7e4dd]">
+        <div className="relative w-full sm:w-96">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Rechercher une catégorie..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 border-[#e7e4dd] focus-visible:ring-[#24582d]/20"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 font-medium">Statut :</span>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'actif' | 'inactif')}
+              className="flex h-9 rounded-lg border border-[#e7e4dd] bg-white px-3 py-1 text-xs text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#24582d]"
+            >
+              <option value="all">Toutes les catégories</option>
+              <option value="actif">Actives uniquement</option>
+              <option value="inactif">Inactives uniquement</option>
+            </select>
+          </div>
+
+          <span className="text-xs text-gray-500 font-medium whitespace-nowrap bg-[#faf8f4] px-2.5 py-1 rounded-md border border-[#e7e4dd]">
+            {filteredCategories.length} catégorie{filteredCategories.length > 1 ? 's' : ''}
+          </span>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-xl border border-[#e7e4dd] overflow-hidden shadow-xs">
+        <Table>
+          <TableHeader className="bg-[#faf8f4]">
+            <TableRow>
+              <TableHead className="font-semibold text-gray-600 py-3.5 w-[240px]">Nom</TableHead>
+              <TableHead className="font-semibold text-gray-600 py-3.5">Description</TableHead>
+              <TableHead className="font-semibold text-gray-600 py-3.5 text-center w-[140px]">
+                Produits
+              </TableHead>
+              <TableHead className="font-semibold text-gray-600 py-3.5 w-[120px]">Statut</TableHead>
+              <TableHead className="font-semibold text-gray-600 py-3.5 text-right w-[80px]">
+                Actions
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredCategories.map((category) => (
+              <TableRow key={category.id} className="hover:bg-[#faf8f4]/60 transition-colors">
+                <TableCell>
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-8 w-8 rounded-lg bg-[#edf8ef] text-[#24582d] flex items-center justify-center shrink-0">
+                      <FolderTree className="h-4 w-4" />
+                    </div>
+                    <span className="font-semibold text-[#1e2a1f]">{category.name}</span>
+                  </div>
+                </TableCell>
+                <TableCell className="text-gray-600 text-sm">
+                  {category.description || <span className="text-gray-400 italic">Aucune description</span>}
+                </TableCell>
+                <TableCell className="text-center">
+                  <Link
+                    href={`/admin/produits?categorie=${encodeURIComponent(category.name)}`}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#faf8f4] text-[#1e2a1f] border border-[#e7e4dd] hover:bg-[#edf8ef] hover:text-[#24582d] hover:border-[#b0c8a8] transition-colors"
+                    title={`Voir les produits de la catégorie ${category.name}`}
+                  >
+                    <PackageCheck className="h-3.5 w-3.5 text-[#24582d]" />
+                    <span>{category.productCount}</span>
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  {category.status === 'actif' ? (
+                    <Badge className="bg-[#dcfce7] text-[#166534] hover:bg-[#dcfce7]/80 shadow-none border-none font-medium">
+                      Actif
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-gray-100 text-gray-600 hover:bg-gray-200 shadow-none border-none font-medium">
+                      Inactif
+                    </Badge>
+                  )}
+                </TableCell>
+                <TableCell className="text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-gray-500 hover:text-[#24582d] hover:bg-[#edf8ef] hover:border-[#b0c8a8] transition-colors focus:outline-none">
+                      <span className="sr-only">Ouvrir le menu</span>
+                      <MoreHorizontal className="h-4 w-4" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="end"
+                      sideOffset={4}
+                      className="w-52 p-1.5 rounded-xl border border-[#e7e4dd] bg-white shadow-xl"
+                    >
+                      <DropdownMenuGroup>
+                        <DropdownMenuLabel className="px-2.5 py-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                          Gestion
+                        </DropdownMenuLabel>
+                        <DropdownMenuItem
+                          className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef] transition-colors whitespace-nowrap"
+                          onClick={() => handleOpenEditDialog(category)}
+                        >
+                          <Edit2 className="mr-2.5 h-4 w-4 text-[#24582d]" />
+                          Modifier
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef] transition-colors whitespace-nowrap"
+                          render={
+                            <Link
+                              href={`/admin/produits?categorie=${encodeURIComponent(category.name)}`}
+                            />
+                          }
+                        >
+                          <ExternalLink className="mr-2.5 h-4 w-4 text-gray-500" />
+                          Voir les produits
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef] transition-colors whitespace-nowrap"
+                          onClick={() => handleToggleStatus(category)}
+                        >
+                          <Power className="mr-2.5 h-4 w-4 text-gray-500" />
+                          {category.status === 'actif' ? 'Désactiver' : 'Activer'}
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+
+                      <DropdownMenuSeparator className="my-1 border-t border-[#f0eee8]" />
+
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem
+                          className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors whitespace-nowrap focus:text-red-700 focus:bg-red-50"
+                          onClick={() => setCategoryToDelete(category)}
+                        >
+                          <Trash2 className="mr-2.5 h-4 w-4 text-red-600" />
+                          Supprimer
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+
+            {filteredCategories.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} className="h-44 text-center text-gray-500">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <FolderTree className="h-8 w-8 text-gray-300" />
+                    <p className="font-medium text-gray-700">Aucune catégorie trouvée.</p>
+                    <p className="text-xs text-gray-400">
+                      Modifiez votre recherche ou réinitialisez les filtres.
+                    </p>
+                    {(searchQuery || statusFilter !== 'all') && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSearchQuery('');
+                          setStatusFilter('all');
+                        }}
+                        className="mt-2 text-xs border-[#e7e4dd]"
+                      >
+                        Réinitialiser la recherche
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Modal Dialog: Add / Edit Category */}
+      <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-white border border-[#e7e4dd] p-6 rounded-2xl shadow-xl">
+          <DialogHeader>
+            <div className="flex items-center gap-2 text-[#24582d]">
+              <FolderTree className="h-5 w-5" />
+              <DialogTitle className="text-lg font-bold text-[#1e2a1f]">
+                {editingCategory ? 'Modifier la catégorie' : 'Ajouter une catégorie'}
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-xs text-gray-500">
+              {editingCategory
+                ? 'Modifiez les informations de cette catégorie de produits.'
+                : 'Créez une nouvelle catégorie pour organiser les produits de la boutique.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveCategory} className="space-y-4 pt-2">
+            {/* Nom */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-700">
+                Nom de la catégorie <span className="text-red-500">*</span>
+              </label>
+              <Input
+                placeholder="Ex : Bouquets de mariage, Plantes d'intérieur..."
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+                required
+                className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20 text-sm"
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-700">
+                Description
+              </label>
+              <textarea
+                placeholder="Brève description de la catégorie et des articles associés..."
+                value={formDescription}
+                onChange={(e) => setFormDescription(e.target.value)}
+                rows={3}
+                className="w-full rounded-lg border border-[#e7e4dd] p-3 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#24582d] focus:border-[#24582d]"
+              />
+            </div>
+
+            {/* Statut */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-700">Statut</label>
+              <select
+                value={formStatus}
+                onChange={(e) => setFormStatus(e.target.value as 'actif' | 'inactif')}
+                className="w-full rounded-lg border border-[#e7e4dd] bg-white p-2.5 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#24582d]"
+              >
+                <option value="actif">Actif (visible dans la boutique)</option>
+                <option value="inactif">Inactif (masqué)</option>
+              </select>
+            </div>
+
+            <DialogFooter className="gap-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsFormDialogOpen(false)}
+                className="border-[#e7e4dd] text-gray-600 hover:bg-gray-100"
+              >
+                Annuler
+              </Button>
+              <Button
+                type="submit"
+                variant="cta"
+                className="bg-[#c1647a] hover:bg-[#a9576a] !text-white font-medium"
+              >
+                {editingCategory ? 'Enregistrer les modifications' : 'Créer la catégorie'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Dialog: Delete Confirmation */}
+      <Dialog
+        open={!!categoryToDelete}
+        onOpenChange={(open) => !open && setCategoryToDelete(null)}
+      >
+        <DialogContent className="sm:max-w-md bg-white border border-[#e7e4dd] p-6 rounded-2xl shadow-xl">
+          <DialogHeader>
+            <div className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              <DialogTitle className="text-lg font-bold text-gray-900">
+                Supprimer la catégorie
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-sm text-gray-600 pt-2 space-y-3">
+              <p>
+                Êtes-vous certain de vouloir supprimer la catégorie{' '}
+                <strong className="text-gray-900">« {categoryToDelete?.name} »</strong> ? Cette action est irréversible.
+              </p>
+              {categoryToDelete && categoryToDelete.productCount > 0 && (
+                <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800">
+                  <span className="font-semibold block mb-0.5">⚠️ Impact sur les produits :</span>
+                  Cette catégorie regroupe actuellement{' '}
+                  <strong>{categoryToDelete.productCount} produit(s)</strong>. Si vous confirmez,
+                  ces articles resteront dans le catalogue mais ne seront plus classés dans cette catégorie.
+                </div>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="gap-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setCategoryToDelete(null)}
+              className="border-[#e7e4dd] text-gray-600 hover:bg-gray-100 py-4 px-6"
+            >
+              Annuler
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              className="bg-red-300 hover:bg-red-700 text-white py-4 px-6 font-medium"
+            >
+              Supprimer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+    </div>
+  );
+}

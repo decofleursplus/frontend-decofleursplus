@@ -48,34 +48,41 @@
 - [x] Create `/admin/clients/[id]` (Customer profile & CRM history)
 - [x] Implement Customer order history, VIP status & loyalty info
 
-### Gestion du stock (Stock)
-- [ ] Create `/admin/stock` page layout
-- [ ] Implement Stock DataTable with Low Stock alerts
+### Gestion des catégories (Categories — Maquette 09)
+- [x] Create `/admin/categories` page layout
+- [x] Implement Categories DataTable (Nom, Description, Nombre de produits, Statut, Actions)
+- [x] Implement Category creation/editing Modal or Drawer ("+ Ajouter une catégorie")
+- [x] Implement search & category status toggle
 
-### Gestion des livraisons (Deliveries)
-- [ ] Create `/admin/livraisons` page layout
-- [ ] Implement Deliveries DataTable
 
-### Gestion des catégories (Categories)
-- [ ] Create `/admin/categories` page layout
-- [ ] Implement Categories DataTable
-- [ ] Implement Category creation/editing modal
+### Gestion du stock (Stock — Maquette 10)
+- [ ] Create `/admin/stock` page layout with tabs (Tous, Stock faible, Rupture)
+- [ ] Implement Stock DataTable (Produit avec image, Stock actuel, Stock minimum, Statut badge, Actions)
+- [ ] Implement Stock quick-adjust modal or inline update
+- [ ] Implement Stock filter by category and search
 
-### Marketing
-- [ ] Create `/admin/marketing` page layout
-- [ ] Implement Promotions & Coupons DataTable
-- [ ] Implement Campaign management & Cart recovery features
+### Gestion des livraisons (Deliveries — Maquette 11)
+- [ ] Create `/admin/livraisons` page layout with status tabs (Toutes, À livrer, En cours, Livrées)
+- [ ] Implement Deliveries DataTable (#Livraison, Commande, Livreur, Statut, Date, Actions)
+- [ ] Implement delivery detail / assign driver modal
+
+### Marketing & Promotions (Maquette 12/13)
+- [ ] Create `/admin/marketing` page layout with tabs (Promotions, Coupons, Campagnes, Relance panier)
+- [ ] Implement Promotions & Coupons DataTable (Nom, Type, Réduction, Période, Statut)
+- [ ] Implement Campaign creation modal & Cart recovery configuration
+
+### Paramètres & Équipe (Settings — Maquettes 15 & 16)
+- [ ] Create `/admin/parametres` page layout with sub-navigation (Général, Boutique, Paiement, Livraison, Notifications, Utilisateurs, Rôles, SEO)
+- [ ] Implement Boutique settings form (Nom, Slogan, Contact, Logo)
+- [ ] Implement Team/Users DataTable with "+ Ajouter un utilisateur"
 
 ### Blog & Contenu
 - [ ] Create `/admin/blog` page layout
-- [ ] Implement Articles & Categories management
-- [ ] Implement Article editor with Drafts/Publication status
+- [ ] Implement Articles management (Liste, filtres par catégorie, statuts Brouillon/Publié)
+- [ ] Implement Article editor
 
-### Rapports (Finances & Reports)
+### Rapports & Finances
 - [ ] Create `/admin/rapports` page layout
-- [ ] Implement Revenue, Payments, and Refunds charts
-- [ ] Implement detailed statistical reporting views
+- [ ] Implement Revenue, Payments, and Financial breakdown charts
+- [ ] Implement export and statistical reports
 
-### Paramètres (Settings)
-- [ ] Create `/admin/parametres` page layout
-- [ ] Implement settings tabs (General, Users, Roles, etc.)

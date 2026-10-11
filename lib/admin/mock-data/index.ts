@@ -2,4 +2,5 @@ export { type AdminProduct, type AdminOrder, type AdminCustomer, type AdminCateg
 export { adminProducts } from './products';
 export { adminOrders } from './orders';
 export { adminCustomers } from './customers';
-export { adminCategories, dashboardKpis, salesChartData, orderDistribution } from './dashboard';
+export { adminCategories } from './categories';
+export { dashboardKpis, salesChartData, orderDistribution } from './dashboard';

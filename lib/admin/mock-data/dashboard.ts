@@ -1,13 +1,6 @@
-import type { AdminCategory, KpiData, ChartPoint, OrderDistribution } from './types';
+import type { KpiData, ChartPoint, OrderDistribution } from './types';
+export { adminCategories } from './categories';
 
-export const adminCategories: AdminCategory[] = [
-  { id: 'cat-1', name: 'Bouquets', description: 'Fleurs fraîches', productCount: 78, status: 'actif' },
-  { id: 'cat-2', name: 'Plantes', description: "Plantes d'intérieur et extérieur", productCount: 62, status: 'actif' },
-  { id: 'cat-3', name: 'Fruits & Légumes', description: 'Paniers de fruits', productCount: 20, status: 'actif' },
-  { id: 'cat-4', name: 'Cadeaux', description: 'Coffrets et cadeaux', productCount: 45, status: 'actif' },
-  { id: 'cat-5', name: 'Décorations', description: 'Décorations événementielles', productCount: 30, status: 'actif' },
-  { id: 'cat-6', name: 'Mariages & Événements', description: 'Compositions pour événements', productCount: 25, status: 'actif' },
-];
 
 export const dashboardKpis: KpiData = {
   revenue: 1250000,
