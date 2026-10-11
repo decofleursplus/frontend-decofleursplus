@@ -36,15 +36,16 @@ export default function NewProductPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="border-[#e7e4dd] text-gray-600">
+          <Button variant="outline" render={<Link href="/admin/produits" />} className="border-[#e7e4dd] text-gray-600">
             Annuler
           </Button>
           <Button 
-            className="bg-[#c1647a] hover:bg-[#a9576a] text-white" 
+            variant="cta"
+            className="bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs" 
             onClick={handleSubmit}
             disabled={isSubmitting}
           >
-            <Save className="mr-2 h-4 w-4" />
+            <Save className="mr-2 h-4 w-4 text-white" />
             {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
           </Button>
         </div>

@@ -1,21 +1,98 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { adminOrders } from '@/lib/admin/mock-data/orders';
+import type { OrderStatus } from '@/lib/admin/mock-data/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuGroup } from '@/components/ui/dropdown-menu';
-import { Search, Filter, MoreHorizontal, Eye, CheckCircle, Truck, XCircle, Printer } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuGroup,
+} from '@/components/ui/dropdown-menu';
+import {
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+} from '@/components/ui/sheet';
+import {
+  Search,
+  Filter,
+  MoreHorizontal,
+  Eye,
+  CheckCircle,
+  Truck,
+  XCircle,
+  Printer,
+  X,
+  RotateCcw,
+  Check,
+  ArrowUpDown,
+  ShoppingBag,
+} from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
 export default function AdminOrdersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [orders, setOrders] = useState(adminOrders);
+
+  // Applied filters state
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [deliveryFilter, setDeliveryFilter] = useState<string>('all');
+  const [sortFilter, setSortFilter] = useState<string>('date_desc');
+
+  // Draft filters in drawer
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [draftStatus, setDraftStatus] = useState<string>('all');
+  const [draftDelivery, setDraftDelivery] = useState<string>('all');
+  const [draftSort, setDraftSort] = useState<string>('date_desc');
+
+  const handleOpenFilterDrawer = (open: boolean) => {
+    if (open) {
+      setDraftStatus(statusFilter);
+      setDraftDelivery(deliveryFilter);
+      setDraftSort(sortFilter);
+    }
+    setIsFilterOpen(open);
+  };
+
+  const handleApplyFilters = () => {
+    setStatusFilter(draftStatus);
+    setDeliveryFilter(draftDelivery);
+    setSortFilter(draftSort);
+    setIsFilterOpen(false);
+    toast.success('Filtres appliqués');
+  };
+
+  const handleResetFilters = () => {
+    setDraftStatus('all');
+    setDraftDelivery('all');
+    setDraftSort('date_desc');
+    setStatusFilter('all');
+    setDeliveryFilter('all');
+    setSortFilter('date_desc');
+    setIsFilterOpen(false);
+    toast.info('Filtres réinitialisés');
+  };
+
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (statusFilter !== 'all') count++;
+    if (deliveryFilter !== 'all') count++;
+    if (sortFilter !== 'date_desc') count++;
+    return count;
+  }, [statusFilter, deliveryFilter, sortFilter]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -25,18 +102,18 @@ export default function AdminOrdersPage() {
     }).format(amount);
   };
 
-  const handleUpdateStatus = (orderId: string, newStatus: string) => {
+  const handleUpdateStatus = (orderId: string, newStatus: OrderStatus) => {
     setOrders((prev) =>
       prev.map((order) =>
         order.id === orderId ? { ...order, status: newStatus } : order
       )
     );
-    
+
     const statusLabels: Record<string, string> = {
-      'en_preparation': 'En préparation',
-      'en_livraison': 'En livraison',
-      'livree': 'Livrée',
-      'annulee': 'Annulée'
+      en_preparation: 'En préparation',
+      en_livraison: 'En livraison',
+      livree: 'Livrée',
+      annulee: 'Annulée',
     };
 
     toast.success('Statut mis à jour', {
@@ -65,20 +142,59 @@ export default function AdminOrdersPage() {
     return new Date(dateStr).toLocaleDateString('fr-FR', {
       day: 'numeric',
       month: 'long',
-      year: 'numeric'
+      year: 'numeric',
     });
   };
 
-  const filteredOrders = orders.filter((order) => {
-    const matchesSearch = order.ref.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          order.customerName.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    const matchesDelivery = deliveryFilter === 'all' || 
-                            (deliveryFilter === 'domicile' && order.deliveryMode.toLowerCase().includes('domicile')) ||
-                            (deliveryFilter === 'boutique' && order.deliveryMode.toLowerCase().includes('boutique'));
-    
-    return matchesSearch && matchesStatus && matchesDelivery;
-  });
+  const filteredOrders = useMemo(() => {
+    return orders
+      .filter((order) => {
+        const matchesSearch =
+          searchQuery.trim() === '' ||
+          order.ref.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          order.customerName.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+        const matchesDelivery =
+          deliveryFilter === 'all' ||
+          (deliveryFilter === 'domicile' && order.deliveryMode.toLowerCase().includes('domicile')) ||
+          (deliveryFilter === 'boutique' && order.deliveryMode.toLowerCase().includes('boutique'));
+
+        return matchesSearch && matchesStatus && matchesDelivery;
+      })
+      .sort((a, b) => {
+        if (sortFilter === 'date_desc') {
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+        }
+        if (sortFilter === 'date_asc') {
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
+        }
+        if (sortFilter === 'amount_desc') return b.total - a.total;
+        if (sortFilter === 'amount_asc') return a.total - b.total;
+        return 0;
+      });
+  }, [orders, searchQuery, statusFilter, deliveryFilter, sortFilter]);
+
+  const orderStatuses = [
+    { label: 'Tous les statuts', value: 'all' },
+    { label: 'En préparation', value: 'en_preparation' },
+    { label: 'En livraison', value: 'en_livraison' },
+    { label: 'Livrée', value: 'livree' },
+    { label: 'Annulée', value: 'annulee' },
+    { label: 'Remboursée', value: 'remboursee' },
+  ];
+
+  const deliveryModes = [
+    { label: 'Tous les modes', value: 'all' },
+    { label: 'Livraison à domicile', value: 'domicile' },
+    { label: 'Retrait en boutique', value: 'boutique' },
+  ];
+
+  const sortOptions = [
+    { label: 'Date la plus récente', value: 'date_desc' },
+    { label: 'Date la plus ancienne', value: 'date_asc' },
+    { label: 'Montant décroissant', value: 'amount_desc' },
+    { label: 'Montant croissant', value: 'amount_asc' },
+  ];
 
   return (
     <div className="space-y-6">
@@ -92,7 +208,7 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
-      {/* Filters and Search */}
+      {/* Filters and Search Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border border-[#e7e4dd]">
         <div className="relative w-full sm:w-96">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -102,122 +218,288 @@ export default function AdminOrdersPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 border-[#e7e4dd] focus-visible:ring-[#24582d]/20"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
-        
+
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 border border-[#e7e4dd] bg-transparent hover:bg-gray-50 text-gray-700 h-9 px-4 py-2 w-full sm:w-auto">
+          {/* Drawer Filter */}
+          <Sheet open={isFilterOpen} onOpenChange={handleOpenFilterDrawer}>
+            <SheetTrigger
+              render={
+                <Button
+                  variant="outline"
+                  className={`border-[#e7e4dd] w-full sm:w-auto transition-colors ${
+                    activeFiltersCount > 0
+                      ? 'border-[#c1647a] text-[#c1647a] bg-[#fdf5f7]'
+                      : 'text-gray-700 hover:bg-[#faf8f4]'
+                  }`}
+                />
+              }
+            >
               <Filter className="mr-2 h-4 w-4" />
               Filtres
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>Filtrer par statut</DropdownMenuLabel>
-                <DropdownMenuCheckboxItem checked={statusFilter === 'all'} onCheckedChange={() => setStatusFilter('all')}>
-                  Tous les statuts
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem checked={statusFilter === 'en_preparation'} onCheckedChange={() => setStatusFilter('en_preparation')}>
-                  En préparation
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem checked={statusFilter === 'en_livraison'} onCheckedChange={() => setStatusFilter('en_livraison')}>
-                  En livraison
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem checked={statusFilter === 'livree'} onCheckedChange={() => setStatusFilter('livree')}>
-                  Livrée
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem checked={statusFilter === 'annulee'} onCheckedChange={() => setStatusFilter('annulee')}>
-                  Annulée
-                </DropdownMenuCheckboxItem>
-              </DropdownMenuGroup>
-              
-              <DropdownMenuSeparator />
-              
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>Filtrer par livraison</DropdownMenuLabel>
-                <DropdownMenuCheckboxItem checked={deliveryFilter === 'all'} onCheckedChange={() => setDeliveryFilter('all')}>
-                  Toutes les livraisons
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem checked={deliveryFilter === 'domicile'} onCheckedChange={() => setDeliveryFilter('domicile')}>
-                  À domicile
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem checked={deliveryFilter === 'boutique'} onCheckedChange={() => setDeliveryFilter('boutique')}>
-                  Retrait en boutique
-                </DropdownMenuCheckboxItem>
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              {activeFiltersCount > 0 && (
+                <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#c1647a] text-[11px] font-bold text-white">
+                  {activeFiltersCount}
+                </span>
+              )}
+            </SheetTrigger>
+
+            <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
+              <SheetHeader>
+                <div className="flex items-center gap-2 text-[#24582d]">
+                  <Filter className="h-5 w-5" />
+                  <SheetTitle>Filtrer les commandes</SheetTitle>
+                </div>
+                <SheetDescription>
+                  Sélectionnez vos critères de statut, livraison ou tri puis appliquez.
+                </SheetDescription>
+              </SheetHeader>
+
+              {/* Drawer Scrollable Content */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {/* Order Status */}
+                <div className="space-y-3">
+                  <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    Statut de la commande
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {orderStatuses.map((stat) => {
+                      const isSelected = draftStatus === stat.value;
+                      return (
+                        <button
+                          key={stat.value}
+                          type="button"
+                          onClick={() => setDraftStatus(stat.value)}
+                          className={`flex items-center justify-between px-3 py-2 text-xs rounded-lg border text-left transition-all ${
+                            isSelected
+                              ? 'border-[#24582d] bg-[#edf8ef] text-[#24582d] font-semibold ring-1 ring-[#24582d]'
+                              : 'border-[#e7e4dd] bg-white text-gray-600 hover:bg-[#faf8f4]'
+                          }`}
+                        >
+                          <span className="truncate">{stat.label}</span>
+                          {isSelected && <Check className="h-3.5 w-3.5 shrink-0 ml-1 text-[#24582d]" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Delivery Mode */}
+                <div className="space-y-3">
+                  <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    Mode de livraison
+                  </label>
+                  <div className="grid grid-cols-1 gap-2">
+                    {deliveryModes.map((dm) => {
+                      const isSelected = draftDelivery === dm.value;
+                      return (
+                        <button
+                          key={dm.value}
+                          type="button"
+                          onClick={() => setDraftDelivery(dm.value)}
+                          className={`flex items-center justify-between px-3.5 py-2.5 text-xs rounded-lg border text-left transition-all ${
+                            isSelected
+                              ? 'border-[#24582d] bg-[#edf8ef] text-[#24582d] font-semibold ring-1 ring-[#24582d]'
+                              : 'border-[#e7e4dd] bg-white text-gray-600 hover:bg-[#faf8f4]'
+                          }`}
+                        >
+                          <span>{dm.label}</span>
+                          {isSelected && <Check className="h-3.5 w-3.5 shrink-0 text-[#24582d]" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Sort Option */}
+                <div className="space-y-3">
+                  <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <ArrowUpDown className="h-3.5 w-3.5" />
+                    Tri des commandes
+                  </label>
+                  <select
+                    value={draftSort}
+                    onChange={(e) => setDraftSort(e.target.value)}
+                    className="flex h-10 w-full items-center justify-between rounded-lg border border-[#e7e4dd] bg-white px-3 py-2 text-xs text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#24582d]"
+                  >
+                    {sortOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Drawer Footer Buttons */}
+              <SheetFooter className="gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleResetFilters}
+                  className="flex-1 border-[#e7e4dd] text-gray-600 hover:bg-gray-100"
+                >
+                  <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                  Réinitialiser
+                </Button>
+                <Button
+                  type="button"
+                  variant="cta"
+                  onClick={handleApplyFilters}
+                  className="flex-1 bg-[#c1647a] hover:bg-[#a9576a] !text-white"
+                >
+                  Appliquer les filtres
+                </Button>
+              </SheetFooter>
+            </SheetContent>
+          </Sheet>
+
+          {activeFiltersCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleResetFilters}
+              className="text-xs text-gray-500 hover:text-[#c1647a]"
+            >
+              Réinitialiser
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-[#e7e4dd] overflow-hidden">
+      {/* Active Filter Pills */}
+      {activeFiltersCount > 0 && (
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <span className="text-xs font-medium text-gray-500">Filtres actifs :</span>
+          {statusFilter !== 'all' && (
+            <Badge className="bg-[#f0eee8] text-gray-700 hover:bg-[#e7e4dd] border-none text-xs gap-1 py-1">
+              Statut : {orderStatuses.find((s) => s.value === statusFilter)?.label}
+              <button onClick={() => setStatusFilter('all')}>
+                <X className="h-3 w-3 hover:text-red-600" />
+              </button>
+            </Badge>
+          )}
+          {deliveryFilter !== 'all' && (
+            <Badge className="bg-[#f0eee8] text-gray-700 hover:bg-[#e7e4dd] border-none text-xs gap-1 py-1">
+              Livraison : {deliveryModes.find((m) => m.value === deliveryFilter)?.label}
+              <button onClick={() => setDeliveryFilter('all')}>
+                <X className="h-3 w-3 hover:text-red-600" />
+              </button>
+            </Badge>
+          )}
+          {sortFilter !== 'date_desc' && (
+            <Badge className="bg-[#f0eee8] text-gray-700 hover:bg-[#e7e4dd] border-none text-xs gap-1 py-1">
+              Tri : {sortOptions.find((o) => o.value === sortFilter)?.label}
+              <button onClick={() => setSortFilter('date_desc')}>
+                <X className="h-3 w-3 hover:text-red-600" />
+              </button>
+            </Badge>
+          )}
+        </div>
+      )}
+
+      {/* Orders Table */}
+      <div className="bg-white rounded-xl border border-[#e7e4dd] overflow-hidden shadow-xs">
         <Table>
-          <TableHeader className="bg-transparent border-b border-[#e7e4dd]">
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="font-medium text-gray-500 py-4">Commande</TableHead>
-              <TableHead className="font-medium text-gray-500 py-4">Date</TableHead>
-              <TableHead className="font-medium text-gray-500 py-4">Client</TableHead>
-              <TableHead className="font-medium text-gray-500 py-4">Livraison</TableHead>
-              <TableHead className="font-medium text-gray-500 py-4">Total</TableHead>
-              <TableHead className="font-medium text-gray-500 py-4">Statut</TableHead>
-              <TableHead className="font-medium text-gray-500 py-4 text-right">Actions</TableHead>
+          <TableHeader className="bg-[#faf8f4]">
+            <TableRow>
+              <TableHead className="font-semibold text-gray-600 py-3.5">Commande</TableHead>
+              <TableHead className="font-semibold text-gray-600 py-3.5">Date</TableHead>
+              <TableHead className="font-semibold text-gray-600 py-3.5">Client</TableHead>
+              <TableHead className="font-semibold text-gray-600 py-3.5">Articles</TableHead>
+              <TableHead className="font-semibold text-gray-600 py-3.5 text-right">Total</TableHead>
+              <TableHead className="font-semibold text-gray-600 py-3.5">Statut</TableHead>
+              <TableHead className="font-semibold text-gray-600 py-3.5">Livraison</TableHead>
+              <TableHead className="font-semibold text-gray-600 py-3.5 text-right w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredOrders.map((order) => (
-              <TableRow key={order.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50/50">
-                <TableCell className="py-4">
-                  <div className="font-medium text-[#1e2a1f]">{order.ref}</div>
-                  <div className="text-sm text-gray-500">{order.items.length} article(s)</div>
+              <TableRow key={order.id} className="hover:bg-[#faf8f4]/60 transition-colors">
+                <TableCell className="font-mono font-medium text-[#1e2a1f]">
+                  <Link href={`/admin/commandes/${order.id}`} className="hover:underline hover:text-[#24582d]">
+                    {order.ref}
+                  </Link>
                 </TableCell>
-                <TableCell className="py-4 text-[#4a5568]">{formatDate(order.date)}</TableCell>
-                <TableCell className="py-4">
+                <TableCell className="text-gray-600 text-sm">
+                  {formatDate(order.date)}
+                </TableCell>
+                <TableCell>
                   <div className="font-medium text-[#1e2a1f]">{order.customerName}</div>
+                  <div className="text-xs text-gray-500 font-mono">ID: {order.customerId}</div>
                 </TableCell>
-                <TableCell className="py-4">
-                  <div className="font-medium text-[#4a5568]">{order.deliveryMode}</div>
-                  <div className="text-sm text-gray-400 max-w-[200px] truncate" title={order.deliveryAddress}>
-                    {order.deliveryAddress}
-                  </div>
+                <TableCell className="text-gray-600 text-sm">
+                  {order.items.length} article{order.items.length > 1 ? 's' : ''}
                 </TableCell>
-                <TableCell className="py-4 font-semibold text-[#1e8b4d]">
+                <TableCell className="text-right font-semibold text-[#24582d]">
                   {formatCurrency(order.total)}
                 </TableCell>
-                <TableCell className="py-4">{getStatusBadge(order.status)}</TableCell>
-                <TableCell className="py-4 text-right">
+                <TableCell>{getStatusBadge(order.status)}</TableCell>
+                <TableCell>
+                  <span className="text-xs text-gray-600 bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200">
+                    {order.deliveryMode}
+                  </span>
+                </TableCell>
+                <TableCell className="text-right">
                   <DropdownMenu>
-                    <DropdownMenuTrigger className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-400 hover:text-[#1e2a1f] hover:bg-gray-100 transition-colors">
+                    <DropdownMenuTrigger className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-gray-500 hover:text-[#24582d] hover:bg-[#edf8ef] hover:border-[#b0c8a8] transition-colors focus:outline-none">
                       <span className="sr-only">Ouvrir le menu</span>
-                      <MoreHorizontal className="h-5 w-5" />
+                      <MoreHorizontal className="h-4 w-4" />
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuContent align="end" sideOffset={4} className="w-56 p-1.5 rounded-xl border border-[#e7e4dd] bg-white shadow-xl">
                       <DropdownMenuGroup>
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="cursor-pointer font-medium p-0">
-                          <Link href={`/admin/commandes/${order.id}`} className="flex items-center w-full px-2 py-1.5">
-                            <Eye className="mr-2 h-4 w-4 text-gray-500" />
-                            Détails
-                          </Link>
+                        <DropdownMenuLabel className="px-2.5 py-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                          Actions
+                        </DropdownMenuLabel>
+                        <DropdownMenuItem
+                          className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef] transition-colors whitespace-nowrap"
+                          render={<Link href={`/admin/commandes/${order.id}`} />}
+                        >
+                          <Eye className="mr-2.5 h-4 w-4 text-[#24582d]" />
+                          Détails de la commande
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="cursor-pointer font-medium">
-                          <Printer className="mr-2 h-4 w-4 text-gray-500" />
+                        <DropdownMenuItem
+                          className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef] transition-colors whitespace-nowrap"
+                          onClick={() => toast.info('Impression facture lancée')}
+                        >
+                          <Printer className="mr-2.5 h-4 w-4 text-gray-500" />
                           Imprimer facture
                         </DropdownMenuItem>
                       </DropdownMenuGroup>
-                      <DropdownMenuSeparator />
+
+                      <DropdownMenuSeparator className="my-1 border-t border-[#f0eee8]" />
+
                       <DropdownMenuGroup>
-                        <DropdownMenuLabel className="text-xs text-gray-400 uppercase tracking-wider">Mettre à jour</DropdownMenuLabel>
-                        <DropdownMenuItem className="cursor-pointer font-medium" onClick={() => handleUpdateStatus(order.id, 'en_livraison')}>
-                          <Truck className="mr-2 h-4 w-4 text-[#3d5a99]" />
+                        <DropdownMenuLabel className="px-2.5 py-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                          Mettre à jour
+                        </DropdownMenuLabel>
+                        <DropdownMenuItem
+                          className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-[#3d5a99] transition-colors whitespace-nowrap"
+                          onClick={() => handleUpdateStatus(order.id, 'en_livraison')}
+                        >
+                          <Truck className="mr-2.5 h-4 w-4 text-[#3d5a99]" />
                           En livraison
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="cursor-pointer font-medium" onClick={() => handleUpdateStatus(order.id, 'livree')}>
-                          <CheckCircle className="mr-2 h-4 w-4 text-[#166534]" />
+                        <DropdownMenuItem
+                          className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:bg-emerald-50 hover:text-[#166534] transition-colors whitespace-nowrap"
+                          onClick={() => handleUpdateStatus(order.id, 'livree')}
+                        >
+                          <CheckCircle className="mr-2.5 h-4 w-4 text-[#166534]" />
                           Marquer livrée
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="cursor-pointer text-red-600 focus:text-red-600 font-medium" onClick={() => handleUpdateStatus(order.id, 'annulee')}>
-                          <XCircle className="mr-2 h-4 w-4" />
+                        <DropdownMenuItem
+                          className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors whitespace-nowrap focus:text-red-700 focus:bg-red-50"
+                          onClick={() => handleUpdateStatus(order.id, 'annulee')}
+                        >
+                          <XCircle className="mr-2.5 h-4 w-4 text-red-600" />
                           Annuler commande
                         </DropdownMenuItem>
                       </DropdownMenuGroup>
@@ -226,11 +508,23 @@ export default function AdminOrdersPage() {
                 </TableCell>
               </TableRow>
             ))}
-            
+
             {filteredOrders.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="h-32 text-center text-gray-500">
-                  Aucune commande ne correspond à vos critères.
+                <TableCell colSpan={8} className="h-40 text-center text-gray-500">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <ShoppingBag className="h-8 w-8 text-gray-300" />
+                    <p className="font-medium text-gray-700">Aucune commande ne correspond aux critères.</p>
+                    <p className="text-xs text-gray-400">Essayez de modifier votre recherche ou de réinitialiser vos filtres.</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleResetFilters}
+                      className="mt-2 text-xs border-[#e7e4dd]"
+                    >
+                      Effacer les filtres
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             )}

@@ -22,7 +22,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
         <h1 className="text-2xl font-bold text-gray-800">Produit introuvable</h1>
         <p className="text-gray-500 mt-2">Le produit demandé n&apos;existe pas.</p>
-        <Button render={<Link href="/admin/produits" />} className="mt-6 bg-[#c1647a] hover:bg-[#a9576a] text-white">
+        <Button render={<Link href="/admin/produits" />} variant="cta" className="mt-6 bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs">
           Retour aux produits
         </Button>
       </div>
@@ -58,11 +58,12 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             Supprimer
           </Button>
           <Button 
-            className="bg-[#c1647a] hover:bg-[#a9576a] text-white" 
+            variant="cta"
+            className="bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs" 
             onClick={handleSubmit}
             disabled={isSubmitting}
           >
-            <Save className="mr-2 h-4 w-4" />
+            <Save className="mr-2 h-4 w-4 text-white" />
             {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
           </Button>
         </div>

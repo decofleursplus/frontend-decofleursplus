@@ -20,7 +20,7 @@ export default function CustomerProfilePage({ params }: { params: Promise<{ id: 
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
         <h1 className="text-2xl font-bold text-gray-800">Client introuvable</h1>
         <p className="text-gray-500 mt-2">Le client demandé n&apos;existe pas.</p>
-        <Button render={<Link href="/admin/clients" />} className="mt-6 bg-[#c1647a] hover:bg-[#a9576a] text-white">
+        <Button render={<Link href="/admin/clients" />} variant="cta" className="mt-6 bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs">
           Retour aux clients
         </Button>
       </div>
@@ -123,11 +123,11 @@ export default function CustomerProfilePage({ params }: { params: Promise<{ id: 
               </div>
               <div className="flex items-start gap-3 text-gray-600">
                 <MapPin className="h-4 w-4 text-gray-400 mt-0.5" />
-                <span>{customer.address}</span>
+                <span>{customer.address || 'Adresse non renseignée'}</span>
               </div>
               <div className="flex items-center gap-3 text-gray-600 pt-3 border-t border-[#f0eee8]">
                 <Calendar className="h-4 w-4 text-gray-400" />
-                <span>Client depuis {formatDate(customer.joinDate)}</span>
+                <span>Client depuis {formatDate(customer.joinedAt)}</span>
               </div>
             </CardContent>
           </Card>
@@ -139,7 +139,7 @@ export default function CustomerProfilePage({ params }: { params: Promise<{ id: 
             <Card>
               <CardContent className="p-6 flex flex-col items-center justify-center text-center">
                 <ShoppingBag className="h-6 w-6 text-gray-400 mb-2" />
-                <div className="text-2xl font-bold text-[#1e2a1f]">{customer.ordersCount}</div>
+                <div className="text-2xl font-bold text-[#1e2a1f]">{customer.totalOrders}</div>
                 <div className="text-sm text-gray-500">Commandes au total</div>
               </CardContent>
             </Card>
@@ -154,7 +154,7 @@ export default function CustomerProfilePage({ params }: { params: Promise<{ id: 
               <CardContent className="p-6 flex flex-col items-center justify-center text-center">
                 <Star className="h-6 w-6 text-yellow-500 mb-2" />
                 <div className="text-2xl font-bold text-[#1e2a1f]">
-                  {formatCurrency(customer.totalSpent / Math.max(1, customer.ordersCount))}
+                  {formatCurrency(customer.totalSpent / Math.max(1, customer.totalOrders))}
                 </div>
                 <div className="text-sm text-gray-500">Panier moyen</div>
               </CardContent>

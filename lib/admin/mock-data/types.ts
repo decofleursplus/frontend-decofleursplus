@@ -65,6 +65,8 @@ export type AdminCustomer = {
   status: 'actif' | 'inactif';
   joinedAt: string;
   avatar?: string;
+  address?: string;
+  lastOrderDate?: string;
 };
 
 export type AdminCategory = {

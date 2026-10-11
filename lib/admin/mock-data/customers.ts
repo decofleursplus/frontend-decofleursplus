@@ -12,6 +12,8 @@ export const adminCustomers: AdminCustomer[] = [
     status: 'actif',
     joinedAt: '2024-01-12',
     avatar: 'AD',
+    address: 'Saly Portudal, Rue des Palmiers',
+    lastOrderDate: '2024-03-12',
   },
   {
     id: 'cust-002',
@@ -24,6 +26,8 @@ export const adminCustomers: AdminCustomer[] = [
     status: 'actif',
     joinedAt: '2024-02-05',
     avatar: 'MS',
+    address: 'Mbour, Avenue Léopold Sédar Senghor',
+    lastOrderDate: '2024-03-12',
   },
   {
     id: 'cust-003',
@@ -36,6 +40,8 @@ export const adminCustomers: AdminCustomer[] = [
     status: 'actif',
     joinedAt: '2024-01-20',
     avatar: 'FB',
+    address: 'Saly Portudal, Résidence les Bougainvilliers',
+    lastOrderDate: '2024-03-11',
   },
   {
     id: 'cust-004',
@@ -48,6 +54,8 @@ export const adminCustomers: AdminCustomer[] = [
     status: 'actif',
     joinedAt: '2023-11-08',
     avatar: 'KN',
+    address: 'Dakar, Almadies',
+    lastOrderDate: '2024-03-11',
   },
   {
     id: 'cust-005',
@@ -60,5 +68,7 @@ export const adminCustomers: AdminCustomer[] = [
     status: 'actif',
     joinedAt: '2024-02-28',
     avatar: 'ID',
+    address: 'Thiès, Quartier Dixième',
+    lastOrderDate: '2024-03-10',
   },
 ];

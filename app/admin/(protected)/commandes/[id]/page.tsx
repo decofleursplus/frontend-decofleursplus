@@ -17,7 +17,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
         <h1 className="text-2xl font-bold text-gray-800">Commande introuvable</h1>
         <p className="text-gray-500 mt-2">La commande demandée n&apos;existe pas.</p>
-        <Button render={<Link href="/admin/commandes" />} className="mt-6 bg-[#c1647a] hover:bg-[#a9576a] text-white">
+        <Button render={<Link href="/admin/commandes" />} variant="cta" className="mt-6 bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs">
           Retour aux commandes
         </Button>
       </div>
@@ -57,7 +57,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     });
   };
 
-  const subtotal = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = order.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 bg-white/90 rounded-2xl shadow-sm backdrop-blur-sm relative z-10" style={{
@@ -86,8 +86,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             <Printer className="mr-2 h-4 w-4" />
             Imprimer
           </Button>
-          <Button className="bg-[#c1647a] hover:bg-[#a9576a] text-white">
-            <Truck className="mr-2 h-4 w-4" />
+          <Button variant="cta" className="bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs">
+            <Truck className="mr-2 h-4 w-4 text-white" />
             Mettre en livraison
           </Button>
         </div>
@@ -107,18 +107,18 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                     <div className="flex items-center gap-4">
                       <div className="w-16 h-16 rounded-md bg-gray-100 overflow-hidden flex items-center justify-center">
                         {item.image ? (
-                          <img src={item.image} alt={item.name} className="object-cover w-full h-full" />
+                          <img src={item.image} alt={item.productName} className="object-cover w-full h-full" />
                         ) : (
                           <span className="text-xs text-gray-400">Pas d&apos;image</span>
                         )}
                       </div>
                       <div>
-                        <div className="font-medium text-[#1e2a1f]">{item.name}</div>
-                        <div className="text-sm text-gray-500">{formatCurrency(item.price)} × {item.quantity}</div>
+                        <div className="font-medium text-[#1e2a1f]">{item.productName}</div>
+                        <div className="text-sm text-gray-500">{formatCurrency(item.unitPrice)} × {item.quantity}</div>
                       </div>
                     </div>
                     <div className="font-medium text-[#1e2a1f]">
-                      {formatCurrency(item.price * item.quantity)}
+                      {formatCurrency(item.unitPrice * item.quantity)}
                     </div>
                   </div>
                 ))}

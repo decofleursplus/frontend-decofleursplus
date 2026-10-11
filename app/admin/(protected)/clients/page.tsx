@@ -65,7 +65,7 @@ export default function AdminCustomersPage() {
             Gérez votre base de données clients et identifiez vos meilleurs acheteurs.
           </p>
         </div>
-        <Button className="bg-[#c1647a] hover:bg-[#a9576a] text-white">
+        <Button variant="cta" className="bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs">
           Exporter (CSV)
         </Button>
       </div>
@@ -122,7 +122,7 @@ export default function AdminCustomersPage() {
                 </TableCell>
                 <TableCell>{getSegmentBadge(customer.segment)}</TableCell>
                 <TableCell className="text-right font-medium text-gray-700">
-                  {customer.ordersCount}
+                  {customer.totalOrders}
                 </TableCell>
                 <TableCell className="text-right font-medium text-[#24582d]">
                   {formatCurrency(customer.totalSpent)}
