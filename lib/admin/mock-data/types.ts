@@ -163,3 +163,91 @@ export type AdminDelivery = {
   notes?: string;
   trackingSteps?: DeliveryTrackingStep[];
 };
+
+/* ── Marketing & Promotions Types ───────────────────── */
+
+export type CouponType = 'percentage' | 'fixed_amount' | 'free_shipping';
+export type CouponStatus = 'actif' | 'programme' | 'expire' | 'epuise' | 'inactif';
+
+export type AdminCoupon = {
+  id: string;
+  code: string;
+  type: CouponType;
+  value: number;
+  minOrderAmount?: number;
+  maxUsageTotal?: number;
+  currentUsageCount: number;
+  maxUsagePerCustomer?: number;
+  startDate: string;
+  endDate: string;
+  status: CouponStatus;
+  revenueGenerated: number;
+  description?: string;
+};
+
+export type PromotionTargetType = 'all' | 'categories' | 'products';
+export type PromotionStatus = 'active' | 'programmee' | 'terminee' | 'inactive';
+
+export type AdminPromotion = {
+  id: string;
+  name: string;
+  targetType: PromotionTargetType;
+  targetNames: string[];
+  discountPercentage: number;
+  startDate: string;
+  endDate: string;
+  badgeText: string;
+  status: PromotionStatus;
+  salesCount: number;
+  revenueGenerated: number;
+};
+
+export type CampaignChannel = 'whatsapp' | 'sms' | 'email';
+export type CampaignStatus = 'envoyee' | 'programmee' | 'brouillon';
+
+export type AdminCampaign = {
+  id: string;
+  name: string;
+  channel: CampaignChannel;
+  audience: string;
+  recipientCount: number;
+  sentAt?: string;
+  scheduledAt?: string;
+  openRate?: number;
+  clickRate?: number;
+  conversionCount: number;
+  revenueGenerated: number;
+  status: CampaignStatus;
+  messageContent: string;
+};
+
+export type CartRecoveryStatus =
+  | 'a_relancer'
+  | 'relance_1_envoyee'
+  | 'relance_2_envoyee'
+  | 'recupere'
+  | 'expire';
+
+export type AdminAbandonedCart = {
+  id: string;
+  customerId?: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  items: OrderItem[];
+  total: number;
+  abandonedAt: string;
+  status: CartRecoveryStatus;
+  lastReminderAt?: string;
+  recoveryChannel?: 'whatsapp' | 'email';
+  recoveredAt?: string;
+};
+
+export type CartRecoverySettings = {
+  autoEnabled: boolean;
+  delayHours1: number;
+  delayHours2: number;
+  includeDiscount: boolean;
+  discountCode: string;
+  discountValue: string;
+};

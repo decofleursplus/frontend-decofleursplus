@@ -27,18 +27,22 @@ Phase 3 — Back-office
 - Create `/admin/livraisons` page layout and Deliveries DataTable with Status Sub-pills (Toutes, À livrer, En cours, Livrées, Échecs — Maquette 11)
 - Implement Driver Assignment Dialog (`AssignDriverDialog`) with drivers team, vehicle types, availability and time slots
 - Implement Delivery Details & Tracking Drawer (`DeliveryDetailSheet`) with real-time stepper, recipient info, maps integration and print
+- Create `/admin/marketing` page layout with 4 tabs: Codes promo & Coupons, Promotions directes, Campagnes marketing, Relance paniers abandonnés
+- Implement `CreateCouponDialog` with random code generator, rules, usage limits and dates
+- Implement `CreatePromotionDialog` for direct catalogue discounts with category and product multi-targeting
+- Implement `CreateCampaignDialog` for WhatsApp, SMS and Email campaigns with dynamic personalization variables and live preview
+- Implement `CartRecoveryConfigDialog` and direct 1-click WhatsApp/Email triggers for abandoned carts
 
 ## Currently Working On
-Validation de la Gestion des Livraisons et passage à Marketing & Promotions (`/admin/marketing` — Maquette 12/13).
+Validation du module Marketing & Promotions et passage à Paramètres & Équipe (`/admin/parametres` — Maquettes 15/16) ou Blog & Contenu (`/admin/blog`).
 
 ## Next Tasks
-- Implémenter `/admin/marketing` avec onglets Promotions, Codes promo/Coupons, Campagnes et Relance panier.
+- Implémenter `/admin/parametres` avec sous-navigation (Général, Boutique, Paiement, Livraison, Notifications, Équipe/Utilisateurs, Rôles, SEO).
 
 ## Remaining
-- Marketing & Promotions (`/admin/marketing` - Maquette 12/13)
+- Paramètres & Utilisateurs (`/admin/parametres` - Maquettes 15/16)
 - Blog & Contenu (`/admin/blog`)
 - Rapports & Finances (`/admin/rapports`)
-- Paramètres & Utilisateurs (`/admin/parametres` - Maquettes 15/16)
 
 ## Known Issues
 *(None)*
@@ -50,20 +54,20 @@ Validation de la Gestion des Livraisons et passage à Marketing & Promotions (`/
 - **Routing:** French URL paths for the admin section (`/admin/tableau-de-bord`, etc.) to match public routing.
 
 ## Files Recently Modified
-- `app/admin/(protected)/livraisons/page.tsx`
-- `components/admin/assign-driver-dialog.tsx`
-- `components/admin/complete-delivery-dialog.tsx`
-- `components/admin/add-driver-dialog.tsx`
-- `components/admin/delivery-detail-sheet.tsx`
-- `lib/admin/mock-data/deliveries.ts`
+- `app/admin/(protected)/marketing/page.tsx`
+- `components/admin/create-coupon-dialog.tsx`
+- `components/admin/create-promotion-dialog.tsx`
+- `components/admin/create-campaign-dialog.tsx`
+- `components/admin/cart-recovery-config-dialog.tsx`
+- `lib/admin/mock-data/marketing.ts`
 - `lib/admin/mock-data/types.ts`
 - `lib/admin/mock-data/index.ts`
 - `docs/IMPLEMENTATION_PLAN.md`
 - `docs/IMPLEMENTATION_STATUS.md`
 
 ## Last Completed Task
-Refonte complète de la Gestion des livraisons (`/admin/livraisons` — Maquette 11) : suppression de la redondance d'actions, colonne destinataire compactée, suppression de la colonne commande, filtres avancés en menus déroulants (dropdowns), onglet Flotte & Livreurs avec modale d'ajout de livreur et modale de clôture de livraison avec confirmation du réceptionnaire.
+Implémentation complète du module Marketing & Promotions (`/admin/marketing`) avec 4 sous-onglets opérationnels (Codes promo & Coupons, Promotions directes sur catalogue, Campagnes multi-canaux WhatsApp/SMS/Email, et Relance des paniers abandonnés avec déclencheurs en 1 clic et configuration de séquence automatique).
 
 ## Recommended Next Task
-Marketing & Promotions (`/admin/marketing` — Maquette 12/13)
+Paramètres & Équipe (`/admin/parametres` — Maquettes 15/16) ou Blog & Contenu (`/admin/blog`)
 

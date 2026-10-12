@@ -60,10 +60,10 @@ export function CompleteDeliveryDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 custom-modal-scroll [&_[data-slot=dialog-close]]:top-6 [&_[data-slot=dialog-close]]:right-6 sm:[&_[data-slot=dialog-close]]:top-8 sm:[&_[data-slot=dialog-close]]:right-8">
         <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-[#1e2a1f] flex items-center gap-2">
+          <DialogHeader className="space-y-1.5 pb-2">
+            <DialogTitle className="text-xl font-bold text-[#1e2a1f] flex items-center gap-2.5">
               <CheckCircle2 className="h-5 w-5 text-[#166534]" />
               Marquer la livraison comme terminée
             </DialogTitle>
@@ -73,9 +73,9 @@ export function CompleteDeliveryDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4 text-xs">
+          <div className="space-y-5 py-4 text-xs">
             {/* Recap Card */}
-            <div className="bg-[#fcfaf7] border border-[#e7e4dd] rounded-xl p-3 space-y-2">
+            <div className="bg-[#fcfaf7] border border-[#e7e4dd] rounded-xl p-3.5 space-y-2">
               <div className="flex items-center justify-between text-gray-700">
                 <span className="font-semibold text-gray-900">{delivery.customerName}</span>
                 <span className="text-gray-500">{delivery.deliveryZone}</span>
@@ -92,7 +92,7 @@ export function CompleteDeliveryDialog({
 
             {/* Recipient Name */}
             <div className="space-y-1.5">
-              <label className="font-semibold text-gray-700 flex items-center gap-1.5">
+              <label className="font-semibold text-gray-700 text-xs flex items-center gap-1.5 whitespace-nowrap">
                 <User className="h-3.5 w-3.5 text-gray-400" />
                 Nom de la personne ayant réceptionné *
               </label>
@@ -100,7 +100,7 @@ export function CompleteDeliveryDialog({
                 value={recipientName}
                 onChange={(e) => setRecipientName(e.target.value)}
                 placeholder="Ex: Awa Diop (ou M. Diallo, gardien...)"
-                className="text-xs h-9 bg-white"
+                className="text-xs h-10 bg-white"
                 required
               />
               <p className="text-[11px] text-gray-400">
@@ -109,10 +109,10 @@ export function CompleteDeliveryDialog({
             </div>
 
             {/* Auto timestamp */}
-            <div className="bg-[#f0fdf4] border border-[#bbf7d0] rounded-lg p-2.5 flex items-center justify-between text-[#166534]">
+            <div className="bg-[#f0fdf4] border border-[#bbf7d0] rounded-xl p-3 flex items-center justify-between text-[#166534]">
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                <span className="font-medium">Horodatage de fin de course</span>
+                <span className="font-medium text-xs">Horodatage de fin de course</span>
               </div>
               <span className="font-mono font-bold text-xs">
                 Aujourd&apos;hui à {currentTime}
@@ -121,7 +121,7 @@ export function CompleteDeliveryDialog({
 
             {/* Notes */}
             <div className="space-y-1.5">
-              <label className="font-semibold text-gray-700 flex items-center gap-1.5">
+              <label className="font-semibold text-gray-700 text-xs flex items-center gap-1.5 whitespace-nowrap">
                 <FileText className="h-3.5 w-3.5 text-gray-400" />
                 Observation / Note de remise (optionnel)
               </label>
@@ -129,23 +129,23 @@ export function CompleteDeliveryDialog({
                 value={completionNotes}
                 onChange={(e) => setCompletionNotes(e.target.value)}
                 placeholder="Ex: Remis en main propre, bouquet vérifié intact"
-                className="text-xs h-9 bg-white"
+                className="text-xs h-10 bg-white"
               />
             </div>
           </div>
 
-          <DialogFooter className="pt-2 border-t border-[#f0ede6] gap-2">
+          <DialogFooter className="pt-4 border-t border-[#f0ede6] gap-3">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="text-xs border-[#e7e4dd]"
+              className="text-xs h-10 px-4 border-[#e7e4dd]"
             >
               Annuler
             </Button>
             <Button
               type="submit"
-              className="bg-[#166534] hover:bg-[#14532d] text-white text-xs font-semibold px-4 gap-1.5"
+              className="bg-[#166534] hover:bg-[#14532d] text-white text-xs font-semibold h-10 px-5 gap-1.5"
             >
               <CheckCircle2 className="h-3.5 w-3.5" />
               Confirmer la remise

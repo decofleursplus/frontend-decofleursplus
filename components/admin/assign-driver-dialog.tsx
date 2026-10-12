@@ -70,9 +70,9 @@ export function AssignDriverDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-lg font-bold text-[#1e2a1f] flex items-center gap-2">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 custom-modal-scroll [&_[data-slot=dialog-close]]:top-6 [&_[data-slot=dialog-close]]:right-6 sm:[&_[data-slot=dialog-close]]:top-8 sm:[&_[data-slot=dialog-close]]:right-8">
+        <DialogHeader className="space-y-1.5 pb-2">
+          <DialogTitle className="text-xl font-bold text-[#1e2a1f] flex items-center gap-2.5">
             <Truck className="h-5 w-5 text-[#c1647a]" />
             Assigner un livreur
           </DialogTitle>
@@ -190,12 +190,12 @@ export function AssignDriverDialog({
               value={timeSlot}
               onChange={(e) => setTimeSlot(e.target.value)}
               placeholder="Ex: 14:30 - 15:30"
-              className="text-xs h-9 bg-white"
+              className="text-xs h-10 bg-white"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
+            <label className="text-xs font-semibold text-gray-700 flex items-center gap-1.5 whitespace-nowrap">
               <AlertCircle className="h-3.5 w-3.5 text-gray-400" />
               Consignes au livreur
             </label>
@@ -203,17 +203,17 @@ export function AssignDriverDialog({
               value={customNote}
               onChange={(e) => setCustomNote(e.target.value)}
               placeholder="Ex: Appeler à l'arrivée..."
-              className="text-xs h-9 bg-white"
+              className="text-xs h-10 bg-white"
             />
           </div>
         </div>
 
-        <DialogFooter className="pt-2 border-t border-[#f0ede6] gap-2">
+        <DialogFooter className="pt-4 border-t border-[#f0ede6] gap-3">
           <Button
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="text-xs border-[#e7e4dd]"
+            className="text-xs h-10 px-4 border-[#e7e4dd]"
           >
             Annuler
           </Button>
@@ -221,7 +221,7 @@ export function AssignDriverDialog({
             type="button"
             onClick={handleConfirm}
             disabled={!selectedDriverId}
-            className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold px-4"
+            className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold h-10 px-5"
           >
             Confirmer l&apos;assignation
           </Button>

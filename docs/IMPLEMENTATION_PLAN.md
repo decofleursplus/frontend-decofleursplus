@@ -69,9 +69,9 @@
 - [x] Implement delivery detail / assign driver modal
 
 ### Marketing & Promotions (Maquette 12/13)
-- [ ] Create `/admin/marketing` page layout with tabs (Promotions, Coupons, Campagnes, Relance panier)
-- [ ] Implement Promotions & Coupons DataTable (Nom, Type, Réduction, Période, Statut)
-- [ ] Implement Campaign creation modal & Cart recovery configuration
+- [x] Create `/admin/marketing` page layout with tabs (Promotions, Coupons, Campagnes, Relance panier)
+- [x] Implement Promotions & Coupons DataTable (Nom, Type, Réduction, Période, Statut)
+- [x] Implement Campaign creation modal & Cart recovery configuration with WhatsApp/Email triggers
 
 ### Paramètres & Équipe (Settings — Maquettes 15 & 16)
 - [ ] Create `/admin/parametres` page layout with sub-navigation (Général, Boutique, Paiement, Livraison, Notifications, Utilisateurs, Rôles, SEO)
