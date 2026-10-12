@@ -79,9 +79,13 @@
 - [ ] Implement Team/Users DataTable with "+ Ajouter un utilisateur"
 
 ### Blog & Contenu
-- [ ] Create `/admin/blog` page layout
-- [ ] Implement Articles management (Liste, filtres par catégorie, statuts Brouillon/Publié)
-- [ ] Implement Article editor
+- [x] Create `/admin/blog` page layout with 4 sub-sections (Articles, Catégories, Auteurs, Paramètres/SEO)
+- [x] Implement Articles management (DataTable, filtres par statut, recherche, actions dupliquer/statut/supprimer)
+- [x] Implement Article editor modal (`ArticleEditorDialog`) with 4 tabs (Contenu, Médias, Cross-selling produits, SEO Google Preview)
+- [x] Implement Article preview modal (`ArticlePreviewDialog`) with live storefront rendering
+- [x] Implement Category creation/editing modal (`CreateBlogCategoryDialog`) with color presets
+- [x] Implement Author creation/editing modal (`AuthorProfileDialog`)
+
 
 ### Rapports & Finances
 - [ ] Create `/admin/rapports` page layout

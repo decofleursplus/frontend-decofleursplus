@@ -27,6 +27,10 @@ export {
   type AdminAbandonedCart,
   type CartRecoveryStatus,
   type CartRecoverySettings,
+  type BlogArticle,
+  type BlogArticleStatus,
+  type BlogCategory,
+  type BlogAuthor,
 } from './types';
 export { adminProducts } from './products';
 export { adminOrders } from './orders';
@@ -42,4 +46,10 @@ export {
   adminAbandonedCarts,
   defaultCartRecoverySettings,
 } from './marketing';
+export {
+  adminBlogArticles,
+  adminBlogCategories,
+  adminBlogAuthors,
+} from './blog';
+
 

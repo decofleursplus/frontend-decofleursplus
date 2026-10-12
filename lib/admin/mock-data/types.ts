@@ -251,3 +251,57 @@ export type CartRecoverySettings = {
   discountCode: string;
   discountValue: string;
 };
+
+/* ── Blog & Contenu Types ────────────────────────────── */
+
+export type BlogArticleStatus = 'publie' | 'brouillon' | 'planifie' | 'archive';
+
+export type BlogArticle = {
+  id: string;
+  title: string;
+  slug: string;
+  categoryId: string;
+  categoryName: string;
+  categoryColor?: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar?: string;
+  authorRole?: string;
+  coverImage: string;
+  coverImageCaption?: string;
+  excerpt: string;
+  content: string;
+  readTime: string;
+  status: BlogArticleStatus;
+  publishedAt?: string;
+  scheduledAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  viewsCount: number;
+  likesCount: number;
+  isFeatured: boolean;
+  tags: string[];
+  seoTitle?: string;
+  seoDescription?: string;
+  relatedProductIds?: string[];
+};
+
+export type BlogCategory = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  color: string;
+  articlesCount: number;
+  coverImage?: string;
+};
+
+export type BlogAuthor = {
+  id: string;
+  name: string;
+  role: string;
+  avatar: string;
+  bio: string;
+  articlesCount: number;
+};
+

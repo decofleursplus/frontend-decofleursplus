@@ -32,16 +32,20 @@ Phase 3 — Back-office
 - Implement `CreatePromotionDialog` for direct catalogue discounts with category and product multi-targeting
 - Implement `CreateCampaignDialog` for WhatsApp, SMS and Email campaigns with dynamic personalization variables and live preview
 - Implement `CartRecoveryConfigDialog` and direct 1-click WhatsApp/Email triggers for abandoned carts
+- Create `/admin/blog` page layout with 4 tabs: Articles & Guides, Thématiques & Catégories, Auteurs & Contributeurs, Paramètres & SEO du Blog
+- Implement `ArticleEditorDialog` with 4-tab editor (Contenu avec toolbar H2/H3/list/quote, Médias avec presets photos de la boutique, Publication avec sélecteur de cross-selling floral, Référencement SEO avec live Google SERP preview)
+- Implement `ArticlePreviewDialog` with complete customer-facing storefront visual rendering
+- Implement `CreateBlogCategoryDialog` for editorial category management with color badge presets
+- Implement `AuthorProfileDialog` for author bios and credentials
 
 ## Currently Working On
-Validation du module Marketing & Promotions et passage à Paramètres & Équipe (`/admin/parametres` — Maquettes 15/16) ou Blog & Contenu (`/admin/blog`).
+Validation du module Blog & Contenu et passage à Paramètres & Équipe (`/admin/parametres` — Maquettes 15/16).
 
 ## Next Tasks
-- Implémenter `/admin/parametres` avec sous-navigation (Général, Boutique, Paiement, Livraison, Notifications, Équipe/Utilisateurs, Rôles, SEO).
+- Implémenter `/admin/parametres` avec sous-navigation latérale (Général, Boutique, Équipe & Rôles avec matrice de permissions complète, Paiement, Livraison, Notifications, SEO).
 
 ## Remaining
 - Paramètres & Utilisateurs (`/admin/parametres` - Maquettes 15/16)
-- Blog & Contenu (`/admin/blog`)
 - Rapports & Finances (`/admin/rapports`)
 
 ## Known Issues
@@ -54,20 +58,21 @@ Validation du module Marketing & Promotions et passage à Paramètres & Équipe 
 - **Routing:** French URL paths for the admin section (`/admin/tableau-de-bord`, etc.) to match public routing.
 
 ## Files Recently Modified
-- `app/admin/(protected)/marketing/page.tsx`
-- `components/admin/create-coupon-dialog.tsx`
-- `components/admin/create-promotion-dialog.tsx`
-- `components/admin/create-campaign-dialog.tsx`
-- `components/admin/cart-recovery-config-dialog.tsx`
-- `lib/admin/mock-data/marketing.ts`
+- `app/admin/(protected)/blog/page.tsx`
+- `components/admin/article-editor-dialog.tsx`
+- `components/admin/article-preview-dialog.tsx`
+- `components/admin/create-blog-category-dialog.tsx`
+- `components/admin/author-profile-dialog.tsx`
+- `lib/admin/mock-data/blog.ts`
 - `lib/admin/mock-data/types.ts`
 - `lib/admin/mock-data/index.ts`
 - `docs/IMPLEMENTATION_PLAN.md`
 - `docs/IMPLEMENTATION_STATUS.md`
 
 ## Last Completed Task
-Implémentation complète du module Marketing & Promotions (`/admin/marketing`) avec 4 sous-onglets opérationnels (Codes promo & Coupons, Promotions directes sur catalogue, Campagnes multi-canaux WhatsApp/SMS/Email, et Relance des paniers abandonnés avec déclencheurs en 1 clic et configuration de séquence automatique).
+Implémentation complète du module Blog & Contenu (`/admin/blog`) avec gestion dynamique des articles, filtrage multicritères, éditeur complet d'articles (avec intégration cross-selling et prévisualisation Google SERP), modale d'aperçu fidèle au storefront, gestion des catégories thématiques et fiches auteurs.
 
 ## Recommended Next Task
-Paramètres & Équipe (`/admin/parametres` — Maquettes 15/16) ou Blog & Contenu (`/admin/blog`)
+Paramètres & Équipe (`/admin/parametres` — Maquettes 15/16) avec navigation latérale et gestion fine des collaborateurs/rôles.
+
 
