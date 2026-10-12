@@ -117,3 +117,49 @@ export type OrderDistribution = {
   count: number;
   percentage: number;
 };
+
+export type DeliveryStatus = 'a_livrer' | 'en_cours' | 'livree' | 'echec';
+
+export type DeliveryDriver = {
+  id: string;
+  name: string;
+  phone: string;
+  vehicle: 'Moto' | 'Scooter' | 'Fourgonnette' | 'Voiture';
+  vehiclePlate?: string;
+  status: 'disponible' | 'en_course' | 'indisponible';
+  activeDeliveriesCount: number;
+  rating: number;
+  avatar?: string;
+};
+
+export type DeliveryTrackingStep = {
+  step: 'preparation' | 'prise_en_charge' | 'en_acheminement' | 'livre';
+  label: string;
+  time?: string;
+  completed: boolean;
+};
+
+export type AdminDelivery = {
+  id: string;
+  orderId: string;
+  orderRef: string;
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  deliveryAddress: string;
+  deliveryZone: 'Saly' | 'Mbour' | 'Somone' | 'Ngaparou' | 'Dakar' | 'Autre';
+  deliveryMode: 'Livraison express' | 'Livraison standard' | 'Retrait boutique';
+  driverId?: string;
+  driverName?: string;
+  driverPhone?: string;
+  driverVehicle?: string;
+  status: DeliveryStatus;
+  scheduledDate: string;
+  timeSlot: string;
+  deliveredAt?: string;
+  recipientName?: string;
+  deliveryFee: number;
+  itemsSummary: string;
+  notes?: string;
+  trackingSteps?: DeliveryTrackingStep[];
+};

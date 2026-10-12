@@ -24,16 +24,17 @@ Phase 3 — Back-office
 - Create `/admin/stock` page layout and Stock DataTable with Status Tabs (Tous, Stock faible, Rupture — Maquette 10)
 - Implement Stock Quick-adjustment modal with real-time preview and movement trail
 - Implement Movement History tab with audit trail for stock movements
+- Create `/admin/livraisons` page layout and Deliveries DataTable with Status Sub-pills (Toutes, À livrer, En cours, Livrées, Échecs — Maquette 11)
+- Implement Driver Assignment Dialog (`AssignDriverDialog`) with drivers team, vehicle types, availability and time slots
+- Implement Delivery Details & Tracking Drawer (`DeliveryDetailSheet`) with real-time stepper, recipient info, maps integration and print
 
 ## Currently Working On
-Validation de la gestion du stock et passage à la Gestion des Livraisons (`/admin/livraisons` — Maquette 11).
+Validation de la Gestion des Livraisons et passage à Marketing & Promotions (`/admin/marketing` — Maquette 12/13).
 
 ## Next Tasks
-- Cadrer les détails de la Gestion des Livraisons avec l'utilisateur (/grill-me).
-- Implémenter `/admin/livraisons` avec onglets de statut (Toutes, À livrer, En cours, Livrées), assignation des livreurs et suivi.
+- Implémenter `/admin/marketing` avec onglets Promotions, Codes promo/Coupons, Campagnes et Relance panier.
 
 ## Remaining
-- Gestion des livraisons (`/admin/livraisons` - Maquette 11)
 - Marketing & Promotions (`/admin/marketing` - Maquette 12/13)
 - Blog & Contenu (`/admin/blog`)
 - Rapports & Finances (`/admin/rapports`)
@@ -49,17 +50,20 @@ Validation de la gestion du stock et passage à la Gestion des Livraisons (`/adm
 - **Routing:** French URL paths for the admin section (`/admin/tableau-de-bord`, etc.) to match public routing.
 
 ## Files Recently Modified
-- `app/admin/(protected)/clients/page.tsx`
-- `app/admin/(protected)/clients/[id]/page.tsx`
-- `components/admin/send-email-dialog.tsx`
-- `lib/admin/mock-data/customers.ts`
-- `app/globals.css`
-- `app/admin/(protected)/stock/page.tsx`
+- `app/admin/(protected)/livraisons/page.tsx`
+- `components/admin/assign-driver-dialog.tsx`
+- `components/admin/complete-delivery-dialog.tsx`
+- `components/admin/add-driver-dialog.tsx`
+- `components/admin/delivery-detail-sheet.tsx`
+- `lib/admin/mock-data/deliveries.ts`
+- `lib/admin/mock-data/types.ts`
+- `lib/admin/mock-data/index.ts`
+- `docs/IMPLEMENTATION_PLAN.md`
+- `docs/IMPLEMENTATION_STATUS.md`
 
 ## Last Completed Task
-Refonte et perfectionnement de `/admin/clients` (suppression du bouton export CSV, refonte complète des filtres avec pilules de segments et drawer avancé, logique d'envoi d'e-mail avec modale interactive `SendEmailDialog`).
-Gestion du stock (`/admin/stock` — Maquette 10 avec onglets de statut, alertes de rupture, historique des mouvements et modale d'ajustement)
+Refonte complète de la Gestion des livraisons (`/admin/livraisons` — Maquette 11) : suppression de la redondance d'actions, colonne destinataire compactée, suppression de la colonne commande, filtres avancés en menus déroulants (dropdowns), onglet Flotte & Livreurs avec modale d'ajout de livreur et modale de clôture de livraison avec confirmation du réceptionnaire.
 
 ## Recommended Next Task
-Gestion des livraisons (`/admin/livraisons` — Maquette 11)
+Marketing & Promotions (`/admin/marketing` — Maquette 12/13)
 

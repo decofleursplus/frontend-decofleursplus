@@ -64,9 +64,9 @@
 
 
 ### Gestion des livraisons (Deliveries — Maquette 11)
-- [ ] Create `/admin/livraisons` page layout with status tabs (Toutes, À livrer, En cours, Livrées)
-- [ ] Implement Deliveries DataTable (#Livraison, Commande, Livreur, Statut, Date, Actions)
-- [ ] Implement delivery detail / assign driver modal
+- [x] Create `/admin/livraisons` page layout with status tabs (Toutes, À livrer, En cours, Livrées)
+- [x] Implement Deliveries DataTable (#Livraison, Commande, Livreur, Statut, Date, Actions)
+- [x] Implement delivery detail / assign driver modal
 
 ### Marketing & Promotions (Maquette 12/13)
 - [ ] Create `/admin/marketing` page layout with tabs (Promotions, Coupons, Campagnes, Relance panier)
