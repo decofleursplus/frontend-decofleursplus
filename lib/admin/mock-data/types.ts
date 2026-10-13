@@ -305,3 +305,231 @@ export type BlogAuthor = {
   articlesCount: number;
 };
 
+/* ── Rapports & Finances Types ───────────────────────── */
+
+export type ReportPeriodPreset =
+  | 'today'
+  | '7days'
+  | '30days'
+  | 'this_month'
+  | 'this_year'
+  | 'custom';
+
+export type PaymentMethodType = 'wave' | 'orange_money' | 'carte_bancaire' | 'especes';
+
+export type SettlementStatus = 'encaisse' | 'en_attente' | 'rembourse';
+
+export type FinancialTransaction = {
+  id: string;
+  ref: string;
+  orderId: string;
+  orderRef: string;
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  paymentMethod: PaymentMethodType;
+  grossAmount: number;
+  gatewayFeeRate: number; // e.g. 0.01 for 1%
+  gatewayFee: number;
+  netAmount: number;
+  status: SettlementStatus;
+  date: string;
+  settlementDate?: string;
+  gatewayRef?: string;
+  notes?: string;
+};
+
+export type SalesTimePoint = {
+  date: string;
+  label: string;
+  sales: number;
+  orders: number;
+  previousSales: number;
+};
+
+export type SalesByCategory = {
+  category: string;
+  salesCount: number;
+  revenue: number;
+  percentage: number;
+  color: string;
+};
+
+export type SalesByZone = {
+  zone: string;
+  ordersCount: number;
+  revenue: number;
+  percentage: number;
+};
+
+export type TopSellingProduct = {
+  id: string;
+  name: string;
+  sku: string;
+  category: string;
+  image: string;
+  quantitySold: number;
+  revenue: number;
+  averagePrice: number;
+  marginRate: number;
+};
+
+export type PaymentMethodBreakdown = {
+  method: PaymentMethodType;
+  label: string;
+  count: number;
+  grossRevenue: number;
+  fees: number;
+  netRevenue: number;
+  percentage: number;
+  color: string;
+};
+
+export type PeriodMetrics = {
+  grossRevenue: number;
+  ordersCount: number;
+  averageOrderValue: number;
+  newCustomersCount: number;
+  returningCustomersCount: number;
+  collectedAmount: number;
+  pendingAmount: number;
+  gatewayFees: number;
+  netRevenue: number;
+};
+
+export type ReportDataset = {
+  periodLabel: string;
+  comparisonLabel: string;
+  current: PeriodMetrics;
+  previous: PeriodMetrics;
+  deltas: {
+    revenueDelta: number;
+    ordersDelta: number;
+    aovDelta: number;
+    customersDelta: number;
+    netDelta: number;
+  };
+  chartPoints: SalesTimePoint[];
+  topProducts: TopSellingProduct[];
+  categoriesBreakdown: SalesByCategory[];
+  zonesBreakdown: SalesByZone[];
+  paymentBreakdown: PaymentMethodBreakdown[];
+};
+
+// ── Types Paramètres & Équipe (Maquettes 15 & 16) ───────────────────
+export type AdminRoleKey =
+  | 'admin'
+  | 'gestionnaire'
+  | 'fleuriste'
+  | 'livreur'
+  | 'comptable';
+
+export type AdminUserStatus = 'actif' | 'inactif' | 'en_attente';
+
+export type AdminUser = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: AdminRoleKey;
+  status: AdminUserStatus;
+  avatar?: string;
+  lastLogin?: string;
+  createdAt: string;
+};
+
+export type RoleDefinition = {
+  key: AdminRoleKey;
+  label: string;
+  description: string;
+  badgeClass: string;
+};
+
+export type AdminPermissionModule = {
+  key: string;
+  label: string;
+  category: string;
+  permissions: Record<
+    AdminRoleKey,
+    {
+      read: boolean;
+      write: boolean;
+      delete: boolean;
+      export: boolean;
+    }
+  >;
+};
+
+export type BoutiqueSettings = {
+  shopName: string;
+  tagline: string;
+  contactEmail: string;
+  phoneDakar: string;
+  phoneSaly: string;
+  address: string;
+  logoUrl: string;
+  currency: string;
+  timezone: string;
+  openingHours: string;
+  orderPrefix: string;
+};
+
+export type PaymentGatewaySettings = {
+  wave: {
+    enabled: boolean;
+    merchantId: string;
+    absorbFees: boolean;
+    feeRate: number;
+  };
+  orangeMoney: {
+    enabled: boolean;
+    merchantNumber: string;
+    absorbFees: boolean;
+    feeRate: number;
+  };
+  card: {
+    enabled: boolean;
+    provider: string;
+    absorbFees: boolean;
+    feeRate: number;
+  };
+  cash: {
+    enabled: boolean;
+    maxAmount: number;
+  };
+};
+
+export type DeliveryZoneSettings = {
+  id: string;
+  name: string;
+  coverage: string;
+  price: number;
+  delayHours: string;
+  freeAbove?: number;
+  enabled: boolean;
+};
+
+export type NotificationSettings = {
+  whatsappEnabled: boolean;
+  smsEnabled: boolean;
+  emailEnabled: boolean;
+  onNewOrder: boolean;
+  onDriverAssigned: boolean;
+  onDelivered: boolean;
+  onLowStock: boolean;
+  adminAlertPhone: string;
+  adminAlertEmail: string;
+};
+
+export type SeoSettings = {
+  metaTitle: string;
+  metaDescription: string;
+  keywords: string;
+  ogImageUrl: string;
+  instagramUrl: string;
+  facebookUrl: string;
+  tiktokUrl: string;
+};
+
+
+

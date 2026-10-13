@@ -37,16 +37,27 @@ Phase 3 — Back-office
 - Implement `ArticlePreviewDialog` with complete customer-facing storefront visual rendering
 - Implement `CreateBlogCategoryDialog` for editorial category management with color badge presets
 - Implement `AuthorProfileDialog` for author bios and credentials
+- Create `/admin/rapports` page layout with dual analytical tabs: Analyse Commerciale & Ventes, and Bilan Financier & Trésorerie
+- Implement unified temporal filter bar (Presets: Aujourd'hui, 7j, 30j, Ce mois, Cette année, Personnalisé) with automated comparison deltas (+/- %)
+- Implement Commercial Analytics with 4 KPIs, Chart.js multi-period sales line chart, top floral sales, and category & geographic delivery breakdown
+- Implement Financial & Treasury breakdown with 4 KPIs, Wave/OM/CB/Cash payment cards, fees deduction, and distribution doughnut
+- Implement interactive financial transactions audit journal with filters (method, settlement status, search)
+- Implement `TransactionDetailDialog` displaying full financial audit breakdown (gross, fees rate, net received, order & customer info)
+- Implement `ExportReportDialog` supporting CSV download and styled printable PDF generation
+- Implement `/admin/parametres` with internal vertical navigation (Boutique & Général, Collaborateurs, Rôles & Permissions, Paiement, Livraison, Notifications, SEO — Maquettes 15 & 16)
+- Implement `UserEditorDialog` for adding/editing team members with role badges and account statuses
+- Implement interactive permissions matrix by role (Admin, Gestionnaire, Fleuriste, Livreur, Comptable)
+- Implement payment gateways config (Wave, Orange Money, CB, Espèces), delivery zones (Saly, Mbour, Dakar, Ngaparou), WhatsApp/SMS notifications triggers, and Google SEO preview
 
 ## Currently Working On
-Validation du module Blog & Contenu et passage à Paramètres & Équipe (`/admin/parametres` — Maquettes 15/16).
+Phase 3 — Back-office achevée avec succès (Tableau de bord, Commandes, Produits, Catégories, Clients CRM, Stock, Livraisons, Marketing, Blog & Contenu, Rapports & Finances, Paramètres & Équipe).
 
 ## Next Tasks
-- Implémenter `/admin/parametres` avec sous-navigation latérale (Général, Boutique, Équipe & Rôles avec matrice de permissions complète, Paiement, Livraison, Notifications, SEO).
+- Recette globale et validation end-to-end de l'espace administration.
+- Préparation de la Phase 4 (responsive / PWA mobile si demandée).
 
 ## Remaining
-- Paramètres & Utilisateurs (`/admin/parametres` - Maquettes 15/16)
-- Rapports & Finances (`/admin/rapports`)
+- *(Tous les modules prévus pour le back-office dans les maquettes 01 à 16 sont implémentés)*
 
 ## Known Issues
 *(None)*
@@ -55,24 +66,23 @@ Validation du module Blog & Contenu et passage à Paramètres & Équipe (`/admin
 - **Data Layer:** Static TypeScript arrays in `lib/admin/mock-data/` to simulate the DB.
 - **Component Organization:** Strict separation in `components/admin/`.
 - **UI Library:** Using `shadcn/ui` (Radix UI / Base UI) for accessible interactive components (modals, dropdowns, tabs), heavily customized with Tailwind to match the mockup perfectly.
-- **Routing:** French URL paths for the admin section (`/admin/tableau-de-bord`, etc.) to match public routing.
+- **Routing:** French URL paths for the admin section (`/admin/tableau-de-bord`, `/admin/rapports`, `/admin/parametres`, etc.) to match public routing.
 
 ## Files Recently Modified
-- `app/admin/(protected)/blog/page.tsx`
-- `components/admin/article-editor-dialog.tsx`
-- `components/admin/article-preview-dialog.tsx`
-- `components/admin/create-blog-category-dialog.tsx`
-- `components/admin/author-profile-dialog.tsx`
-- `lib/admin/mock-data/blog.ts`
+- `app/admin/(protected)/rapports/page.tsx`
+- `app/admin/(protected)/parametres/page.tsx`
+- `components/admin/user-editor-dialog.tsx`
+- `components/ui/switch.tsx`
+- `components/ui/textarea.tsx`
+- `lib/admin/mock-data/settings.ts`
 - `lib/admin/mock-data/types.ts`
 - `lib/admin/mock-data/index.ts`
 - `docs/IMPLEMENTATION_PLAN.md`
 - `docs/IMPLEMENTATION_STATUS.md`
 
 ## Last Completed Task
-Implémentation complète du module Blog & Contenu (`/admin/blog`) avec gestion dynamique des articles, filtrage multicritères, éditeur complet d'articles (avec intégration cross-selling et prévisualisation Google SERP), modale d'aperçu fidèle au storefront, gestion des catégories thématiques et fiches auteurs.
+Implémentation complète du module Paramètres & Équipe (`/admin/parametres` — Maquettes 15 & 16) avec navigation latérale interne (Boutique & Général, Collaborateurs, Rôles & Permissions, Paiements Wave/OM/CB/Cash, Zones de livraison Saly/Dakar, Notifications WhatsApp/SMS/Email, SEO Google SERP preview), modale de gestion des collaborateurs (`UserEditorDialog`), et matrice de droits d'accès interactive.
 
-## Recommended Next Task
-Paramètres & Équipe (`/admin/parametres` — Maquettes 15/16) avec navigation latérale et gestion fine des collaborateurs/rôles.
+
 
 

@@ -74,9 +74,11 @@
 - [x] Implement Campaign creation modal & Cart recovery configuration with WhatsApp/Email triggers
 
 ### Paramètres & Équipe (Settings — Maquettes 15 & 16)
-- [ ] Create `/admin/parametres` page layout with sub-navigation (Général, Boutique, Paiement, Livraison, Notifications, Utilisateurs, Rôles, SEO)
-- [ ] Implement Boutique settings form (Nom, Slogan, Contact, Logo)
-- [ ] Implement Team/Users DataTable with "+ Ajouter un utilisateur"
+- [x] Create `/admin/parametres` page layout with sub-navigation (Boutique & Général, Collaborateurs, Rôles & Permissions, Paiement, Livraison, Notifications, SEO)
+- [x] Implement Boutique settings form (Nom, Slogan, Contact, Logo, Horaires, Devise, Fuseau horaire)
+- [x] Implement Team/Users DataTable with "+ Ajouter un utilisateur" and `UserEditorDialog`
+- [x] Implement interactive Roles & Permissions matrix (Modules vs Rôles avec bascule des droits Lecture/Écriture/Suppression/Export)
+- [x] Implement operational tabs: Passerelles de paiement (Wave, OM, CB, Espèces), Zones de livraison (Saly, Mbour, Dakar, Ngaparou), Notifications & Alertes (WhatsApp/SMS/Email), et SEO & Google SERP preview
 
 ### Blog & Contenu
 - [x] Create `/admin/blog` page layout with 4 sub-sections (Articles, Catégories, Auteurs, Paramètres/SEO)
@@ -88,7 +90,9 @@
 
 
 ### Rapports & Finances
-- [ ] Create `/admin/rapports` page layout
-- [ ] Implement Revenue, Payments, and Financial breakdown charts
-- [ ] Implement export and statistical reports
+- [x] Create `/admin/rapports` page layout with dual analytical tabs (Ventes & Performance, Bilan Financier & Trésorerie)
+- [x] Implement Revenue, Payments, and Financial breakdown charts with comparative period indicators
+- [x] Implement export and statistical reports (`ExportReportDialog` with CSV and styled PDF print)
+- [x] Implement financial audit journal and transaction detail drawer (`TransactionDetailDialog`)
+
 
