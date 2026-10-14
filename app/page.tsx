@@ -301,7 +301,9 @@ export default function HomePage() {
                 <h2>Nos créations phares</h2>
               </div>
               <Link href="/boutique" className="view-all-link">
-                Voir tout le catalogue <ArrowRight size={14} />
+                <span className="view-all-desktop">Voir tout le catalogue</span>
+                <span className="view-all-mobile">Voir tout</span>
+                <ArrowRight size={14} />
               </Link>
             </div>
 

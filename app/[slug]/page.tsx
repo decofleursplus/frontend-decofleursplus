@@ -27,6 +27,7 @@ import { CatalogClient } from '@/components/catalog-client';
 import { ProductGrid } from '@/components/product-grid';
 import { SiteFooter } from '@/components/site-footer';
 import { ContactForm } from '@/components/contact-form';
+import { ContactMap } from '@/components/contact-map';
 import { DevisForm } from '@/components/devis-form';
 
 const categories: Record<string, string> = {
@@ -213,56 +214,239 @@ function CategoryPage({ title, slug }: { title: string; slug: string }) {
 }
 
 function DeliveryPage() {
+  const deliveryZones = [
+    {
+      zone: 'Zone 1 · Saly Cœur',
+      places: 'Saly Portudal, Saly Niakhniakhal, Saly Tapée, Saly Carrefour, Résidences balnéaires',
+      time: 'Livraison en 2h à 3h (ou créneau horaire précis)',
+      price: '2 000 FCFA',
+      tag: 'Express 90 min dispo',
+    },
+    {
+      zone: 'Zone 2 · Saly & Mbour Nord',
+      places: 'Saly Joseph, Ngaparou, Mbour centre, Saly Golf',
+      time: 'Livraison en 3h à 4h',
+      price: '2 500 FCFA',
+      tag: 'Quotidien',
+    },
+    {
+      zone: 'Zone 3 · Petite Côte Sud & Ouest',
+      places: 'La Somone, Warang, Nianing, Mbour Tefess',
+      time: 'Livraison en 3h à 5h',
+      price: '3 500 FCFA',
+      tag: 'Quotidien',
+    },
+    {
+      zone: 'Zone 4 · Périphérie Petite Côte',
+      places: 'Popenguine, Toubab Dialaw, Sindia, Malicounda',
+      time: 'Même jour pour toute commande avant 14h',
+      price: '5 000 FCFA',
+      tag: 'Sur créneau',
+    },
+    {
+      zone: 'Zone 5 · Dakar & Environs',
+      places: 'Dakar ville, Almadies, Plateau, Diamniadio, Thiès',
+      time: 'Navette quotidienne sécurisée ou coursier dédié',
+      price: '8 000 FCFA',
+      tag: 'Navette sécurisée',
+    },
+    {
+      zone: 'Atelier DécoFleur Plus',
+      places: 'Retrait sur place à la boutique (Route de la Plage, Saly Portudal)',
+      time: 'Prêt en 60 minutes après commande',
+      price: 'Gratuit',
+      tag: 'Click & Collect',
+    },
+  ];
+
+  const steps = [
+    {
+      step: '01',
+      title: 'Sélection & Coupe du jour',
+      desc: 'Tiges fraîches coupées le matin même pour garantir une tenue et un éclat floral maximal sous notre climat.',
+      icon: Sprout,
+    },
+    {
+      step: '02',
+      title: 'Création artisanale & Réserve d’eau',
+      desc: 'Assemblage minutieux par nos artisans avec réserve d’eau nutritive pour que le bouquet reste parfaitement hydraté.',
+      icon: Flower2,
+    },
+    {
+      step: '03',
+      title: 'Photo de confirmation WhatsApp',
+      desc: 'Nous vous envoyons une photo haute définition de votre composition avant le départ de notre véhicule.',
+      icon: MessageCircle,
+    },
+    {
+      step: '04',
+      title: 'Transport climatisé & Remise soignée',
+      desc: 'Acheminement en véhicule climatisé et remise en main propre avec le mot doux de votre choix (ou surprise anonyme).',
+      icon: Truck,
+    },
+  ];
+
+  const commitments = [
+    {
+      title: 'Transport sous climatisation',
+      desc: 'Tous nos véhicules sont réfrigérés ou climatisés pour préserver les fleurs de la chaleur de la Petite Côte.',
+      icon: ShieldCheck,
+    },
+    {
+      title: 'Livraisons surprises & Hôtels',
+      desc: 'Remise discrète en chambre d’hôtel ou villa avec message manuscrit calligraphié pour un effet waouh garanti.',
+      icon: Heart,
+    },
+    {
+      title: 'Notification WhatsApp immédiate',
+      desc: 'Vous êtes immédiatement prévenu dès que votre composition est déposée ou remise au destinataire.',
+      icon: CheckCircle2,
+    },
+    {
+      title: 'Garantie Remplacement 24h',
+      desc: 'Si la composition ne correspond pas à vos attentes à l’arrivée, nous la remplaçons gracieusement sous 24h.',
+      icon: Star,
+    },
+  ];
+
+  const whatsappSpecialUrl =
+    'https://wa.me/221779417860?text=' +
+    encodeURIComponent('Bonjour DécoFleur Plus, je souhaite organiser une livraison sur mesure ou hors zone.');
+
   return (
     <>
       <main className="content-width page-main">
-        <div className="page-copy">
-          <span className="eyebrow"><Truck size={16} /> Service logistique à Saly & Mbour</span>
-          <h1>La livraison de vos fleurs</h1>
-          <p>
-            Décofleur Plus livre avec soin vos bouquets, plantes et corbeilles de fruits dans toute la zone de Saly,
-            Mbour, Ngaparou et La Somone. Choisissez votre créneau horaire préféré lors du checkout.
-          </p>
-        </div>
-
-        <div className="info-card-grid">
-          <article className="info-card">
-            <h2>Livraison Standard</h2>
-            <p className="price-tag">2 000 FCFA</p>
-            <p>Disponible à Saly Portudal et Mbour centre. Livré sous 3h à 5h avec notification WhatsApp au destinataire.</p>
-          </article>
-          <article className="info-card">
-            <h2>Livraison Express</h2>
-            <p className="price-tag">5 000 FCFA</p>
-            <p>Livraison prioritaire sous 90 minutes. Idéal pour une surprise ou une célébration de dernière minute.</p>
-          </article>
-          <article className="info-card">
-            <h2>Retrait en Boutique</h2>
-            <p className="price-tag">Gratuit</p>
-            <p>Venez récupérer votre composition directement à notre boutique de Saly Portudal aux horaires d’ouverture.</p>
-          </article>
-        </div>
-
-        <div className="delivery-map-card" style={{ marginTop: '30px' }}>
-          <div className="delivery-map-copy">
-            <h3><MapPin size={18} /> Zone de couverture</h3>
-            <p>
-              Notre service de livraison dessert quotidiennement : Saly Portudal, Saly Niakhniakhal, Saly Joseph,
-              Mbour centre, Mbour Tefess, Warang, Ngaparou et La Somone.
+        <div className="delivery-page-container">
+          {/* Hero Banner Logistique */}
+          <section className="delivery-hero-card">
+            <span className="delivery-hero-badge">
+              <Truck size={14} /> Service Logistique DécoFleur Plus
+            </span>
+            <h1 className="delivery-hero-title">
+              La livraison de vos fleurs &amp; primeurs d’exception
+            </h1>
+            <p className="delivery-hero-subtitle">
+              De Saly Portudal à Mbour, Ngaparou, La Somone et Dakar : nous acheminons vos bouquets, corbeilles et plantes
+              dans des conditions de fraîcheur irréprochables avec notification WhatsApp.
             </p>
-            <p className="muted-note">Pour toute autre localité au Sénégal, veuillez nous contacter avant de commander.</p>
-            <Link className="button-pill-pink button-small" href="/contact">
-              Nous contacter pour une livraison spéciale <ArrowRight size={14} />
-            </Link>
-          </div>
-          <div className="delivery-map-img">
-            <Image
-              src="/images/order-map.jpg"
-              alt="Carte de livraison à Saly et Mbour"
-              fill
-              sizes="(max-width: 900px) 100vw, 450px"
-            />
-          </div>
+            <div className="delivery-hero-quickstats">
+              <span className="delivery-stat-pill">
+                <Clock size={14} /> 7j/7 de 08h00 à 20h00
+              </span>
+              <span className="delivery-stat-pill">
+                <Truck size={14} /> Véhicules climatisés
+              </span>
+              <span className="delivery-stat-pill">
+                <ShieldCheck size={14} /> Garantie fraîcheur 100%
+              </span>
+            </div>
+          </section>
+
+          {/* Timeline des 4 étapes */}
+          <section aria-labelledby="delivery-steps-title">
+            <div className="delivery-section-heading">
+              <span>EXCELLENCE OPÉRATIONNELLE</span>
+              <h2 id="delivery-steps-title">Le parcours de votre bouquet, étape par étape</h2>
+              <p>Un processus maîtrisé de la coupe matinale jusqu’au pas de la porte de votre destinataire.</p>
+            </div>
+            <div className="delivery-steps-grid">
+              {steps.map((st) => {
+                const IconComponent = st.icon;
+                return (
+                  <article key={st.step} className="delivery-step-card">
+                    <div className="delivery-step-number">{st.step}</div>
+                    <div className="delivery-step-icon">
+                      <IconComponent size={20} />
+                    </div>
+                    <h3 className="delivery-step-title">{st.title}</h3>
+                    <p className="delivery-step-desc">{st.desc}</p>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* Grille des zones et tarifs */}
+          <section aria-labelledby="delivery-zones-title">
+            <div className="delivery-section-heading">
+              <span>TARIFICATION TRANSPARENTE</span>
+              <h2 id="delivery-zones-title">Zones de livraison &amp; Tarifs détaillés</h2>
+              <p>Des tarifs fixes et clairs pour toute la Petite Côte et les grands axes du Sénégal.</p>
+            </div>
+            <div className="delivery-zones-card">
+              <table className="delivery-zones-table">
+                <thead>
+                  <tr>
+                    <th>Zone &amp; Localité</th>
+                    <th>Quartiers et résidences couverts</th>
+                    <th>Délai indicatif</th>
+                    <th>Tarif</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {deliveryZones.map((z, idx) => (
+                    <tr key={idx}>
+                      <td>
+                        <span className="zone-name">{z.zone}</span>
+                        <span className="zone-tag">{z.tag}</span>
+                      </td>
+                      <td>{z.places}</td>
+                      <td>{z.time}</td>
+                      <td>
+                        <span className="zone-price">{z.price}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          {/* Nos 4 Engagements fraîcheur */}
+          <section aria-labelledby="delivery-commitments-title">
+            <div className="delivery-section-heading">
+              <span>NOTRE PROMESSE</span>
+              <h2 id="delivery-commitments-title">Des garanties pensées pour votre sérénité</h2>
+              <p>Parce qu’offrir des fleurs est un geste chargé d’émotion, chaque détail compte.</p>
+            </div>
+            <div className="delivery-commitments-grid">
+              {commitments.map((c, idx) => {
+                const IconComp = c.icon;
+                return (
+                  <article key={idx} className="delivery-commitment-card">
+                    <div className="delivery-commitment-icon">
+                      <IconComp size={22} />
+                    </div>
+                    <h3 className="delivery-commitment-title">{c.title}</h3>
+                    <p className="delivery-commitment-desc">{c.desc}</p>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* CTA Banner de commande ou livraison spéciale */}
+          <section className="delivery-cta-card">
+            <div className="delivery-cta-copy">
+              <h3>Besoin d’une livraison spéciale ou hors zone ?</h3>
+              <p>Mariage, livraison surprise anonyme, événement d’entreprise ou localité éloignée : contactez nos fleuristes.</p>
+            </div>
+            <div className="delivery-cta-buttons">
+              <Link href="/boutique" className="button-pill-pink">
+                Commander en ligne <ArrowRight size={16} />
+              </Link>
+              <a
+                href={whatsappSpecialUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="boutique-btn boutique-btn-whatsapp"
+                style={{ padding: '10px 18px', borderRadius: '9999px' }}
+              >
+                <MessageCircle size={16} />
+                <span>Demander sur WhatsApp</span>
+              </a>
+            </div>
+          </section>
         </div>
       </main>
       <SiteFooter />
@@ -457,47 +641,100 @@ function AboutPage() {
 }
 
 function ContactPage() {
+  const whatsappUrl =
+    'https://wa.me/221779417860?text=' +
+    encodeURIComponent('Bonjour DécoFleur Plus, je souhaite un renseignement ou un devis personnalisé.');
+
   return (
     <>
       <main className="content-width page-main">
-        <div className="page-copy">
-          <span className="eyebrow"><MessageCircle size={16} /> Service client & atelier</span>
-          <h1>Contactez Décofleur Plus</h1>
+        {/* Header de page */}
+        <div className="page-copy contact-header-copy">
+          <span className="eyebrow">
+            <MessageCircle size={16} /> Écoute, conseil &amp; atelier
+          </span>
+          <h1>Contactez la Maison DécoFleur Plus</h1>
           <p>
-            Besoin d’un conseil personnalisé pour un bouquet, d’un devis pour un événement ou d’une précision sur votre
-            livraison ? Notre équipe est à votre écoute par message, téléphone ou directement sur WhatsApp.
+            Une question sur un bouquet, une commande en cours, ou un projet événementiel sur mesure à Saly ou sur la Petite Côte ?
+            Notre équipe vous répond avec attention et réactivité.
           </p>
         </div>
 
-        <div className="contact-layout">
-          <section className="checkout-panel">
-            <h2>Envoyez-nous un message</h2>
+        {/* Grille Split-Screen : Formulaire à gauche, Infos & Carte à droite */}
+        <div className="contact-premium-grid">
+          {/* Colonne gauche : Formulaire */}
+          <section className="contact-form-card" aria-labelledby="contact-form-title">
+            <div className="contact-form-header">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#be185d]">
+                Formulaire en ligne
+              </span>
+              <h2 id="contact-form-title">Envoyez-nous un message</h2>
+              <p>Remplissez ce formulaire et notre équipe vous recontactera sous 2 heures ouvrées.</p>
+            </div>
             <ContactForm />
+            <div className="contact-reassurance-row">
+              <span className="reassurance-pill">
+                <CheckCircle2 size={13} className="text-emerald-600" /> Réponse rapide sous 2h
+              </span>
+              <span className="reassurance-pill">
+                <CheckCircle2 size={13} className="text-emerald-600" /> Devis gratuit &amp; sans engagement
+              </span>
+              <span className="reassurance-pill">
+                <CheckCircle2 size={13} className="text-emerald-600" /> Données confidentielles
+              </span>
+            </div>
           </section>
 
-          <aside className="checkout-panel contact-details">
-            <h2>Notre Boutique à Saly</h2>
-            <p><MapPin size={18} /> Saly Portudal (Route de la Plage), Sénégal</p>
-            <p><Phone size={18} /> +221 77 941 78 60</p>
-            <p><Clock size={18} /> Lundi au Samedi : 8h00 – 19h30</p>
-            <p><Clock size={18} /> Dimanche : 9h00 – 14h00</p>
-            <p><ShieldCheck size={18} /> Paiement sécurisé Wave & Orange Money</p>
+          {/* Colonne droite : Coordonnées boutique & Carte interactive */}
+          <aside className="contact-sidebar-column">
+            {/* Carte 1 : Coordonnées & Statut direct */}
+            <div className="contact-boutique-card">
 
-            <div style={{ marginTop: '18px' }}>
-              <a
-                className="button-pill-pink button-small"
-                href="tel:+221779417860"
-                style={{ width: '100%', justifyContent: 'center', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-              >
-                <Phone size={15} /> Contacter
-              </a>
+              <h3 className="boutique-title">Atelier &amp; Boutique à Saly</h3>
+              <p className="boutique-address">
+                <MapPin size={17} className="text-[#246e38] shrink-0 mt-0.5" />
+                <span>Route de la Plage (face aux Résidences), Saly Portudal, Petite Côte, Sénégal</span>
+              </p>
+
+              {/* Boutons d'actions directs dans la colonne boutique */}
+              <div className="boutique-actions">
+
+                <a
+                  href="tel:+221779417860"
+                  className="boutique-btn boutique-btn-phone"
+                >
+                  <Phone size={16} />
+                  <span>Appeler au +221 77 941 78 60</span>
+                </a>
+              </div>
+
+              <div className="boutique-meta-grid">
+                <div className="boutique-meta-item">
+                  <Clock size={15} className="text-emerald-700 shrink-0 mt-0.5" />
+                  <div>
+                    <strong>Horaires semaine</strong>
+                    <span>Lundi au Samedi : 08h00 à 19h30</span>
+                  </div>
+                </div>
+                <div className="boutique-meta-item">
+                  <Clock size={15} className="text-emerald-700 shrink-0 mt-0.5" />
+                  <div>
+                    <strong>Horaires dimanche</strong>
+                    <span>Dimanche : 09h00 à 14h00</span>
+                  </div>
+                </div>
+                <div className="boutique-meta-item">
+                  <ShieldCheck size={15} className="text-emerald-700 shrink-0 mt-0.5" />
+                  <div>
+                    <strong>Paiement accepté</strong>
+                    <span>Wave, Orange Money, Espèces, CB</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--line)' }}>
-              <Link href="/#faq" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--pink)', fontSize: '13px', fontWeight: 600 }}>
-                Consulter les questions fréquentes (FAQ) <ArrowRight size={14} />
-              </Link>
-            </div>
+            {/* Carte 2 : Carte interactive avec repère et itinéraire */}
+            <ContactMap />
           </aside>
         </div>
       </main>
