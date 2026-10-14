@@ -160,12 +160,13 @@ export function SiteHeader() {
         {/* Brand Logo */}
         <Link className="brand" href="/" aria-label="Décofleur Plus, accueil">
           <Image
-            src="/logo_decofleur.jpeg"
+            src="/logo_decofleur_cropped.png"
             alt="Décofleur Plus - Nature en Élégance"
-            width={240}
-            height={70}
+            width={90}
+            height={66}
             priority
             className="brand-logo"
+            style={{ width: 'auto' }}
           />
         </Link>
 
@@ -341,11 +342,12 @@ export function SiteHeader() {
           <div id="mobile-navigation-drawer" className="mobile-drawer" role="dialog" aria-modal="true" aria-label="Menu de navigation" onClick={(e) => e.stopPropagation()}>
             <div className="mobile-drawer-header mt-16 pb-8">
               <Image
-                src="/logo_decofleur.jpeg"
+                src="/logo_decofleur_cropped.png"
                 alt="Décofleur Plus"
-                width={160}
-                height={50}
+                width={72}
+                height={52}
                 className="drawer-logo"
+                style={{ width: 'auto' }}
               />
             
               <button

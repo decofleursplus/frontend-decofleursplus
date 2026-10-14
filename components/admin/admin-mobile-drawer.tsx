@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
 import { logoutAdmin } from '@/app/admin/connexion/actions';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 
 type InstallPromptEvent = Event & {
@@ -130,26 +130,27 @@ export function AdminMobileDrawer() {
       />
 
       {/* Panneau latéral glissant depuis la gauche */}
-      <aside className="relative flex flex-col w-[85%] max-w-[320px] h-full bg-[#fbfaf8] border-r border-[#ece8df] shadow-2xl z-10 animate-in slide-in-from-left duration-250 ease-out overflow-hidden">
+      <aside className="relative flex flex-col w-[85%] max-w-[320px] h-full bg-gradient-to-b from-[#102617] via-[#0d2114] to-[#08170d] text-white border-r border-white/10 z-10 animate-in slide-in-from-left duration-250 ease-out overflow-hidden">
         {/* Header du Drawer */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[#ece8df] bg-white/90 backdrop-blur-md">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/20 backdrop-blur-md">
           <Link
             href="/admin/tableau-de-bord"
             onClick={closeMobileDrawer}
-            className="flex items-center gap-2.5"
+            className="flex items-center gap-2.5 hover:opacity-85 transition-opacity"
           >
             <Image
-              src="/logo_decofleur.jpeg"
+              src="/logo_decofleur_darkbg.png"
               alt="Décofleur Plus"
-              width={34}
-              height={34}
-              className="h-8 w-8 object-contain rounded-md"
+              width={32}
+              height={32}
+              className="h-8 w-auto object-contain"
+              style={{ width: 'auto' }}
             />
             <div className="flex flex-col">
-              <span className="font-serif italic font-semibold text-base text-[#193e23] leading-none">
+              <span className="font-serif italic font-semibold text-base text-white leading-none">
                 Décofleur Plus
               </span>
-              <span className="text-[10px] font-semibold tracking-wider uppercase text-[#c1647a] mt-0.5">
+              <span className="text-[10px] font-semibold tracking-wider uppercase text-[#ff5c8a] mt-0.5">
                 Back-office
               </span>
             </div>
@@ -158,7 +159,7 @@ export function AdminMobileDrawer() {
           <button
             type="button"
             onClick={closeMobileDrawer}
-            className="flex items-center justify-center h-8 w-8 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+            className="flex items-center justify-center h-8 w-8 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
             aria-label="Fermer le menu"
           >
             <X size={18} />
@@ -166,19 +167,27 @@ export function AdminMobileDrawer() {
         </div>
 
         {/* Profil utilisateur connecté */}
-        <div className="px-4 py-2.5 bg-gradient-to-r from-[#edf8ef] to-[#faf8f2] border-b border-[#e5e0d4] flex items-center justify-between">
+        <div className="px-4 py-2.5 bg-white/5 border-b border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <Avatar className="h-8 w-8 border border-emerald-300">
-              <AvatarFallback className="bg-[#193e23] text-white text-xs font-bold">
-                A
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className="h-8 w-8 ring-2 ring-emerald-500/30">
+                <AvatarImage
+                  src="/images/admin-avatar.jpg"
+                  alt="Admin"
+                  className="object-cover"
+                />
+                <AvatarFallback className="bg-[#193e23] text-white text-xs font-bold">
+                  A
+                </AvatarFallback>
+              </Avatar>
+              <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-1 ring-white" />
+            </div>
             <div className="flex flex-col">
-              <span className="text-xs font-semibold text-gray-900 leading-tight">Admin</span>
-              <span className="text-[10.5px] text-gray-500 leading-none">admin@decofleur.com</span>
+              <span className="text-xs font-semibold text-white leading-tight">Admin</span>
+              <span className="text-[10.5px] text-white/60 leading-none">admin@decofleur.com</span>
             </div>
           </div>
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-800">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
             Super Admin
           </span>
         </div>
@@ -186,38 +195,38 @@ export function AdminMobileDrawer() {
         {/* Section PWA : Installation ou état de l'app (subtile et discrète) */}
         <div className="px-3 pt-2.5 pb-1">
           {isStandalone ? (
-            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-emerald-50/70 border border-emerald-200/50 text-emerald-800 text-[11px] font-medium">
-              <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
+            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-400/30 text-emerald-200 text-[11px] font-medium">
+              <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
               <span className="truncate">Application installée</span>
             </div>
           ) : installPrompt ? (
-            <div className="flex items-center justify-between p-2 rounded-xl bg-white/80 border border-gray-200/70 shadow-2xs">
+            <div className="flex items-center justify-between p-2 rounded-xl bg-white/10 border border-white/10 shadow-2xs">
               <div className="flex items-center gap-2 min-w-0">
-                <div className="flex items-center justify-center h-6 w-6 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-100 shrink-0">
+                <div className="flex items-center justify-center h-6 w-6 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
                   <Smartphone size={13} />
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <span className="text-[11.5px] font-semibold text-gray-800 leading-tight truncate">Installer l'application</span>
-                  <span className="text-[9.5px] text-gray-500 leading-tight truncate">Accès direct écran d'accueil</span>
+                  <span className="text-[11.5px] font-semibold text-white leading-tight truncate">Installer l'application</span>
+                  <span className="text-[9.5px] text-white/60 leading-tight truncate">Accès direct écran d'accueil</span>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={handleInstallClick}
-                className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 transition-colors cursor-pointer"
+                className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-white bg-emerald-600 hover:bg-emerald-500 border border-emerald-400/50 transition-colors cursor-pointer"
               >
                 <Download size={11} />
                 <span>Installer</span>
               </button>
             </div>
           ) : isIosSafari ? (
-            <div className="p-2 rounded-lg bg-amber-50/70 border border-amber-200/50 text-amber-900 text-[10px] leading-tight">
+            <div className="p-2 rounded-lg bg-amber-500/15 border border-amber-400/30 text-amber-200 text-[10px] leading-tight">
               <strong>Astuce iOS :</strong> Touchez <span className="underline font-semibold">Partager</span> puis <span className="font-semibold">« Sur l'écran d'accueil »</span>.
             </div>
           ) : null}
         </div>
 
-        {/* Liste plate des modules (sans les 4 du bottom bar, sans sectionnage) */}
+        {/* Liste des modules */}
         <div className="flex-1 overflow-y-auto px-3 py-2">
           <ul className="space-y-1">
             {drawerMenuItems.map((item) => {
@@ -234,18 +243,18 @@ export function AdminMobileDrawer() {
                     className={cn(
                       'flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors',
                       isActive
-                        ? 'bg-gradient-to-r from-[#edf8ef] to-[#e8f4ea] text-[#193e23] font-bold border border-[#193e23]/10 shadow-2xs'
-                        : 'text-gray-700 hover:bg-gray-100/70 hover:text-gray-900'
+                        ? 'bg-gradient-to-r from-emerald-600/50 to-emerald-700/60 text-white font-semibold border border-white/15 shadow-xs'
+                        : 'text-white/75 hover:bg-white/10 hover:text-white'
                     )}
                   >
                     <Icon
                       size={17}
-                      className={isActive ? 'text-[#c1647a]' : 'text-gray-500'}
+                      className={isActive ? 'text-[#ff5c8a]' : 'text-white/60'}
                       strokeWidth={isActive ? 2.2 : 1.8}
                     />
                     <span className="flex-1 truncate">{item.label}</span>
                     {isActive && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#c1647a]" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#ff5c8a]" />
                     )}
                   </Link>
                 </li>
@@ -255,26 +264,26 @@ export function AdminMobileDrawer() {
         </div>
 
         {/* Footer du Drawer : Boutique & Déconnexion */}
-        <div className="p-3 border-t border-[#ece8df] bg-white/80 space-y-2">
+        <div className="p-3 border-t border-white/10 bg-black/25 space-y-2">
           <Link
             href="/"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex items-center justify-between px-3 py-2 rounded-lg border border-white/10 text-xs font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
           >
             <span className="flex items-center gap-2">
-              <ExternalLink size={14} className="text-gray-400" />
+              <ExternalLink size={14} className="text-white/60" />
               <span>Voir la boutique publique</span>
             </span>
-            <span className="text-[10px] text-gray-400">Ouvrir ↗</span>
+            <span className="text-[10px] text-white/60">Ouvrir ↗</span>
           </Link>
 
           <form action={logoutAdmin} className="w-full">
             <button
               type="submit"
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-rose-200 bg-rose-50/60 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition-colors cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-rose-800/40 bg-rose-950/40 text-xs font-semibold text-rose-200 hover:bg-rose-900/60 transition-colors cursor-pointer"
             >
-              <LogOut size={14} className="text-rose-600" />
+              <LogOut size={14} className="text-rose-300" />
               <span>Se déconnecter</span>
             </button>
           </form>

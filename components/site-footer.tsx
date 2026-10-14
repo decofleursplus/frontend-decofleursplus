@@ -27,9 +27,10 @@ export function SiteFooter() {
             <Image
               src="/logo_decofleur.jpeg"
               alt="Décofleur Plus - Nature en Élégance"
-              width={200}
-              height={60}
+              width={54}
+              height={54}
               className="footer-logo-img"
+              style={{ width: 'auto' }}
             />
           </Link>
         </div>

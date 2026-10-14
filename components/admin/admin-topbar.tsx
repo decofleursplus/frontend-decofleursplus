@@ -3,7 +3,7 @@
 import { Bell, Menu } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
 
 export function AdminTopbar() {
@@ -26,9 +26,10 @@ export function AdminTopbar() {
           <Image
             src="/logo_decofleur.jpeg"
             alt="Décofleur Plus"
-            width={32}
-            height={32}
-            className="h-7 w-7 object-contain rounded-md lg:hidden"
+            width={28}
+            height={28}
+            className="h-7 w-auto object-contain rounded-md lg:hidden"
+            style={{ width: 'auto' }}
           />
           <span className="admin-topbar-title">
             Back-office
@@ -47,11 +48,27 @@ export function AdminTopbar() {
           <Bell size={18} />
           <span className="admin-notif-dot" />
         </button>
-        <div className="admin-topbar-user">
-          <Avatar className="admin-topbar-avatar">
-            <AvatarFallback className="admin-topbar-avatar-fb">A</AvatarFallback>
-          </Avatar>
-          <span className="admin-topbar-username hidden sm:inline">Admin</span>
+        <div className="admin-topbar-user flex items-center gap-2.5 py-1 px-1.5 sm:px-2 rounded-full bg-white/70 border border-[#e7e4dd] hover:bg-white transition-all shadow-2xs">
+          <div className="relative">
+            <Avatar className="h-8 w-8 ring-2 ring-emerald-600/20">
+              <AvatarImage
+                src="/images/admin-avatar.jpg"
+                alt="Directrice DécoFleur Plus"
+                className="object-cover"
+              />
+              <AvatarFallback className="bg-[#102617] text-white text-xs font-bold">
+                DF
+              </AvatarFallback>
+            </Avatar>
+            <span
+              className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white"
+              title="En ligne"
+            />
+          </div>
+          <div className="hidden sm:flex flex-col text-left pr-1">
+            <span className="admin-topbar-username text-xs font-bold text-gray-800 leading-tight">Admin</span>
+            <span className="text-[10px] font-medium text-emerald-800 leading-none">Directrice</span>
+          </div>
         </div>
       </div>
     </header>

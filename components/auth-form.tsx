@@ -99,10 +99,11 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           <Image
             src="/logo_decofleur.jpeg"
             alt="Décofleur Plus"
-            width={160}
-            height={46}
+            width={52}
+            height={52}
             priority
             className="auth-brand-image"
+            style={{ width: 'auto' }}
           />
         </Link>
       </div>

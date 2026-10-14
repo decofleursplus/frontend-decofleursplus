@@ -106,12 +106,7 @@ const universCategories = [
     icon: Building2,
     tag: 'B2B',
   },
-  {
-    title: 'Promotions & Offres',
-    subtitle: 'Créations phares du moment',
-    href: '/boutique',
-    icon: Tag,
-  },
+
 ];
 
 // 4 campagnes saisonnières inspirées de la maquette
@@ -162,10 +157,6 @@ export default function HomePage() {
   // 4 featured products
   const featured = products.slice(0, 4);
 
-  const whatsappHeroUrl =
-    'https://wa.me/221779417860?text=' +
-    encodeURIComponent('Bonjour DécoFleur Plus, je souhaite passer une commande ou obtenir un conseil floral.');
-
   const whatsappScenoUrl =
     'https://wa.me/221779417860?text=' +
     encodeURIComponent('Bonjour DécoFleur Plus, je souhaite un devis pour une scénographie florale sur mesure.');
@@ -189,39 +180,18 @@ export default function HomePage() {
 
           <div className="content-width hero-inner">
             <div className="hero-content-left">
-              <div className="hero-eyebrow">
-                <Flower2 size={16} className="eyebrow-flower" />
-                <span>FLEURISTE · PRIMEUR · DÉCORATION · ÉVÉNEMENTIEL</span>
-              </div>
 
               <h1 className="hero-headline">
                 Des fleurs, des fruits,<br />
                 des idées, <span className="headline-em">des émotions&nbsp;!</span>
               </h1>
 
-              <p className="hero-subline">
-                Mariages, anniversaires, baptêmes, deuils, entreprises… Nous sublimons tous vos moments précieux
-                à Saly Portudal, sur la Petite Côte et les Îles du Saloum.
-              </p>
+
 
               <div className="hero-actions">
                 <Link href="/boutique" className="button-pill-pink">
                   Découvrir nos créations <ArrowRight size={17} />
                 </Link>
-                <a
-                  href={whatsappHeroUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="button-pill-outline hero-wa-btn"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-                >
-                  <WhatsAppIcon size={18} /> Commander sur WhatsApp
-                </a>
-              </div>
-
-              <div className="hero-script-tag-inline" style={{ marginTop: '18px' }}>
-                <span>Maison florale &amp; végétale · Saly Portudal, Sénégal</span>
-                <Heart size={14} fill="var(--pink)" color="var(--pink)" />
               </div>
             </div>
           </div>
