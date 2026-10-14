@@ -496,28 +496,28 @@ export function ExportReportDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[560px]">
+      <DialogContent className="w-[94vw] max-w-[560px] p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-pink-50 text-[#c1647a]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-pink-50 text-[#c1647a]">
               <Download className="h-5 w-5" />
             </div>
             <div>
-              <DialogTitle className="text-xl">Exporter un rapport d'activité</DialogTitle>
-              <DialogDescription className="text-sm text-gray-500">
-                Période sélectionnée : <span className="font-medium text-gray-900">{periodLabel}</span>
+              <DialogTitle className="text-lg sm:text-xl font-bold">Exporter un rapport d'activité</DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm text-gray-500">
+                Période : <span className="font-semibold text-gray-900">{periodLabel}</span>
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
-        <div className="space-y-5 py-2">
+        <div className="space-y-4 sm:space-y-5 py-2">
           {/* Sélection du Type de Rapport */}
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             <Label className="text-xs font-semibold uppercase text-gray-500">
               Type de rapport
             </Label>
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
               <button
                 type="button"
                 onClick={() => setReportType('sales')}
@@ -593,11 +593,11 @@ export function ExportReportDialog({
           </div>
 
           {/* Sélection du Format */}
-          <div className="space-y-2.5">
+          <div className="space-y-2 sm:space-y-2.5">
             <Label className="text-xs font-semibold uppercase text-gray-500">
               Format d'exportation
             </Label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
               <button
                 type="button"
                 onClick={() => setFormat('csv')}
@@ -633,14 +633,6 @@ export function ExportReportDialog({
                   <div className="text-xs text-gray-500">Mise en page officielle & branding</div>
                 </div>
               </button>
-            </div>
-          </div>
-
-          {/* Info note */}
-          <div className="flex items-start gap-2.5 rounded-lg border border-amber-100 bg-amber-50/60 p-3 text-xs text-amber-800">
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-            <div>
-              Les montants sont exprimés en <strong>Francs CFA (FCFA)</strong>. Les frais des passerelles de paiement (Wave 1%, OM 1%, Carte 2.5%) sont automatiquement déduits pour obtenir les flux nets réels.
             </div>
           </div>
         </div>

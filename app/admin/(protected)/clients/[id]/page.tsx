@@ -68,21 +68,22 @@ export default function CustomerProfilePage({ params }: { params: Promise<{ id: 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" render={<Link href="/admin/clients" />} className="h-9 w-9 rounded-xl border-[#e7e4dd]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="icon" render={<Link href="/admin/clients" />} className="h-9 w-9 shrink-0 rounded-xl border-[#e7e4dd]">
               <ArrowLeft className="h-4 w-4 text-gray-500" />
           </Button>
-          <div>
+          <div className="min-w-0">
             <h1 className="text-xl font-semibold text-[#1e2a1f]">Profil Client</h1>
+            <p className="text-sm text-gray-500 truncate max-w-[220px] sm:max-w-none">{customer.name}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
           <Button
             type="button"
             variant="outline"
             onClick={() => setIsEmailModalOpen(true)}
-            className="border-[#e7e4dd] text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef] hover:border-[#24582d]/30"
+            className="w-full sm:w-auto border-[#e7e4dd] text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef] hover:border-[#24582d]/30"
           >
             <Mail className="mr-2 h-4 w-4 text-[#24582d]" />
             Contacter par e-mail
@@ -174,30 +175,53 @@ export default function CustomerProfilePage({ params }: { params: Promise<{ id: 
             </CardHeader>
             <CardContent>
               {customerOrders.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Référence</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Statut</TableHead>
-                      <TableHead className="text-right">Montant</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <>
+                  {/* Desktop Orders Table */}
+                  <div className="hidden sm:block">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Référence</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Statut</TableHead>
+                          <TableHead className="text-right">Montant</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {customerOrders.map(order => (
+                          <TableRow key={order.id}>
+                            <TableCell>
+                              <Link href={`/admin/commandes/${order.id}`} className="font-medium text-[#24582d] hover:underline">
+                                {order.ref}
+                              </Link>
+                            </TableCell>
+                            <TableCell className="text-gray-600">{formatDate(order.date)}</TableCell>
+                            <TableCell>{getStatusBadge(order.status)}</TableCell>
+                            <TableCell className="text-right font-medium">{formatCurrency(order.total)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile Orders Cards */}
+                  <div className="sm:hidden space-y-2.5">
                     {customerOrders.map(order => (
-                      <TableRow key={order.id}>
-                        <TableCell>
-                          <Link href={`/admin/commandes/${order.id}`} className="font-medium text-[#24582d] hover:underline">
+                      <div key={order.id} className="p-3 bg-[#faf8f4] border border-[#e7e4dd] rounded-xl space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Link href={`/admin/commandes/${order.id}`} className="font-mono font-bold text-xs text-[#24582d] hover:underline">
                             {order.ref}
                           </Link>
-                        </TableCell>
-                        <TableCell className="text-gray-600">{formatDate(order.date)}</TableCell>
-                        <TableCell>{getStatusBadge(order.status)}</TableCell>
-                        <TableCell className="text-right font-medium">{formatCurrency(order.total)}</TableCell>
-                      </TableRow>
+                          <div>{getStatusBadge(order.status)}</div>
+                        </div>
+                        <div className="flex items-center justify-between text-xs pt-1 border-t border-[#f0ede6]">
+                          <span className="text-gray-500">{formatDate(order.date)}</span>
+                          <span className="font-bold text-gray-900">{formatCurrency(order.total)}</span>
+                        </div>
+                      </div>
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                </>
               ) : (
                 <div className="text-center py-6 text-gray-500 text-sm border border-dashed border-[#e7e4dd] rounded-lg">
                   Aucune commande trouvée pour ce client.

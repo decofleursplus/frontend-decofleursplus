@@ -516,9 +516,9 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
           )}
         </div>
 
-        {/* Card 1: Titre & Identifiant URL */}
+        {/* Card 1: Informations Générales (Titre, URL & Chapeau d'accroche) */}
         <Card className="border-[#ece8e1] shadow-xs">
-          <CardContent className="p-6 space-y-4">
+          <CardContent className="p-4 sm:p-6 space-y-4">
             <div>
               <Label htmlFor="post-title" className="text-xs font-bold text-[#333] uppercase tracking-wider block mb-1.5">
                 Titre principal de l’article <span className="text-red-500">*</span>
@@ -536,42 +536,49 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
               <Label htmlFor="post-slug" className="text-[11px] font-semibold text-[#666] block mb-1">
                 Identifiant URL (Slug public) :
               </Label>
-              <div className="flex items-center gap-1 text-xs">
-                <span className="text-[#888] font-mono bg-[#faf8f4] px-2.5 py-1.5 rounded-md border border-[#e7e4dd]">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 text-xs">
+                <span className="text-[#888] font-mono bg-[#faf8f4] px-2.5 py-1.5 rounded-md border border-[#e7e4dd] shrink-0 text-[11px] truncate">
                   https://decofleurplus.com/blog/
                 </span>
                 <Input
                   id="post-slug"
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
-                  className="font-mono text-xs text-[#24582d] h-9 border-[#e7e4dd] focus-visible:ring-[#24582d]"
+                  className="font-mono text-xs text-[#24582d] h-9 border-[#e7e4dd] focus-visible:ring-[#24582d] flex-1"
                   placeholder="permalink-automatique"
                 />
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Card 2: Chapeau / Résumé d'accroche */}
-        <Card className="border-[#ece8e1] shadow-xs">
-          <CardContent className="p-6 space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="post-excerpt" className="text-xs font-bold text-[#333] uppercase tracking-wider flex items-center gap-1.5">
-                <FileText size={13} className="text-[#24582d]" />
-                Extrait / Résumé d’accroche (Chapeau) <span className="text-red-500">*</span>
-              </Label>
-              <span className={`text-[11px] ${excerpt.length > 200 ? 'text-amber-600 font-semibold' : 'text-[#888]'}`}>
-                {excerpt.length} / 250 caractères recommandés
-              </span>
+            {/* Extrait / Chapeau d'accroche intégré */}
+            <div className="pt-2 border-t border-[#f0eee8] space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="post-excerpt" className="text-xs font-bold text-[#333] uppercase tracking-wider flex items-center gap-1.5">
+                  <FileText size={13} className="text-[#24582d]" />
+                  <span>Extrait / Résumé d’accroche (Chapeau)</span>
+                  <span className="text-red-500">*</span>
+                </Label>
+                <span className="text-[10.5px] text-gray-400 hidden sm:inline">
+                  Partages & cartes blog
+                </span>
+              </div>
+              <textarea
+                id="post-excerpt"
+                rows={3}
+                placeholder="Rédigez un court résumé percutant (qui apparaîtra en haut de l’article, sur les cartes de la page d'accueil du blog et lors des partages sur WhatsApp ou Facebook)..."
+                value={excerpt}
+                onChange={(e) => setExcerpt(e.target.value)}
+                className="w-full p-3 rounded-xl border border-[#e7e4dd] bg-white text-xs text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#24582d]/20 transition-all leading-relaxed resize-y"
+              />
+              <div className="flex items-center justify-between text-[11px] text-gray-500 px-0.5">
+                <span className="text-[10px] text-gray-400">
+                  Affiché sur la page d'accueil et les fiches articles
+                </span>
+                <span className={excerpt.length > 200 ? 'text-amber-600 font-semibold' : 'text-gray-400'}>
+                  {excerpt.length} / 250 caractères recommandés
+                </span>
+              </div>
             </div>
-            <textarea
-              id="post-excerpt"
-              rows={3}
-              placeholder="Rédigez un court résumé percutant qui apparaîtra en haut de l’article, sur les cartes de la page d'accueil du blog et lors des partages sur WhatsApp ou Facebook..."
-              value={excerpt}
-              onChange={(e) => setExcerpt(e.target.value)}
-              className="w-full p-3 rounded-xl border border-[#e7e4dd] bg-[#faf8f4] text-xs text-[#333] font-serif italic focus:outline-none focus:ring-2 focus:ring-[#24582d]/20 transition-all leading-relaxed"
-            />
           </CardContent>
         </Card>
 

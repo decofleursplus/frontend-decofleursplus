@@ -1,4 +1,4 @@
-const VERSION = 'decofleur-pwa-v1';
+const VERSION = 'decofleur-pwa-v2';
 const SHELL = `${VERSION}-shell`;
 const STATIC = `${VERSION}-static`;
 const SHELL_URLS = ['/offline.html', '/icons/icon.svg', '/icons/icon-maskable.svg'];
@@ -18,6 +18,14 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
+
+  // In local development, never cache or intercept assets to ensure HMR and live updates
+  const isLocalhost = Boolean(
+    self.location.hostname === 'localhost' ||
+    self.location.hostname === '[::1]' ||
+    self.location.hostname.match(/^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/)
+  );
+  if (isLocalhost) return;
 
   if (request.mode === 'navigate') {
     event.respondWith(fetch(request).catch(async () =>

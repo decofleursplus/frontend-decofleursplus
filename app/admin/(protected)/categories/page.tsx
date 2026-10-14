@@ -159,17 +159,17 @@ export default function AdminCategoriesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="admin-page-header">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="admin-page-title text-[#1e2a1f] font-bold">Gestion des catégories</h1>
-          <p className="admin-page-subtitle text-gray-500 mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-[#1e2a1f]">Gestion des catégories</h1>
+          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
             Gérez les catégories de votre catalogue pour organiser vos produits.
           </p>
         </div>
         <Button
           onClick={handleOpenCreateDialog}
           variant="cta"
-          className="bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs font-medium"
+          className="bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs font-medium w-full sm:w-auto h-10 shrink-0"
         >
           <Plus className="h-4 w-4 mr-2" />
           Ajouter une catégorie
@@ -177,47 +177,74 @@ export default function AdminCategoriesPage() {
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border border-[#e7e4dd]">
-        <div className="relative w-full sm:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Rechercher une catégorie..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 border-[#e7e4dd] focus-visible:ring-[#24582d]/20"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500 font-medium">Statut :</span>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'actif' | 'inactif')}
-              className="flex h-9 rounded-lg border border-[#e7e4dd] bg-white px-3 py-1 text-xs text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#24582d]"
-            >
-              <option value="all">Toutes les catégories</option>
-              <option value="actif">Actives uniquement</option>
-              <option value="inactif">Inactives uniquement</option>
-            </select>
+      <div className="space-y-3 bg-white p-3.5 sm:p-4 rounded-xl border border-[#e7e4dd]">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="relative w-full sm:w-96">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Rechercher une catégorie..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-10 border-[#e7e4dd] focus-visible:ring-[#24582d]/20 text-sm"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
 
-          <span className="text-xs text-gray-500 font-medium whitespace-nowrap bg-[#faf8f4] px-2.5 py-1 rounded-md border border-[#e7e4dd]">
+          <span className="hidden sm:inline-flex text-xs text-gray-500 font-medium whitespace-nowrap bg-[#faf8f4] px-2.5 py-1.5 rounded-lg border border-[#e7e4dd]">
             {filteredCategories.length} catégorie{filteredCategories.length > 1 ? 's' : ''}
+          </span>
+        </div>
+
+        {/* Status Filter Pills (Horizontal scrollable on mobile) */}
+        <div className="flex items-center justify-between gap-2 pt-1 border-t border-[#f0eee8]">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar flex-nowrap sm:flex-wrap">
+            <button
+              onClick={() => setStatusFilter('all')}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                statusFilter === 'all'
+                  ? 'bg-[#24582d] text-white shadow-xs'
+                  : 'bg-[#faf8f4] text-gray-600 border border-[#e7e4dd] hover:bg-gray-100'
+              }`}
+            >
+              Toutes ({categories.length})
+            </button>
+            <button
+              onClick={() => setStatusFilter('actif')}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                statusFilter === 'actif'
+                  ? 'bg-[#166534] text-white shadow-xs'
+                  : 'bg-[#faf8f4] text-gray-600 border border-[#e7e4dd] hover:bg-gray-100'
+              }`}
+            >
+              Actives ({categories.filter((c) => c.status === 'actif').length})
+            </button>
+            <button
+              onClick={() => setStatusFilter('inactif')}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                statusFilter === 'inactif'
+                  ? 'bg-gray-700 text-white shadow-xs'
+                  : 'bg-[#faf8f4] text-gray-600 border border-[#e7e4dd] hover:bg-gray-100'
+              }`}
+            >
+              Inactives ({categories.filter((c) => c.status === 'inactif').length})
+            </button>
+          </div>
+
+          <span className="sm:hidden text-xs text-gray-500 font-medium whitespace-nowrap bg-[#faf8f4] px-2 py-1 rounded-md border border-[#e7e4dd] shrink-0">
+            {filteredCategories.length}
           </span>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-[#e7e4dd] overflow-hidden shadow-xs">
+      {/* Desktop Table View (>= 1024px) */}
+      <div className="hidden lg:block bg-white rounded-xl border border-[#e7e4dd] overflow-hidden shadow-xs">
         <Table>
           <TableHeader className="bg-[#faf8f4]">
             <TableRow>
@@ -356,9 +383,115 @@ export default function AdminCategoriesPage() {
         </Table>
       </div>
 
+      {/* Mobile Card View (< 1024px) */}
+      <div className="lg:hidden space-y-3">
+        {filteredCategories.map((category) => (
+          <div
+            key={category.id}
+            className="bg-white rounded-xl border border-[#e7e4dd] p-4 shadow-xs space-y-3"
+          >
+            {/* Header: Icon, Name & Status Badge */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="h-9 w-9 rounded-lg bg-[#edf8ef] text-[#24582d] flex items-center justify-center shrink-0">
+                  <FolderTree className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-sm text-[#1e2a1f] truncate">{category.name}</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    ID: <span className="font-mono">{category.id}</span>
+                  </p>
+                </div>
+              </div>
+
+              {category.status === 'actif' ? (
+                <Badge className="bg-[#dcfce7] text-[#166534] shadow-none border-none text-[11px] font-semibold shrink-0">
+                  Actif
+                </Badge>
+              ) : (
+                <Badge className="bg-gray-100 text-gray-600 shadow-none border-none text-[11px] font-semibold shrink-0">
+                  Inactif
+                </Badge>
+              )}
+            </div>
+
+            {/* Description */}
+            <p className="text-xs text-gray-600 leading-relaxed bg-[#faf8f4] p-2.5 rounded-lg border border-[#f0eee8]">
+              {category.description || (
+                <span className="text-gray-400 italic">Aucune description renseignée</span>
+              )}
+            </p>
+
+            {/* Metrics & Actions */}
+            <div className="flex items-center justify-between gap-2 pt-1 border-t border-[#f0eee8]">
+              <Link
+                href={`/admin/produits?categorie=${encodeURIComponent(category.name)}`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#edf8ef] text-[#24582d] border border-[#b0c8a8]/40 hover:bg-[#d8eedb] transition-colors"
+              >
+                <PackageCheck className="h-3.5 w-3.5" />
+                <span>{category.productCount} produit{category.productCount > 1 ? 's' : ''}</span>
+              </Link>
+
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => handleToggleStatus(category)}
+                  className={`h-8 w-8 rounded-lg flex items-center justify-center border transition-colors ${
+                    category.status === 'actif'
+                      ? 'border-[#e7e4dd] text-gray-500 hover:text-amber-600 hover:bg-amber-50'
+                      : 'border-[#24582d]/30 text-[#24582d] bg-[#edf8ef]'
+                  }`}
+                  title={category.status === 'actif' ? 'Désactiver' : 'Activer'}
+                >
+                  <Power className="h-3.5 w-3.5" />
+                </button>
+
+                <button
+                  onClick={() => handleOpenEditDialog(category)}
+                  className="h-8 w-8 rounded-lg flex items-center justify-center border border-[#e7e4dd] text-gray-600 hover:text-[#24582d] hover:bg-[#edf8ef] transition-colors"
+                  title="Modifier"
+                >
+                  <Edit2 className="h-3.5 w-3.5" />
+                </button>
+
+                <button
+                  onClick={() => setCategoryToDelete(category)}
+                  className="h-8 w-8 rounded-lg flex items-center justify-center border border-[#e7e4dd] text-red-600 hover:bg-red-50 transition-colors"
+                  title="Supprimer"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {filteredCategories.length === 0 && (
+          <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center space-y-2">
+            <FolderTree className="h-8 w-8 text-gray-300 mx-auto" />
+            <p className="font-semibold text-sm text-gray-700">Aucune catégorie trouvée</p>
+            <p className="text-xs text-gray-400">
+              Modifiez votre recherche ou réinitialisez les filtres.
+            </p>
+            {(searchQuery || statusFilter !== 'all') && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchQuery('');
+                  setStatusFilter('all');
+                }}
+                className="mt-2 text-xs border-[#e7e4dd]"
+              >
+                Réinitialiser
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Modal Dialog: Add / Edit Category */}
       <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
-        <DialogContent className="sm:max-w-md bg-white border border-[#e7e4dd] p-6 rounded-2xl shadow-xl">
+        <DialogContent className="w-[94vw] max-w-md bg-white border border-[#e7e4dd] p-5 sm:p-6 rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center gap-2 text-[#24582d]">
               <FolderTree className="h-5 w-5" />
@@ -415,19 +548,19 @@ export default function AdminCategoriesPage() {
               </select>
             </div>
 
-            <DialogFooter className="gap-2 pt-4">
+            <DialogFooter className="flex-col sm:flex-row gap-2 pt-4">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsFormDialogOpen(false)}
-                className="border-[#e7e4dd] text-gray-600 hover:bg-gray-100"
+                className="w-full sm:w-auto border-[#e7e4dd] text-gray-600 hover:bg-gray-100"
               >
                 Annuler
               </Button>
               <Button
                 type="submit"
                 variant="cta"
-                className="bg-[#c1647a] hover:bg-[#a9576a] !text-white font-medium"
+                className="w-full sm:w-auto bg-[#c1647a] hover:bg-[#a9576a] !text-white font-medium"
               >
                 {editingCategory ? 'Enregistrer les modifications' : 'Créer la catégorie'}
               </Button>
@@ -441,7 +574,7 @@ export default function AdminCategoriesPage() {
         open={!!categoryToDelete}
         onOpenChange={(open) => !open && setCategoryToDelete(null)}
       >
-        <DialogContent className="sm:max-w-md bg-white border border-[#e7e4dd] p-6 rounded-2xl shadow-xl">
+        <DialogContent className="w-[94vw] max-w-md bg-white border border-[#e7e4dd] p-5 sm:p-6 rounded-2xl shadow-xl">
           <DialogHeader>
             <div className="flex items-center gap-2 text-red-600">
               <AlertTriangle className="h-5 w-5" />

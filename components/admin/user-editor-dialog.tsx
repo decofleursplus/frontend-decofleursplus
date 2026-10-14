@@ -94,7 +94,7 @@ export function UserEditorDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px] max-h-[calc(100vh-3rem)] overflow-y-auto p-4 sm:p-6">
+      <DialogContent className="w-[94vw] max-w-[520px] max-h-[calc(100vh-3rem)] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-pink-50 text-[#c1647a]">
@@ -181,33 +181,38 @@ export function UserEditorDialog({
             </div>
 
             <div className="grid grid-cols-1 gap-2 pt-1">
-              {adminRolesList.map((r) => {
-                const isSelected = role === r.key;
-                return (
-                  <div
-                    key={r.key}
-                    onClick={() => setRole(r.key)}
-                    className={`flex items-start justify-between rounded-lg border p-2.5 cursor-pointer transition-all ${
-                      isSelected
-                        ? 'border-[#c1647a] bg-pink-50/40 shadow-xs'
-                        : 'border-gray-200 hover:border-gray-300 bg-white'
-                    }`}
-                  >
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-xs text-gray-900">{r.label}</span>
+              {adminRolesList
+                .filter((r) => r.key !== 'livreur')
+                .map((r) => {
+                  const isSelected = role === r.key;
+                  return (
+                    <div
+                      key={r.key}
+                      onClick={() => setRole(r.key)}
+                      className={`flex items-start justify-between rounded-lg border p-2.5 cursor-pointer transition-all ${
+                        isSelected
+                          ? 'border-[#c1647a] bg-pink-50/40 shadow-xs'
+                          : 'border-gray-200 hover:border-gray-300 bg-white'
+                      }`}
+                    >
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-xs text-gray-900">{r.label}</span>
+                        </div>
+                        <p className="text-[11px] text-gray-500 leading-relaxed">
+                          {r.description}
+                        </p>
                       </div>
-                      <p className="text-[11px] text-gray-500 leading-relaxed">
-                        {r.description}
-                      </p>
+                      {isSelected && (
+                        <CheckCircle2 className="h-4 w-4 text-[#c1647a] shrink-0 mt-0.5" />
+                      )}
                     </div>
-                    {isSelected && (
-                      <CheckCircle2 className="h-4 w-4 text-[#c1647a] shrink-0 mt-0.5" />
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                })}
             </div>
+            <p className="text-[10.5px] text-gray-400 italic pt-0.5">
+              Note : Les livreurs et coursiers sont gérés directement dans le module Livraisons.
+            </p>
           </div>
 
           {/* Statut du compte */}

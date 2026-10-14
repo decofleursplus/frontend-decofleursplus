@@ -235,7 +235,7 @@ export default function AdminOrdersPage() {
               render={
                 <Button
                   variant="outline"
-                  className={`border-[#e7e4dd] w-full sm:w-auto transition-colors ${
+                  className={`border-[#e7e4dd] flex-1 sm:w-auto transition-colors ${
                     activeFiltersCount > 0
                       ? 'border-[#c1647a] text-[#c1647a] bg-[#fdf5f7]'
                       : 'text-gray-700 hover:bg-[#faf8f4]'
@@ -243,10 +243,10 @@ export default function AdminOrdersPage() {
                 />
               }
             >
-              <Filter className="mr-2 h-4 w-4" />
-              Filtres
+              <Filter className="mr-2 h-4 w-4 shrink-0" />
+              <span>Filtres</span>
               {activeFiltersCount > 0 && (
-                <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#c1647a] text-[11px] font-bold text-white">
+                <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#c1647a] text-[11px] font-bold text-white shrink-0">
                   {activeFiltersCount}
                 </span>
               )}
@@ -367,7 +367,7 @@ export default function AdminOrdersPage() {
               variant="ghost"
               size="sm"
               onClick={handleResetFilters}
-              className="text-xs text-gray-500 hover:text-[#c1647a]"
+              className="text-xs text-gray-500 hover:text-[#c1647a] shrink-0"
             >
               Réinitialiser
             </Button>
@@ -406,8 +406,163 @@ export default function AdminOrdersPage() {
         </div>
       )}
 
-      {/* Orders Table */}
-      <div className="bg-white rounded-xl border border-[#e7e4dd] overflow-hidden shadow-xs">
+      {/* Status Quick Tabs */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar">
+        {[
+          { label: 'Toutes', value: 'all', count: orders.length },
+          { label: 'En préparation', value: 'en_preparation', count: orders.filter((o) => o.status === 'en_preparation').length },
+          { label: 'En livraison', value: 'en_livraison', count: orders.filter((o) => o.status === 'en_livraison').length },
+          { label: 'Livrées', value: 'livree', count: orders.filter((o) => o.status === 'livree').length },
+          { label: 'Annulées', value: 'annulee', count: orders.filter((o) => o.status === 'annulee').length },
+        ].map((tab) => {
+          const isActive = statusFilter === tab.value;
+          return (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => setStatusFilter(tab.value)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors shrink-0 ${
+                isActive
+                  ? 'bg-[#193e23] text-white shadow-2xs'
+                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-[#e7e4dd]'
+              }`}
+            >
+              <span>{tab.label}</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                  isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                }`}
+              >
+                {tab.count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Mobile Orders Card View (visible on < lg) */}
+      <div className="space-y-3 lg:hidden">
+        {filteredOrders.map((order) => (
+          <div
+            key={order.id}
+            className="bg-white rounded-xl border border-[#e7e4dd] p-3.5 shadow-2xs space-y-2.5"
+          >
+            <div className="flex items-center justify-between">
+              <Link
+                href={`/admin/commandes/${order.id}`}
+                className="font-mono font-bold text-sm text-[#1e2a1f] hover:text-[#24582d]"
+              >
+                {order.ref}
+              </Link>
+              <div className="flex items-center gap-1.5">
+                {getStatusBadge(order.status)}
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100">
+                    <MoreHorizontal size={16} />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52 p-1.5 rounded-xl border border-[#e7e4dd] bg-white shadow-xl">
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel className="px-2.5 py-1 text-[10.5px] font-bold text-gray-400 uppercase tracking-wider">
+                        Actions
+                      </DropdownMenuLabel>
+                      <DropdownMenuItem
+                        className="cursor-pointer font-medium py-1.5 px-2.5 rounded-lg text-xs text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef]"
+                        render={<Link href={`/admin/commandes/${order.id}`} />}
+                      >
+                        <Eye className="mr-2 h-3.5 w-3.5 text-[#24582d]" />
+                        Détails de la commande
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="cursor-pointer font-medium py-1.5 px-2.5 rounded-lg text-xs text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef]"
+                        onClick={() => toast.info('Impression facture lancée')}
+                      >
+                        <Printer className="mr-2 h-3.5 w-3.5 text-gray-500" />
+                        Imprimer facture
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                    <DropdownMenuSeparator className="my-1 border-t border-[#f0eee8]" />
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel className="px-2.5 py-1 text-[10.5px] font-bold text-gray-400 uppercase tracking-wider">
+                        Changer statut
+                      </DropdownMenuLabel>
+                      <DropdownMenuItem
+                        className="cursor-pointer font-medium py-1.5 px-2.5 rounded-lg text-xs text-gray-700 hover:bg-blue-50 hover:text-[#3d5a99]"
+                        onClick={() => handleUpdateStatus(order.id, 'en_livraison')}
+                      >
+                        <Truck className="mr-2 h-3.5 w-3.5 text-[#3d5a99]" />
+                        En livraison
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="cursor-pointer font-medium py-1.5 px-2.5 rounded-lg text-xs text-gray-700 hover:bg-emerald-50 hover:text-[#166534]"
+                        onClick={() => handleUpdateStatus(order.id, 'livree')}
+                      >
+                        <CheckCircle className="mr-2 h-3.5 w-3.5 text-[#166534]" />
+                        Marquer livrée
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="cursor-pointer font-medium py-1.5 px-2.5 rounded-lg text-xs text-red-600 hover:bg-red-50"
+                        onClick={() => handleUpdateStatus(order.id, 'annulee')}
+                      >
+                        <XCircle className="mr-2 h-3.5 w-3.5 text-red-600" />
+                        Annuler commande
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold text-gray-900 truncate max-w-[190px]">
+                {order.customerName}
+              </span>
+              <span className="text-gray-400 text-[11px] shrink-0">
+                {formatDate(order.date)}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 text-[11px] text-gray-500">
+              <span className="bg-[#faf8f4] px-2 py-0.5 rounded-md border border-[#e7e4dd] truncate">
+                {order.deliveryMode}
+              </span>
+              <span>•</span>
+              <span>{order.items.length} article{order.items.length > 1 ? 's' : ''}</span>
+            </div>
+
+            <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-wider text-gray-400 block">Montant</span>
+                <span className="font-bold text-sm text-[#24582d]">{formatCurrency(order.total)}</span>
+              </div>
+              <Link
+                href={`/admin/commandes/${order.id}`}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#24582d]/20 bg-[#edf8ef] text-xs font-semibold text-[#24582d] hover:bg-[#e2f3e5] transition-colors"
+              >
+                <span>Détails</span>
+                <Eye size={13} />
+              </Link>
+            </div>
+          </div>
+        ))}
+
+        {filteredOrders.length === 0 && (
+          <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-gray-500 space-y-2">
+            <ShoppingBag className="h-8 w-8 text-gray-300 mx-auto" />
+            <p className="font-medium text-gray-700 text-sm">Aucune commande trouvée</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleResetFilters}
+              className="mt-2 text-xs border-[#e7e4dd]"
+            >
+              Effacer les filtres
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Orders Desktop Table (visible on lg+) */}
+      <div className="hidden lg:block bg-white rounded-xl border border-[#e7e4dd] overflow-hidden shadow-xs">
         <Table>
           <TableHeader className="bg-[#faf8f4]">
             <TableRow>

@@ -89,7 +89,7 @@ export function CreateCouponDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 custom-modal-scroll [&_[data-slot=dialog-close]]:top-6 [&_[data-slot=dialog-close]]:right-6 sm:[&_[data-slot=dialog-close]]:top-8 sm:[&_[data-slot=dialog-close]]:right-8">
+      <DialogContent className="w-[94vw] max-w-2xl max-h-[90vh] overflow-y-auto p-5 sm:p-8 custom-modal-scroll [&_[data-slot=dialog-close]]:top-5 [&_[data-slot=dialog-close]]:right-5 sm:[&_[data-slot=dialog-close]]:top-8 sm:[&_[data-slot=dialog-close]]:right-8">
         <form onSubmit={handleSubmit}>
           <DialogHeader className="space-y-1.5 pb-2">
             <DialogTitle className="text-xl font-bold text-[#1e2a1f] flex items-center gap-2.5">

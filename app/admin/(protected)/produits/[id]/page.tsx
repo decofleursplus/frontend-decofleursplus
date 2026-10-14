@@ -42,28 +42,28 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" render={<Link href="/admin/produits" />} className="h-9 w-9 rounded-xl border-[#e7e4dd]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="icon" render={<Link href="/admin/produits" />} className="h-9 w-9 shrink-0 rounded-xl border-[#e7e4dd]">
               <ArrowLeft className="h-4 w-4 text-gray-500" />
           </Button>
-          <div>
+          <div className="min-w-0">
             <h1 className="text-xl font-semibold text-[#1e2a1f]">Modifier le produit</h1>
-            <p className="text-sm text-gray-500">{product.name}</p>
+            <p className="text-sm text-gray-500 truncate max-w-[240px] sm:max-w-none">{product.name}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" className="border-red-200 text-red-600 hover:bg-red-50">
-            <Trash2 className="mr-2 h-4 w-4" />
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <Button variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 flex-1 sm:flex-initial">
+            <Trash2 className="mr-1.5 h-4 w-4" />
             Supprimer
           </Button>
           <Button 
             variant="cta"
-            className="bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs" 
+            className="bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs flex-1 sm:flex-initial" 
             onClick={handleSubmit}
             disabled={isSubmitting}
           >
-            <Save className="mr-2 h-4 w-4 text-white" />
+            <Save className="mr-1.5 h-4 w-4 text-white" />
             {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
           </Button>
         </div>

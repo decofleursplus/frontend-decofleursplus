@@ -393,12 +393,12 @@ export function ArticleEditorDialog({
                 </div>
               </div>
 
-              <div>
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="article-excerpt" className="text-xs font-semibold text-[#444]">
                     Extrait / Résumé d’accroche (Chapeau) <span className="text-red-500">*</span>
                   </Label>
-                  <span className="text-[11px] text-[#888]">{excerpt.length} caractères</span>
+                  <span className="text-[10.5px] text-gray-400">Réseaux & accueil</span>
                 </div>
                 <textarea
                   id="article-excerpt"
@@ -406,8 +406,11 @@ export function ArticleEditorDialog({
                   placeholder="Bref résumé accrocheur affiché sur la page d'accueil du blog et les réseaux sociaux..."
                   value={excerpt}
                   onChange={(e) => setExcerpt(e.target.value)}
-                  className="mt-1 w-full p-2.5 rounded-md border border-[#e7e4dd] bg-white text-xs text-[#333] focus:outline-none focus:ring-2 focus:ring-[#24582d]/20 leading-relaxed"
+                  className="w-full p-2.5 rounded-lg border border-[#e7e4dd] bg-white text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#24582d]/20 leading-relaxed"
                 />
+                <div className="flex justify-end text-[10.5px] text-[#888]">
+                  <span>{excerpt.length} / 250 caractères recommandés</span>
+                </div>
               </div>
 
               {/* Rich Content Editor */}

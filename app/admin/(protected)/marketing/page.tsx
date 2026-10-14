@@ -50,7 +50,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { WhatsAppColorIcon } from '@/components/icons';
+import { WhatsAppColorIcon, WhatsAppButtonIcon } from '@/components/icons';
 import { CreateCouponDialog } from '@/components/admin/create-coupon-dialog';
 import { CreatePromotionDialog } from '@/components/admin/create-promotion-dialog';
 import { CreateCampaignDialog } from '@/components/admin/create-campaign-dialog';
@@ -389,19 +389,19 @@ export default function AdminMarketingPage() {
   return (
     <div className="space-y-6">
       {/* Page Header with contextual Create Button */}
-      <div className="admin-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="admin-page-title text-[#1e2a1f] font-bold">Marketing & Promotions</h1>
-          <p className="admin-page-subtitle text-gray-500 mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-[#1e2a1f]">Marketing & Promotions</h1>
+          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
             Créez des offres attractives, fidélisez vos clients via WhatsApp & SMS et récupérez vos ventes perdues.
           </p>
         </div>
 
-        <div>
+        <div className="w-full sm:w-auto">
           {activeTab === 'coupons' && (
             <Button
               onClick={() => setIsCouponDialogOpen(true)}
-              className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold h-10 px-4 gap-1.5 shadow-xs"
+              className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold h-10 px-4 gap-1.5 shadow-xs w-full sm:w-auto"
             >
               <Plus className="h-4 w-4" />
               Nouveau code promo
@@ -411,7 +411,7 @@ export default function AdminMarketingPage() {
           {activeTab === 'promotions' && (
             <Button
               onClick={() => setIsPromotionDialogOpen(true)}
-              className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold h-10 px-4 gap-1.5 shadow-xs"
+              className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold h-10 px-4 gap-1.5 shadow-xs w-full sm:w-auto"
             >
               <Plus className="h-4 w-4" />
               Lancer une promotion
@@ -421,7 +421,7 @@ export default function AdminMarketingPage() {
           {activeTab === 'campagnes' && (
             <Button
               onClick={() => setIsCampaignDialogOpen(true)}
-              className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold h-10 px-4 gap-1.5 shadow-xs"
+              className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold h-10 px-4 gap-1.5 shadow-xs w-full sm:w-auto"
             >
               <Plus className="h-4 w-4" />
               Nouvelle campagne
@@ -432,7 +432,7 @@ export default function AdminMarketingPage() {
             <Button
               variant="outline"
               onClick={() => setIsConfigDialogOpen(true)}
-              className="border-[#e7e4dd] text-gray-800 hover:text-[#c1647a] text-xs font-semibold h-10 px-4 gap-1.5 bg-white shadow-xs"
+              className="border-[#e7e4dd] text-gray-800 hover:text-[#c1647a] text-xs font-semibold h-10 px-4 gap-1.5 bg-white shadow-xs w-full sm:w-auto"
             >
               <Sliders className="h-4 w-4 text-[#c1647a]" />
               Configuration automatique
@@ -441,77 +441,77 @@ export default function AdminMarketingPage() {
         </div>
       </div>
 
-      {/* Top Marketing KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-[#e7e4dd] rounded-xl p-4 shadow-xs space-y-1">
-          <div className="flex items-center justify-between text-gray-500 text-xs">
-            <span>CA Promotionnel généré</span>
-            <div className="h-7 w-7 rounded-lg bg-[#fdf2f4] text-[#c1647a] flex items-center justify-center">
-              <DollarSign className="h-4 w-4" />
+      {/* Top Marketing KPI Cards (2x2 on mobile, 4 on desktop) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white border border-[#e7e4dd] rounded-xl p-3 sm:p-4 shadow-xs space-y-1">
+          <div className="flex items-center justify-between text-gray-500 text-[11px] sm:text-xs">
+            <span className="truncate">CA Promo</span>
+            <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg bg-[#fdf2f4] text-[#c1647a] flex items-center justify-center shrink-0">
+              <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
           </div>
-          <p className="text-xl font-bold text-gray-900 font-mono">
-            {kpiStats.totalRevenue.toLocaleString('fr-FR')} FCFA
+          <p className="text-sm sm:text-xl font-bold text-gray-900 font-mono truncate">
+            {kpiStats.totalRevenue.toLocaleString('fr-FR')} F
           </p>
-          <p className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
-            <TrendingUp className="h-3 w-3" />
-            +18.4% ce mois-ci
+          <p className="text-[10px] sm:text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+            <TrendingUp className="h-3 w-3 shrink-0" />
+            <span>+18.4%</span>
           </p>
         </div>
 
-        <div className="bg-white border border-[#e7e4dd] rounded-xl p-4 shadow-xs space-y-1">
-          <div className="flex items-center justify-between text-gray-500 text-xs">
-            <span>Offres actives en boutique</span>
-            <div className="h-7 w-7 rounded-lg bg-[#dcfce7] text-[#166534] flex items-center justify-center">
-              <Tag className="h-4 w-4" />
+        <div className="bg-white border border-[#e7e4dd] rounded-xl p-3 sm:p-4 shadow-xs space-y-1">
+          <div className="flex items-center justify-between text-gray-500 text-[11px] sm:text-xs">
+            <span className="truncate">Offres actives</span>
+            <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg bg-[#dcfce7] text-[#166534] flex items-center justify-center shrink-0">
+              <Tag className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
           </div>
-          <p className="text-xl font-bold text-gray-900">
-            {kpiStats.activeCouponsCount} codes • {kpiStats.activePromosCount} promos
+          <p className="text-xs sm:text-lg lg:text-xl font-bold text-gray-900 leading-snug whitespace-nowrap">
+            {`${kpiStats.activeCouponsCount} codes • ${kpiStats.activePromosCount} promos`}
           </p>
-          <p className="text-[11px] text-gray-500 font-medium">
-            Surveillance en temps réel
+          <p className="text-[10px] sm:text-[11px] text-gray-500 font-medium">
+            En temps réel
           </p>
         </div>
 
-        <div className="bg-white border border-[#e7e4dd] rounded-xl p-4 shadow-xs space-y-1">
-          <div className="flex items-center justify-between text-gray-500 text-xs">
-            <span>Taux de réactivité campagnes</span>
-            <div className="h-7 w-7 rounded-lg bg-[#e5eaff] text-[#3d5a99] flex items-center justify-center">
-              <Megaphone className="h-4 w-4" />
+        <div className="bg-white border border-[#e7e4dd] rounded-xl p-3 sm:p-4 shadow-xs space-y-1">
+          <div className="flex items-center justify-between text-gray-500 text-[11px] sm:text-xs">
+            <span className="truncate">Réactivité</span>
+            <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg bg-[#e5eaff] text-[#3d5a99] flex items-center justify-center shrink-0">
+              <Megaphone className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
           </div>
-          <p className="text-xl font-bold text-gray-900">94.2% WhatsApp</p>
-          <p className="text-[11px] text-[#3d5a99] font-medium">
-            32.5% de taux de clics
+          <p className="text-sm sm:text-xl font-bold text-gray-900 truncate">94.2% WA</p>
+          <p className="text-[10px] sm:text-[11px] text-[#3d5a99] font-medium">
+            32.5% clics
           </p>
         </div>
 
-        <div className="bg-white border border-[#e7e4dd] rounded-xl p-4 shadow-xs space-y-1">
-          <div className="flex items-center justify-between text-gray-500 text-xs">
-            <span>Paniers récupérés</span>
-            <div className="h-7 w-7 rounded-lg bg-[#fff8cc] text-[#9a7b00] flex items-center justify-center">
-              <ShoppingCart className="h-4 w-4" />
+        <div className="bg-white border border-[#e7e4dd] rounded-xl p-3 sm:p-4 shadow-xs space-y-1">
+          <div className="flex items-center justify-between text-gray-500 text-[11px] sm:text-xs">
+            <span className="truncate">Paniers sauvés</span>
+            <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg bg-[#fff8cc] text-[#9a7b00] flex items-center justify-center shrink-0">
+              <ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
           </div>
-          <p className="text-xl font-bold text-gray-900 font-mono">
-            {kpiStats.recoveredRevenue.toLocaleString('fr-FR')} FCFA
+          <p className="text-sm sm:text-xl font-bold text-gray-900 font-mono truncate">
+            {kpiStats.recoveredRevenue.toLocaleString('fr-FR')} F
           </p>
-          <p className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
-            <CheckCircle className="h-3 w-3" />
-            {kpiStats.recoveryRate}% des paniers convertis
+          <p className="text-[10px] sm:text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+            <CheckCircle className="h-3 w-3 shrink-0" />
+            <span>{kpiStats.recoveryRate}% convertis</span>
           </p>
         </div>
       </div>
 
-      {/* Main Top Navigation Tabs */}
-      <div className="flex border-b border-[#e7e4dd] gap-2 overflow-x-auto overflow-y-hidden">
+      {/* Main Top Navigation Tabs (Horizontally scrollable on mobile) */}
+      <div className="flex border-b border-[#e7e4dd] gap-2 overflow-x-auto no-scrollbar flex-nowrap pb-1">
         <button
           onClick={() => {
             setActiveTab('coupons');
             setSearchQuery('');
           }}
-          className={`flex items-center gap-2 pb-3 px-4 text-sm font-semibold transition-all border-b-2 -mb-[1px] whitespace-nowrap ${
+          className={`flex items-center gap-2 pb-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold transition-all border-b-2 -mb-[1px] whitespace-nowrap shrink-0 ${
             activeTab === 'coupons'
               ? 'border-[#24582d] text-[#24582d]'
               : 'border-transparent text-gray-500 hover:text-gray-900'
@@ -519,7 +519,7 @@ export default function AdminMarketingPage() {
         >
           <Tag className="h-4 w-4" />
           <span>Codes promo & Coupons</span>
-          <span className="ml-1 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">
+          <span className="ml-1 text-[11px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">
             {coupons.length}
           </span>
         </button>
@@ -529,7 +529,7 @@ export default function AdminMarketingPage() {
             setActiveTab('promotions');
             setSearchQuery('');
           }}
-          className={`flex items-center gap-2 pb-3 px-4 text-sm font-semibold transition-all border-b-2 -mb-[1px] whitespace-nowrap ${
+          className={`flex items-center gap-2 pb-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold transition-all border-b-2 -mb-[1px] whitespace-nowrap shrink-0 ${
             activeTab === 'promotions'
               ? 'border-[#24582d] text-[#24582d]'
               : 'border-transparent text-gray-500 hover:text-gray-900'
@@ -537,7 +537,7 @@ export default function AdminMarketingPage() {
         >
           <BadgePercent className="h-4 w-4" />
           <span>Promotions directes</span>
-          <span className="ml-1 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">
+          <span className="ml-1 text-[11px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">
             {promotions.length}
           </span>
         </button>
@@ -547,7 +547,7 @@ export default function AdminMarketingPage() {
             setActiveTab('campagnes');
             setSearchQuery('');
           }}
-          className={`flex items-center gap-2 pb-3 px-4 text-sm font-semibold transition-all border-b-2 -mb-[1px] whitespace-nowrap ${
+          className={`flex items-center gap-2 pb-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold transition-all border-b-2 -mb-[1px] whitespace-nowrap shrink-0 ${
             activeTab === 'campagnes'
               ? 'border-[#24582d] text-[#24582d]'
               : 'border-transparent text-gray-500 hover:text-gray-900'
@@ -555,7 +555,7 @@ export default function AdminMarketingPage() {
         >
           <Megaphone className="h-4 w-4" />
           <span>Campagnes marketing</span>
-          <span className="ml-1 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">
+          <span className="ml-1 text-[11px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">
             {campaigns.length}
           </span>
         </button>
@@ -565,7 +565,7 @@ export default function AdminMarketingPage() {
             setActiveTab('paniers');
             setSearchQuery('');
           }}
-          className={`flex items-center gap-2 pb-3 px-4 text-sm font-semibold transition-all border-b-2 -mb-[1px] whitespace-nowrap ${
+          className={`flex items-center gap-2 pb-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold transition-all border-b-2 -mb-[1px] whitespace-nowrap shrink-0 ${
             activeTab === 'paniers'
               ? 'border-[#24582d] text-[#24582d]'
               : 'border-transparent text-gray-500 hover:text-gray-900'
@@ -573,7 +573,7 @@ export default function AdminMarketingPage() {
         >
           <ShoppingCart className="h-4 w-4" />
           <span>Relance paniers</span>
-          <span className="ml-1 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">
+          <span className="ml-1 text-[11px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">
             {abandonedCarts.length}
           </span>
         </button>
@@ -596,7 +596,7 @@ export default function AdminMarketingPage() {
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar flex-nowrap sm:flex-wrap">
               {[
                 { id: 'all', label: 'Tous' },
                 { id: 'actif', label: 'Actifs' },
@@ -607,7 +607,7 @@ export default function AdminMarketingPage() {
                 <button
                   key={pill.id}
                   onClick={() => setCouponStatusFilter(pill.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
                     couponStatusFilter === pill.id
                       ? 'bg-[#c1647a] text-white shadow-xs'
                       : 'bg-white border border-[#e7e4dd] text-gray-600 hover:bg-[#faf8f4]'
@@ -619,8 +619,8 @@ export default function AdminMarketingPage() {
             </div>
           </div>
 
-          {/* DataTable */}
-          <div className="bg-white border border-[#e7e4dd] rounded-xl overflow-hidden shadow-xs">
+          {/* Desktop DataTable (>= 1024px) */}
+          <div className="hidden lg:block bg-white border border-[#e7e4dd] rounded-xl overflow-hidden shadow-xs">
             <Table>
               <TableHeader className="bg-[#faf8f4]/60">
                 <TableRow className="border-[#e7e4dd]">
@@ -781,6 +781,134 @@ export default function AdminMarketingPage() {
               </TableBody>
             </Table>
           </div>
+
+          {/* Mobile Card View (< 1024px) for Coupons */}
+          <div className="lg:hidden space-y-3">
+            {filteredCoupons.map((coupon) => (
+              <div
+                key={coupon.id}
+                className="bg-white rounded-xl border border-[#e7e4dd] p-3.5 shadow-xs space-y-3"
+              >
+                {/* Header: Code + Copy + Status */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono font-bold text-xs text-gray-900 bg-gray-100 px-2 py-1 rounded border border-gray-200">
+                      {coupon.code}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyCode(coupon.code)}
+                      className="p-1 hover:text-[#c1647a] text-gray-400 transition-colors"
+                      title="Copier le code"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  {getCouponStatusBadge(coupon.status)}
+                </div>
+
+                {/* Reduction & Conditions */}
+                <div className="bg-[#faf8f4] p-2.5 rounded-lg border border-[#f0eee8] space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">Avantage :</span>
+                    <div>
+                      {coupon.type === 'percentage' && (
+                        <span className="font-bold text-sm text-[#c1647a]">
+                          -{coupon.value}% de remise
+                        </span>
+                      )}
+                      {coupon.type === 'fixed_amount' && (
+                        <span className="font-bold text-sm text-[#166534]">
+                          -{coupon.value.toLocaleString('fr-FR')} FCFA
+                        </span>
+                      )}
+                      {coupon.type === 'free_shipping' && (
+                        <span className="text-xs font-bold text-[#3d5a99] flex items-center gap-1">
+                          <Truck className="h-3.5 w-3.5" />
+                          Livraison offerte
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-gray-600">
+                    <span className="text-gray-400">Condition :</span>
+                    <span>
+                      {coupon.minOrderAmount
+                        ? `Min : ${coupon.minOrderAmount.toLocaleString('fr-FR')} FCFA`
+                        : 'Sans minimum d’achat'}
+                    </span>
+                  </div>
+                  {coupon.description && (
+                    <p className="text-[11px] text-gray-500 italic pt-0.5">
+                      {coupon.description}
+                    </p>
+                  )}
+                </div>
+
+                {/* Usage progress & CA */}
+                <div className="space-y-1.5 pt-0.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500">
+                      Utilisations :{' '}
+                      <strong className="text-gray-800">{coupon.currentUsageCount}</strong> /{' '}
+                      {coupon.maxUsageTotal || '∞'}
+                    </span>
+                    <span className="font-mono font-bold text-xs text-gray-900">
+                      {coupon.revenueGenerated.toLocaleString('fr-FR')} FCFA générés
+                    </span>
+                  </div>
+                  {coupon.maxUsageTotal && (
+                    <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                      <div
+                        className="bg-[#c1647a] h-full rounded-full"
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            (coupon.currentUsageCount / coupon.maxUsageTotal) * 100
+                          )}%`,
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Period & Actions Footer */}
+                <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#f0eee8] text-xs">
+                  <span className="text-[11px] text-gray-400">
+                    Du {coupon.startDate} au {coupon.endDate}
+                  </span>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleCouponStatus(coupon.id)}
+                      className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-colors ${
+                        coupon.status === 'actif'
+                          ? 'border-[#e7e4dd] text-gray-600 hover:text-amber-600'
+                          : 'border-[#24582d]/30 text-[#24582d] bg-[#edf8ef]'
+                      }`}
+                    >
+                      {coupon.status === 'actif' ? 'Désactiver' : 'Activer'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteCoupon(coupon.id)}
+                      className="p-1.5 rounded-md border border-[#e7e4dd] text-gray-400 hover:text-red-600 transition-colors"
+                      title="Supprimer"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {filteredCoupons.length === 0 && (
+              <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-xs text-gray-500">
+                Aucun code promotionnel trouvé.
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -801,7 +929,7 @@ export default function AdminMarketingPage() {
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar flex-nowrap sm:flex-wrap">
               {[
                 { id: 'all', label: 'Toutes' },
                 { id: 'active', label: 'En cours' },
@@ -811,7 +939,7 @@ export default function AdminMarketingPage() {
                 <button
                   key={pill.id}
                   onClick={() => setPromotionStatusFilter(pill.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
                     promotionStatusFilter === pill.id
                       ? 'bg-[#c1647a] text-white shadow-xs'
                       : 'bg-white border border-[#e7e4dd] text-gray-600 hover:bg-[#faf8f4]'
@@ -823,8 +951,8 @@ export default function AdminMarketingPage() {
             </div>
           </div>
 
-          {/* DataTable */}
-          <div className="bg-white border border-[#e7e4dd] rounded-xl overflow-hidden shadow-xs">
+          {/* Desktop DataTable (>= 1024px) */}
+          <div className="hidden lg:block bg-white border border-[#e7e4dd] rounded-xl overflow-hidden shadow-xs">
             <Table>
               <TableHeader className="bg-[#faf8f4]/60">
                 <TableRow className="border-[#e7e4dd]">
@@ -937,6 +1065,89 @@ export default function AdminMarketingPage() {
               </TableBody>
             </Table>
           </div>
+
+          {/* Mobile Card View (< 1024px) for Promotions */}
+          <div className="lg:hidden space-y-3">
+            {filteredPromotions.map((promo) => (
+              <div
+                key={promo.id}
+                className="bg-white rounded-xl border border-[#e7e4dd] p-3.5 shadow-xs space-y-3"
+              >
+                {/* Header: Name, Badge text, Status */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-sm text-[#1e2a1f] truncate">{promo.name}</h3>
+                    <span className="inline-block bg-[#fdf2f4] text-[#c1647a] font-semibold text-[10px] px-2 py-0.5 rounded-full border border-[#f0dde2] mt-1">
+                      {promo.badgeText}
+                    </span>
+                  </div>
+                  {getPromotionStatusBadge(promo.status)}
+                </div>
+
+                {/* Discount & Targets */}
+                <div className="bg-[#faf8f4] p-2.5 rounded-lg border border-[#f0eee8] space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">Remise automatique :</span>
+                    <span className="font-bold text-sm text-[#c1647a]">
+                      -{promo.discountPercentage}%
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-gray-400 block mb-1">Cible :</span>
+                    <div className="flex flex-wrap gap-1">
+                      {promo.targetNames.map((target, idx) => (
+                        <Badge
+                          key={idx}
+                          className="bg-white text-gray-700 border border-[#e7e4dd] text-[10px] py-0 px-2"
+                        >
+                          {target}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sales & Period */}
+                <div className="flex items-center justify-between text-xs text-gray-600 pt-0.5">
+                  <span>
+                    Ventes générées : <strong className="text-gray-900 font-mono">{promo.salesCount}</strong>
+                  </span>
+                  <span className="text-[11px] text-gray-400">
+                    Du {promo.startDate} au {promo.endDate}
+                  </span>
+                </div>
+
+                {/* Actions Footer */}
+                <div className="flex items-center justify-end gap-1.5 pt-2 border-t border-[#f0eee8]">
+                  <button
+                    type="button"
+                    onClick={() => handleTogglePromotionStatus(promo.id)}
+                    className={`px-3 py-1 rounded-md text-xs font-semibold border transition-colors ${
+                      promo.status === 'active'
+                        ? 'border-[#e7e4dd] text-gray-600 hover:text-amber-600'
+                        : 'border-[#24582d]/30 text-[#24582d] bg-[#edf8ef]'
+                    }`}
+                  >
+                    {promo.status === 'active' ? 'Arrêter' : 'Activer'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeletePromotion(promo.id)}
+                    className="p-1.5 rounded-md border border-[#e7e4dd] text-gray-400 hover:text-red-600 transition-colors"
+                    title="Supprimer"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {filteredPromotions.length === 0 && (
+              <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-xs text-gray-500">
+                Aucune promotion directe trouvée.
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -957,7 +1168,7 @@ export default function AdminMarketingPage() {
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar flex-nowrap sm:flex-wrap">
               {[
                 { id: 'all', label: 'Tous canaux' },
                 { id: 'whatsapp', label: 'WhatsApp' },
@@ -967,7 +1178,7 @@ export default function AdminMarketingPage() {
                 <button
                   key={pill.id}
                   onClick={() => setCampaignChannelFilter(pill.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
                     campaignChannelFilter === pill.id
                       ? 'bg-[#c1647a] text-white shadow-xs'
                       : 'bg-white border border-[#e7e4dd] text-gray-600 hover:bg-[#faf8f4]'
@@ -979,8 +1190,8 @@ export default function AdminMarketingPage() {
             </div>
           </div>
 
-          {/* DataTable */}
-          <div className="bg-white border border-[#e7e4dd] rounded-xl overflow-hidden shadow-xs">
+          {/* Desktop DataTable (>= 1024px) */}
+          <div className="hidden lg:block bg-white border border-[#e7e4dd] rounded-xl overflow-hidden shadow-xs">
             <Table>
               <TableHeader className="bg-[#faf8f4]/60">
                 <TableRow className="border-[#e7e4dd]">
@@ -1105,6 +1316,94 @@ export default function AdminMarketingPage() {
               </TableBody>
             </Table>
           </div>
+
+          {/* Mobile Card View (< 1024px) for Campaigns */}
+          <div className="lg:hidden space-y-3">
+            {filteredCampaigns.map((camp) => (
+              <div
+                key={camp.id}
+                className="bg-white rounded-xl border border-[#e7e4dd] p-3.5 shadow-xs space-y-3"
+              >
+                {/* Header: Name, Channel Badge, Status Badge */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-sm text-[#1e2a1f] truncate">{camp.name}</h3>
+                    <div className="mt-1">{getCampaignChannelBadge(camp.channel)}</div>
+                  </div>
+                  <div>
+                    {camp.status === 'envoyee' && (
+                      <Badge className="bg-[#dcfce7] text-[#166534] border-none text-[10px] py-0.5">
+                        Envoyée
+                      </Badge>
+                    )}
+                    {camp.status === 'programmee' && (
+                      <Badge className="bg-[#e5eaff] text-[#3d5a99] border-none text-[10px] py-0.5">
+                        Programmée
+                      </Badge>
+                    )}
+                    {camp.status === 'brouillon' && (
+                      <Badge className="bg-gray-100 text-gray-600 border-none text-[10px] py-0.5">
+                        Brouillon
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                {/* Message preview */}
+                <p className="text-xs text-gray-600 italic bg-[#faf8f4] p-2.5 rounded-lg border border-[#f0eee8] leading-relaxed">
+                  &ldquo;{camp.messageContent}&rdquo;
+                </p>
+
+                {/* Audience & Metrics */}
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
+                    <span className="text-[10px] text-gray-400 block">Audience</span>
+                    <strong className="text-gray-900 text-xs truncate block">{camp.audience}</strong>
+                    <span className="text-[10px] text-gray-500">
+                      {camp.recipientCount.toLocaleString('fr-FR')} contacts
+                    </span>
+                  </div>
+
+                  <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
+                    <span className="text-[10px] text-gray-400 block">Performance</span>
+                    {camp.status === 'envoyee' ? (
+                      <span className="text-xs text-emerald-700 font-bold block">
+                        {camp.openRate}% ouv. • {camp.clickRate}% clics
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400 italic block">En attente</span>
+                    )}
+                    <span className="text-[10px] text-gray-500 font-mono">
+                      {camp.conversionCount} ventes générées
+                    </span>
+                  </div>
+                </div>
+
+                {/* Footer: Date & Preview button */}
+                <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#f0eee8] text-xs">
+                  <span className="text-[11px] text-gray-400">
+                    {camp.sentAt || camp.scheduledAt || 'Brouillon'}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      toast.info(`Message : "${camp.messageContent}"`);
+                    }}
+                    className="h-8 text-xs border-[#e7e4dd]"
+                  >
+                    Aperçu
+                  </Button>
+                </div>
+              </div>
+            ))}
+
+            {filteredCampaigns.length === 0 && (
+              <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-xs text-gray-500">
+                Aucune campagne marketing trouvée.
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1114,8 +1413,8 @@ export default function AdminMarketingPage() {
       {activeTab === 'paniers' && (
         <div className="space-y-4">
           {/* Recovery Automation Banner */}
-          <div className="bg-[#fcfaf7] border border-[#e7e4dd] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="space-y-0.5">
+          <div className="bg-[#fcfaf7] border border-[#e7e4dd] rounded-xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <span className="font-bold text-xs text-gray-900">
                   Automatisation active :
@@ -1133,7 +1432,7 @@ export default function AdminMarketingPage() {
               size="sm"
               variant="outline"
               onClick={() => setIsConfigDialogOpen(true)}
-              className="text-xs h-8 border-[#e7e4dd] bg-white text-gray-700 hover:text-[#c1647a] shrink-0 gap-1"
+              className="text-xs h-9 sm:h-8 border-[#e7e4dd] bg-white text-gray-700 hover:text-[#c1647a] shrink-0 gap-1 w-full sm:w-auto"
             >
               <Sliders className="h-3.5 w-3.5" />
               Modifier règles
@@ -1152,7 +1451,7 @@ export default function AdminMarketingPage() {
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar flex-nowrap sm:flex-wrap">
               {[
                 { id: 'all', label: 'Tous' },
                 { id: 'a_relancer', label: 'À relancer' },
@@ -1162,7 +1461,7 @@ export default function AdminMarketingPage() {
                 <button
                   key={pill.id}
                   onClick={() => setCartStatusFilter(pill.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
                     cartStatusFilter === pill.id
                       ? 'bg-[#c1647a] text-white shadow-xs'
                       : 'bg-white border border-[#e7e4dd] text-gray-600 hover:bg-[#faf8f4]'
@@ -1174,8 +1473,8 @@ export default function AdminMarketingPage() {
             </div>
           </div>
 
-          {/* DataTable */}
-          <div className="bg-white border border-[#e7e4dd] rounded-xl overflow-hidden shadow-xs">
+          {/* Desktop DataTable (>= 1024px) */}
+          <div className="hidden lg:block bg-white border border-[#e7e4dd] rounded-xl overflow-hidden shadow-xs">
             <Table>
               <TableHeader className="bg-[#faf8f4]/60">
                 <TableRow className="border-[#e7e4dd]">
@@ -1266,10 +1565,10 @@ export default function AdminMarketingPage() {
                             <Button
                               size="sm"
                               onClick={() => handleSendCartReminder(cart, 'whatsapp')}
-                              className="h-7 px-2.5 text-[11px] font-semibold bg-[#25D366] hover:bg-[#1faa53] text-white gap-1.5 shadow-xs"
+                              className="h-7 px-2.5 text-[11px] font-semibold bg-[#25D366] hover:bg-[#20ba5a] active:bg-[#128C7E] text-white gap-1.5 shadow-xs transition-colors cursor-pointer"
                               title="Relancer par WhatsApp"
                             >
-                              <WhatsAppColorIcon size={14} className="shrink-0" />
+                              <WhatsAppButtonIcon size={14} className="shrink-0" />
                               WhatsApp
                             </Button>
 
@@ -1306,6 +1605,115 @@ export default function AdminMarketingPage() {
                 )}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Mobile Card View (< 1024px) for Abandoned Carts */}
+          <div className="lg:hidden space-y-3">
+            {filteredCarts.map((cart) => (
+              <div
+                key={cart.id}
+                className="bg-white rounded-xl border border-[#e7e4dd] p-3.5 shadow-xs space-y-3"
+              >
+                {/* Header: Customer Name, Abandoned time, Status */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-sm text-[#1e2a1f] truncate">{cart.customerName}</h3>
+                    <div className="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
+                      <span className="font-mono">{cart.customerPhone}</span>
+                      <span>•</span>
+                      <span className="truncate">{cart.customerEmail}</span>
+                    </div>
+                  </div>
+                  {getCartStatusBadge(cart.status)}
+                </div>
+
+                {/* Items in cart */}
+                <div className="bg-[#faf8f4] p-2.5 rounded-lg border border-[#f0eee8] space-y-1.5">
+                  <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider block">
+                    Articles abandonnés :
+                  </span>
+                  <div className="space-y-1">
+                    {cart.items.map((it, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-xs text-gray-700">
+                        <span className="truncate">
+                          <strong className="text-gray-900">{it.quantity}x</strong> {it.productName}
+                        </span>
+                        <span className="font-mono text-gray-500 shrink-0 ml-2">
+                          {it.unitPrice.toLocaleString('fr-FR')} F
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1 border-t border-[#e7e4dd] text-xs">
+                    <span className="font-semibold text-gray-600">Total Panier :</span>
+                    <span className="font-bold font-mono text-sm text-[#1e2a1f]">
+                      {cart.total.toLocaleString('fr-FR')} FCFA
+                    </span>
+                  </div>
+                </div>
+
+                {/* Status info & Abandoned time */}
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span className="flex items-center gap-1 text-[11px]">
+                    <Clock className="h-3 w-3 text-gray-400" />
+                    Abandonné {cart.abandonedAt}
+                  </span>
+                  {cart.lastReminderAt && (
+                    <span className="text-[10px] text-gray-400">
+                      Relancé : {cart.lastReminderAt}
+                    </span>
+                  )}
+                </div>
+
+                {/* Action Buttons Footer */}
+                <div className="pt-2 border-t border-[#f0eee8]">
+                  {cart.status !== 'recupere' ? (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => handleSendCartReminder(cart, 'whatsapp')}
+                        className="flex-1 h-9 px-3 text-xs font-semibold bg-[#25D366] hover:bg-[#20ba5a] active:bg-[#128C7E] text-white gap-2 shadow-xs transition-colors cursor-pointer"
+                      >
+                        <WhatsAppButtonIcon size={16} className="shrink-0" />
+                        <span>WhatsApp</span>
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleSendCartReminder(cart, 'email')}
+                        className="h-9 px-3 text-xs font-semibold border-[#e7e4dd] text-gray-700 hover:text-[#c1647a] gap-1"
+                      >
+                        <Mail className="h-3.5 w-3.5" />
+                        Email
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleMarkCartRecovered(cart.id)}
+                        className="h-9 w-9 p-0 text-emerald-700 hover:bg-emerald-50 shrink-0 border border-emerald-200"
+                        title="Marquer comme converti"
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-1.5 text-xs text-emerald-700 font-semibold bg-[#edf8ef] py-1.5 rounded-lg border border-[#b0c8a8]/40">
+                      <CheckCircle className="h-4 w-4" />
+                      <span>Panier converti en commande passée</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {filteredCarts.length === 0 && (
+              <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-xs text-gray-500">
+                Aucun panier abandonné trouvé pour ces critères.
+              </div>
+            )}
           </div>
         </div>
       )}

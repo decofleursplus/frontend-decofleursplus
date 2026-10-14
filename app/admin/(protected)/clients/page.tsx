@@ -256,11 +256,11 @@ export default function AdminCustomersPage() {
       </div>
 
       {/* Segment Sub-Pills */}
-      <div className="flex items-center gap-2.5 overflow-x-auto pb-1">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar flex-nowrap sm:flex-wrap">
         <button
           type="button"
           onClick={() => setSegmentFilter('all')}
-          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+          className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 shrink-0 ${
             segmentFilter === 'all'
               ? 'bg-[#c1647a] text-white! shadow-xs'
               : 'bg-white text-gray-700 border border-[#e7e4dd] hover:bg-[#faf8f4]'
@@ -285,7 +285,7 @@ export default function AdminCustomersPage() {
         <button
           type="button"
           onClick={() => setSegmentFilter('vip')}
-          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+          className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 shrink-0 ${
             segmentFilter === 'vip'
               ? 'bg-[#c1647a] text-white! shadow-xs'
               : 'bg-white text-gray-700 border border-[#e7e4dd] hover:bg-[#faf8f4]'
@@ -319,7 +319,7 @@ export default function AdminCustomersPage() {
         <button
           type="button"
           onClick={() => setSegmentFilter('entreprise')}
-          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+          className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 shrink-0 ${
             segmentFilter === 'entreprise'
               ? 'bg-[#c1647a] text-white! shadow-xs'
               : 'bg-white text-gray-700 border border-[#e7e4dd] hover:bg-[#faf8f4]'
@@ -359,7 +359,7 @@ export default function AdminCustomersPage() {
         <button
           type="button"
           onClick={() => setSegmentFilter('particulier')}
-          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+          className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 shrink-0 ${
             segmentFilter === 'particulier'
               ? 'bg-[#c1647a] text-white! shadow-xs'
               : 'bg-white text-gray-700 border border-[#e7e4dd] hover:bg-[#faf8f4]'
@@ -399,7 +399,7 @@ export default function AdminCustomersPage() {
         <button
           type="button"
           onClick={() => setSegmentFilter('inactif')}
-          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+          className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 shrink-0 ${
             segmentFilter === 'inactif'
               ? 'bg-[#c1647a] text-white! shadow-xs'
               : 'bg-white text-gray-700 border border-[#e7e4dd] hover:bg-[#faf8f4]'
@@ -432,33 +432,33 @@ export default function AdminCustomersPage() {
       </div>
 
       {/* Filters and Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border border-[#e7e4dd]">
-        <div className="relative w-full sm:w-96">
+      <div className="flex items-center justify-between gap-2 sm:gap-3">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Rechercher par nom, email, téléphone..."
+            placeholder="Rechercher nom, email, tél..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 pr-9 border-[#e7e4dd] focus-visible:ring-[#24582d]/20 text-sm"
+            className="pl-9 pr-8 border-[#e7e4dd] focus-visible:ring-[#24582d]/20 text-xs sm:text-sm h-10 bg-white"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
               <X className="h-4 w-4" />
             </button>
           )}
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-2 shrink-0">
           {/* Advanced Filter Drawer */}
           <Sheet open={isFilterDrawerOpen} onOpenChange={handleOpenFilterDrawer}>
             <SheetTrigger
               render={
                 <Button
                   variant="outline"
-                  className={`border-[#e7e4dd] w-full sm:w-auto transition-colors ${
+                  className={`h-10 border-[#e7e4dd] bg-white gap-1.5 sm:gap-2 relative shrink-0 text-xs ${
                     activeFiltersCount > 0
                       ? 'border-[#c1647a] text-[#c1647a] bg-[#fdf5f7]'
                       : 'text-gray-700 hover:bg-[#faf8f4]'
@@ -466,10 +466,11 @@ export default function AdminCustomersPage() {
                 />
               }
             >
-              <Filter className="mr-2 h-4 w-4" />
-              Filtres avancés
+              <Filter className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Filtres avancés</span>
+              <span className="sm:hidden">Filtres</span>
               {activeFiltersCount > 0 && (
-                <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#c1647a] text-[11px] font-bold text-white">
+                <span className="h-4.5 w-4.5 rounded-full bg-[#c1647a] text-white text-[10px] font-bold flex items-center justify-center">
                   {activeFiltersCount}
                 </span>
               )}
@@ -653,8 +654,8 @@ export default function AdminCustomersPage() {
         </div>
       )}
 
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-[#e7e4dd] overflow-hidden shadow-xs">
+      {/* Table (Desktop) */}
+      <div className="hidden lg:block bg-white rounded-xl border border-[#e7e4dd] overflow-hidden shadow-xs">
         <Table>
           <TableHeader className="bg-[#faf8f4]">
             <TableRow>
@@ -764,6 +765,112 @@ export default function AdminCustomersPage() {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile Customers Card View */}
+      <div className="lg:hidden space-y-3">
+        {filteredCustomers.length === 0 ? (
+          <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-gray-500 space-y-2">
+            <UserX className="h-8 w-8 text-gray-300 mx-auto" />
+            <p className="font-semibold text-gray-700 text-sm">Aucun client trouvé</p>
+            <p className="text-xs text-gray-500">Essayez de modifier vos critères de recherche.</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleResetFilters}
+              className="mt-2 text-xs border-[#e7e4dd]"
+            >
+              Réinitialiser les filtres
+            </Button>
+          </div>
+        ) : (
+          filteredCustomers.map((customer) => (
+            <div
+              key={customer.id}
+              className="bg-white border border-[#e7e4dd] rounded-xl p-3.5 space-y-3 shadow-xs"
+            >
+              {/* Top Row: Avatar + Name + Segment Badge */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-3 min-w-0">
+                  <Avatar className="h-10 w-10 border border-[#e7e4dd] shrink-0">
+                    <AvatarFallback className="bg-[#edf8ef] text-[#24582d] font-bold text-xs">
+                      {getInitials(customer.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <h4 className="font-semibold text-sm text-[#1e2a1f] truncate">
+                      {customer.name}
+                    </h4>
+                    <span className="text-xs text-gray-500 block truncate">
+                      {customer.address || 'Sénégal'}
+                    </span>
+                  </div>
+                </div>
+                <div className="shrink-0">{getSegmentBadge(customer.segment, customer.status)}</div>
+              </div>
+
+              {/* Contact info links */}
+              <div className="bg-[#faf8f4] rounded-lg p-2.5 space-y-1.5 text-xs">
+                <div className="flex items-center justify-between text-gray-700">
+                  <span className="text-gray-400 text-[11px]">Téléphone :</span>
+                  <a href={`tel:${customer.phone}`} className="font-mono font-medium hover:text-[#c1647a]">
+                    {customer.phone}
+                  </a>
+                </div>
+                <div className="flex items-center justify-between text-gray-700">
+                  <span className="text-gray-400 text-[11px]">Email :</span>
+                  <a href={`mailto:${customer.email}`} className="truncate max-w-[200px] hover:text-[#c1647a]">
+                    {customer.email}
+                  </a>
+                </div>
+              </div>
+
+              {/* Stats Row: Orders + Total Spent + Last Order */}
+              <div className="grid grid-cols-3 gap-2 text-center pt-1 border-t border-[#f0ede6]">
+                <div>
+                  <span className="text-[10px] text-gray-400 block font-medium">Commandes</span>
+                  <span className="text-xs font-bold text-gray-900 mt-0.5 block">
+                    {customer.totalOrders}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-gray-400 block font-medium">Total dépensé</span>
+                  <span className="text-xs font-bold text-[#24582d] mt-0.5 block">
+                    {formatCurrency(customer.totalSpent)}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-gray-400 block font-medium">Dernier achat</span>
+                  <span className="text-[11px] text-gray-600 mt-0.5 block truncate">
+                    {customer.lastOrderDate ? formatDate(customer.lastOrderDate) : '—'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Actions Row */}
+              <div className="flex items-center gap-2 pt-2 border-t border-[#f0ede6]">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  render={<Link href={`/admin/clients/${customer.id}`} />}
+                  className="flex-1 h-8 text-xs border-[#e7e4dd] text-gray-700 hover:bg-[#faf8f4] font-medium gap-1.5"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  Voir profil
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleOpenEmailDialog(customer)}
+                  className="flex-1 h-8 text-xs border-[#24582d]/30 text-[#24582d] hover:bg-[#edf8ef] font-medium gap-1.5"
+                >
+                  <Mail className="h-3.5 w-3.5" />
+                  Email
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Send Email Modal */}

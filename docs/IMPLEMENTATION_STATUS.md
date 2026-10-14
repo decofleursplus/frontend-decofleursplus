@@ -1,63 +1,48 @@
 # Current Status
 
 ## Current Phase
-Phase 3 — Back-office
+Phase 4 — Back-office Responsive & PWA (Tab View & Ergonomie Mobile)
 
 ## Completed
-- Initialize `shadcn/ui` and configure design tokens for admin
-- Create `components/admin` directory structure
-- Setup `lib/admin/mock-data`
-- Build Back-office architecture (`app/admin/layout.tsx`)
-- Implement Admin Sidebar and Topbar
-- Create `/admin/connexion` page layout
-- Implement Admin Login form
-- Simulate auth flow and protect routes
-- Implement Tableau de bord (Dashboard) with KPIs, Chart, and Recent Orders
-- Create `/admin/produits` page layout and Product DataTable
-- Implement "Add/Edit Product" Dialog or sub-page
-- Create `/admin/commandes` page layout and Order DataTable
-- Create `/admin/commandes/[id]` Order Details Page
-- Create `/admin/clients` CRM page layout
-- Create `/admin/clients/[id]` Customer Profile & CRM History Page
-- Create `/admin/categories` page layout and Categories DataTable (Maquette 09)
-- Implement Category Add/Edit Dialog and secure deletion logic
-- Create `/admin/stock` page layout and Stock DataTable with Status Tabs (Tous, Stock faible, Rupture — Maquette 10)
-- Implement Stock Quick-adjustment modal with real-time preview and movement trail
-- Implement Movement History tab with audit trail for stock movements
-- Create `/admin/livraisons` page layout and Deliveries DataTable with Status Sub-pills (Toutes, À livrer, En cours, Livrées, Échecs — Maquette 11)
-- Implement Driver Assignment Dialog (`AssignDriverDialog`) with drivers team, vehicle types, availability and time slots
-- Implement Delivery Details & Tracking Drawer (`DeliveryDetailSheet`) with real-time stepper, recipient info, maps integration and print
-- Create `/admin/marketing` page layout with 4 tabs: Codes promo & Coupons, Promotions directes, Campagnes marketing, Relance paniers abandonnés
-- Implement `CreateCouponDialog` with random code generator, rules, usage limits and dates
-- Implement `CreatePromotionDialog` for direct catalogue discounts with category and product multi-targeting
-- Implement `CreateCampaignDialog` for WhatsApp, SMS and Email campaigns with dynamic personalization variables and live preview
-- Implement `CartRecoveryConfigDialog` and direct 1-click WhatsApp/Email triggers for abandoned carts
-- Create `/admin/blog` page layout with 4 tabs: Articles & Guides, Thématiques & Catégories, Auteurs & Contributeurs, Paramètres & SEO du Blog
-- Implement `ArticleEditorDialog` with 4-tab editor (Contenu avec toolbar H2/H3/list/quote, Médias avec presets photos de la boutique, Publication avec sélecteur de cross-selling floral, Référencement SEO avec live Google SERP preview)
-- Implement `ArticlePreviewDialog` with complete customer-facing storefront visual rendering
-- Implement `CreateBlogCategoryDialog` for editorial category management with color badge presets
-- Implement `AuthorProfileDialog` for author bios and credentials
-- Create `/admin/rapports` page layout with dual analytical tabs: Analyse Commerciale & Ventes, and Bilan Financier & Trésorerie
-- Implement unified temporal filter bar (Presets: Aujourd'hui, 7j, 30j, Ce mois, Cette année, Personnalisé) with automated comparison deltas (+/- %)
-- Implement Commercial Analytics with 4 KPIs, Chart.js multi-period sales line chart, top floral sales, and category & geographic delivery breakdown
-- Implement Financial & Treasury breakdown with 4 KPIs, Wave/OM/CB/Cash payment cards, fees deduction, and distribution doughnut
-- Implement interactive financial transactions audit journal with filters (method, settlement status, search)
-- Implement `TransactionDetailDialog` displaying full financial audit breakdown (gross, fees rate, net received, order & customer info)
-- Implement `ExportReportDialog` supporting CSV download and styled printable PDF generation
-- Implement `/admin/parametres` with internal vertical navigation (Boutique & Général, Collaborateurs, Rôles & Permissions, Paiement, Livraison, Notifications, SEO — Maquettes 15 & 16)
-- Implement `UserEditorDialog` for adding/editing team members with role badges and account statuses
-- Implement interactive permissions matrix by role (Admin, Gestionnaire, Fleuriste, Livreur, Comptable)
-- Implement payment gateways config (Wave, Orange Money, CB, Espèces), delivery zones (Saly, Mbour, Dakar, Ngaparou), WhatsApp/SMS notifications triggers, and Google SEO preview
+*(Phases 1, 2 et 3 achevées — Back-office Desktop complet avec les 16 maquettes)*
+- [x] Initialisation design system, architecture, auth et layout admin
+- [x] 11 modules desktop complets (Tableau de bord, Commandes, Produits, Catégories, Clients CRM, Stock, Livraisons, Marketing, Blog, Rapports, Paramètres)
+- [x] Cadrage d'architecture Responsive & PWA validé (/grill-me) : Bottom Tab Bar (5 accès), Side Drawer fluide pour les 11 modules, Tabs internes par module, et Card view tactile pour les tableaux
+- [x] Phase 4 — Étape 1 : Shell Global Back-office PWA & Navigation Mobile (composants `AdminMobileTabBar`, `AdminMobileDrawer`, refonte responsive `AdminTopbar`, masquage propre de `AdminSidebar` sur mobile, raccourcis PWA dans `manifest.ts` et styles CSS mobiles avec Safe Area).
+- [x] Phase 4 — Module 1 : Tableau de bord (`/admin/tableau-de-bord`) adapté et validé visuellement via Playwright subagent (grille KPIs 2x2, graphiques sans overflow, fiches produits et commandes récentes sans débordement horizontal).
+- [x] Phase 4 — Module 2 : Commandes (`/admin/commandes` & `/admin/commandes/[id]`) adapté et validé via Playwright (onglets rapides de statuts horizontaux, Card View mobile tactile avec badges et montants en avant, zéro overflow, page détail responsive).
+- [x] Phase 4 — Module 3 : Produits (`/admin/produits`, `/admin/produits/nouveau`, `/admin/produits/[id]`) adapté et validé visuellement via Playwright (onglets catégories horizontaux, fiches produits tactiles avec switch statut et prix, formulaires création/édition responsive sans collision d'en-tête).
+- [x] Phase 4 — Module 4 : Livraisons (`/admin/livraisons`) adapté et validé via Playwright (onglets Suivi/Flotte, sous-pills de statuts, fiches de courses mobiles avec actions rapides, cartes coursiers flotte, et tiroir de détails `DeliveryDetailSheet` fluide).
+- [x] Phase 4 — Module 5 : Stock (`/admin/stock`) adapté et validé visuellement via Playwright (onglets État du stock/Historique, fiches d'inventaire avec métriques et alertes seuil, drawer d'ajustement rapide, et journal des mouvements mobile).
+- [x] Phase 4 — Module 6 : Clients CRM (`/admin/clients` & `/admin/clients/[id]`) adapté et validé via Playwright (sous-pills de segments fidélité scrollables, cartes clients avec contacts directs tél/email et LTV, fiche profil client responsive).
+- [x] Phase 4 — Module 7 : Catégories (`/admin/categories`) adapté et validé via Playwright (sous-pills de statuts scrollables, fiches catégories tactiles avec compteur de produits et actions rapides, modale de création/édition fluide sans débordement).
+- [x] Phase 4 — Module 8 : Marketing & Promotions (`/admin/marketing`) adapté et validé via Playwright (grille KPIs 2x2, 4 onglets principaux avec défilement horizontal sans coupure, sous-pills tactiles, fiches mobiles pour coupons, promotions, campagnes et relance paniers avec boutons directs WhatsApp et Email).
+- [x] Phase 4 — Module 9 : Blog & Contenu (`/admin/blog`) adapté et validé via Playwright (métriques 2x2, 3 onglets thématiques scrollables, fiches d'articles riches avec vignettes, badges, stats de lecture, barre d'actions rapide et modales responsive).
+- [x] Phase 4 — Module 10 : Rapports & Finances (`/admin/rapports`) adapté et validé via Playwright (onglets Ventes & Trésorerie sans overflow, grille KPIs 2x2, graphiques adaptatifs, fiches tactiles pour le Grand Livre des transactions et modales responsive pour Export et Détails transaction).
+- [x] Phase 4 — Module 11 : Paramètres (`/admin/parametres`) adapté et validé via Playwright (sous-navigation mobile en pilules horizontales défilables, fiches collaborateurs tactiles avec contacts directs et statuts interactifs, modale `UserEditorDialog` fluide, et matrice interactive de rôles et permissions par module en cartes).
+- [x] Phase 4 — Ajustements ergonomiques & visuels (5 Small Fixes demandés) :
+  1. *Couleur du sélecteur actif mobile* : Remplacement du vert trop sombre par le dégradé menthe douce (`linear-gradient(135deg, #edf8ef, #e8f4ea)`), texte vert forêt (`#193e23`) et icône/pastille rose (`#c1647a`), identique à la version desktop.
+  2. *Bannière PWA subtile* : Élimination du bloc vert massif au profit d'une carte compacte, claire et élégante avec micro-bouton "Installer".
+  3. *Suppression de la redondance navigation* : Retrait du bouton "Menu" du bottom navbar (4 onglets directs : Dashboard, Commandes, Produits, Livraisons). Les 4 modules du bottom bar n'apparaissent plus dans le drawer.
+  4. *Suppression du sectionnage du drawer* : Suppression des titres de catégories (*ACTIVITÉ PRINCIPALE*, *CROISSANCE & CONTENU*, *SYSTÈME*), affichage des 7 modules restants en liste directe fluide.
+  5. *Bouton WhatsApp officiel* : Remplacement de l'icône téléphone générique par le véritable logo WhatsApp officiel (bulle de dialogue avec combiné) et application du vert officiel WhatsApp (`#25D366`).
+- [x] Phase 4 — Ajustements structurels & Fix logique métier (/grill-me) :
+  1. *Restructuration Extrait/Chapeau article (Image 1)* : Intégration directe du champ Chapeau dans la 1ère carte d'informations générales (Titre & Slug) au lieu d'une carte séparée encombrante, avec libellé équilibré, textarea aérée et compteur de caractères discret sous le champ.
+  2. *Suppression de l'encart CFA (Image 2)* : Retrait de la bannière d'information sur les montants FCFA et commissions de paiement dans la modale d'export des rapports (`ExportReportDialog`).
+  3. *Séparation Collaborateurs / Flotte de livreurs (Logique fix)* : Retrait du rôle "Livreur" de la boîte de dialogue d'ajout de collaborateur (`UserEditorDialog`) et des filtres de rôles dans Paramètres. Exclusion des livreurs de la liste des collaborateurs au profit du module dédié Livraisons, avec encart et lien direct vers `/admin/livraisons`.
+
 
 ## Currently Working On
-Phase 3 — Back-office achevée avec succès (Tableau de bord, Commandes, Produits, Catégories, Clients CRM, Stock, Livraisons, Marketing, Blog & Contenu, Rapports & Finances, Paramètres & Équipe).
+Phase 4 — Recette globale & Contrôle qualité final sur l'ensemble des 11 modules back-office en conditions réelles PWA & Mobile.
 
 ## Next Tasks
-- Recette globale et validation end-to-end de l'espace administration.
-- Préparation de la Phase 4 (responsive / PWA mobile si demandée).
+- 1. Synthèse globale de conformité sur les 11 modules du back-office.
+- 2. Validation du respect des Safe Areas et des cibles tactiles (44px min).
+- 3. Préparation pour la mise en production.
 
 ## Remaining
-- *(Tous les modules prévus pour le back-office dans les maquettes 01 à 16 sont implémentés)*
+- *(Tous les 11 modules du back-office sont 100% responsives et validés visuellement avec Playwright)*
+
 
 ## Known Issues
 *(None)*

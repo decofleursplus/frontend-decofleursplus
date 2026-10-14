@@ -79,17 +79,6 @@ export const initialAdminUsers: AdminUser[] = [
   },
   {
     id: 'USR-004',
-    name: 'Ibrahima Diallo',
-    email: 'i.diallo@decofleurplus.sn',
-    phone: '+221 77 567 89 01',
-    role: 'livreur',
-    status: 'actif',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-    lastLogin: '2026-10-13T05:05:00Z',
-    createdAt: '2023-08-15T14:20:00Z',
-  },
-  {
-    id: 'USR-005',
     name: 'Khady Ndiaye',
     email: 'khady.finance@decofleurplus.sn',
     phone: '+221 70 456 78 90',
@@ -98,16 +87,6 @@ export const initialAdminUsers: AdminUser[] = [
     avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
     lastLogin: '2026-10-12T16:22:00Z',
     createdAt: '2024-01-08T10:00:00Z',
-  },
-  {
-    id: 'USR-006',
-    name: 'Cheikh Ndao',
-    email: 'c.ndao@decofleurplus.sn',
-    phone: '+221 77 123 45 67',
-    role: 'livreur',
-    status: 'inactif',
-    lastLogin: '2026-09-28T11:10:00Z',
-    createdAt: '2024-03-20T09:15:00Z',
   },
 ];
 

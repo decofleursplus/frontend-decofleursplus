@@ -96,3 +96,84 @@
 - [x] Implement financial audit journal and transaction detail drawer (`TransactionDetailDialog`)
 
 
+## Phase 4 — Back-office Responsive & PWA (Tab View & Ergonomie Mobile)
+
+### Architecture & Shell Global PWA
+- [x] Mettre à jour `app/manifest.ts` avec le raccourci direct Back-office (`/admin/tableau-de-bord`) et métadonnées PWA
+- [x] Créer le composant `AdminMobileTabBar` (barre fixe en bas : Dashboard, Commandes, Produits, Livraisons, Menu)
+- [x] Créer le composant `AdminMobileDrawer` (Side Drawer glissant depuis la gauche avec liste des 11 modules, installateur PWA et déconnexion)
+- [x] Adapter `AdminTopbar` pour mobile (compact, logo/brand, icône notifs & profil, safe-area)
+- [x] Adapter `AdminSidebar` (masquage propre sur mobile < 1024px sans saut de layout)
+- [x] Ajouter les styles CSS d'administration mobile dans `app/globals.css` (Safe Area Insets iOS/Android, conteneurs réactifs, prévention overflow)
+
+### Module 1 — Tableau de bord (`/admin/tableau-de-bord`)
+- [x] Adapter la grille de KPIs en layout mobile tactile fluide (1 ou 2 colonnes sans écrasement)
+- [x] Adapter les graphiques Recharts/Chart.js pour petits écrans (responsive container, tooltips tactiles)
+- [x] Transformer la liste des commandes récentes et produits phares en fiches mobiles claires
+- [x] Audit visuel et validation : zéro débordement horizontal, textes lisibles
+
+### Module 2 — Commandes (`/admin/commandes`)
+- [x] Onglets de statut scrollables horizontalement (Toutes, En attente, Confirmées, Livrées, Annulées)
+- [x] Transformer le tableau de commandes en Card View tactile (badges statut, montant mis en avant, actions rapides)
+- [x] Adapter la page de détail `/admin/commandes/[id]` pour mobile
+- [x] Audit visuel et validation anti-overflow
+
+### Module 3 — Produits (`/admin/produits`)
+- [x] Barre de filtres et recherche adaptée aux écrans tactiles
+- [x] Transformer le tableau de produits en fiches compactes (vignette photo, nom, prix, stock badge, switch statut)
+- [x] Adapter les formulaires création/édition produit (`/admin/produits/nouveau`, `/admin/produits/[id]`)
+- [x] Audit visuel et validation anti-overflow
+
+### Module 4 — Livraisons (`/admin/livraisons`)
+- [x] Adaptation des sous-onglets de courses
+- [x] Transformation du tableau en fiches de livraison avec livreur, créneau et état
+- [x] Adaptation du drawer `DeliveryDetailSheet` et modale `AssignDriverDialog` sur mobile
+- [x] Audit visuel et validation anti-overflow
+
+### Module 5 — Stock (`/admin/stock`)
+- [x] Fiches de gestion de stock avec alerte seuil critique et ajustement rapide tactile
+- [x] Onglet historique des mouvements adapté au mobile
+- [x] Audit visuel et validation anti-overflow
+
+### Module 6 — Clients (`/admin/clients`)
+- [x] Fiches CRM clients adaptées avec badges fidélité et accès rapide au contact (téléphone/email)
+- [x] Adaptation de la fiche client `/admin/clients/[id]`
+- [x] Audit visuel et validation anti-overflow
+
+### Module 7 — Catégories (`/admin/categories`)
+- [x] Fiches catégories et modale d'ajout/édition adaptées au tactile
+- [x] Audit visuel et validation anti-overflow
+
+### Module 8 — Marketing (`/admin/marketing`)
+- [x] Onglets de navigation marketing (Coupons, Promotions, Campagnes, Relance panier)
+- [x] Fiches coupons et formulaires de création adaptés au mobile
+- [x] Audit visuel et validation anti-overflow
+
+### Module 9 — Blog & Contenu (`/admin/blog`)
+- [x] Onglets internes (Articles, Catégories, Auteurs, Paramètres/SEO)
+- [x] Fiches articles et modales d'édition `ArticleEditorDialog` adaptées sur smartphone
+- [x] Audit visuel et validation anti-overflow
+
+### Module 10 — Rapports & Finances (`/admin/rapports`)
+- [x] Onglets analytiques (Performance commerciale, Bilan trésorerie)
+- [x] Graphiques financiers et KPIs adaptatifs
+- [x] Fiches d'audit financier et dialogue d'export responsive
+- [x] Audit visuel et validation anti-overflow
+
+### Module 11 — Paramètres (`/admin/parametres`)
+- [x] Remplacer la colonne latérale par une barre d'onglets segmentée/défilable sur mobile
+- [x] Adaptation des formulaires boutique, gestion collaborateurs et matrice de rôles
+- [x] Audit visuel et validation anti-overflow
+
+### Ajustements Ergonomiques & Retours Utilisateur (5 Small Fixes)
+- [x] **Image 1** : Rétablir la couleur du sélecteur actif mobile avec la même couleur que sur desktop (dégradé vert menthe `#edf8ef` à `#e8f4ea`, texte vert forêt `#193e23`, icône et pastille rose poudrée `#c1647a`).
+- [x] **Image 2** : Rendre la bannière PWA plus subtile et discrète (carte compacte et claire, micro-bouton élégant au lieu du pavé vert massif).
+- [x] **Image 3** : Supprimer la redondance entre bottom navbar et drawer (retrait du bouton "Menu" du bottom bar qui compte désormais 4 items, et exclusion des 4 modules Dashboard/Commandes/Produits/Livraisons du drawer).
+- [x] **Image 4** : Supprimer le sectionnage dans le drawer (retrait des en-têtes *ACTIVITÉ PRINCIPALE*, etc., liste plate directe des 7 modules restants).
+- [x] **Image 5** : Bouton WhatsApp avec la véritable couleur officielle (`#25D366`) et le véritable logo WhatsApp officiel (bulle de dialogue avec combiné).
+
+### Ajustements Structurels & Métier (/grill-me)
+- [x] **Image 1 — Restructuration Chapeau/Extrait d'article** : Intégration directe du champ dans la 1ère carte d'informations générales (Titre & Slug) au lieu d'une carte séparée, libellé équilibré, textarea claire et compteur en dessous.
+- [x] **Image 2 — Suppression note FCFA / Commissions** : Suppression de la bannière informative jaune dans la modale d'export des rapports d'activité (`ExportReportDialog`).
+- [x] **Logique fix — Séparation Collaborateurs / Flotte Livraisons** : Retrait du rôle "Livreur" dans `UserEditorDialog` et dans le filtre de Paramètres. Exclusion des livreurs de la liste des collaborateurs au profit du module dédié `/admin/livraisons`, avec bandeau d'orientation et lien direct.
+

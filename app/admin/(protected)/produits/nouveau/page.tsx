@@ -26,22 +26,22 @@ export default function NewProductPage() {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" render={<Link href="/admin/produits" />} className="h-9 w-9 rounded-xl border-[#e7e4dd]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="icon" render={<Link href="/admin/produits" />} className="h-9 w-9 shrink-0 rounded-xl border-[#e7e4dd]">
               <ArrowLeft className="h-4 w-4 text-gray-500" />
           </Button>
           <div>
             <h1 className="text-xl font-semibold text-[#1e2a1f]">Ajouter un produit</h1>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" render={<Link href="/admin/produits" />} className="border-[#e7e4dd] text-gray-600">
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <Button variant="outline" render={<Link href="/admin/produits" />} className="border-[#e7e4dd] text-gray-600 flex-1 sm:flex-initial">
             Annuler
           </Button>
           <Button 
             variant="cta"
-            className="bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs" 
+            className="bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs flex-1 sm:flex-initial" 
             onClick={handleSubmit}
             disabled={isSubmitting}
           >

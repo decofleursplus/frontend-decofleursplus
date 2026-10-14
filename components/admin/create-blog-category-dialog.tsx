@@ -105,7 +105,7 @@ export function CreateBlogCategoryDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-white border-[#ece8e1]">
+      <DialogContent className="w-[94vw] max-w-md bg-white border-[#ece8e1] p-5 sm:p-6 max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader className="pb-3 border-b border-[#f0eee8]">
             <div className="flex items-center gap-3">

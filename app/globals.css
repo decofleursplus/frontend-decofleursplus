@@ -5586,3 +5586,118 @@
 @keyframes adminFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .admin-content { animation: adminFadeIn 0.3s ease both; }
 @media (prefers-reduced-motion: reduce) { .admin-content { animation: none; } }
+
+/* ── Admin Responsive & PWA Navigation ─────────── */
+.admin-mobile-tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 45;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid rgba(238, 235, 229, 0.9);
+  box-shadow: 0 -4px 20px rgba(25, 62, 35, 0.05);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.admin-mobile-tabbar-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch;
+  height: 56px;
+}
+
+.admin-mobile-tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  gap: 2px;
+  padding: 4px 2px;
+  color: #636b64;
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 150ms ease;
+}
+
+.admin-mobile-tab-item:hover {
+  color: var(--forest);
+}
+
+.admin-mobile-tab-item.active {
+  color: var(--forest);
+  font-weight: 700;
+}
+
+.admin-mobile-tab-item.active .admin-mobile-tab-icon-wrap {
+  color: var(--pink);
+}
+
+.admin-mobile-tab-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.admin-mobile-tab-label {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 10.5px;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-topbar-mobile-menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid #e7e4dd;
+  background: rgba(255, 255, 255, 0.9);
+  color: #1e2a1f;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.admin-topbar-mobile-menu-btn:hover {
+  background: #ffffff;
+  border-color: var(--forest);
+}
+
+@media (max-width: 1023px) {
+  .admin-sidebar {
+    display: none !important;
+  }
+  .admin-topbar {
+    height: 52px;
+    padding: 0 14px;
+  }
+  .admin-content {
+    padding: 16px 14px 100px;
+  }
+  .admin-page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .admin-page-title {
+    font-size: 20px;
+  }
+  .admin-page-subtitle {
+    font-size: 12.5px;
+  }
+}

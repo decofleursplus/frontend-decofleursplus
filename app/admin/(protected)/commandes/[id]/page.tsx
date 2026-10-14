@@ -68,26 +68,26 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       backgroundColor: 'rgba(255, 255, 255, 0.95)'
     }}>
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" render={<Link href="/admin/commandes" />} className="h-9 w-9 rounded-xl border-[#e7e4dd]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-start sm:items-center gap-3">
+          <Button variant="outline" size="icon" render={<Link href="/admin/commandes" />} className="h-9 w-9 rounded-xl border-[#e7e4dd] shrink-0 mt-0.5 sm:mt-0">
               <ArrowLeft className="h-4 w-4 text-gray-500" />
           </Button>
           <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl font-semibold text-[#1e2a1f]">Commande {order.ref}</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-lg sm:text-xl font-semibold text-[#1e2a1f]">Commande {order.ref}</h1>
               {getStatusBadge(order.status)}
             </div>
-            <p className="text-sm text-gray-500">{formatDate(order.date)}</p>
+            <p className="text-xs sm:text-sm text-gray-500">{formatDate(order.date)}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" className="border-[#e7e4dd] text-gray-600">
-            <Printer className="mr-2 h-4 w-4" />
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button variant="outline" className="flex-1 sm:flex-none border-[#e7e4dd] text-gray-600 text-xs sm:text-sm">
+            <Printer className="mr-1.5 h-3.5 w-3.5" />
             Imprimer
           </Button>
-          <Button variant="cta" className="bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs">
-            <Truck className="mr-2 h-4 w-4 text-white" />
+          <Button variant="cta" className="flex-1 sm:flex-none bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs text-xs sm:text-sm">
+            <Truck className="mr-1.5 h-3.5 w-3.5 text-white" />
             Mettre en livraison
           </Button>
         </div>
@@ -97,27 +97,27 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         {/* Main Column */}
         <div className="md:col-span-2 space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-[#1e2a1f]">Articles de la commande</CardTitle>
+            <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
+              <CardTitle className="text-sm sm:text-base text-[#1e2a1f]">Articles de la commande</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-6 pt-0">
               <div className="space-y-4">
                 {order.items.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between border-b border-[#f0eee8] pb-4 last:border-0 last:pb-0">
-                    <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-md bg-gray-100 overflow-hidden flex items-center justify-center">
+                  <div key={index} className="flex items-center justify-between border-b border-[#f0eee8] pb-4 last:border-0 last:pb-0 gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-md bg-gray-100 overflow-hidden flex items-center justify-center shrink-0 border border-gray-100">
                         {item.image ? (
                           <img src={item.image} alt={item.productName} className="object-cover w-full h-full" />
                         ) : (
-                          <span className="text-xs text-gray-400">Pas d&apos;image</span>
+                          <span className="text-[10px] text-gray-400">Pas d&apos;image</span>
                         )}
                       </div>
-                      <div>
-                        <div className="font-medium text-[#1e2a1f]">{item.productName}</div>
-                        <div className="text-sm text-gray-500">{formatCurrency(item.unitPrice)} × {item.quantity}</div>
+                      <div className="min-w-0">
+                        <div className="font-semibold text-xs sm:text-sm text-[#1e2a1f] truncate max-w-[140px] sm:max-w-none">{item.productName}</div>
+                        <div className="text-[11px] sm:text-xs text-gray-500">{formatCurrency(item.unitPrice)} × {item.quantity}</div>
                       </div>
                     </div>
-                    <div className="font-medium text-[#1e2a1f]">
+                    <div className="font-bold text-xs sm:text-sm text-[#1e2a1f] shrink-0 text-right ml-2">
                       {formatCurrency(item.unitPrice * item.quantity)}
                     </div>
                   </div>

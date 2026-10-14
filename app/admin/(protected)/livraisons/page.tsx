@@ -394,10 +394,10 @@ export default function AdminDeliveriesPage() {
       </div>
 
       {/* Main Top Navigation Tabs */}
-      <div className="flex border-b border-[#e7e4dd] gap-2">
+      <div className="flex border-b border-[#e7e4dd] gap-2 overflow-x-auto no-scrollbar">
         <button
           onClick={() => setMainTab('courses')}
-          className={`flex items-center gap-2 pb-3 px-4 text-sm font-semibold transition-all border-b-2 -mb-[1px] ${
+          className={`flex items-center gap-2 pb-3 px-4 text-sm font-semibold transition-all border-b-2 -mb-[1px] shrink-0 ${
             mainTab === 'courses'
               ? 'border-[#24582d] text-[#24582d]'
               : 'border-transparent text-gray-500 hover:text-gray-900'
@@ -412,7 +412,7 @@ export default function AdminDeliveriesPage() {
 
         <button
           onClick={() => setMainTab('livreurs')}
-          className={`flex items-center gap-2 pb-3 px-4 text-sm font-semibold transition-all border-b-2 -mb-[1px] ${
+          className={`flex items-center gap-2 pb-3 px-4 text-sm font-semibold transition-all border-b-2 -mb-[1px] shrink-0 ${
             mainTab === 'livreurs'
               ? 'border-[#24582d] text-[#24582d]'
               : 'border-transparent text-gray-500 hover:text-gray-900'
@@ -430,12 +430,12 @@ export default function AdminDeliveriesPage() {
       {mainTab === 'courses' && (
         <div className="space-y-5">
           {/* Status Sub-Pills Bar */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar flex-nowrap sm:flex-wrap">
             {/* TOUTES */}
             <button
               type="button"
               onClick={() => setStatusFilter('all')}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 shrink-0 ${
                 statusFilter === 'all'
                   ? 'bg-[#c1647a] text-white! shadow-xs'
                   : 'bg-white text-gray-700 border border-[#e7e4dd] hover:bg-[#faf8f4]'
@@ -472,7 +472,7 @@ export default function AdminDeliveriesPage() {
             <button
               type="button"
               onClick={() => setStatusFilter('a_livrer')}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 shrink-0 ${
                 statusFilter === 'a_livrer'
                   ? 'bg-[#c1647a] text-white! shadow-xs'
                   : 'bg-white text-gray-700 border border-[#e7e4dd] hover:bg-[#faf8f4]'
@@ -509,7 +509,7 @@ export default function AdminDeliveriesPage() {
             <button
               type="button"
               onClick={() => setStatusFilter('en_cours')}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 shrink-0 ${
                 statusFilter === 'en_cours'
                   ? 'bg-[#c1647a] text-white! shadow-xs'
                   : 'bg-white text-gray-700 border border-[#e7e4dd] hover:bg-[#faf8f4]'
@@ -546,7 +546,7 @@ export default function AdminDeliveriesPage() {
             <button
               type="button"
               onClick={() => setStatusFilter('livree')}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 shrink-0 ${
                 statusFilter === 'livree'
                   ? 'bg-[#c1647a] text-white! shadow-xs'
                   : 'bg-white text-gray-700 border border-[#e7e4dd] hover:bg-[#faf8f4]'
@@ -584,7 +584,7 @@ export default function AdminDeliveriesPage() {
               <button
                 type="button"
                 onClick={() => setStatusFilter('echec')}
-                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+                className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 shrink-0 ${
                   statusFilter === 'echec'
                     ? 'bg-[#c1647a] text-white! shadow-xs'
                     : 'bg-white text-gray-700 border border-[#e7e4dd] hover:bg-[#faf8f4]'
@@ -620,34 +620,35 @@ export default function AdminDeliveriesPage() {
           </div>
 
           {/* Search and Filters Bar */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            <div className="relative flex-1 max-w-md">
+          <div className="flex items-center justify-between gap-2 sm:gap-3">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Rechercher par #livraison, commande, destinataire, livreur..."
+                placeholder="Rechercher #livraison, commande, client..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 h-10 text-xs bg-white border-[#e7e4dd] focus-visible:ring-[#c1647a]"
               />
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               {/* Drawer Filter */}
               <Sheet open={isFilterOpen} onOpenChange={handleOpenFilterDrawer}>
                 <SheetTrigger
                   render={
                     <Button
                       variant="outline"
-                      className={`text-xs h-10 border-[#e7e4dd] bg-white gap-2 relative ${
+                      className={`text-xs h-10 border-[#e7e4dd] bg-white gap-1.5 sm:gap-2 relative shrink-0 ${
                         activeFiltersCount > 0 ? 'border-[#c1647a] text-[#c1647a]' : 'text-gray-700'
                       }`}
                     />
                   }
                 >
                   <Filter className="h-3.5 w-3.5" />
-                  Filtres avancés
+                  <span className="hidden sm:inline">Filtres avancés</span>
+                  <span className="sm:hidden">Filtres</span>
                   {activeFiltersCount > 0 && (
-                    <span className="h-5 w-5 rounded-full bg-[#c1647a] text-white text-[10px] font-bold flex items-center justify-center">
+                    <span className="h-4.5 w-4.5 rounded-full bg-[#c1647a] text-white text-[10px] font-bold flex items-center justify-center">
                       {activeFiltersCount}
                     </span>
                   )}
@@ -746,8 +747,8 @@ export default function AdminDeliveriesPage() {
             </div>
           </div>
 
-          {/* Deliveries DataTable */}
-          <div className="bg-white border border-[#e7e4dd] rounded-xl overflow-hidden shadow-xs">
+          {/* Deliveries DataTable (Desktop) */}
+          <div className="hidden lg:block bg-white border border-[#e7e4dd] rounded-xl overflow-hidden shadow-xs">
             <Table>
               <TableHeader className="bg-[#faf8f4]/60">
                 <TableRow className="border-[#e7e4dd]">
@@ -953,6 +954,206 @@ export default function AdminDeliveriesPage() {
                 )}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Deliveries Mobile Card View */}
+          <div className="lg:hidden space-y-3">
+            {filteredDeliveries.length === 0 ? (
+              <div className="bg-white border border-[#e7e4dd] rounded-xl p-8 text-center text-gray-500 space-y-2">
+                <Truck className="h-8 w-8 text-gray-300 mx-auto" />
+                <p className="text-xs font-medium">Aucune livraison trouvée pour ces critères.</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setStatusFilter('all');
+                    setZoneFilter('all');
+                    setDriverFilter('all');
+                    setModeFilter('all');
+                    setSearchQuery('');
+                  }}
+                  className="text-xs border-[#e7e4dd] mt-1"
+                >
+                  Réinitialiser la recherche
+                </Button>
+              </div>
+            ) : (
+              filteredDeliveries.map((delivery) => (
+                <div
+                  key={delivery.id}
+                  onClick={() => handleOpenDetail(delivery)}
+                  className="bg-white border border-[#e7e4dd] rounded-xl p-4 space-y-3 shadow-xs hover:border-gray-300 transition-all cursor-pointer"
+                >
+                  {/* Top: #Livraison + orderRef + Status */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-sm text-gray-900">
+                          {delivery.id}
+                        </span>
+                        <span className="text-xs font-mono text-gray-400">
+                          {delivery.orderRef}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-gray-500 mt-0.5">
+                        {delivery.deliveryMode}
+                      </div>
+                    </div>
+                    <div>{getStatusBadge(delivery.status)}</div>
+                  </div>
+
+                  {/* Customer & Address */}
+                  <div className="bg-[#faf8f4] rounded-lg p-2.5 space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-xs text-gray-900 truncate">
+                        {delivery.customerName}
+                      </span>
+                      <Badge className="bg-[#fdf2f4] text-[#c1647a] border-none text-[10px] font-medium py-0 px-1.5 shrink-0">
+                        {delivery.deliveryZone}
+                      </Badge>
+                    </div>
+                    <p className="text-[11px] text-gray-600 line-clamp-2">
+                      {delivery.deliveryAddress}
+                    </p>
+                  </div>
+
+                  {/* Info Row: Time slot & Driver */}
+                  <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-[#f0ede6]">
+                    <div>
+                      <span className="text-[10px] text-gray-400 block font-medium">Créneau prévu</span>
+                      <div className="flex items-center gap-1 text-gray-800 font-medium text-[11px] mt-0.5">
+                        <Clock className="h-3 w-3 text-gray-400 shrink-0" />
+                        <span className="truncate">{delivery.timeSlot}</span>
+                      </div>
+                      <span className="text-[10px] text-gray-400">{delivery.scheduledDate}</span>
+                    </div>
+
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <span className="text-[10px] text-gray-400 block font-medium">Livreur</span>
+                      {delivery.driverId ? (
+                        <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+                          <div className="h-5 w-5 rounded-full bg-[#f0ede6] text-gray-700 text-[9px] font-bold flex items-center justify-center shrink-0">
+                            {delivery.driverName ? delivery.driverName.slice(0, 2).toUpperCase() : 'LV'}
+                          </div>
+                          <div className="min-w-0 truncate">
+                            <span className="font-medium text-[11px] text-gray-900 truncate block">
+                              {delivery.driverName}
+                            </span>
+                            <span className="text-[9px] text-gray-400 truncate block">
+                              {delivery.driverVehicle || 'Moto'}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenAssignModal(delivery)}
+                          className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 rounded-md px-2 py-0.5 transition-colors cursor-pointer mt-0.5"
+                        >
+                          <UserCheck className="h-3 w-3 text-amber-600 shrink-0" />
+                          <span>Assigner</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action Buttons Row */}
+                  <div className="pt-2 border-t border-[#f0ede6] flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                    {delivery.status === 'a_livrer' && (
+                      <>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            if (!delivery.driverId) {
+                              handleOpenAssignModal(delivery);
+                            } else {
+                              handleStatusChange(delivery.id, 'en_cours');
+                              toast.success('Course démarrée');
+                            }
+                          }}
+                          className={`flex-1 h-8 text-xs font-semibold ${
+                            delivery.driverId
+                              ? 'bg-[#3d5a99] hover:bg-[#2f4677] text-white'
+                              : 'bg-[#c1647a] hover:bg-[#a85266] text-white'
+                          }`}
+                        >
+                          {delivery.driverId ? 'Démarrer course' : 'Assigner livreur'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          title="Marquer livrée"
+                          onClick={() => handleOpenCompleteModal(delivery)}
+                          className="h-8 px-3 border-[#bbf7d0] bg-[#f0fdf4] text-[#166534] hover:bg-[#dcfce7] text-xs font-semibold gap-1 shrink-0"
+                        >
+                          <CheckCircle className="h-3.5 w-3.5" />
+                          <span>Livrée</span>
+                        </Button>
+                      </>
+                    )}
+
+                    {delivery.status === 'en_cours' && (
+                      <>
+                        <Button
+                          size="sm"
+                          onClick={() => handleOpenCompleteModal(delivery)}
+                          className="flex-1 h-8 bg-[#166534] hover:bg-[#14532d] text-white text-xs font-semibold gap-1.5"
+                        >
+                          <CheckCircle className="h-3.5 w-3.5" />
+                          Terminer la livraison
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            handleStatusChange(delivery.id, 'echec');
+                            toast.error('Livraison marquée en échec');
+                          }}
+                          className="h-8 px-2.5 border-red-200 text-red-600 hover:bg-red-50 text-xs font-medium shrink-0"
+                        >
+                          Échec
+                        </Button>
+                      </>
+                    )}
+
+                    {delivery.status === 'livree' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleOpenDetail(delivery)}
+                        className="w-full h-8 text-xs text-gray-700 border-[#e7e4dd] hover:bg-[#faf8f4] justify-between"
+                      >
+                        <span>Livrée le {delivery.deliveredAt || delivery.scheduledDate}</span>
+                        <ChevronRight className="h-3.5 w-3.5 text-gray-400" />
+                      </Button>
+                    )}
+
+                    {delivery.status === 'echec' && (
+                      <div className="flex items-center gap-2 w-full">
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            handleStatusChange(delivery.id, 'a_livrer');
+                            toast.info('Livraison replanifiée');
+                          }}
+                          className="flex-1 h-8 bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold"
+                        >
+                          Replanifier
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleOpenDetail(delivery)}
+                          className="h-8 text-xs border-[#e7e4dd] shrink-0"
+                        >
+                          Détails
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}

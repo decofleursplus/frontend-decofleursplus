@@ -226,7 +226,7 @@ export default function AdminProductsPage() {
         </div>
         <Button
           variant="cta"
-          className="bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs"
+          className="bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs w-full sm:w-auto"
           render={<Link href="/admin/produits/nouveau" />}
         >
           <Plus className="mr-2 h-4 w-4 text-white" />
@@ -234,15 +234,46 @@ export default function AdminProductsPage() {
         </Button>
       </div>
 
+      {/* Categories Quick Tabs */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar">
+        {categories.map((cat) => {
+          const isActive = selectedCategory === cat.value;
+          const count = cat.value === 'all'
+            ? products.length
+            : products.filter((p) => p.category.toLowerCase() === cat.value.toLowerCase()).length;
+          return (
+            <button
+              key={cat.value}
+              type="button"
+              onClick={() => setSelectedCategory(cat.value)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors shrink-0 ${
+                isActive
+                  ? 'bg-[#193e23] text-white shadow-2xs'
+                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-[#e7e4dd]'
+              }`}
+            >
+              <span>{cat.label}</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                  isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                }`}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Filters and Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border border-[#e7e4dd]">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-xl border border-[#e7e4dd]">
         <div className="relative w-full sm:w-96">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             placeholder="Rechercher par nom ou référence..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 border-[#e7e4dd] focus-visible:ring-[#24582d]/20"
+            className="pl-9 border-[#e7e4dd] focus-visible:ring-[#24582d]/20 text-xs sm:text-sm"
           />
           {searchQuery && (
             <button
@@ -261,7 +292,7 @@ export default function AdminProductsPage() {
               render={
                 <Button
                   variant="outline"
-                  className={`border-[#e7e4dd] w-full sm:w-auto transition-colors ${
+                  className={`border-[#e7e4dd] flex-1 sm:w-auto transition-colors ${
                     activeFiltersCount > 0
                       ? 'border-[#c1647a] text-[#c1647a] bg-[#fdf5f7]'
                       : 'text-gray-700 hover:bg-[#faf8f4]'
@@ -269,10 +300,10 @@ export default function AdminProductsPage() {
                 />
               }
             >
-              <Filter className="mr-2 h-4 w-4" />
-              Filtres
+              <Filter className="mr-2 h-4 w-4 shrink-0" />
+              <span>Filtres</span>
               {activeFiltersCount > 0 && (
-                <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#c1647a] text-[11px] font-bold text-white">
+                <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#c1647a] text-[11px] font-bold text-white shrink-0">
                   {activeFiltersCount}
                 </span>
               )}
@@ -420,7 +451,7 @@ export default function AdminProductsPage() {
               variant="ghost"
               size="sm"
               onClick={handleResetFilters}
-              className="text-xs text-gray-500 hover:text-[#c1647a]"
+              className="text-xs text-gray-500 hover:text-[#c1647a] shrink-0"
             >
               Réinitialiser
             </Button>
@@ -467,8 +498,162 @@ export default function AdminProductsPage() {
         </div>
       )}
 
-      {/* Products Table */}
-      <div className="bg-white rounded-xl border border-[#e7e4dd] overflow-hidden shadow-xs">
+      {/* Mobile Products Card View (visible on < lg) */}
+      <div className="space-y-3 lg:hidden">
+        {filteredProducts.map((product) => (
+          <div
+            key={product.id}
+            className="bg-white rounded-xl border border-[#e7e4dd] p-3.5 shadow-2xs space-y-3"
+          >
+            <div className="flex items-start gap-3">
+              {/* Product Thumbnail */}
+              <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 border border-[#e7e4dd] shrink-0">
+                {product.image ? (
+                  <Image
+                    src={product.image}
+                    alt={product.name}
+                    fill
+                    sizes="64px"
+                    className="object-cover"
+                    onError={(e) => {
+                      const target = e.currentTarget as HTMLImageElement;
+                      target.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-gray-400">
+                    <Package className="h-6 w-6" />
+                  </div>
+                )}
+              </div>
+
+              {/* Product Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-1">
+                  <Link
+                    href={`/admin/produits/${product.id}`}
+                    className="font-bold text-sm text-[#1e2a1f] hover:text-[#24582d] truncate"
+                  >
+                    {product.name}
+                  </Link>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 shrink-0">
+                      <MoreHorizontal size={16} />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="end"
+                      sideOffset={4}
+                      className="w-52 p-1.5 rounded-xl border border-[#e7e4dd] bg-white shadow-xl"
+                    >
+                      <DropdownMenuGroup>
+                        <DropdownMenuLabel className="px-2.5 py-1 text-[10.5px] font-bold text-gray-400 uppercase tracking-wider">
+                          Actions
+                        </DropdownMenuLabel>
+                        <DropdownMenuItem
+                          className="cursor-pointer font-medium py-1.5 px-2.5 rounded-lg text-xs text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef]"
+                          render={<Link href={`/admin/produits/${product.id}`} />}
+                        >
+                          <Edit className="mr-2 h-3.5 w-3.5 text-[#24582d]" />
+                          Modifier la fiche
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="cursor-pointer font-medium py-1.5 px-2.5 rounded-lg text-xs text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef]"
+                          render={<Link href={`/boutique/${product.id}`} target="_blank" />}
+                        >
+                          <Eye className="mr-2 h-3.5 w-3.5 text-gray-500" />
+                          Voir sur la boutique
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+                      <DropdownMenuSeparator className="my-1 border-t border-[#f0eee8]" />
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem
+                          className="cursor-pointer font-medium py-1.5 px-2.5 rounded-lg text-xs text-red-600 hover:bg-red-50 focus:bg-red-50"
+                          onClick={() => setProductToDelete(product)}
+                        >
+                          <Trash2 className="mr-2 h-3.5 w-3.5 text-red-600" />
+                          Supprimer le produit
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs text-gray-600 font-medium">
+                    {product.category}
+                  </span>
+                  <span className="text-gray-300">•</span>
+                  <span className="text-[11px] text-gray-400 font-mono">
+                    {product.sku}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 mt-1.5">
+                  {getStatusBadge(product.status)}
+                  <span
+                    className={`text-[11px] font-semibold px-2 py-0.5 rounded-md ${
+                      product.stock === 0
+                        ? 'bg-red-50 text-red-700 border border-red-200'
+                        : product.stock <= 5
+                        ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                        : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    }`}
+                  >
+                    Stock: {product.stock}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom: Price + Actions */}
+            <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-wider text-gray-400 block">Prix</span>
+                <span className="font-bold text-base text-[#24582d]">
+                  {formatCurrency(product.price)}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-2.5 text-xs text-gray-700 border-[#e7e4dd]"
+                  render={<Link href={`/admin/produits/${product.id}`} />}
+                >
+                  <Edit size={13} className="mr-1" />
+                  Modifier
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-red-600 border-red-100 hover:bg-red-50"
+                  onClick={() => setProductToDelete(product)}
+                >
+                  <Trash2 size={13} />
+                </Button>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {filteredProducts.length === 0 && (
+          <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-gray-500 space-y-2">
+            <Package className="h-8 w-8 text-gray-300 mx-auto" />
+            <p className="font-medium text-gray-700 text-sm">Aucun produit ne correspond à ces critères</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleResetFilters}
+              className="mt-2 text-xs border-[#e7e4dd]"
+            >
+              Effacer les filtres
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Products Desktop Table (visible on lg+) */}
+      <div className="hidden lg:block bg-white rounded-xl border border-[#e7e4dd] overflow-hidden shadow-xs">
         <Table>
           <TableHeader className="bg-[#faf8f4]">
             <TableRow>

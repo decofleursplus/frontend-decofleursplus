@@ -177,101 +177,119 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {/* Revenue */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Chiffre d&apos;affaires</CardTitle>
-            <CreditCard className="h-4 w-4 text-[#c1647a]" />
+        <Card className="shadow-2xs">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 sm:p-5 pb-1 sm:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-gray-600 truncate">Chiffre d&apos;affaires</CardTitle>
+            <CreditCard className="h-4 w-4 text-[#c1647a] shrink-0" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-[#1e2a1f]">{formatCurrency(dashboardKpis.revenue)}</div>
-            <p className="text-xs text-green-600 flex items-center mt-1">
-              <ArrowUpRight className="mr-1 h-3 w-3" />
-              +{dashboardKpis.revenueDelta}% <span className="text-gray-400 ml-1">par rapport au mois dernier</span>
+          <CardContent className="p-3 sm:p-5 pt-0">
+            <div className="text-base sm:text-2xl font-bold text-[#1e2a1f] truncate">
+              {formatCurrency(dashboardKpis.revenue)}
+            </div>
+            <p className="text-[11px] sm:text-xs text-green-600 flex items-center mt-1 truncate">
+              <ArrowUpRight className="mr-0.5 h-3 w-3 shrink-0" />
+              <span>+{dashboardKpis.revenueDelta}%</span>
+              <span className="text-gray-400 ml-1 hidden sm:inline">par rapport au mois dernier</span>
+              <span className="text-gray-400 ml-1 sm:hidden">vs m-1</span>
             </p>
           </CardContent>
         </Card>
 
         {/* Orders */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Commandes</CardTitle>
-            <ShoppingBag className="h-4 w-4 text-[#c1647a]" />
+        <Card className="shadow-2xs">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 sm:p-5 pb-1 sm:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-gray-600 truncate">Commandes</CardTitle>
+            <ShoppingBag className="h-4 w-4 text-[#c1647a] shrink-0" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-[#1e2a1f]">{dashboardKpis.orders}</div>
-            <p className="text-xs text-green-600 flex items-center mt-1">
-              <ArrowUpRight className="mr-1 h-3 w-3" />
-              +{dashboardKpis.ordersDelta}% <span className="text-gray-400 ml-1">par rapport au mois dernier</span>
+          <CardContent className="p-3 sm:p-5 pt-0">
+            <div className="text-base sm:text-2xl font-bold text-[#1e2a1f]">
+              {dashboardKpis.orders}
+            </div>
+            <p className="text-[11px] sm:text-xs text-green-600 flex items-center mt-1 truncate">
+              <ArrowUpRight className="mr-0.5 h-3 w-3 shrink-0" />
+              <span>+{dashboardKpis.ordersDelta}%</span>
+              <span className="text-gray-400 ml-1 hidden sm:inline">par rapport au mois dernier</span>
+              <span className="text-gray-400 ml-1 sm:hidden">vs m-1</span>
             </p>
           </CardContent>
         </Card>
 
         {/* Customers */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Clients</CardTitle>
-            <Users className="h-4 w-4 text-[#c1647a]" />
+        <Card className="shadow-2xs">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 sm:p-5 pb-1 sm:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-gray-600 truncate">Clients</CardTitle>
+            <Users className="h-4 w-4 text-[#c1647a] shrink-0" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-[#1e2a1f]">{dashboardKpis.customers}</div>
-            <p className="text-xs text-green-600 flex items-center mt-1">
-              <ArrowUpRight className="mr-1 h-3 w-3" />
-              +{dashboardKpis.customersDelta}% <span className="text-gray-400 ml-1">par rapport au mois dernier</span>
+          <CardContent className="p-3 sm:p-5 pt-0">
+            <div className="text-base sm:text-2xl font-bold text-[#1e2a1f]">
+              {dashboardKpis.customers}
+            </div>
+            <p className="text-[11px] sm:text-xs text-green-600 flex items-center mt-1 truncate">
+              <ArrowUpRight className="mr-0.5 h-3 w-3 shrink-0" />
+              <span>+{dashboardKpis.customersDelta}%</span>
+              <span className="text-gray-400 ml-1 hidden sm:inline">par rapport au mois dernier</span>
+              <span className="text-gray-400 ml-1 sm:hidden">vs m-1</span>
             </p>
           </CardContent>
         </Card>
 
         {/* Products */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Produits Actifs</CardTitle>
-            <Package className="h-4 w-4 text-[#c1647a]" />
+        <Card className="shadow-2xs">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 sm:p-5 pb-1 sm:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-gray-600 truncate">Produits Actifs</CardTitle>
+            <Package className="h-4 w-4 text-[#c1647a] shrink-0" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-[#1e2a1f]">{dashboardKpis.products}</div>
-            <p className="text-xs text-green-600 flex items-center mt-1">
-              <ArrowUpRight className="mr-1 h-3 w-3" />
-              +{dashboardKpis.productsDelta}% <span className="text-gray-400 ml-1">par rapport au mois dernier</span>
+          <CardContent className="p-3 sm:p-5 pt-0">
+            <div className="text-base sm:text-2xl font-bold text-[#1e2a1f]">
+              {dashboardKpis.products}
+            </div>
+            <p className="text-[11px] sm:text-xs text-green-600 flex items-center mt-1 truncate">
+              <ArrowUpRight className="mr-0.5 h-3 w-3 shrink-0" />
+              <span>+{dashboardKpis.productsDelta}%</span>
+              <span className="text-gray-400 ml-1 hidden sm:inline">par rapport au mois dernier</span>
+              <span className="text-gray-400 ml-1 sm:hidden">vs m-1</span>
             </p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
         {/* Chart */}
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle className="flex items-center text-[#1e2a1f]">
-              <TrendingUp className="mr-2 h-5 w-5 text-[#c1647a]" />
-              Évolution des ventes (30 derniers jours)
+        <Card className="col-span-1 lg:col-span-4 shadow-2xs">
+          <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
+            <CardTitle className="flex items-center text-sm sm:text-base text-[#1e2a1f]">
+              <TrendingUp className="mr-2 h-4 w-4 sm:h-5 sm:w-5 text-[#c1647a] shrink-0" />
+              <span>Évolution des ventes (30 jours)</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="pl-0">
-            <div className="h-[300px] w-full px-4">
+          <CardContent className="p-2 sm:p-6 pt-0">
+            <div className="h-[220px] sm:h-[300px] w-full px-1 sm:px-4">
               <Line data={lineChartData} options={lineChartOptions} />
             </div>
           </CardContent>
         </Card>
 
         {/* Recent Orders Table */}
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle className="text-[#1e2a1f]">Dernières commandes</CardTitle>
+        <Card className="col-span-1 lg:col-span-3 shadow-2xs">
+          <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
+            <CardTitle className="text-sm sm:text-base text-[#1e2a1f]">Dernières commandes</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="overflow-auto max-h-[300px]">
+          <CardContent className="p-3 sm:p-6 pt-0">
+            <div className="overflow-x-auto max-h-[300px]">
               <Table>
                 <TableBody>
                   {adminOrders.slice(0, 5).map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell>
-                        <div className="font-medium text-[#1e2a1f]">{order.customerName}</div>
-                        <div className="text-xs text-gray-500">{order.ref}</div>
+                    <TableRow key={order.id} className="text-xs sm:text-sm">
+                      <TableCell className="py-2.5 px-2">
+                        <div className="font-semibold text-[#1e2a1f] truncate max-w-[110px] sm:max-w-none">
+                          {order.customerName}
+                        </div>
+                        <div className="text-[10.5px] text-gray-500">{order.ref}</div>
                       </TableCell>
-                      <TableCell>{getStatusBadge(order.status)}</TableCell>
-                      <TableCell className="text-right font-medium text-[#24582d]">
+                      <TableCell className="py-2.5 px-1.5">{getStatusBadge(order.status)}</TableCell>
+                      <TableCell className="py-2.5 px-2 text-right font-semibold text-[#24582d] whitespace-nowrap">
                         {formatCurrency(order.total)}
                       </TableCell>
                     </TableRow>
@@ -279,37 +297,37 @@ export default function AdminDashboardPage() {
                 </TableBody>
               </Table>
             </div>
-            <div className="mt-4 flex justify-center border-t border-gray-100 pt-4">
+            <div className="mt-3 sm:mt-4 flex justify-center border-t border-gray-100 pt-3">
               <Link 
                 href="/admin/commandes" 
-                className="text-sm font-medium text-[#c1647a] hover:text-[#a95568] transition-colors"
+                className="text-xs sm:text-sm font-semibold text-[#c1647a] hover:text-[#a95568] transition-colors"
               >
-                Voir toutes les commandes
+                Voir toutes les commandes →
               </Link>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
         {/* Order Distribution Chart */}
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle className="text-[#1e2a1f]">Répartition des commandes</CardTitle>
+        <Card className="col-span-1 lg:col-span-3 shadow-2xs">
+          <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
+            <CardTitle className="text-sm sm:text-base text-[#1e2a1f]">Répartition des commandes</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="h-[250px] mt-4 flex items-center justify-between">
-              <div className="w-1/2 h-full">
+          <CardContent className="p-3 sm:p-6 pt-0">
+            <div className="mt-2 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="w-full sm:w-1/2 h-[180px] sm:h-[220px]">
                 <Doughnut data={doughnutData} options={doughnutOptions} />
               </div>
-              <div className="w-1/2 space-y-4 pl-4">
+              <div className="w-full sm:w-1/2 grid grid-cols-2 sm:grid-cols-1 gap-2 sm:space-y-3 sm:pl-3">
                 {orderDistributionDataArray.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                      <span className="text-gray-600">{item.name}</span>
+                  <div key={index} className="flex items-center justify-between text-xs sm:text-sm">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                      <span className="text-gray-600 truncate">{item.name}</span>
                     </div>
-                    <span className="font-medium text-[#1e2a1f]">{item.value}%</span>
+                    <span className="font-semibold text-[#1e2a1f] shrink-0 ml-1">{item.value}%</span>
                   </div>
                 ))}
               </div>
@@ -318,21 +336,21 @@ export default function AdminDashboardPage() {
         </Card>
 
         {/* Top Products */}
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle className="text-[#1e2a1f]">Produits les plus vendus</CardTitle>
+        <Card className="col-span-1 lg:col-span-4 shadow-2xs">
+          <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
+            <CardTitle className="text-sm sm:text-base text-[#1e2a1f]">Produits les plus vendus</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
+          <CardContent className="p-3 sm:p-6 pt-0">
+            <div className="space-y-4 sm:space-y-6">
               {[
                 { name: 'Bouquet Élégance Rose', sales: 124, revenue: 3100000, stock: 'En stock', image: '/images/bouquet-passion.jpg' },
                 { name: 'Panier de Fruits', sales: 85, revenue: 1530000, stock: 'Faible', image: '/images/fruits.jpg' },
                 { name: 'Orchidée Phalaenopsis', sales: 62, revenue: 1860000, stock: 'En stock', image: '/images/orchidee.jpg' },
                 { name: 'Plante Monstera', sales: 45, revenue: 540000, stock: 'En stock', image: '/images/plante-monstera.jpg' },
               ].map((product, i) => (
-                <div key={i} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-md bg-gray-100 overflow-hidden relative shrink-0">
+                <div key={i} className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gray-100 overflow-hidden relative shrink-0 border border-gray-100">
                       <Image 
                         src={product.image} 
                         alt={product.name}
@@ -341,14 +359,16 @@ export default function AdminDashboardPage() {
                         className="object-cover"
                       />
                     </div>
-                    <div>
-                      <div className="font-medium text-[#1e2a1f]">{product.name}</div>
-                      <div className="text-xs text-gray-500">
-                        {product.sales} ventes — {product.stock}
+                    <div className="min-w-0">
+                      <div className="font-semibold text-xs sm:text-sm text-[#1e2a1f] truncate">
+                        {product.name}
+                      </div>
+                      <div className="text-[10.5px] sm:text-xs text-gray-500 truncate">
+                        {product.sales} ventes • <span className={product.stock === 'Faible' ? 'text-amber-600 font-medium' : 'text-emerald-700'}>{product.stock}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="font-medium text-[#24582d]">
+                  <div className="font-semibold text-xs sm:text-sm text-[#24582d] shrink-0 text-right">
                     {formatCurrency(product.revenue)}
                   </div>
                 </div>

@@ -317,10 +317,10 @@ export default function AdminStockPage() {
       </div>
 
       {/* Main Top Navigation Tabs */}
-      <div className="flex border-b border-[#e7e4dd] gap-2">
+      <div className="flex border-b border-[#e7e4dd] gap-2 overflow-x-auto no-scrollbar">
         <button
           onClick={() => setMainTab('etat-stock')}
-          className={`flex items-center gap-2 pb-3 px-4 text-sm font-semibold transition-all border-b-2 -mb-[1px] ${
+          className={`flex items-center gap-2 pb-3 px-4 text-sm font-semibold transition-all border-b-2 -mb-[1px] shrink-0 ${
             mainTab === 'etat-stock'
               ? 'border-[#24582d] text-[#24582d]'
               : 'border-transparent text-gray-500 hover:text-gray-900'
@@ -331,7 +331,7 @@ export default function AdminStockPage() {
         </button>
         <button
           onClick={() => setMainTab('historique')}
-          className={`flex items-center gap-2 pb-3 px-4 text-sm font-semibold transition-all border-b-2 -mb-[1px] ${
+          className={`flex items-center gap-2 pb-3 px-4 text-sm font-semibold transition-all border-b-2 -mb-[1px] shrink-0 ${
             mainTab === 'historique'
               ? 'border-[#24582d] text-[#24582d]'
               : 'border-transparent text-gray-500 hover:text-gray-900'
@@ -348,11 +348,11 @@ export default function AdminStockPage() {
       {mainTab === 'etat-stock' ? (
         <div className="space-y-5">
           {/* Status Sub-Pills (Mockup 10 style: Tous, Stock faible, Rupture) */}
-          <div className="flex items-center gap-2.5 overflow-x-auto pb-1">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar flex-nowrap sm:flex-wrap">
             <button
               type="button"
               onClick={() => setStockStatusFilter('all')}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 shrink-0 ${
                 stockStatusFilter === 'all'
                   ? 'bg-[#c1647a] text-white! shadow-xs'
                   : 'bg-white text-gray-700 border border-[#e7e4dd] hover:bg-[#faf8f4]'
@@ -381,7 +381,7 @@ export default function AdminStockPage() {
             <button
               type="button"
               onClick={() => setStockStatusFilter('low')}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 shrink-0 ${
                 stockStatusFilter === 'low'
                   ? 'bg-[#c1647a] text-white! shadow-xs'
                   : 'bg-white text-gray-700 border border-[#e7e4dd] hover:bg-[#faf8f4]'
@@ -417,7 +417,7 @@ export default function AdminStockPage() {
             <button
               type="button"
               onClick={() => setStockStatusFilter('out')}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 shrink-0 ${
                 stockStatusFilter === 'out'
                   ? 'bg-[#c1647a] text-white! shadow-xs'
                   : 'bg-white text-gray-700 border border-[#e7e4dd] hover:bg-[#faf8f4]'
@@ -453,14 +453,14 @@ export default function AdminStockPage() {
 
 
           {/* Search & Filters Bar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border border-[#e7e4dd]">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-xl border border-[#e7e4dd]">
             <div className="relative w-full sm:w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Rechercher par nom ou référence..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 border-[#e7e4dd] focus-visible:ring-[#24582d]/20 text-sm"
+                className="pl-9 border-[#e7e4dd] focus-visible:ring-[#24582d]/20 text-xs sm:text-sm h-10"
               />
               {searchQuery && (
                 <button
@@ -472,14 +472,14 @@ export default function AdminStockPage() {
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-start sm:justify-end">
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
               {/* Category selector */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-gray-500 font-medium">Catégorie :</span>
+              <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
+                <span className="text-xs text-gray-500 font-medium hidden sm:inline">Catégorie :</span>
                 <select
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="h-9 rounded-lg border border-[#e7e4dd] bg-white px-3 text-xs text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#24582d]"
+                  className="w-full sm:w-auto h-9 rounded-lg border border-[#e7e4dd] bg-white px-2.5 sm:px-3 text-xs text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#24582d]"
                 >
                   <option value="all">Toutes les catégories</option>
                   {categoriesList.map((cat) => (
@@ -491,8 +491,8 @@ export default function AdminStockPage() {
               </div>
 
               {/* Sorting selector */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-gray-500 font-medium">Trier par :</span>
+              <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
+                <span className="text-xs text-gray-500 font-medium hidden sm:inline">Trier par :</span>
                 <select
                   value={sortOption}
                   onChange={(e) =>
@@ -500,19 +500,19 @@ export default function AdminStockPage() {
                       e.target.value as 'priority' | 'stock_asc' | 'stock_desc' | 'name_asc'
                     )
                   }
-                  className="h-9 rounded-lg border border-[#e7e4dd] bg-white px-3 text-xs text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#24582d]"
+                  className="w-full sm:w-auto h-9 rounded-lg border border-[#e7e4dd] bg-white px-2.5 sm:px-3 text-xs text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#24582d]"
                 >
-                  <option value="priority">Priorité alertes (ruptures d&apos;abord)</option>
+                  <option value="priority">Priorité alertes</option>
                   <option value="stock_asc">Stock croissant</option>
                   <option value="stock_desc">Stock décroissant</option>
-                  <option value="name_asc">Nom du produit (A-Z)</option>
+                  <option value="name_asc">Nom (A-Z)</option>
                 </select>
               </div>
             </div>
           </div>
 
-          {/* Stock Table */}
-          <div className="bg-white rounded-xl border border-[#e7e4dd] overflow-hidden shadow-xs">
+          {/* Stock Table (Desktop) */}
+          <div className="hidden lg:block bg-white rounded-xl border border-[#e7e4dd] overflow-hidden shadow-xs">
             <Table>
               <TableHeader className="bg-[#faf8f4]">
                 <TableRow>
@@ -642,19 +642,133 @@ export default function AdminStockPage() {
               </TableBody>
             </Table>
           </div>
+
+          {/* Stock Mobile Card View */}
+          <div className="lg:hidden space-y-3">
+            {filteredProducts.length === 0 ? (
+              <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-gray-500 space-y-2">
+                <Package className="h-8 w-8 text-gray-300 mx-auto" />
+                <p className="text-xs font-medium">Aucun produit ne correspond à ces critères.</p>
+                {(searchQuery || categoryFilter !== 'all' || stockStatusFilter !== 'all') && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setCategoryFilter('all');
+                      setStockStatusFilter('all');
+                    }}
+                    className="mt-2 text-xs border-[#e7e4dd]"
+                  >
+                    Réinitialiser les filtres
+                  </Button>
+                )}
+              </div>
+            ) : (
+              filteredProducts.map((product) => {
+                const min = product.minStock ?? 5;
+                const isOutOfStock = product.stock === 0;
+                const isLowStock = product.stock > 0 && product.stock <= min;
+
+                return (
+                  <div
+                    key={product.id}
+                    className="bg-white border border-[#e7e4dd] rounded-xl p-3.5 space-y-3 shadow-xs"
+                  >
+                    {/* Top Row: Thumbnail + Name + Status Badge */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="relative h-12 w-12 rounded-lg overflow-hidden bg-gray-100 shrink-0 border border-[#e7e4dd]">
+                          <Image
+                            src={product.image}
+                            alt={product.name}
+                            fill
+                            sizes="48px"
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="font-semibold text-sm text-[#1e2a1f] truncate">
+                            {product.name}
+                          </h4>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-xs text-gray-500">{product.category}</span>
+                            <span className="text-[10px] font-mono text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-200">
+                              {product.sku}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="shrink-0">{getStockStatusBadge(product.stock, min)}</div>
+                    </div>
+
+                    {/* Stock Metrics Box */}
+                    <div className="bg-[#faf8f4] rounded-lg p-2.5 flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] text-gray-400 block font-medium">Stock disponible</span>
+                        <div className="flex items-baseline gap-1 mt-0.5">
+                          <span
+                            className={`text-lg font-bold font-mono ${
+                              isOutOfStock
+                                ? 'text-red-600'
+                                : isLowStock
+                                ? 'text-amber-600'
+                                : 'text-[#166534]'
+                            }`}
+                          >
+                            {product.stock}
+                          </span>
+                          <span className="text-xs text-gray-400">unités</span>
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <span className="text-[10px] text-gray-400 block font-medium">Seuil d&apos;alerte min</span>
+                        <span className="text-xs font-semibold font-mono text-gray-700 mt-0.5 block">
+                          {min} unités
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2 pt-1 border-t border-[#f0ede6]">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenAdjustModal(product)}
+                        className="flex-1 h-8 text-xs border-[#e7e4dd] text-[#24582d] hover:bg-[#edf8ef] hover:border-[#b0c8a8] font-semibold gap-1.5"
+                      >
+                        <SlidersHorizontal className="h-3.5 w-3.5" />
+                        Ajuster le stock
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        render={<Link href={`/admin/produits/${product.id}`} />}
+                        className="h-8 px-2.5 text-xs border-[#e7e4dd] text-gray-600 hover:bg-[#faf8f4]"
+                        title="Fiche produit"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
       ) : (
         /* Tab: Historique des mouvements */
         <div className="space-y-5">
           {/* Movement search & filter */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border border-[#e7e4dd]">
-            <div className="relative w-full sm:w-80">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-xl border border-[#e7e4dd]">
+            <div className="relative flex-1 sm:w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Rechercher par produit, motif..."
                 value={historySearchQuery}
                 onChange={(e) => setHistorySearchQuery(e.target.value)}
-                className="pl-9 border-[#e7e4dd] focus-visible:ring-[#24582d]/20 text-sm"
+                className="pl-9 border-[#e7e4dd] focus-visible:ring-[#24582d]/20 text-xs sm:text-sm h-10"
               />
               {historySearchQuery && (
                 <button
@@ -666,7 +780,7 @@ export default function AdminStockPage() {
               )}
             </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
               <span className="text-xs text-gray-500 font-medium">Type :</span>
               <select
                 value={historyTypeFilter}
@@ -683,8 +797,8 @@ export default function AdminStockPage() {
             </div>
           </div>
 
-          {/* Movements Table */}
-          <div className="bg-white rounded-xl border border-[#e7e4dd] overflow-hidden shadow-xs">
+          {/* Movements Table (Desktop) */}
+          <div className="hidden lg:block bg-white rounded-xl border border-[#e7e4dd] overflow-hidden shadow-xs">
             <Table>
               <TableHeader className="bg-[#faf8f4]">
                 <TableRow>
@@ -757,8 +871,62 @@ export default function AdminStockPage() {
                   </TableRow>
                 )}
               </TableBody>
-
             </Table>
+          </div>
+
+          {/* Movement Mobile Cards */}
+          <div className="lg:hidden space-y-3">
+            {filteredMovements.length === 0 ? (
+              <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-gray-500 space-y-2">
+                <History className="h-8 w-8 text-gray-300 mx-auto" />
+                <p className="font-medium text-gray-700 text-xs">Aucun mouvement enregistré.</p>
+              </div>
+            ) : (
+              filteredMovements.map((m) => (
+                <div
+                  key={m.id}
+                  className="bg-white border border-[#e7e4dd] rounded-xl p-3.5 space-y-2.5 shadow-xs"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <span className="font-semibold text-sm text-[#1e2a1f] block">
+                        {m.productName}
+                      </span>
+                      <span className="text-[10px] font-mono text-gray-400">{m.productSku}</span>
+                    </div>
+                    <div className="shrink-0">{getMovementTypeBadge(m.type)}</div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs bg-[#faf8f4] p-2 rounded-lg">
+                    <span className="text-gray-500">{formatDate(m.date)}</span>
+                    <span
+                      className={`font-mono font-bold text-sm ${
+                        m.type === 'entree'
+                          ? 'text-[#166534]'
+                          : m.type === 'sortie'
+                          ? 'text-[#cc0000]'
+                          : 'text-[#3d5a99]'
+                      }`}
+                    >
+                      {m.type === 'entree' ? `+${m.quantity}` : m.type === 'sortie' ? `-${m.quantity}` : m.quantity} unités
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs text-gray-600 pt-1 border-t border-[#f0ede6]">
+                    <span className="text-[11px] truncate max-w-[220px]" title={m.reason}>
+                      {m.reason}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedMovementForReason(m)}
+                      className="text-[#24582d] hover:underline text-[11px] font-medium shrink-0 ml-1"
+                    >
+                      Détail
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}

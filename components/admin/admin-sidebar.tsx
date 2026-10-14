@@ -47,7 +47,7 @@ export function AdminSidebar() {
 
   return (
     <aside
-      className={cn('admin-sidebar', isCollapsed && 'collapsed')}
+      className={cn('admin-sidebar hidden lg:flex', isCollapsed && 'collapsed')}
       style={{
         width: isCollapsed ? 70 : 240,
         minWidth: isCollapsed ? 70 : 240,

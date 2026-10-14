@@ -6,12 +6,17 @@ interface AdminSidebarContextType {
   isCollapsed: boolean;
   toggleSidebar: () => void;
   setCollapsed: (collapsed: boolean) => void;
+  isMobileDrawerOpen: boolean;
+  openMobileDrawer: () => void;
+  closeMobileDrawer: () => void;
+  toggleMobileDrawer: () => void;
 }
 
 const AdminSidebarContext = createContext<AdminSidebarContextType | undefined>(undefined);
 
 export function AdminSidebarProvider({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState<boolean>(false);
 
   useEffect(() => {
     try {
@@ -45,8 +50,22 @@ export function AdminSidebarProvider({ children }: { children: React.ReactNode }
     }
   };
 
+  const openMobileDrawer = () => setIsMobileDrawerOpen(true);
+  const closeMobileDrawer = () => setIsMobileDrawerOpen(false);
+  const toggleMobileDrawer = () => setIsMobileDrawerOpen((prev) => !prev);
+
   return (
-    <AdminSidebarContext.Provider value={{ isCollapsed, toggleSidebar, setCollapsed }}>
+    <AdminSidebarContext.Provider
+      value={{
+        isCollapsed,
+        toggleSidebar,
+        setCollapsed,
+        isMobileDrawerOpen,
+        openMobileDrawer,
+        closeMobileDrawer,
+        toggleMobileDrawer,
+      }}
+    >
       <div
         className={`admin-shell ${
           isCollapsed ? 'admin-shell-collapsed' : ''

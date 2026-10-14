@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import {
   Store,
   Users,
@@ -112,15 +113,17 @@ export default function AdminParametresPage() {
   };
 
   // ── Users Handlers ────────────────────────────────────────────────
-  const filteredUsers = users.filter((u) => {
-    const matchesSearch =
-      u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
-      u.email.toLowerCase().includes(userSearch.toLowerCase()) ||
-      u.phone.toLowerCase().includes(userSearch.toLowerCase());
-    const matchesRole = roleFilter === 'all' || u.role === roleFilter;
-    const matchesStatus = statusFilter === 'all' || u.status === statusFilter;
-    return matchesSearch && matchesRole && matchesStatus;
-  });
+  const filteredUsers = users
+    .filter((u) => u.role !== 'livreur')
+    .filter((u) => {
+      const matchesSearch =
+        u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
+        u.email.toLowerCase().includes(userSearch.toLowerCase()) ||
+        u.phone.toLowerCase().includes(userSearch.toLowerCase());
+      const matchesRole = roleFilter === 'all' || u.role === roleFilter;
+      const matchesStatus = statusFilter === 'all' || u.status === statusFilter;
+      return matchesSearch && matchesRole && matchesStatus;
+    });
 
   const handleSaveUser = (savedUser: AdminUser) => {
     setUsers((prev) => {
@@ -195,9 +198,9 @@ export default function AdminParametresPage() {
   return (
     <div className="space-y-6 pb-12">
       {/* ── En-tête de la page ───────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-200 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-gray-200 pb-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-gray-900">
             Paramètres & Configuration
           </h1>
           <p className="admin-page-subtitle">
@@ -208,22 +211,47 @@ export default function AdminParametresPage() {
         <Button
           onClick={handleSaveAll}
           disabled={isSaving}
-          className="gap-2 bg-[#c1647a] hover:bg-[#a84d63] text-white shadow-xs font-semibold"
+          className="w-full sm:w-auto h-9 gap-2 bg-[#c1647a] hover:bg-[#a84d63] text-white shadow-2xs font-semibold text-xs sm:text-sm"
         >
           {isSaving ? (
             <RefreshCw className="h-4 w-4 animate-spin" />
           ) : (
             <Save className="h-4 w-4" />
           )}
-          {isSaving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+          {isSaving ? 'Enregistrement...' : 'Enregistrer'}
         </Button>
       </div>
 
-      {/* ── Layout en grille : Sidebar verticale (Sticky) + Contenu ───── */}
+      {/* ── Barre de sous-onglets mobile (< md) ───────────────── */}
+      <div className="md:hidden overflow-x-auto no-scrollbar -mx-4 px-4 py-1 border-b border-gray-200">
+        <div className="flex items-center gap-2 min-w-max pb-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.key;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setActiveTab(item.key as SettingsTab)}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold shrink-0 transition-all ${
+                  isActive
+                    ? 'bg-[#c1647a] text-white shadow-2xs'
+                    : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5 shrink-0" />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Layout en grille : Sidebar verticale (Desktop) + Contenu ───── */}
       <div className="grid grid-cols-12 gap-6 items-start">
-        {/* Navigation latérale interne (Sticky) */}
-        <aside className="col-span-12 md:col-span-4 lg:col-span-3 sticky top-6 self-start z-10 space-y-4">
-          <div className="rounded-xl border border-gray-200 bg-white p-2 shadow-xs space-y-1">
+        {/* Navigation latérale interne (Desktop uniquement) */}
+        <aside className="hidden md:block md:col-span-4 lg:col-span-3 sticky top-6 self-start z-10 space-y-4">
+          <div className="rounded-xl border border-gray-200 bg-white p-2 shadow-2xs space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.key;
@@ -234,7 +262,7 @@ export default function AdminParametresPage() {
                   onClick={() => setActiveTab(item.key as SettingsTab)}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all ${
                     isActive
-                      ? 'bg-[#c1647a] text-white shadow-xs font-semibold'
+                      ? 'bg-[#c1647a] text-white shadow-2xs font-semibold'
                       : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium'
                   }`}
                 >
@@ -259,7 +287,7 @@ export default function AdminParametresPage() {
           </div>
 
           {/* Badge récapitulatif système */}
-          <div className="mt-4 rounded-xl border border-gray-100 bg-gray-50/80 p-3.5 text-xs text-gray-500 space-y-2">
+          <div className="rounded-xl border border-gray-100 bg-gray-50/80 p-3.5 text-xs text-gray-500 space-y-2">
             <div className="flex items-center gap-2 font-semibold text-gray-700">
               <Sparkles className="h-3.5 w-3.5 text-[#c1647a]" />
               <span>Backoffice Décofleur</span>
@@ -538,8 +566,8 @@ export default function AdminParametresPage() {
                 </Card>
               </div>
 
-              <Card className="border-gray-200 shadow-xs">
-                <CardHeader className="pb-4">
+              <Card className="border-gray-200 shadow-2xs">
+                <CardHeader className="pb-3 sm:pb-4 p-4 sm:p-6">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2">
@@ -547,11 +575,11 @@ export default function AdminParametresPage() {
                           Membres & Collaborateurs
                         </CardTitle>
                         <Badge className="bg-[#c1647a]/10 text-[#c1647a] hover:bg-[#c1647a]/15 border-none font-mono">
-                          {users.length} membres
+                          {users.filter((u) => u.role !== 'livreur').length} membres
                         </Badge>
                       </div>
                       <CardDescription className="text-xs text-gray-500">
-                        Comptes habilités à administrer la boutique, gérer les commandes, les stocks et les livraisons.
+                        Comptes habilités à administrer la boutique, gérer les commandes, les stocks et la comptabilité.
                       </CardDescription>
                     </div>
 
@@ -561,7 +589,7 @@ export default function AdminParametresPage() {
                         setIsUserEditorOpen(true);
                       }}
                       size="sm"
-                      className="bg-[#c1647a] hover:bg-[#a84d63] text-white gap-1.5 shadow-xs"
+                      className="w-full sm:w-auto h-9 bg-[#c1647a] hover:bg-[#a84d63] text-white gap-1.5 shadow-2xs text-xs sm:text-sm font-semibold"
                     >
                       <UserPlus className="h-4 w-4" />
                       Ajouter un collaborateur
@@ -569,8 +597,8 @@ export default function AdminParametresPage() {
                   </div>
 
                   {/* Toolbar de filtres */}
-                  <div className="flex flex-wrap items-center gap-2 pt-3">
-                    <div className="relative w-full sm:w-64">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-3">
+                    <div className="relative w-full sm:w-60">
                       <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
                       <Input
                         placeholder="Rechercher par nom, email..."
@@ -580,34 +608,177 @@ export default function AdminParametresPage() {
                       />
                     </div>
 
-                    <select
-                      value={roleFilter}
-                      onChange={(e) => setRoleFilter(e.target.value)}
-                      className="h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs text-gray-700 shadow-xs focus:border-[#c1647a] focus:outline-none"
-                    >
-                      <option value="all">Tous les rôles</option>
-                      {adminRolesList.map((r) => (
-                        <option key={r.key} value={r.key}>
-                          {r.label}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={roleFilter}
+                        onChange={(e) => setRoleFilter(e.target.value)}
+                        className="flex-1 sm:flex-initial h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs text-gray-700 shadow-2xs focus:border-[#c1647a] focus:outline-hidden"
+                      >
+                        <option value="all">Tous les rôles</option>
+                        {adminRolesList
+                          .filter((r) => r.key !== 'livreur')
+                          .map((r) => (
+                            <option key={r.key} value={r.key}>
+                              {r.label}
+                            </option>
+                          ))}
+                      </select>
 
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs text-gray-700 shadow-xs focus:border-[#c1647a] focus:outline-none"
+                      <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="flex-1 sm:flex-initial h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs text-gray-700 shadow-2xs focus:border-[#c1647a] focus:outline-hidden"
+                      >
+                        <option value="all">Tous les statuts</option>
+                        <option value="actif">Actif</option>
+                        <option value="inactif">Inactif</option>
+                        <option value="en_attente">En attente</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Notice Flotte & Livreurs */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 p-3 rounded-xl border border-emerald-200/80 bg-emerald-50/60 text-xs text-emerald-900 mt-3">
+                    <div className="flex items-center gap-2">
+                      <Truck className="h-4 w-4 text-emerald-700 shrink-0" />
+                      <span>
+                        <strong>Flotte & Livreurs :</strong> Les livreurs et leurs assignations sont gérés directement dans le module Livraisons.
+                      </span>
+                    </div>
+                    <Link
+                      href="/admin/livraisons"
+                      className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-emerald-300 text-emerald-800 font-semibold hover:bg-emerald-100/60 transition-colors shadow-2xs text-[11px]"
                     >
-                      <option value="all">Tous les statuts</option>
-                      <option value="actif">Actif</option>
-                      <option value="inactif">Inactif</option>
-                      <option value="en_attente">En attente</option>
-                    </select>
+                      <span>Gérer la flotte</span>
+                      <span>→</span>
+                    </Link>
                   </div>
                 </CardHeader>
 
                 <CardContent className="p-0">
-                  <div className="overflow-x-auto">
+                  {/* VUE MOBILE : Cartes Tactiles (< 1024px) */}
+                  <div className="lg:hidden p-3 space-y-3">
+                    {filteredUsers.length === 0 ? (
+                      <div className="py-10 text-center text-xs text-gray-500">
+                        Aucun collaborateur ne correspond à ces critères.
+                      </div>
+                    ) : (
+                      filteredUsers.map((user) => (
+                        <div
+                          key={user.id}
+                          className="rounded-xl border border-gray-200 bg-white p-3.5 shadow-2xs space-y-3"
+                        >
+                          {/* Ligne 1 : Avatar, Nom, ID, Rôle */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="h-9 w-9 rounded-full overflow-hidden bg-pink-100 flex items-center justify-center font-bold text-[#c1647a] shrink-0 border border-pink-200">
+                                {user.avatar ? (
+                                  <Image
+                                    src={user.avatar}
+                                    alt={user.name}
+                                    width={36}
+                                    height={36}
+                                    unoptimized
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  user.name.charAt(0)
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="font-semibold text-sm text-gray-900 truncate">{user.name}</div>
+                                <div className="text-[11px] text-gray-400 font-mono">{user.id}</div>
+                              </div>
+                            </div>
+                            <div className="shrink-0">{getRoleBadge(user.role)}</div>
+                          </div>
+
+                          {/* Ligne 2 : Contact (Email + Phone) */}
+                          <div className="grid grid-cols-1 gap-1 border-t border-gray-100 pt-2 text-xs text-gray-600">
+                            <a
+                              href={`mailto:${user.email}`}
+                              className="flex items-center gap-1.5 hover:text-[#c1647a] truncate"
+                            >
+                              <Mail className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                              <span className="truncate">{user.email}</span>
+                            </a>
+                            <a
+                              href={`tel:${user.phone}`}
+                              className="flex items-center gap-1.5 hover:text-[#c1647a] font-mono text-[11px]"
+                            >
+                              <Phone className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                              <span>{user.phone}</span>
+                            </a>
+                          </div>
+
+                          {/* Ligne 3 : Statut, Dernière connexion, Actions */}
+                          <div className="flex items-center justify-between border-t border-gray-100 pt-2">
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleUserStatus(user.id)}
+                                title="Changer le statut"
+                                className="cursor-pointer"
+                              >
+                                {user.status === 'actif' && (
+                                  <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border-emerald-200">
+                                    Actif
+                                  </Badge>
+                                )}
+                                {user.status === 'inactif' && (
+                                  <Badge variant="secondary" className="text-gray-600 bg-gray-100">
+                                    Inactif
+                                  </Badge>
+                                )}
+                                {user.status === 'en_attente' && (
+                                  <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-200">
+                                    En attente
+                                  </Badge>
+                                )}
+                              </button>
+                              <span className="text-[10px] text-gray-400">
+                                {user.lastLogin ? (
+                                  new Date(user.lastLogin).toLocaleDateString('fr-FR', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                  })
+                                ) : (
+                                  'Jamais'
+                                )}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingUser(user);
+                                  setIsUserEditorOpen(true);
+                                }}
+                                className="h-8 px-2.5 text-xs text-gray-700 hover:text-[#c1647a]"
+                              >
+                                <Edit2 className="h-3.5 w-3.5 mr-1" />
+                                Modifier
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteUser(user.id, user.name)}
+                                className="h-8 w-8 p-0 text-gray-400 hover:text-rose-600"
+                                title="Supprimer"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* VUE DESKTOP : Tableau Complet (>= 1024px) */}
+                  <div className="hidden lg:block overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-gray-50/70">
@@ -747,8 +918,8 @@ export default function AdminParametresPage() {
              ─────────────────────────────────────────────────────────── */}
           {activeTab === 'roles' && (
             <div className="space-y-6 animate-in fade-in duration-200">
-              <Card className="border-gray-200 shadow-xs">
-                <CardHeader className="pb-4 border-b border-gray-100">
+              <Card className="border-gray-200 shadow-2xs">
+                <CardHeader className="pb-3 sm:pb-4 p-4 sm:p-6 border-b border-gray-100">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
                       <CardTitle className="text-base font-bold text-gray-900">
@@ -762,7 +933,7 @@ export default function AdminParametresPage() {
                     <Button
                       onClick={handleSaveAll}
                       size="sm"
-                      className="bg-[#c1647a] hover:bg-[#a84d63] text-white text-xs gap-1.5"
+                      className="w-full sm:w-auto h-9 bg-[#c1647a] hover:bg-[#a84d63] text-white text-xs sm:text-sm font-semibold gap-1.5 shadow-2xs"
                     >
                       <Save className="h-3.5 w-3.5" />
                       Enregistrer la matrice
@@ -770,7 +941,7 @@ export default function AdminParametresPage() {
                   </div>
 
                   {/* Sélecteur de rôle pour filtrer la vue détaillée */}
-                  <div className="flex items-center gap-2 pt-3 overflow-x-auto pb-1">
+                  <div className="flex items-center gap-2 pt-3 overflow-x-auto no-scrollbar pb-1">
                     <span className="text-xs font-semibold text-gray-600 shrink-0">
                       Rôle actif :
                     </span>
@@ -779,7 +950,7 @@ export default function AdminParametresPage() {
                         key={r.key}
                         type="button"
                         onClick={() => setActiveRoleForMatrix(r.key)}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-all shrink-0 ${
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 ${
                           activeRoleForMatrix === r.key
                             ? 'bg-[#c1647a] text-white shadow-2xs'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -792,14 +963,111 @@ export default function AdminParametresPage() {
                 </CardHeader>
 
                 <CardContent className="p-0">
-                  <div className="p-4 bg-pink-50/40 border-b border-pink-100 text-xs flex items-center gap-2 text-pink-900">
+                  <div className="p-3.5 sm:p-4 bg-pink-50/40 border-b border-pink-100 text-xs flex items-center gap-2 text-pink-900">
                     <Info className="h-4 w-4 shrink-0 text-[#c1647a]" />
                     <span>
-                      Modifications appliquées pour le rôle <strong>{adminRolesList.find((r) => r.key === activeRoleForMatrix)?.label}</strong>. Cliquez sur les badges pour activer ou désactiver un droit.
+                      Modifications appliquées pour le rôle <strong>{adminRolesList.find((r) => r.key === activeRoleForMatrix)?.label}</strong>.
                     </span>
                   </div>
 
-                  <div className="overflow-x-auto">
+                  {/* VUE MOBILE : Cartes de Permissions (< 1024px) */}
+                  <div className="lg:hidden p-3 space-y-2.5">
+                    {permissionsMatrix.map((mod) => {
+                      const perms = mod.permissions[activeRoleForMatrix];
+                      const isAdminRole = activeRoleForMatrix === 'admin';
+
+                      return (
+                        <div
+                          key={mod.key}
+                          className="rounded-xl border border-gray-200 bg-white p-3 shadow-2xs space-y-2.5"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-semibold text-sm text-gray-900">{mod.label}</div>
+                              <div className="text-[11px] text-gray-400">{mod.category}</div>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
+                            {/* Lecture */}
+                            <button
+                              type="button"
+                              disabled={isAdminRole}
+                              onClick={() => handleTogglePermission(mod.key, activeRoleForMatrix, 'read')}
+                              className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                                perms.read
+                                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                  : 'bg-gray-50 text-gray-400 border border-gray-200'
+                              } ${isAdminRole ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
+                            >
+                              <span className="flex items-center gap-1.5">
+                                <Eye className="h-3 w-3" />
+                                Lecture
+                              </span>
+                              {perms.read ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <X className="h-3.5 w-3.5 text-gray-300" />}
+                            </button>
+
+                            {/* Écriture / Modif */}
+                            <button
+                              type="button"
+                              disabled={isAdminRole}
+                              onClick={() => handleTogglePermission(mod.key, activeRoleForMatrix, 'write')}
+                              className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                                perms.write
+                                  ? 'bg-blue-50 text-blue-800 border border-blue-200'
+                                  : 'bg-gray-50 text-gray-400 border border-gray-200'
+                              } ${isAdminRole ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
+                            >
+                              <span className="flex items-center gap-1.5">
+                                <Edit2 className="h-3 w-3" />
+                                Modif
+                              </span>
+                              {perms.write ? <Check className="h-3.5 w-3.5 text-blue-600" /> : <X className="h-3.5 w-3.5 text-gray-300" />}
+                            </button>
+
+                            {/* Suppression */}
+                            <button
+                              type="button"
+                              disabled={isAdminRole}
+                              onClick={() => handleTogglePermission(mod.key, activeRoleForMatrix, 'delete')}
+                              className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                                perms.delete
+                                  ? 'bg-rose-50 text-rose-800 border border-rose-200'
+                                  : 'bg-gray-50 text-gray-400 border border-gray-200'
+                              } ${isAdminRole ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
+                            >
+                              <span className="flex items-center gap-1.5">
+                                <Trash2 className="h-3 w-3" />
+                                Suppr
+                              </span>
+                              {perms.delete ? <Check className="h-3.5 w-3.5 text-rose-600" /> : <X className="h-3.5 w-3.5 text-gray-300" />}
+                            </button>
+
+                            {/* Export */}
+                            <button
+                              type="button"
+                              disabled={isAdminRole}
+                              onClick={() => handleTogglePermission(mod.key, activeRoleForMatrix, 'export')}
+                              className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                                perms.export
+                                  ? 'bg-purple-50 text-purple-800 border border-purple-200'
+                                  : 'bg-gray-50 text-gray-400 border border-gray-200'
+                              } ${isAdminRole ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
+                            >
+                              <span className="flex items-center gap-1.5">
+                                <FileSpreadsheet className="h-3 w-3" />
+                                Export
+                              </span>
+                              {perms.export ? <Check className="h-3.5 w-3.5 text-purple-600" /> : <X className="h-3.5 w-3.5 text-gray-300" />}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* VUE DESKTOP : Tableau Complet (>= 1024px) */}
+                  <div className="hidden lg:block overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-gray-50/70">

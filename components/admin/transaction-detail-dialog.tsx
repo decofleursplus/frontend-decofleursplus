@@ -116,7 +116,7 @@ export function TransactionDetailDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px] max-h-[calc(100vh-3rem)] overflow-y-auto p-4 sm:p-5">
+      <DialogContent className="w-[94vw] max-w-[520px] max-h-[calc(100vh-3rem)] overflow-y-auto p-4 sm:p-5">
         <DialogHeader className="pr-6">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">

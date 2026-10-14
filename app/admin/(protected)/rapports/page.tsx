@@ -417,9 +417,10 @@ export default function AdminRapportsPage() {
   return (
     <div className="space-y-6">
       {/* ── 1. En-tête de la page ──────────────────────── */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      {/* ── 1. En-tête de la page ──────────────────────── */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-gray-900">
             Rapports & Finances
           </h1>
           <p className="admin-page-subtitle">
@@ -427,16 +428,16 @@ export default function AdminRapportsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="border-gray-200 text-gray-700 hover:bg-gray-50"
+            className="flex-1 sm:flex-initial h-9 border-gray-200 text-gray-700 hover:bg-gray-50 text-xs sm:text-sm"
           >
             <RotateCw
-              className={`h-4 w-4 mr-2 text-gray-500 ${
+              className={`h-3.5 w-3.5 mr-1.5 text-gray-500 ${
                 isRefreshing ? 'animate-spin text-[#c1647a]' : ''
               }`}
             />
@@ -446,69 +447,66 @@ export default function AdminRapportsPage() {
           <Button
             size="sm"
             onClick={() => setIsExportDialogOpen(true)}
-            className="bg-[#c1647a] hover:bg-[#a84d63] text-white shadow-sm"
+            className="flex-1 sm:flex-initial h-9 bg-[#c1647a] hover:bg-[#a84d63] text-white shadow-2xs text-xs sm:text-sm"
           >
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-3.5 w-3.5 mr-1.5" />
             Exporter le rapport
           </Button>
         </div>
       </div>
 
       {/* ── 2. Barre de Filtres Temporels Unifiée ───────── */}
-      <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-xs">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {/* Preset buttons */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs font-semibold uppercase text-gray-400 mr-1 hidden sm:inline">
-              Période :
-            </span>
-            {[
-              { id: 'today', label: "Aujourd'hui" },
-              { id: '7days', label: '7 derniers jours' },
-              { id: 'this_month', label: 'Ce mois-ci' },
-              { id: 'this_year', label: 'Cette année' },
-              { id: 'custom', label: 'Personnalisé' },
-            ].map((preset) => {
-              const isSelected = selectedPeriod === preset.id;
-              return (
-                <button
-                  key={preset.id}
-                  type="button"
-                  onClick={() => setSelectedPeriod(preset.id as ReportPeriodPreset)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
-                    isSelected
-                      ? 'bg-pink-50 text-[#c1647a] ring-1 ring-[#c1647a] font-semibold'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                  }`}
-                >
-                  {preset.label}
-                </button>
-              );
-            })}
-          </div>
+      <div className="rounded-xl border border-gray-200 bg-white p-2.5 sm:p-3 shadow-2xs">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 -mx-1 px-1">
+          <span className="text-xs font-semibold uppercase text-gray-400 mr-1 shrink-0 hidden sm:inline">
+            Période :
+          </span>
+          {[
+            { id: 'today', label: "Aujourd'hui" },
+            { id: '7days', label: '7 derniers jours' },
+            { id: 'this_month', label: 'Ce mois-ci' },
+            { id: 'this_year', label: 'Cette année' },
+            { id: 'custom', label: 'Personnalisé' },
+          ].map((preset) => {
+            const isSelected = selectedPeriod === preset.id;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => setSelectedPeriod(preset.id as ReportPeriodPreset)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap shrink-0 transition-all ${
+                  isSelected
+                    ? 'bg-pink-50 text-[#c1647a] ring-1 ring-[#c1647a] font-semibold'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                }`}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Custom date range picker if 'custom' is active */}
         {selectedPeriod === 'custom' && (
-          <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-3">
-            <div className="flex items-center gap-2">
+          <div className="mt-3 flex flex-wrap items-center gap-2.5 border-t border-gray-100 pt-3">
+            <div className="flex items-center gap-1.5">
               <label htmlFor="custom-start" className="text-xs text-gray-600 font-medium">Du :</label>
               <Input
                 id="custom-start"
                 type="date"
                 value={customStartDate}
                 onChange={(e) => setCustomStartDate(e.target.value)}
-                className="h-8 w-38 text-xs"
+                className="h-8 w-34 text-xs"
               />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <label htmlFor="custom-end" className="text-xs text-gray-600 font-medium">Au :</label>
               <Input
                 id="custom-end"
                 type="date"
                 value={customEndDate}
                 onChange={(e) => setCustomEndDate(e.target.value)}
-                className="h-8 w-38 text-xs"
+                className="h-8 w-34 text-xs"
               />
             </div>
             <Button
@@ -517,38 +515,38 @@ export default function AdminRapportsPage() {
               onClick={() => toast.success('Période personnalisée appliquée')}
               className="h-8 text-xs"
             >
-              Appliquer la plage
+              Appliquer
             </Button>
           </div>
         )}
       </div>
 
       {/* ── 3. Navigation par Onglets Métiers ───────────── */}
-      <div className="border-b border-gray-200">
-        <nav className="flex space-x-6" aria-label="Tabs">
+      <div className="border-b border-gray-200 overflow-x-auto no-scrollbar">
+        <nav className="flex space-x-4 sm:space-x-6 min-w-max" aria-label="Tabs">
           <button
             type="button"
             onClick={() => setActiveTab('sales')}
-            className={`flex items-center gap-2 border-b-2 py-3 px-1 text-sm font-medium transition-colors ${
+            className={`flex items-center gap-2 border-b-2 py-3 px-1 text-sm font-medium transition-colors shrink-0 whitespace-nowrap ${
               activeTab === 'sales'
                 ? 'border-[#c1647a] text-[#c1647a]'
                 : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
             }`}
           >
-            <TrendingUp className="h-4 w-4" />
+            <TrendingUp className="h-4 w-4 shrink-0" />
             <span>Analyse Commerciale & Ventes</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('finance')}
-            className={`flex items-center gap-2 border-b-2 py-3 px-1 text-sm font-medium transition-colors ${
+            className={`flex items-center gap-2 border-b-2 py-3 px-1 text-sm font-medium transition-colors shrink-0 whitespace-nowrap ${
               activeTab === 'finance'
                 ? 'border-[#c1647a] text-[#c1647a]'
                 : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
             }`}
           >
-            <Wallet className="h-4 w-4" />
+            <Wallet className="h-4 w-4 shrink-0" />
             <span>Bilan Financier & Trésorerie</span>
           </button>
         </nav>
@@ -560,130 +558,129 @@ export default function AdminRapportsPage() {
       {activeTab === 'sales' && (
         <div className="space-y-6">
           {/* 4 KPI Cards */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-2.5 sm:gap-4 grid-cols-2 lg:grid-cols-4">
             {/* Chiffre d'Affaires Brut */}
-            <Card className="border-gray-200 shadow-xs">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Chiffre d'Affaires Brut
+            <Card className="border-gray-200 shadow-2xs">
+              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 p-3 sm:p-5">
+                <CardTitle className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 truncate">
+                  CA Brut
                 </CardTitle>
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-pink-50 text-[#c1647a]">
-                  <TrendingUp className="h-4 w-4" />
+                <div className="flex h-6 w-6 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg bg-pink-50 text-[#c1647a]">
+                  <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-gray-900">
+              <CardContent className="p-3 pt-0 sm:p-5 sm:pt-0">
+                <div className="text-base sm:text-2xl font-bold text-gray-900 truncate">
                   {formatCurrency(dataset.current.grossRevenue)}
                 </div>
-                <div className="mt-1 flex items-center text-xs">
+                <div className="mt-1 flex items-center text-[10px] sm:text-xs">
                   <span
-                    className={`flex items-center font-semibold ${
+                    className={`flex items-center font-semibold shrink-0 ${
                       dataset.deltas.revenueDelta >= 0
                         ? 'text-emerald-600'
                         : 'text-rose-600'
                     }`}
                   >
                     {dataset.deltas.revenueDelta >= 0 ? (
-                      <ArrowUpRight className="h-3.5 w-3.5 mr-0.5" />
+                      <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-0.5" />
                     ) : (
-                      <ArrowDownRight className="h-3.5 w-3.5 mr-0.5" />
+                      <ArrowDownRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-0.5" />
                     )}
                     {Math.abs(dataset.deltas.revenueDelta)}%
                   </span>
-                  <span className="text-gray-400 ml-1.5">{dataset.comparisonLabel}</span>
+                  <span className="text-gray-400 ml-1 truncate hidden xs:inline">{dataset.comparisonLabel}</span>
                 </div>
               </CardContent>
             </Card>
 
             {/* Volume de Commandes */}
-            <Card className="border-gray-200 shadow-xs">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Commandes Passées
+            <Card className="border-gray-200 shadow-2xs">
+              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 p-3 sm:p-5">
+                <CardTitle className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 truncate">
+                  Commandes
                 </CardTitle>
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                  <ShoppingBag className="h-4 w-4" />
+                <div className="flex h-6 w-6 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                  <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-gray-900">
+              <CardContent className="p-3 pt-0 sm:p-5 sm:pt-0">
+                <div className="text-base sm:text-2xl font-bold text-gray-900 truncate">
                   {dataset.current.ordersCount}
                 </div>
-                <div className="mt-1 flex items-center text-xs">
+                <div className="mt-1 flex items-center text-[10px] sm:text-xs">
                   <span
-                    className={`flex items-center font-semibold ${
+                    className={`flex items-center font-semibold shrink-0 ${
                       dataset.deltas.ordersDelta >= 0
                         ? 'text-emerald-600'
                         : 'text-rose-600'
                     }`}
                   >
                     {dataset.deltas.ordersDelta >= 0 ? (
-                      <ArrowUpRight className="h-3.5 w-3.5 mr-0.5" />
+                      <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-0.5" />
                     ) : (
-                      <ArrowDownRight className="h-3.5 w-3.5 mr-0.5" />
+                      <ArrowDownRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-0.5" />
                     )}
                     {Math.abs(dataset.deltas.ordersDelta)}%
                   </span>
-                  <span className="text-gray-400 ml-1.5">{dataset.comparisonLabel}</span>
+                  <span className="text-gray-400 ml-1 truncate hidden xs:inline">{dataset.comparisonLabel}</span>
                 </div>
               </CardContent>
             </Card>
 
             {/* Panier Moyen */}
-            <Card className="border-gray-200 shadow-xs">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Panier Moyen (AOV)
+            <Card className="border-gray-200 shadow-2xs">
+              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 p-3 sm:p-5">
+                <CardTitle className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 truncate">
+                  Panier Moyen
                 </CardTitle>
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
-                  <Percent className="h-4 w-4" />
+                <div className="flex h-6 w-6 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                  <Percent className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-gray-900">
+              <CardContent className="p-3 pt-0 sm:p-5 sm:pt-0">
+                <div className="text-base sm:text-2xl font-bold text-gray-900 truncate">
                   {formatCurrency(dataset.current.averageOrderValue)}
                 </div>
-                <div className="mt-1 flex items-center text-xs">
+                <div className="mt-1 flex items-center text-[10px] sm:text-xs">
                   <span
-                    className={`flex items-center font-semibold ${
+                    className={`flex items-center font-semibold shrink-0 ${
                       dataset.deltas.aovDelta >= 0
                         ? 'text-emerald-600'
                         : 'text-rose-600'
                     }`}
                   >
                     {dataset.deltas.aovDelta >= 0 ? (
-                      <ArrowUpRight className="h-3.5 w-3.5 mr-0.5" />
+                      <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-0.5" />
                     ) : (
-                      <ArrowDownRight className="h-3.5 w-3.5 mr-0.5" />
+                      <ArrowDownRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-0.5" />
                     )}
                     {Math.abs(dataset.deltas.aovDelta)}%
                   </span>
-                  <span className="text-gray-400 ml-1.5">{dataset.comparisonLabel}</span>
+                  <span className="text-gray-400 ml-1 truncate hidden xs:inline">{dataset.comparisonLabel}</span>
                 </div>
               </CardContent>
             </Card>
 
             {/* Nouveaux vs Récurrents */}
-            <Card className="border-gray-200 shadow-xs">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+            <Card className="border-gray-200 shadow-2xs">
+              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 p-3 sm:p-5">
+                <CardTitle className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 truncate">
                   Clients Actifs
                 </CardTitle>
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-                  <Users className="h-4 w-4" />
+                <div className="flex h-6 w-6 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                  <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-gray-900">
+              <CardContent className="p-3 pt-0 sm:p-5 sm:pt-0">
+                <div className="text-base sm:text-2xl font-bold text-gray-900 truncate">
                   {dataset.current.newCustomersCount +
                     dataset.current.returningCustomersCount}
                 </div>
-                <div className="mt-1 flex items-center text-xs gap-1.5 text-gray-500">
+                <div className="mt-1 flex items-center text-[10px] sm:text-xs gap-1 text-gray-500 truncate">
                   <span className="font-semibold text-emerald-600">
-                    +{dataset.current.newCustomersCount} nouveaux
+                    +{dataset.current.newCustomersCount}
                   </span>
-                  <span>•</span>
-                  <span>{dataset.current.returningCustomersCount} fidèles</span>
+                  <span>nouveaux</span>
                 </div>
               </CardContent>
             </Card>
@@ -739,13 +736,13 @@ export default function AdminRapportsPage() {
                 {dataset.topProducts.map((product, idx) => (
                   <div
                     key={product.id}
-                    className="flex items-center justify-between rounded-lg border border-gray-100 p-2.5 transition-colors hover:bg-gray-50/60"
+                    className="flex items-center justify-between gap-2 rounded-lg border border-gray-100 p-2 sm:p-2.5 transition-colors hover:bg-gray-50/60"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-100 text-[11px] font-bold text-gray-600">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-[11px] font-bold text-gray-600">
                         {idx + 1}
                       </span>
-                      <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-md bg-gray-100">
+                      <div className="relative h-10 w-10 sm:h-11 sm:w-11 shrink-0 overflow-hidden rounded-md bg-gray-100">
                         <Image
                           src={product.image}
                           alt={product.name}
@@ -753,27 +750,27 @@ export default function AdminRapportsPage() {
                           className="object-cover"
                         />
                       </div>
-                      <div>
-                        <div className="font-medium text-sm text-gray-900 leading-tight">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-xs sm:text-sm text-gray-900 leading-tight truncate">
                           {product.name}
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                        <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-gray-500 mt-0.5 truncate">
                           <span>{product.sku}</span>
                           <span>•</span>
-                          <span className="text-gray-600">{product.category}</span>
+                          <span className="text-gray-600 truncate">{product.category}</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="text-right">
-                      <div className="text-sm font-bold text-gray-900">
+                    <div className="text-right shrink-0">
+                      <div className="text-xs sm:text-sm font-bold text-gray-900">
                         {formatCurrency(product.revenue)}
                       </div>
-                      <div className="flex items-center justify-end gap-1.5 text-xs">
+                      <div className="flex items-center justify-end gap-1.5 text-[11px] sm:text-xs">
                         <span className="font-medium text-gray-600">
                           {product.quantitySold} vendus
                         </span>
-                        <span className="rounded bg-emerald-50 px-1.5 py-0.2 text-[10px] font-semibold text-emerald-700">
+                        <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
                           {product.marginRate}% marge
                         </span>
                       </div>
@@ -877,84 +874,84 @@ export default function AdminRapportsPage() {
       {activeTab === 'finance' && (
         <div className="space-y-6">
           {/* 4 Financial KPIs */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-2.5 sm:gap-4 grid-cols-2 lg:grid-cols-4">
             {/* Total Encaissé */}
-            <Card className="border-gray-200 shadow-xs">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+            <Card className="border-gray-200 shadow-2xs">
+              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 p-3 sm:p-5">
+                <CardTitle className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 truncate">
                   Total Encaissé
                 </CardTitle>
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-                  <ShieldCheck className="h-4 w-4" />
+                <div className="flex h-6 w-6 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                  <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-gray-900">
+              <CardContent className="p-3 pt-0 sm:p-5 sm:pt-0">
+                <div className="text-base sm:text-2xl font-bold text-gray-900 truncate">
                   {formatCurrency(dataset.current.collectedAmount)}
                 </div>
-                <p className="mt-1 text-xs text-gray-500">
-                  Fonds confirmés sur les comptes marchands
+                <p className="mt-1 text-[10px] sm:text-xs text-gray-500 truncate">
+                  Confirmés comptes
                 </p>
               </CardContent>
             </Card>
 
             {/* En attente / Espèces */}
-            <Card className="border-gray-200 shadow-xs">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+            <Card className="border-gray-200 shadow-2xs">
+              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 p-3 sm:p-5">
+                <CardTitle className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 truncate">
                   En attente / Espèces
                 </CardTitle>
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
-                  <Clock className="h-4 w-4" />
+                <div className="flex h-6 w-6 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                  <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-amber-700">
+              <CardContent className="p-3 pt-0 sm:p-5 sm:pt-0">
+                <div className="text-base sm:text-2xl font-bold text-amber-700 truncate">
                   {formatCurrency(dataset.current.pendingAmount)}
                 </div>
-                <p className="mt-1 text-xs text-gray-500">
-                  Commandes en livraison ou dépôts en cours
+                <p className="mt-1 text-[10px] sm:text-xs text-gray-500 truncate">
+                  En livraison
                 </p>
               </CardContent>
             </Card>
 
             {/* Frais & Commissions Passerelles */}
-            <Card className="border-gray-200 shadow-xs">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+            <Card className="border-gray-200 shadow-2xs">
+              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 p-3 sm:p-5">
+                <CardTitle className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 truncate">
                   Frais Passerelles
                 </CardTitle>
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
-                  <CreditCard className="h-4 w-4" />
+                <div className="flex h-6 w-6 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
+                  <CreditCard className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-rose-600">
+              <CardContent className="p-3 pt-0 sm:p-5 sm:pt-0">
+                <div className="text-base sm:text-2xl font-bold text-rose-600 truncate">
                   - {formatCurrency(dataset.current.gatewayFees)}
                 </div>
-                <p className="mt-1 text-xs text-gray-500">
-                  Commissions Wave (1%), OM (1%), CB (2.5%)
+                <p className="mt-1 text-[10px] sm:text-xs text-gray-500 truncate">
+                  Wave (1%), OM (1%), CB
                 </p>
               </CardContent>
             </Card>
 
             {/* Trésorerie Nette */}
-            <Card className="border-gray-200 shadow-xs">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+            <Card className="border-gray-200 shadow-2xs">
+              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 p-3 sm:p-5">
+                <CardTitle className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 truncate">
                   Trésorerie Nette
                 </CardTitle>
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                  <Banknote className="h-4 w-4" />
+                <div className="flex h-6 w-6 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                  <Banknote className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-emerald-600">
+              <CardContent className="p-3 pt-0 sm:p-5 sm:pt-0">
+                <div className="text-base sm:text-2xl font-bold text-emerald-600 truncate">
                   {formatCurrency(dataset.current.netRevenue)}
                 </div>
-                <div className="mt-1 flex items-center text-xs text-emerald-700 font-medium">
-                  <ArrowUpRight className="h-3.5 w-3.5 mr-0.5" />
-                  +{dataset.deltas.netDelta}% net {dataset.comparisonLabel}
+                <div className="mt-1 flex items-center text-[10px] sm:text-xs text-emerald-700 font-medium truncate">
+                  <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-0.5 shrink-0" />
+                  +{dataset.deltas.netDelta}% net
                 </div>
               </CardContent>
             </Card>
@@ -963,7 +960,7 @@ export default function AdminRapportsPage() {
           {/* Cartes Moyens de Paiement & Camembert */}
           <div className="grid gap-6 lg:grid-cols-3">
             {/* Ventilation par moyen de paiement (2 colonnes) */}
-            <div className="lg:col-span-2 grid gap-3 sm:grid-cols-2">
+            <div className="lg:col-span-2 grid gap-3 grid-cols-1 sm:grid-cols-2">
               {dataset.paymentBreakdown.map((pm) => (
                 <div
                   key={pm.method}
@@ -1035,8 +1032,9 @@ export default function AdminRapportsPage() {
           </div>
 
           {/* Journal des Encaissements & Transactions */}
-          <Card className="border-gray-200 shadow-xs">
-            <CardHeader className="pb-4">
+          {/* Journal des Encaissements & Transactions */}
+          <Card className="border-gray-200 shadow-2xs">
+            <CardHeader className="pb-3 sm:pb-4 p-4 sm:p-6">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <CardTitle className="text-base font-bold text-gray-900">
@@ -1047,9 +1045,9 @@ export default function AdminRapportsPage() {
                   </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   {/* Recherche */}
-                  <div className="relative w-full sm:w-64">
+                  <div className="relative w-full sm:w-60">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
                     <Input
                       placeholder="Réf, commande, client..."
@@ -1059,36 +1057,110 @@ export default function AdminRapportsPage() {
                     />
                   </div>
 
-                  {/* Filtre méthode */}
-                  <select
-                    value={paymentMethodFilter}
-                    onChange={(e) => setPaymentMethodFilter(e.target.value)}
-                    className="h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs text-gray-700 shadow-xs focus:border-[#c1647a] focus:outline-none"
-                  >
-                    <option value="all">Tous les modes</option>
-                    <option value="wave">Wave</option>
-                    <option value="orange_money">Orange Money</option>
-                    <option value="carte_bancaire">Carte Bancaire</option>
-                    <option value="especes">Espèces</option>
-                  </select>
+                  <div className="flex items-center gap-2">
+                    {/* Filtre méthode */}
+                    <select
+                      value={paymentMethodFilter}
+                      onChange={(e) => setPaymentMethodFilter(e.target.value)}
+                      className="flex-1 sm:flex-initial h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs text-gray-700 shadow-2xs focus:border-[#c1647a] focus:outline-hidden"
+                    >
+                      <option value="all">Tous les modes</option>
+                      <option value="wave">Wave</option>
+                      <option value="orange_money">Orange Money</option>
+                      <option value="carte_bancaire">Carte Bancaire</option>
+                      <option value="especes">Espèces</option>
+                    </select>
 
-                  {/* Filtre statut */}
-                  <select
-                    value={settlementStatusFilter}
-                    onChange={(e) => setSettlementStatusFilter(e.target.value)}
-                    className="h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs text-gray-700 shadow-xs focus:border-[#c1647a] focus:outline-none"
-                  >
-                    <option value="all">Tous les statuts</option>
-                    <option value="encaisse">Encaissé</option>
-                    <option value="en_attente">En attente</option>
-                    <option value="rembourse">Remboursé</option>
-                  </select>
+                    {/* Filtre statut */}
+                    <select
+                      value={settlementStatusFilter}
+                      onChange={(e) => setSettlementStatusFilter(e.target.value)}
+                      className="flex-1 sm:flex-initial h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs text-gray-700 shadow-2xs focus:border-[#c1647a] focus:outline-hidden"
+                    >
+                      <option value="all">Tous les statuts</option>
+                      <option value="encaisse">Encaissé</option>
+                      <option value="en_attente">En attente</option>
+                      <option value="rembourse">Remboursé</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </CardHeader>
 
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
+              {/* VUE MOBILE : Cartes Tactiles (< 1024px) */}
+              <div className="lg:hidden p-3 space-y-3">
+                {filteredTransactions.length === 0 ? (
+                  <div className="py-12 text-center text-xs text-gray-500">
+                    Aucune transaction ne correspond aux critères sélectionnés.
+                  </div>
+                ) : (
+                  filteredTransactions
+                    .slice(0, showAllTransactions ? undefined : 10)
+                    .map((tx) => (
+                      <div
+                        key={tx.id}
+                        className="rounded-xl border border-gray-200 bg-white p-3.5 shadow-2xs space-y-2.5"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {getMethodBadge(tx.paymentMethod)}
+                            <div>
+                              <span className="font-mono text-xs font-semibold text-gray-900 block leading-tight">
+                                {tx.ref}
+                              </span>
+                              <span className="text-[11px] text-gray-400">
+                                {new Date(tx.date).toLocaleDateString('fr-FR', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                          {getSettlementBadge(tx.status)}
+                        </div>
+
+                        <div className="flex items-center justify-between border-t border-gray-100 pt-2 text-xs">
+                          <div>
+                            <span className="font-semibold text-[#c1647a] block">{tx.orderRef}</span>
+                            <span className="text-gray-900 font-medium">{tx.customerName}</span>
+                            <span className="text-gray-400 text-[11px] block">{tx.customerPhone}</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-gray-400 text-[11px] block">Net perçu</span>
+                            <span className="text-sm font-bold text-emerald-700 block">
+                              {formatCurrency(tx.netAmount)}
+                            </span>
+                            <span className="text-[10px] text-gray-400">
+                              Brut: {formatCurrency(tx.grossAmount)}
+                              {tx.gatewayFee > 0 && ` (-${formatCurrency(tx.gatewayFee)})`}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-gray-100 pt-2 flex items-center justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedTransaction(tx);
+                              setIsDetailDialogOpen(true);
+                            }}
+                            className="h-7 px-2.5 text-xs text-gray-700 hover:text-[#c1647a] hover:border-[#c1647a]/40"
+                          >
+                            <Eye className="h-3.5 w-3.5 mr-1 text-gray-400" />
+                            Détails transaction
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                )}
+              </div>
+
+              {/* VUE DESKTOP : Tableau Complet (>= 1024px) */}
+              <div className="hidden lg:block overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-gray-50/70">

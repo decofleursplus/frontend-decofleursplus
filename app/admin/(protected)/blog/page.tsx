@@ -308,22 +308,22 @@ export default function AdminBlogPage() {
   return (
     <div className="admin-content space-y-6">
       {/* Page Header */}
-      <div className="admin-page-header">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="admin-page-title flex items-center gap-2">
-            <BookOpen className="text-[#24582d]" size={26} />
+          <h1 className="text-xl sm:text-2xl font-serif font-bold text-[#1e2a1f] flex items-center gap-2">
+            <BookOpen className="text-[#24582d]" size={24} />
             Blog & Contenu Éditorial
           </h1>
-          <p className="admin-page-subtitle">
+          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
             Rédigez des guides d’entretien, inspirations et conseils floraux pour inspirer vos clients et booster le SEO
           </p>
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
           <Button
             variant="outline"
             size="sm"
             onClick={() => window.open('/blog', '_blank')}
-            className="text-xs border-[#e7e4dd] bg-white hover:bg-[#faf8f4]"
+            className="text-xs border-[#e7e4dd] bg-white hover:bg-[#faf8f4] h-10 sm:h-9 w-full sm:w-auto"
           >
             <ExternalLink size={14} className="mr-1.5 text-[#666]" />
             Voir le journal public
@@ -331,7 +331,7 @@ export default function AdminBlogPage() {
           <Button
             size="sm"
             onClick={handleOpenCreateArticle}
-            className="bg-[#24582d] hover:bg-[#1a4021] text-white text-xs font-semibold shadow-sm"
+            className="bg-[#24582d] hover:bg-[#1a4021] text-white text-xs font-semibold shadow-xs h-10 sm:h-9 w-full sm:w-auto"
           >
             <Plus size={15} className="mr-1.5" />
             Rédiger un article
@@ -339,78 +339,78 @@ export default function AdminBlogPage() {
         </div>
       </div>
 
-      {/* Top Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 rounded-xl border border-[#ece8e1] bg-white/90 backdrop-blur-sm shadow-xs">
-          <div className="flex items-center justify-between text-xs text-[#777]">
-            <span>Articles en ligne</span>
-            <div className="w-8 h-8 rounded-lg bg-[#edf8ef] text-[#24582d] flex items-center justify-center">
-              <CheckCircle size={16} />
+      {/* Top Metric Cards (2x2 on mobile, 4 on desktop) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="p-3 sm:p-4 rounded-xl border border-[#ece8e1] bg-white/90 backdrop-blur-sm shadow-xs space-y-1">
+          <div className="flex items-center justify-between text-[11px] sm:text-xs text-[#777]">
+            <span className="truncate">En ligne</span>
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#edf8ef] text-[#24582d] flex items-center justify-center shrink-0">
+              <CheckCircle size={15} />
             </div>
           </div>
-          <div className="mt-2 text-2xl font-serif font-bold text-[#1e2a1f]">
-            {totalPublished} <span className="text-xs font-sans font-normal text-[#666]">publiés</span>
+          <div className="text-base sm:text-2xl font-serif font-bold text-[#1e2a1f]">
+            {totalPublished} <span className="text-[11px] font-sans font-normal text-[#666]">publiés</span>
           </div>
-          <span className="text-[11px] text-[#24582d] font-semibold mt-1 inline-block">
-            Visibles sur la boutique
+          <span className="text-[10px] sm:text-[11px] text-[#24582d] font-semibold block truncate">
+            Visibles en boutique
           </span>
         </div>
 
-        <div className="p-4 rounded-xl border border-[#ece8e1] bg-white/90 backdrop-blur-sm shadow-xs">
-          <div className="flex items-center justify-between text-xs text-[#777]">
-            <span>Brouillons & Planifiés</span>
-            <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
-              <Clock size={16} />
+        <div className="p-3 sm:p-4 rounded-xl border border-[#ece8e1] bg-white/90 backdrop-blur-sm shadow-xs space-y-1">
+          <div className="flex items-center justify-between text-[11px] sm:text-xs text-[#777]">
+            <span className="truncate">Brouillons</span>
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
+              <Clock size={15} />
             </div>
           </div>
-          <div className="mt-2 text-2xl font-serif font-bold text-[#1e2a1f]">
+          <div className="text-base sm:text-2xl font-serif font-bold text-[#1e2a1f]">
             {totalDraftsOrScheduled}{' '}
-            <span className="text-xs font-sans font-normal text-[#666]">en préparation</span>
+            <span className="text-[11px] font-sans font-normal text-[#666]">préparés</span>
           </div>
-          <span className="text-[11px] text-amber-700 font-semibold mt-1 inline-block">
+          <span className="text-[10px] sm:text-[11px] text-amber-700 font-semibold block truncate">
             Non visibles du public
           </span>
         </div>
 
-        <div className="p-4 rounded-xl border border-[#ece8e1] bg-white/90 backdrop-blur-sm shadow-xs">
-          <div className="flex items-center justify-between text-xs text-[#777]">
-            <span>Lectures cumulées</span>
-            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
-              <Eye size={16} />
+        <div className="p-3 sm:p-4 rounded-xl border border-[#ece8e1] bg-white/90 backdrop-blur-sm shadow-xs space-y-1">
+          <div className="flex items-center justify-between text-[11px] sm:text-xs text-[#777]">
+            <span className="truncate">Lectures</span>
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
+              <Eye size={15} />
             </div>
           </div>
-          <div className="mt-2 text-2xl font-serif font-bold text-[#1e2a1f]">
+          <div className="text-base sm:text-2xl font-serif font-bold text-[#1e2a1f] font-mono">
             {totalViews.toLocaleString('fr-FR')}{' '}
-            <span className="text-xs font-sans font-normal text-[#666]">vues</span>
+            <span className="text-[11px] font-sans font-normal text-[#666]">vues</span>
           </div>
-          <span className="text-[11px] text-blue-700 font-semibold mt-1 inline-block flex items-center gap-1">
-            <TrendingUp size={12} /> Fort engagement de lecture
+          <span className="text-[10px] sm:text-[11px] text-blue-700 font-semibold block truncate">
+            Fort engagement
           </span>
         </div>
 
-        <div className="p-4 rounded-xl border border-[#ece8e1] bg-white/90 backdrop-blur-sm shadow-xs">
-          <div className="flex items-center justify-between text-xs text-[#777]">
-            <span>Thématiques couvertes</span>
-            <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center">
-              <FolderTree size={16} />
+        <div className="p-3 sm:p-4 rounded-xl border border-[#ece8e1] bg-white/90 backdrop-blur-sm shadow-xs space-y-1">
+          <div className="flex items-center justify-between text-[11px] sm:text-xs text-[#777]">
+            <span className="truncate">Rubriques</span>
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center shrink-0">
+              <FolderTree size={15} />
             </div>
           </div>
-          <div className="mt-2 text-2xl font-serif font-bold text-[#1e2a1f]">
+          <div className="text-base sm:text-2xl font-serif font-bold text-[#1e2a1f]">
             {categories.length}{' '}
-            <span className="text-xs font-sans font-normal text-[#666]">catégories</span>
+            <span className="text-[11px] font-sans font-normal text-[#666]">catégories</span>
           </div>
-          <span className="text-[11px] text-purple-700 font-semibold mt-1 inline-block">
+          <span className="text-[10px] sm:text-[11px] text-purple-700 font-semibold block truncate">
             {authors.length} auteurs actifs
           </span>
         </div>
       </div>
 
-      {/* Main Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-[#e7e4dd] pb-px">
+      {/* Main Navigation Tabs (Horizontally scrollable on mobile) */}
+      <div className="flex items-center gap-2 border-b border-[#e7e4dd] pb-px overflow-x-auto no-scrollbar flex-nowrap">
         <button
           type="button"
           onClick={() => setActiveTab('articles')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-all ${
+          className={`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 text-xs font-semibold border-b-2 transition-all shrink-0 ${
             activeTab === 'articles'
               ? 'border-[#24582d] text-[#24582d] font-bold bg-white/60 rounded-t-lg'
               : 'border-transparent text-[#666] hover:text-[#222]'
@@ -423,7 +423,7 @@ export default function AdminBlogPage() {
         <button
           type="button"
           onClick={() => setActiveTab('categories')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-all ${
+          className={`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 text-xs font-semibold border-b-2 transition-all shrink-0 ${
             activeTab === 'categories'
               ? 'border-[#24582d] text-[#24582d] font-bold bg-white/60 rounded-t-lg'
               : 'border-transparent text-[#666] hover:text-[#222]'
@@ -436,7 +436,7 @@ export default function AdminBlogPage() {
         <button
           type="button"
           onClick={() => setActiveTab('authors')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-all ${
+          className={`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 text-xs font-semibold border-b-2 transition-all shrink-0 ${
             activeTab === 'authors'
               ? 'border-[#24582d] text-[#24582d] font-bold bg-white/60 rounded-t-lg'
               : 'border-transparent text-[#666] hover:text-[#222]'
@@ -454,15 +454,15 @@ export default function AdminBlogPage() {
         <div className="space-y-4">
           {/* Search & Filter Toolbar */}
           <div className="space-y-2.5">
-            <div className="p-3.5 rounded-xl border border-[#ece8e1] bg-white/90 backdrop-blur-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-xs">
+            <div className="p-2.5 sm:p-3.5 rounded-xl border border-[#ece8e1] bg-white/90 backdrop-blur-sm flex items-center justify-between gap-2 sm:gap-3 shadow-xs">
               {/* Search Bar */}
-              <div className="relative flex-1 max-w-md">
+              <div className="relative flex-1">
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <Input
-                  placeholder="Rechercher par titre, extrait, tag ou auteur..."
+                  placeholder="Rechercher par titre, tag ou auteur..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-8 h-9 text-xs bg-[#faf8f4] border-[#e7e4dd] focus-visible:ring-[#24582d]"
+                  className="pl-9 pr-8 h-10 sm:h-9 text-xs bg-[#faf8f4] border-[#e7e4dd] focus-visible:ring-[#24582d]"
                 />
                 {searchQuery && (
                   <button
@@ -476,13 +476,13 @@ export default function AdminBlogPage() {
               </div>
 
               {/* Side Drawer Trigger Button */}
-              <div className="flex items-center gap-2">
+              <div className="shrink-0">
                 <Sheet open={isFilterOpen} onOpenChange={handleOpenFilterDrawer}>
                   <SheetTrigger
                     render={
                       <Button
                         variant="outline"
-                        className={`h-9 px-3.5 text-xs font-medium border-[#e7e4dd] bg-white gap-2 transition-colors ${
+                        className={`h-10 sm:h-9 px-3 text-xs font-medium border-[#e7e4dd] bg-white gap-1.5 transition-colors shrink-0 ${
                           activeFiltersCount > 0
                             ? 'border-[#24582d] text-[#24582d] bg-[#edf8ef] hover:bg-[#e4f3e7]'
                             : 'text-gray-700 hover:bg-[#faf8f4]'
@@ -491,7 +491,7 @@ export default function AdminBlogPage() {
                     }
                   >
                     <Filter size={14} />
-                    <span>Filtres</span>
+                    <span className="hidden xs:inline">Filtres</span>
                     {activeFiltersCount > 0 && (
                       <span className="h-5 w-5 rounded-full bg-[#24582d] text-white text-[11px] font-bold flex items-center justify-center">
                         {activeFiltersCount}
@@ -1010,7 +1010,7 @@ export default function AdminBlogPage() {
       {/* ========================================================================= */}
       {activeTab === 'categories' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h2 className="text-base font-serif font-bold text-[#1e2a1f]">
                 Thématiques Éditoriales & Rubriques
@@ -1022,7 +1022,7 @@ export default function AdminBlogPage() {
             <Button
               size="sm"
               onClick={handleOpenCreateCategory}
-              className="bg-[#24582d] hover:bg-[#1a4021] text-white text-xs font-semibold"
+              className="bg-[#24582d] hover:bg-[#1a4021] text-white text-xs font-semibold w-full sm:w-auto h-10 sm:h-9"
             >
               <Plus size={14} className="mr-1.5" />
               Nouvelle catégorie
@@ -1088,7 +1088,7 @@ export default function AdminBlogPage() {
       {/* ========================================================================= */}
       {activeTab === 'authors' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h2 className="text-base font-serif font-bold text-[#1e2a1f]">
                 Équipe de Rédaction & Fleuristes Auteurs
@@ -1100,7 +1100,7 @@ export default function AdminBlogPage() {
             <Button
               size="sm"
               onClick={handleOpenCreateAuthor}
-              className="bg-[#24582d] hover:bg-[#1a4021] text-white text-xs font-semibold"
+              className="bg-[#24582d] hover:bg-[#1a4021] text-white text-xs font-semibold w-full sm:w-auto h-10 sm:h-9"
             >
               <Plus size={14} className="mr-1.5" />
               Ajouter un rédacteur
