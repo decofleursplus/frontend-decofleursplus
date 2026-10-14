@@ -8,8 +8,6 @@ import {
   Star,
   Crown,
   ArrowRight,
-  UserRound,
-  LogOut,
 } from 'lucide-react';
 import { demoOrders } from '@/lib/account-data';
 import { formatPrice } from '@/lib/products';
@@ -17,31 +15,13 @@ import { formatPrice } from '@/lib/products';
 export default function AccountDashboard() {
   return (
     <div className="account-dashboard-wrapper">
-      {/* Title & Profile Header */}
+      {/* Title Header */}
       <div className="account-title-row">
         <div>
           <h1 className="account-title">Mon compte</h1>
           <p className="account-intro">
             Bienvenue Fatou ! Voici un aperçu de votre espace personnel.
           </p>
-        </div>
-
-        {/* User Profile Card as seen in top right of Mon Compte */}
-        <div className="user-profile-header-card">
-          <div className="profile-avatar-circle">
-            <span>FB</span>
-          </div>
-          <div className="profile-text-meta">
-            <strong>Fatou Ba</strong>
-            <span className="profile-email">fatou.ba@email.com</span>
-            <span className="profile-phone">+221 77 123 45 67</span>
-          </div>
-          <Link href="/compte/informations" className="button-profile-edit">
-            <UserRound size={13} /> Modifier mon profil
-          </Link>
-          <Link href="/connexion" className="dashboard-mobile-signout">
-            <LogOut size={14} /> Déconnexion
-          </Link>
         </div>
       </div>
 

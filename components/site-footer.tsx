@@ -39,6 +39,7 @@ export function SiteFooter() {
           <h3 className="footer-heading">Liens rapides</h3>
           <ul className="footer-links">
             <li><Link href="/">Accueil</Link></li>
+            <li><Link href="/abonnements">Abonnements floraux</Link></li>
             <li><Link href="/a-propos">À propos</Link></li>
             <li><Link href="/contact">Contact</Link></li>
             <li><Link href="/conditions">CGV</Link></li>

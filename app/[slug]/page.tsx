@@ -16,12 +16,18 @@ import {
   BookOpen,
   Calendar,
   Calculator,
+  Sprout,
+  CheckCircle2,
+  Gift,
+  UtensilsCrossed,
+  Building2,
 } from 'lucide-react';
 import { products } from '@/lib/products';
 import { CatalogClient } from '@/components/catalog-client';
 import { ProductGrid } from '@/components/product-grid';
 import { SiteFooter } from '@/components/site-footer';
 import { ContactForm } from '@/components/contact-form';
+import { DevisForm } from '@/components/devis-form';
 
 const categories: Record<string, string> = {
   bouquets: 'Bouquets',
@@ -87,18 +93,18 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
               fill
               sizes="100vw"
             />
-            <div>
-              <span className="eyebrow" style={{ color: '#fff' }}><Heart size={16} /> Savoir-faire floral</span>
-              <h1>Événements & Mariages</h1>
-              <p>Des compositions florales d’exception pour vos célébrations et réceptions sur la Petite Côte.</p>
+            <div className="page-banner-content">
+              <span className="banner-badge"><Heart size={15} /> Savoir-faire floral</span>
+              <h1>Événements & Scénographie</h1>
+              <p>Des compositions florales d’exception et un accompagnement sur mesure pour vos célébrations et réceptions sur la Petite Côte.</p>
             </div>
           </section>
 
           <div className="content-links">
             {[
-              ['Mariages', '/mariages'],
-              ['Anniversaires', '/anniversaires'],
-              ['Décoration sur mesure', '/decoration'],
+              ['Mariages & Cérémonies', '/mariages'],
+              ['Anniversaires & Réceptions', '/anniversaires'],
+              ['Décoration & Tables', '/decoration'],
               ['Cérémonies de deuil', '/deuil'],
             ].map(([label, href]) => (
               <Link className="content-link-card" href={href} key={href}>
@@ -113,11 +119,14 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
           </div>
           <ProductGrid products={products.filter((p) => p.category === 'Mariages' || p.category === 'Bouquets')} />
 
-          <div style={{ marginTop: '40px', display: 'flex', justifyContent: 'center' }}>
-            <Link className="button-pill-pink" href="/contact" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ marginTop: '40px', marginBottom: '24px', display: 'flex', justifyContent: 'center' }}>
+            <a className="button-pill-pink" href="#devis" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
               <Calculator size={18} /> Demander un devis sur mesure
-            </Link>
+            </a>
           </div>
+
+          {/* Formulaire interactif de demande de devis */}
+          <DevisForm />
         </main>
         <SiteFooter />
       </>
@@ -262,9 +271,71 @@ function DeliveryPage() {
 }
 
 function AboutPage() {
+  const savoirFaire = [
+    {
+      num: '01',
+      title: 'Art floral',
+      desc: 'Bouquets d’exception, compositions sur mesure, fleurs fraîches et créations personnalisées pour chaque émotion.',
+      icon: Flower2,
+    },
+    {
+      num: '02',
+      title: 'Scénographie florale',
+      desc: 'Mariages, baptêmes, anniversaires, réceptions, tables, arches végétales, hôtels et décors de villas privées.',
+      icon: Heart,
+    },
+    {
+      num: '03',
+      title: 'Fraises & Primeurs d’exception',
+      desc: 'Fraises fraîches cultivées avec soin, fruits sélectionnés et paniers gourmands généreux.',
+      icon: Star,
+    },
+    {
+      num: '04',
+      title: 'Décoration & Objets',
+      desc: 'Vases raffinés, bougies parfumées, objets décoratifs et contenants élégants pour sublimer vos intérieurs.',
+      icon: Sparkles,
+    },
+    {
+      num: '05',
+      title: 'Peluches & Gourmandises',
+      desc: 'Peluches douces, chocolats fins et coffrets attentionnés pour composer des cadeaux inoubliables.',
+      icon: Gift,
+    },
+    {
+      num: '06',
+      title: 'Paysagisme & Espaces verts',
+      desc: 'Conception végétale, aménagement de jardins, terrasses de villa et entretien paysager sur la Petite Côte.',
+      icon: Sprout,
+    },
+    {
+      num: '07',
+      title: 'Location événementielle',
+      desc: 'Vaisselle soignée, verrerie, mobilier d’appoint et accessoires pour vos réceptions prestigieuses.',
+      icon: UtensilsCrossed,
+    },
+    {
+      num: '08',
+      title: 'Solutions professionnelles',
+      desc: 'Partenariats hôteliers, décoration de restaurants, villas en conciergerie et abonnements corporate.',
+      icon: Building2,
+    },
+  ];
+
+  const engagements = [
+    'Des fleurs et produits frais sélectionnés avec une exigence quotidienne',
+    'Des créations florales artisanales soignées dans le moindre détail',
+    'Des solutions adaptées aux budgets et aux souhaits de chaque client',
+    'Une livraison rapide et ponctuelle à Saly, Mbour et sur la Petite Côte',
+    'Un accompagnement personnalisé par des artisans passionnés',
+    'Des modalités de paiement simples, immédiates et sécurisées (Wave, Orange Money)',
+    'Une relation de confiance et de long terme avec les particuliers et professionnels',
+  ];
+
   return (
     <>
       <main className="content-width page-main">
+        {/* Hero Banner */}
         <section className="about-hero">
           <Image
             src="/images/boutique-equipe.jpg"
@@ -273,60 +344,110 @@ function AboutPage() {
             sizes="100vw"
             priority
           />
+          <div className="about-hero-overlay" />
           <div className="about-hero-text">
-            <span className="eyebrow" style={{ color: '#fff' }}><Sparkles size={16} /> Notre Maison Florale</span>
-            <h1 style={{ color: '#fff' }}>Décofleur Plus</h1>
-            <p>Nature en Élégance — Maître fleuriste à Saly Portudal, Sénégal</p>
+            <span className="about-hero-badge">
+              <Sparkles size={15} /> Maison Florale &amp; Végétale
+            </span>
+            <h1>Décofleur Plus</h1>
+            <p>Nature en Élégance — Saly Portudal, Petite Côte du Sénégal</p>
           </div>
         </section>
 
-        <div className="page-copy" style={{ marginTop: '28px' }}>
-          <h2>Une passion née sur la Petite Côte sénégalaise</h2>
-          <p>
-            Implantée au cœur de <strong>Saly Portudal</strong>, la maison <strong>Décofleur Plus</strong> incarne l’art
-            floral sous toutes ses facettes. Alliant raffinement contemporain et générosité de la nature tropicale, notre
-            atelier imagine chaque jour des créations florales qui célèbrent les plus beaux instants de la vie.
-          </p>
-          <p>
-            Que vous souhaitiez déclarer votre flamme avec un somptueux bouquet de roses, fleurir une réception de mariage
-            prestigieuse en bord de mer, offrir une corbeille de fruits gorgés de soleil ou apporter une touche de sérénité
-            avec des plantes d’intérieur d’exception, notre équipe d’artisans fleuristes met son savoir-faire à votre
-            service avec passion et rigueur.
-          </p>
+        {/* Section 1: Histoire & Héritage */}
+        <div className="about-narrative-section">
+          <div className="about-narrative-col">
+            <span className="section-eyebrow">NOTRE HISTOIRE</span>
+            <h2>Une passion née sur la Petite Côte sénégalaise</h2>
+            <p>
+              Implantée à <strong>Saly Portudal</strong>, la maison <strong>DécoFleur Plus</strong> est née d’une
+              vocation authentique : magnifier la nature tropicale et locale en lui associant les codes de
+              l’art floral contemporain le plus exigeant.
+            </p>
+            <p>
+              L’histoire de DécoFleur Plus s’inscrit dans un héritage familial lié au commerce des fruits, des primeurs
+              et au sens du produit bien sélectionné. Cette sensibilité pour la fraîcheur s’est tout naturellement
+              épanouie vers l’univers floral et végétal : savoir-faire artisanal, rigueur d’assemblage et respect du végétal.
+            </p>
+          </div>
+
+          <div className="about-narrative-col about-narrative-quote-box">
+            <span className="quote-flourish">“</span>
+            <blockquote className="about-large-quote">
+              La proximité d’une maison locale, avec les standards d’une marque d’exception.
+            </blockquote>
+            <p className="quote-author">Maison DécoFleur Plus — Saly Portudal</p>
+          </div>
         </div>
 
-        <div className="about-grid">
-          <article className="about-card">
-            <div className="about-card-icon"><Flower2 size={24} /></div>
-            <h3>Fleurs d’une fraîcheur absolue</h3>
-            <p>Sélection quotidienne de fleurs fraîches garantissant un éclat et une tenue irréprochable plusieurs jours durant.</p>
-          </article>
+        {/* Section 2: Nos 8 Savoir-Faire */}
+        <section className="about-savoir-faire-section">
+          <div className="section-header-center">
+            <span className="section-eyebrow">DOMAINE D’EXCELLENCE</span>
+            <h2>Nos 8 domaines de savoir-faire</h2>
+            <p className="section-lead-center">
+              De la confection d’un bouquet intime jusqu’à la scénographie complète d’un mariage d’envergure, découvrez nos univers.
+            </p>
+          </div>
 
-          <article className="about-card">
-            <div className="about-card-icon"><Heart size={24} /></div>
-            <h3>Créations sur mesure</h3>
-            <p>Chaque bouquet est unique. Personnalisez votre commande avec un mot calligraphié, une carte cadeau et un emballage soigné.</p>
-          </article>
+          <div className="savoir-faire-grid">
+            {savoirFaire.map((item) => {
+              const Icon = item.icon;
+              return (
+                <article key={item.num} className="savoir-faire-card">
+                  <div className="savoir-faire-top">
+                    <span className="savoir-faire-num">{item.num}</span>
+                    <div className="savoir-faire-icon">
+                      <Icon size={20} />
+                    </div>
+                  </div>
+                  <h3>{item.title}</h3>
+                  <p>{item.desc}</p>
+                </article>
+              );
+            })}
+          </div>
+        </section>
 
-          <article className="about-card">
-            <div className="about-card-icon"><Truck size={24} /></div>
-            <h3>Livraison soignée & ponctuelle</h3>
-            <p>Service de coursiers dédiés pour acheminer vos compositions à Saly et Mbour dans des conditions optimales de fraîcheur.</p>
-          </article>
+        {/* Section 3: Nos Engagements */}
+        <section className="about-engagements-section">
+          <div className="engagements-inner">
+            <div className="engagements-left">
+              <span className="section-eyebrow">NOS VALEURS</span>
+              <h2>Les 7 engagements de DécoFleur Plus</h2>
+              <p>
+                Chaque composition, chaque commande et chaque partenariat repose sur un socle de valeurs partagées avec nos clients.
+              </p>
+              <div className="engagement-words-pills">
+                <span>Qualité</span>
+                <span>Fraîcheur</span>
+                <span>Créativité</span>
+                <span>Ponctualité</span>
+                <span>Proximité</span>
+                <span>Exigence</span>
+              </div>
+            </div>
 
-          <article className="about-card">
-            <div className="about-card-icon"><Star size={24} /></div>
-            <h3>Paiement mobile instantané</h3>
-            <p>Réglez vos commandes en toute simplicité et sécurité avec Wave, Orange Money ou par carte bancaire internationale.</p>
-          </article>
-        </div>
+            <div className="engagements-right">
+              <ul className="engagements-list">
+                {engagements.map((eng, idx) => (
+                  <li key={idx}>
+                    <CheckCircle2 size={18} className="engagement-check-icon" />
+                    <span>{eng}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
 
-        <div className="about-cta">
+        {/* CTAs */}
+        <div className="about-cta" style={{ marginTop: '48px' }}>
           <Link className="button-pill-pink" href="/boutique">
-            Découvrir notre collection <ArrowRight size={15} />
+            Découvrir notre boutique <ArrowRight size={15} />
           </Link>
-          <Link className="button-pill-outline" href="/contact">
-            Nous rendre visite ou nous contacter <ArrowRight size={15} />
+          <Link className="button-pill-outline" href="/evenements#devis">
+            Demander un devis sur mesure <ArrowRight size={15} />
           </Link>
         </div>
       </main>

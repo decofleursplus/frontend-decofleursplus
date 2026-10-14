@@ -1,99 +1,211 @@
-# Décofleur Plus — Implementation Plan
+# Implementation Plan
 
-## Phase 2 — User Responsive / PWA
+## Phase 3 — Back-office
 
-**Objectif :** adapter les pages USER existantes au mockup `mockups/Décofleur Plus Mobile App Showcase.png` et ajouter les capacités PWA, sans modifier la direction artistique desktop ni toucher au back-office.
+### Foundation
+- [x] Initialize `shadcn/ui` and configure design tokens for admin (colors, typography)
+- [x] Create `components/admin` directory structure
+- [x] Setup `lib/admin/mock-data` with static TypeScript data arrays
+- [x] Build Back-office architecture (`app/admin/layout.tsx`)
+- [x] Implement Admin Sidebar (`components/admin/admin-sidebar.tsx`)
+- [x] Implement Admin Topbar (`components/admin/admin-topbar.tsx`)
+- [x] Ensure responsive-ready structure
 
-**État initial observé (3 octobre 2026) :** le dépôt contient déjà des règles responsive et un tiroir/bottom navigation dans `components/site-header.tsx` / `app/globals.css`. Ces éléments sont à auditer contre le nouveau mockup avant d’être considérés conformes. `app/layout.tsx` n’expose actuellement qu’un titre et une description ; aucun manifeste, service worker ou flux d’installation n’a été repéré. `rules.md` n’est pas présent à la racine.
+### Authentification Admin
+- [x] Create `/admin/connexion` page layout with a premium centered card design
+- [x] Implement Admin Login form (Email & Password)
+- [x] Simulate auth flow with hardcoded credentials and redirect to dashboard
+- [x] Protect `/admin/*` routes (redirect to `/admin/connexion` if not authenticated)
 
-### Plan et checklist
+### Tableau de bord (Dashboard)
+- [x] Create `/admin/tableau-de-bord` page layout
+- [x] Implement KPI cards (Chiffre d'affaires, Commandes, Clients, Produits)
+- [x] Implement Ventes sur 30 jours chart (Recharts)
+- [x] Implement Répartition des commandes chart
+- [x] Implement Commandes récentes list
+- [x] Implement Produits les plus vendus list
 
-- [x] Lire le plan, le statut et rechercher `rules.md` — `rules.md` absent ; plan établi avant toute modification du code applicatif.
-- [ ] Auditer le shell mobile — Header avec recherche et actions, tiroir/menu, navigation basse à 5 entrées, zones tactiles, safe areas, scroll et comportement sur routes auth ; comparer au mockup.
-- [ ] Définir et vérifier les seuils responsive — Téléphones étroits, mobiles courants, tablettes et desktop ; repérer débordements et éléments desktop qui ne se réorganisent pas correctement.
-- [ ] Accueil mobile — Adapter hero, catégories, cartes produit, sections éditoriales et footer selon la maquette.
-- [ ] Boutique, catégories et recherche — Grille produit mobile, filtres/tri utilisables au pouce, recherche, états vides et pagination/chargement.
-- [ ] Fiche produit et favoris — Galerie/carrousel, variantes, personnalisation, prix et CTA accessibles sans masquer le contenu.
-- [ ] Panier — Lignes produit, quantité/suppression, code promo, récapitulatif et passage au checkout.
-- [ ] Checkout, livraison, paiement et confirmation — Étapes, formulaires, options, récapitulatif et confirmation adaptés au mobile.
-- [ ] Connexion et inscription — Contrôler les formulaires, clavier virtuel, viewport et mise en page mobile existante.
-- [ ] Compte, commandes, détails et suivi — Navigation de compte, cartes, statuts, adresses, fidélité, coupons et suivi.
-- [ ] Blog, article, événements, à propos, contact et pages légales — Mise en page, médias, formulaires et navigation mobile.
-- [ ] États système — Chargement, erreurs, vide, hors ligne et succès sur petits écrans.
-- [ ] Micro-interactions et accessibilité — Feedback tactile, tiroirs/feuilles, transitions et `prefers-reduced-motion`.
-- [ ] PWA manifest et métadonnées — Nom, icônes, couleurs, orientation et mode standalone cohérents avec la marque.
-- [ ] Icônes PWA — Produire les tailles requises et vérifier les rendus installés Android/iOS.
-- [ ] Installation et lancement — Vérifier prompt/consignes d’installation compatibles navigateur, Android et iOS ; expérience de démarrage adaptée.
-- [ ] Service worker et cache — Choisir une stratégie prudente pour les ressources statiques, sans mettre en cache les données personnelles ou transactions ; gérer mise à jour et échec réseau.
-- [ ] Expérience hors ligne — État hors ligne explicite et repli utile pour les pages/ressources non disponibles.
-- [ ] Notifications — Évaluer les capacités et le support déjà présents ; n’activer que si l’architecture existante le permet réellement.
-- [ ] QA responsive et non-régression — Vérifier visuellement les parcours USER aux tailles cibles, interactions, accessibilité et rendu desktop avant de cocher les tâches.
+### Gestion des produits (Products)
+- [x] Create `/admin/produits` page layout
+- [x] Implement Product filters & search bar
+- [x] Implement Product DataTable with pagination and status
+- [x] Create `/admin/produits/nouveau` (Product creation form)
+- [x] Create `/admin/produits/[id]` (Product editing/detail)
+- [x] Implement Product images upload/management UI
+- [x] Implement Product variants & stock UI
+- [x] Implement Product pricing & SEO UI
 
-**Règle de validation :** les cases d’implémentation ne seront cochées qu’après réalisation, vérification visuelle mobile, contrôle responsive et vérification de l’absence de régression desktop. Toute limite ou décision sera consignée dans `docs/IMPLEMENTATION_STATUS.md`.
+### Gestion des commandes (Orders)
+- [x] Create `/admin/commandes` page layout
+- [x] Implement Order filters & search bar
+- [x] Implement Order DataTable with status badges
+- [x] Create `/admin/commandes/[id]` (Order detail page)
+- [x] Implement Order status update actions with Confirmation Dialogs
 
-## Portée et références
+### Gestion des clients (Customers & CRM)
+- [x] Create `/admin/clients` page layout
+- [x] Implement Customer DataTable with CRM segmentation
+- [x] Create `/admin/clients/[id]` (Customer profile & CRM history)
+- [x] Implement Customer order history, VIP status & loyalty info
 
-- [x] Inspecter le dépôt — Dépôt initial sans code applicatif ; prompt, règles, maquettes, logo et PDF présents.
-- [x] Lire `rules.md` et `propmt1.md` — Le mockup est la référence visuelle principale ; conformité stricte aux règles de qualité.
-- [x] Extraire et relire le cahier des charges — 11 pages converties en images haute résolution et lues intégralement. Intégration de toutes les exigences : paiements (Wave, Orange Money, Free Money, Carte, Espèces), zones de livraison Saly & Mbour, personnalisation (carte message, emballage), programme de fidélité, blog floral, contact WhatsApp.
-- [x] Examiner les mockups et le logo — Prototype 1536x1024 reproduit à 100% : barre d’annonces, top bar, hero floral avec cursive, bandeau 7 catégories, section split avec bannière événementielle, 4 produits phares, badges réassurance, encart carte cadeau, témoignages clients et footer complet.
+### Gestion des catégories (Categories — Maquette 09)
+- [x] Create `/admin/categories` page layout
+- [x] Implement Categories DataTable (Nom, Description, Nombre de produits, Statut, Actions)
+- [x] Implement Category creation/editing Modal or Drawer ("+ Ajouter une catégorie")
+- [x] Implement search & category status toggle
 
-## Phase 1 — Foundation
 
-- [x] Initialiser Next.js App Router, React, TypeScript et Tailwind — `package.json`, `next.config.ts`, `postcss.config.mjs`, `tsconfig.json`, `app/`. Build de production réussi.
-- [x] Définir les tokens et styles globaux — `app/globals.css`. Palette forêt (#19331C) / rose signature (#DE2A6B) / crème (#FDF8F5), échelle typographique agrandie selon demande utilisateur, espacements, focus et reduced motion.
-- [x] Intégrer le logo et la hiérarchie typographique — `public/logo_decofleur.jpeg`, `app/layout.tsx`, styles globaux. Typographie serif Georgia pour les titres d’exception et sans-serif moderne pour le texte.
-- [x] Définir les types et données cohérentes — `lib/products.ts`. Produits alignés avec précision sur la maquette : Bouquet Élégance Rose (-10%, 25 000 FCFA), Panier de fruits tropicaux (18 000 FCFA), Centre de table mariage (-15%, 35 000 FCFA), Coffret cadeau luxe (22 000 FCFA), tailles (Petit, Moyen, Grand), dimensions, références.
+### Gestion du stock (Stock — Maquette 10)
+- [x] Create `/admin/stock` page layout with tabs (Tous, Stock faible, Rupture)
+- [x] Implement Stock DataTable (Produit avec image, Stock actuel, Stock minimum, Statut badge, Actions)
+- [x] Implement Stock quick-adjust modal or inline update
+- [x] Implement Stock filter by category and search
+- [x] Implement Movement history tab with full audit trail
 
-## Phase 2 — Composants partagés
 
-- [x] Construire le shell desktop et mobile — `components/site-header.tsx`, `components/site-footer.tsx`. Barre d’annonces supérieure avec réseaux sociaux, recherche centrale, navigation avec dropdowns interactifs, menu tiroir mobile et barre de navigation mobile inférieure (5 onglets).
-- [x] Extraire les primitives UI — Boutons pill signature rose, icônes SVG de marques (Facebook, Instagram, TikTok, YouTube, WhatsApp), étoiles de notation, badges promotions/nouveau, accordéons FAQ.
-- [x] Finaliser les composants commerce — `components/product-card.tsx`, `components/product-grid.tsx`, `components/product-detail.tsx`, `components/catalog-client.tsx`, `components/cart-provider.tsx`. Bouton « Ajouter au panier » pleine largeur, galerie photos avec bascule d’aperçu, choix des tailles et message personnalisé.
-- [x] Ajouter les interactions principales et les animations sobres — Micro-interactions au survol, bascule des favoris, persistance du panier, bouton d’assistance WhatsApp flottant.
+### Gestion des livraisons (Deliveries — Maquette 11)
+- [x] Create `/admin/livraisons` page layout with status tabs (Toutes, À livrer, En cours, Livrées)
+- [x] Implement Deliveries DataTable (#Livraison, Commande, Livreur, Statut, Date, Actions)
+- [x] Implement delivery detail / assign driver modal
 
-## Phase 3 — Parcours e-commerce public
+### Marketing & Promotions (Maquette 12/13)
+- [x] Create `/admin/marketing` page layout with tabs (Promotions, Coupons, Campagnes, Relance panier)
+- [x] Implement Promotions & Coupons DataTable (Nom, Type, Réduction, Période, Statut)
+- [x] Implement Campaign creation modal & Cart recovery configuration with WhatsApp/Email triggers
 
-- [x] Accueil — `/`. Reproduction exacte du prototype desktop et mobile : Hero, bandeau 7 catégories, bannière mariages, grille des 4 produits vedettes, réassurance, carte cadeau, témoignages étoiles et footer.
-- [x] Boutique, catégories, recherche et filtres — `/boutique`, `/categories/[slug]`, pages catégories et `/recherche`. Filtres de prix, catégorie, disponibilité, tri et état vide.
-- [x] Fiche produit — `/produits/[slug]`. Galerie multi-angles, sélection de taille avec calcul dynamique du prix, carte message calligraphiée (+2 000 FCFA), emballage signature (+3 000 FCFA), stock et recommandations.
-- [x] Favoris et panier — `/favoris`, `/panier`. Persistance locale, calculs dynamiques de livraison et TVA, code promo instantané.
-- [x] Livraison, paiement, checkout et états de commande — `/livraison`, `/commande`, `/commande/confirmation`, `/commande/paiement-echoue`. Choix de créneaux, modes Standard/Express/Retrait boutique, modes de paiement Wave, Orange Money, CB et espèces.
+### Paramètres & Équipe (Settings — Maquettes 15 & 16)
+- [x] Create `/admin/parametres` page layout with sub-navigation (Boutique & Général, Collaborateurs, Rôles & Permissions, Paiement, Livraison, Notifications, SEO)
+- [x] Implement Boutique settings form (Nom, Slogan, Contact, Logo, Horaires, Devise, Fuseau horaire)
+- [x] Implement Team/Users DataTable with "+ Ajouter un utilisateur" and `UserEditorDialog`
+- [x] Implement interactive Roles & Permissions matrix (Modules vs Rôles avec bascule des droits Lecture/Écriture/Suppression/Export)
+- [x] Implement operational tabs: Passerelles de paiement (Wave, OM, CB, Espèces), Zones de livraison (Saly, Mbour, Dakar, Ngaparou), Notifications & Alertes (WhatsApp/SMS/Email), et SEO & Google SERP preview
 
-## Phase 4 — Compte client
+### Blog & Contenu
+- [x] Create `/admin/blog` page layout with 4 sub-sections (Articles, Catégories, Auteurs, Paramètres/SEO)
+- [x] Implement Articles management (DataTable, filtres par statut, recherche, actions dupliquer/statut/supprimer)
+- [x] Implement Article editor modal (`ArticleEditorDialog`) with 4 tabs (Contenu, Médias, Cross-selling produits, SEO Google Preview)
+- [x] Implement Article preview modal (`ArticlePreviewDialog`) with live storefront rendering
+- [x] Implement Category creation/editing modal (`CreateBlogCategoryDialog`) with color presets
+- [x] Implement Author creation/editing modal (`AuthorProfileDialog`)
 
-- [x] Authentification frontend — `/connexion`, `/inscription`, `/mot-de-passe-oublie`.
-- [x] Espace client, commandes et suivi — `/compte`, `/compte/commandes`, `/compte/commandes/[id]`, `/compte/suivi/[id]`. Carte de livraison de Saly/Mbour intégrée en haute résolution.
-- [x] Profil, adresses, favoris, avis et notifications — Sections `/compte/*`, formulaire de préférences.
-- [x] Fidélité, coupons, parrainage et cartes cadeaux — Niveaux Bronze, Argent, Or, Platine et historique de points fidélité.
 
-## Phase 5 — Contenu et états système
+### Rapports & Finances
+- [x] Create `/admin/rapports` page layout with dual analytical tabs (Ventes & Performance, Bilan Financier & Trésorerie)
+- [x] Implement Revenue, Payments, and Financial breakdown charts with comparative period indicators
+- [x] Implement export and statistical reports (`ExportReportDialog` with CSV and styled PDF print)
+- [x] Implement financial audit journal and transaction detail drawer (`TransactionDetailDialog`)
 
-- [x] Événements et catégories — `/evenements`, `/mariages`, `/decoration`, `/deuil`, `/anniversaires`, `/plantes`, `/cadeaux`, `/bougies`, `/vases`, `/occasions`.
-- [x] Pages institutionnelles enrichies —
-  - `/a-propos` : Grande photo d’atelier à Saly, histoire de la maison florale, engagements et valeurs artisanales.
-  - `/contact` : Repositionné et sublimé avec coordonnées complètes (Route de la Plage Saly, téléphone direct, horaires Lun-Dim), bouton WhatsApp instantané et formulaire avec sélecteur de sujet.
-  - `/faq` : Accordéons interactifs traitant des livraisons, paiements Wave/OM, commandes depuis l'étranger, garanties de fraîcheur et événements.
-  - `/livraison` : Grille tarifaire Standard (2 000 FCFA), Express (5 000 FCFA) et Retrait boutique gratuit, avec carte de couverture géographique.
-- [x] Blog et articles floraux — `/blog`. 4 articles complets et pertinents : entretien sous le climat de Saly, mariages sur la Petite Côte, corbeilles de fruits tropicaux et plantes dépolluantes.
-- [x] États système — `app/loading.tsx`, `app/error.tsx`, `app/not-found.tsx`, gestion des états vides et confirmation.
 
-## Phase 6 — Validation et finition
+## Phase 4 — Back-office Responsive & PWA (Tab View & Ergonomie Mobile)
 
-- [x] Vérifier TypeScript, ESLint et build — `pnpm exec tsc --noEmit` sans erreur, `pnpm lint` sans avertissement, `pnpm build` avec 69/69 routes générées avec succès.
-- [x] Comparer visuellement chaque page aux mockups — Captures d’écran Chromium à 1536 px (Desktop) et 390 px (Mobile iPhone) validées et conformes au prototype.
-- [x] Vérifier clavier, focus, contraste, reduced motion et débordements — Aucun débordement horizontal, contrastes WCAG respectés, interactions fluides.
-- [x] Maintenir `docs/IMPLEMENTATION_STATUS.md` — Statut complet à jour.
+### Architecture & Shell Global PWA
+- [x] Mettre à jour `app/manifest.ts` avec le raccourci direct Back-office (`/admin/tableau-de-bord`) et métadonnées PWA
+- [x] Créer le composant `AdminMobileTabBar` (barre fixe en bas : Dashboard, Commandes, Produits, Livraisons, Menu)
+- [x] Créer le composant `AdminMobileDrawer` (Side Drawer glissant depuis la gauche avec liste des 11 modules, installateur PWA et déconnexion)
+- [x] Adapter `AdminTopbar` pour mobile (compact, logo/brand, icône notifs & profil, safe-area)
+- [x] Adapter `AdminSidebar` (masquage propre sur mobile < 1024px sans saut de layout)
+- [x] Ajouter les styles CSS d'administration mobile dans `app/globals.css` (Safe Area Insets iOS/Android, conteneurs réactifs, prévention overflow)
 
-## Phase 8 — Tableaux de Bord & Conformité Collage UI (Collage-2.png)
+### Module 1 — Tableau de bord (`/admin/tableau-de-bord`)
+- [x] Adapter la grille de KPIs en layout mobile tactile fluide (1 ou 2 colonnes sans écrasement)
+- [x] Adapter les graphiques Recharts/Chart.js pour petits écrans (responsive container, tooltips tactiles)
+- [x] Transformer la liste des commandes récentes et produits phares en fiches mobiles claires
+- [x] Audit visuel et validation : zéro débordement horizontal, textes lisibles
 
-- [x] 8.1. Carrousel Témoignages : centrer le titre « ♡ Ils nous font confiance » et disposer les flèches de navigation (`<` et `>`) de part et d'autre des cartes sur la même ligne horizontale (`components/testimonial-carousel.tsx`, `app/globals.css`).
-- [x] 8.2. FAQ Homepage : centrer les bandes d'accordéons dans un conteneur dédié de 840px max et limiter l'affichage aux 5 questions essentielles (`components/home-faq.tsx`).
-- [x] 8.3. Navigation & Page FAQ : retirer l'entrée FAQ du menu déroulant « À propos » et du tiroir mobile (`components/site-header.tsx`), et supprimer la page dédiée `/faq` avec redirection permanente vers l'ancre `/#faq` (`app/[slug]/page.tsx`).
-- [x] 8.4. Suivi de Commande (`/compte/suivi/[id]`) : intégrer le stepper 4 étapes avec le jalon « En livraison » actif (`Commande confirmée` -> `Préparation en cours` -> `En livraison` (actif) -> `Livrée`), reproduire la carte du livreur Moussa Ndiaye (note 4.8★, boutons Appel direct et WhatsApp), la carte d'itinéraire Saly/Mbour et la sélection des canaux de notification (`app/compte/suivi/[id]/page.tsx`).
-- [x] 8.5. Mon Compte (`/compte`) : reproduire l'interface complète du cadran supérieur gauche du collage (carte de profil Fatou Ba, 4 cartes de métriques : 12 commandes, 28 500 pts, Niveau Gold, 3 adresses, tableau de commandes récentes avec boutons d'actions contextuels « Voir les détails », « Suivre », « Facture PDF », et modules Mes adresses / Mes favoris).
-- [x] 8.6. Finaliser ma Commande (`/commande`) : reproduire les 5 étapes numérotées du cadran inférieur gauche (1. Adresse de livraison enregistrée, 2. Mode de livraison Standard/Express avec recherche cartographique Saly/Mbour, 3. Date et créneau horaire, 4. Instructions livreur, 5. Mode de paiement avec badges officiels Wave, Orange Money, Carte Bancaire et Espèces), récapitulatif détaillé avec code promo et bouton de paiement sécurisé.
-- [x] 8.7. Programme de Fidélité (`/compte/fidelite`) : reproduire fidèlement le cadran inférieur droit (citation calligraphiée fleurie, carte héro Gold 28 500 pts avec jauge vers Platinum, grille des 4 statuts avec pourcentages de remise, liste des 5 avantages Gold exclusifs, historique de points, coupons actifs `GOLD15` et `LIVRAISON`, et bloc parrainage avec code et partage direct).
-- [x] 8.8. Validation technique et captures d'écran Chromium : validation sans faute de `tsc` et `eslint`, génération de 69/69 routes statiques sous Next.js Turbopack, et captures d'écran Chromium validées pour chaque section.
+### Module 2 — Commandes (`/admin/commandes`)
+- [x] Onglets de statut scrollables horizontalement (Toutes, En attente, Confirmées, Livrées, Annulées)
+- [x] Transformer le tableau de commandes en Card View tactile (badges statut, montant mis en avant, actions rapides)
+- [x] Adapter la page de détail `/admin/commandes/[id]` pour mobile
+- [x] Audit visuel et validation anti-overflow
+
+### Module 3 — Produits (`/admin/produits`)
+- [x] Barre de filtres et recherche adaptée aux écrans tactiles
+- [x] Transformer le tableau de produits en fiches compactes (vignette photo, nom, prix, stock badge, switch statut)
+- [x] Adapter les formulaires création/édition produit (`/admin/produits/nouveau`, `/admin/produits/[id]`)
+- [x] Audit visuel et validation anti-overflow
+
+### Module 4 — Livraisons (`/admin/livraisons`)
+- [x] Adaptation des sous-onglets de courses
+- [x] Transformation du tableau en fiches de livraison avec livreur, créneau et état
+- [x] Adaptation du drawer `DeliveryDetailSheet` et modale `AssignDriverDialog` sur mobile
+- [x] Audit visuel et validation anti-overflow
+
+### Module 5 — Stock (`/admin/stock`)
+- [x] Fiches de gestion de stock avec alerte seuil critique et ajustement rapide tactile
+- [x] Onglet historique des mouvements adapté au mobile
+- [x] Audit visuel et validation anti-overflow
+
+### Module 6 — Clients (`/admin/clients`)
+- [x] Fiches CRM clients adaptées avec badges fidélité et accès rapide au contact (téléphone/email)
+- [x] Adaptation de la fiche client `/admin/clients/[id]`
+- [x] Audit visuel et validation anti-overflow
+
+### Module 7 — Catégories (`/admin/categories`)
+- [x] Fiches catégories et modale d'ajout/édition adaptées au tactile
+- [x] Audit visuel et validation anti-overflow
+
+### Module 8 — Marketing (`/admin/marketing`)
+- [x] Onglets de navigation marketing (Coupons, Promotions, Campagnes, Relance panier)
+- [x] Fiches coupons et formulaires de création adaptés au mobile
+- [x] Audit visuel et validation anti-overflow
+
+### Module 9 — Blog & Contenu (`/admin/blog`)
+- [x] Onglets internes (Articles, Catégories, Auteurs, Paramètres/SEO)
+- [x] Fiches articles et modales d'édition `ArticleEditorDialog` adaptées sur smartphone
+- [x] Audit visuel et validation anti-overflow
+
+### Module 10 — Rapports & Finances (`/admin/rapports`)
+- [x] Onglets analytiques (Performance commerciale, Bilan trésorerie)
+- [x] Graphiques financiers et KPIs adaptatifs
+- [x] Fiches d'audit financier et dialogue d'export responsive
+- [x] Audit visuel et validation anti-overflow
+
+### Module 11 — Paramètres (`/admin/parametres`)
+- [x] Remplacer la colonne latérale par une barre d'onglets segmentée/défilable sur mobile
+- [x] Adaptation des formulaires boutique, gestion collaborateurs et matrice de rôles
+- [x] Audit visuel et validation anti-overflow
+
+### Ajustements Ergonomiques & Retours Utilisateur (5 Small Fixes)
+- [x] **Image 1** : Rétablir la couleur du sélecteur actif mobile avec la même couleur que sur desktop (dégradé vert menthe `#edf8ef` à `#e8f4ea`, texte vert forêt `#193e23`, icône et pastille rose poudrée `#c1647a`).
+- [x] **Image 2** : Rendre la bannière PWA plus subtile et discrète (carte compacte et claire, micro-bouton élégant au lieu du pavé vert massif).
+- [x] **Image 3** : Supprimer la redondance entre bottom navbar et drawer (retrait du bouton "Menu" du bottom bar qui compte désormais 4 items, et exclusion des 4 modules Dashboard/Commandes/Produits/Livraisons du drawer).
+- [x] **Image 4** : Supprimer le sectionnage dans le drawer (retrait des en-têtes *ACTIVITÉ PRINCIPALE*, etc., liste plate directe des 7 modules restants).
+- [x] **Image 5** : Bouton WhatsApp avec la véritable couleur officielle (`#25D366`) et le véritable logo WhatsApp officiel (bulle de dialogue avec combiné).
+
+### Ajustements Structurels & Métier (/grill-me)
+- [x] **Image 1 — Restructuration Chapeau/Extrait d'article** : Intégration directe du champ dans la 1ère carte d'informations générales (Titre & Slug) au lieu d'une carte séparée, libellé équilibré, textarea claire et compteur en dessous.
+- [x] **Image 2 — Suppression note FCFA / Commissions** : Suppression de la bannière informative jaune dans la modale d'export des rapports d'activité (`ExportReportDialog`).
+- [x] **Logique fix — Séparation Collaborateurs / Flotte Livraisons** : Retrait du rôle "Livreur" dans `UserEditorDialog` et dans le filtre de Paramètres. Exclusion des livreurs de la liste des collaborateurs au profit du module dédié `/admin/livraisons`, avec bandeau d'orientation et lien direct.
+
+## Phase 5 — Refonte & Harmonisation UI Côté Particulier (Intégration Maquette Client)
+- [x] **Bouton Flottant WhatsApp** : Implémentation du composant circulaire discret (52px, vert officiel `#25D366`, icône officielle, safe-area inset, message pré-rempli) persistant sur toute la vitrine publique.
+- [x] **Section « Notre univers » (Homepage)** : Grille responsive 2x5 ou 2x6 avec typographie Cormorant/Jost, icônes florales raffinées, micro-interactions tactiles et redirection vers les catégories du catalogue.
+- [x] **Bandeau Campagnes & Événements Saisonniers Haute Définition** : 4 visuels d'artisanat floral d'exception générés sur mesure (Roses rouges Saint-Valentin, Pivoines pastel Fête des Mères, Atelier floral Promotions, Panier de fraises fraîches du terroir) incrustés à gauche avec un fondu horizontal progressif dans les dégradés thématiques, et micro-zoom fluide (scale 1.06) au survol.
+- [x] **Scénographie & Demande de Devis** :
+  - Bloc d'appel à l'action sur la page d'accueil pour la scénographie sur mesure (mariages, hôtels, villas).
+  - Formulaire interactif de demande de devis sur mesure directement intégré dans `/evenements` avec bouton direct WhatsApp.
+- [x] **Page « À Propos » Enrichie & Hero Compact Luminous (`/a-propos`)** :
+  - Déplacement des blocs éditoriaux de la maquette (Héritage familial & Primeur, les 8 Domaines de Savoir-Faire, les 7 Engagements et la Vision De Saly vers le Sénégal).
+  - Suppression du voile vert opaque étouffant et réduction de la hauteur du hero (de 320px à 175px desktop / 155px mobile). La photo de l'atelier et de l'artisan fleuriste rayonne désormais sur la droite avec un scrim doux à gauche pour la lisibilité.
+  - Maintien d'un bloc signature sobre et épuré sur la page d'accueil.
+- [x] **Hero Section Homepage** : Enrichissement avec le sous-titre de la maquette et double CTA (Découvrir nos créations + Commander sur WhatsApp).
+- [x] **Page Dédiée & Tunnel Compact « Abonnements Floraux » (`/abonnements`)** :
+  - **Suppression du look « AI-generated » & Élimination du superflu** : Suppression du grand bandeau photo encombrant de 320px et des blocs verbeux de remplissage. Remplacement par un en-tête sobre et compact (`.abonnements-compact-header`).
+  - **Visibilité immédiate au 1er coup d'œil (100vh / Above the fold)** : L'ensemble des 3 offres et des tarifs est directement visible à l'écran dès l'arrivée sur la page sans avoir à scroller.
+  - **Tunnel séquentiel en 4 étapes fluides tenant sur le viewport** :
+    1. *Étape 1 : Formule* : Bascule de fréquence Hebdomadaire (4 passages) / Bimensuel (2 passages), 3 cartes compactes (*Particulier & Villa* 25 000 FCFA, *Prestige & Réception* 50 000 FCFA, *Entreprise & Hôtellerie* 22 500 FCFA) et sélecteur compact à 3 onglets sur mobile (*Villa*, *Prestige ⭐*, *Entreprise*).
+    2. *Étape 2 : Livraison & Coordonnées* : Formulaire direct avec rappel de l'offre choisie, sélecteur de jour de livraison (Mardi, Vendredi, Samedi) et repères locaux.
+    3. *Étape 3 : Paiement avec Vrais Logos Officiels* : Cartes de paiement interactives intégrant les logos authentiques : Wave Sénégal (`/payment/wave.png`), Orange Money sur fond `#FF7900` (`/payment/orange-money.svg`), et Carte Bancaire Visa / Mastercard (`/payment/visa.svg`, `/payment/mastercard.svg`). Saisie du compte Mobile Money avec réassurance 0% frais.
+    4. *Étape 4 : Confirmation & Ticket récapitulatif* : Écran de félicitations immédiat avec ticket de récapitulatif complet et bouton WhatsApp officiel (`#25D366`) pré-rempli pour notifier instantanément l'artisan.
+  - **FAQ Compacte en accordéon** : 4 questions pratiques placées sous le tunnel sans encombrer la vue initiale.
+- [x] **Refonte Haut de Gamme du Formulaire de Devis (`DevisForm`)** :
+  - Restructuration intégrale en 4 étapes numérotées : Cartes visuelles de sélection d'événement (Mariage, Fête, Hôtel, Villa, Paysage, Sur mesure), Grille d'entrées avec icônes élégantes (Date, Lieu, Budget, Nom, Téléphone, Email), et zone d'expression aérée.
+  - Élimination des collisions de texte et normalisation des hauteurs (touch targets 48px), bordures douces et focus rings végétaux.
+  - Double bouton d'action (Envoi classique + Validation directe WhatsApp avec message pré-rempli) et 3 pastilles de réassurance.
+- [x] **Correction Lisibilité & Contraste des Bannières Vitrine** :
+  - Élimination des textes blancs sur fond clair (`#fff` sur fond crème) sur `/evenements` au profit d'un badge rose poudré contrasté (`.banner-badge` avec `#a0254c`) et d'un conteneur en verre dépoli avec typographie sombre haute définition.
+  - Renforcement du scrim d'ombrage sur `/a-propos` et `/abonnements` via un double dégradé (horizontal 90deg + vertical 180deg) et ajout d'ombres portées typographiques (`text-shadow`), garantissant une lecture immédiate et sans fatigue visuelle sur ordinateur comme sur mobile.
+- [x] **Contrôle Qualité & Recette Visuelle** : Audit Playwright desktop et mobile (390px/1280px), vérification de l'alignement, des espacements, de l'absence totale d'overflow horizontal et de la cohérence globale sur toutes les pages refondues.
+
 
 
