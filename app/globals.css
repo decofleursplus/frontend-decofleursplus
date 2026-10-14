@@ -2039,13 +2039,25 @@
   gap: 32px;
   padding-bottom: 48px;
 }
+.footer-logo-link {
+  display: inline-block;
+  transition: opacity 180ms ease;
+}
+.footer-logo-link:hover {
+  opacity: 0.88;
+}
 .footer-logo-img {
-  background: #ffffff;
-  padding: 6px 12px;
-  border-radius: 8px;
-  height: 114px;
+  height: 68px;
   width: auto;
-  object-fit: cover;
+  object-fit: contain;
+  display: block;
+}
+.footer-brand-motto {
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(226, 236, 227, 0.72);
+  max-width: 250px;
 }
 .footer-heading {
   font-size: 14px;

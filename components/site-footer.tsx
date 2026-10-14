@@ -25,14 +25,18 @@ export function SiteFooter() {
         <div className="footer-col-brand">
           <Link href="/" className="footer-logo-link" aria-label="Décofleur Plus">
             <Image
-              src="/logo_decofleur.jpeg"
+              src="/logo_decofleur_darkbg_cropped.png"
               alt="Décofleur Plus - Nature en Élégance"
-              width={54}
-              height={54}
+              width={160}
+              height={116}
+              priority
               className="footer-logo-img"
               style={{ width: 'auto' }}
             />
           </Link>
+          <p className="footer-brand-motto">
+            Maison florale &amp; végétale · Saly Portudal, Sénégal
+          </p>
         </div>
 
         {/* Quick Links Column */}
