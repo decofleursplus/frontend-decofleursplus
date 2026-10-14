@@ -1,19 +1,16 @@
 'use client';
 
-import { Search, Bell } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 export function AdminTopbar() {
   return (
     <header className="admin-topbar">
-      {/* Search */}
-      <div className="admin-topbar-search">
-        <Search size={16} className="admin-topbar-search-icon" />
-        <input
-          type="text"
-          placeholder="Rechercher un produit, un client, un produit…"
-          className="admin-topbar-search-input"
-        />
+      {/* Titre raffiné calligraphique / italique */}
+      <div className="admin-topbar-brand">
+        <span className="admin-topbar-title">
+          Back-office
+        </span>
       </div>
 
       {/* Right actions */}

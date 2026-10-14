@@ -5,11 +5,11 @@ import Image from 'next/image';
 import {
   Store,
   Users,
+  UserCheck,
+  UserPlus,
   ShieldCheck,
-  CreditCard,
   Truck,
   Bell,
-  Globe,
   Save,
   Search,
   Plus,
@@ -52,31 +52,25 @@ import type {
   AdminRoleKey,
   AdminUserStatus,
   BoutiqueSettings,
-  PaymentGatewaySettings,
   DeliveryZoneSettings,
   NotificationSettings,
-  SeoSettings,
 } from '@/lib/admin/mock-data/types';
 import {
   adminRolesList,
   initialAdminUsers,
   adminPermissionsMatrix,
   initialBoutiqueSettings,
-  initialPaymentSettings,
   initialDeliveryZones,
   initialNotificationSettings,
-  initialSeoSettings,
 } from '@/lib/admin/mock-data';
 import { UserEditorDialog } from '@/components/admin/user-editor-dialog';
 
 type SettingsTab =
   | 'boutique'
-  | 'utilisateurs'
+  | 'collaborateurs'
   | 'roles'
-  | 'paiement'
   | 'livraison'
-  | 'notifications'
-  | 'seo';
+  | 'notifications';
 
 export default function AdminParametresPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('boutique');
@@ -97,17 +91,16 @@ export default function AdminParametresPage() {
   const [permissionsMatrix, setPermissionsMatrix] = useState(adminPermissionsMatrix);
   const [activeRoleForMatrix, setActiveRoleForMatrix] = useState<AdminRoleKey>('gestionnaire');
 
-  // ── Payment Gateways State ────────────────────────────────────────
-  const [payment, setPayment] = useState<PaymentGatewaySettings>(initialPaymentSettings);
-
   // ── Delivery Zones State ──────────────────────────────────────────
   const [deliveryZones, setDeliveryZones] = useState<DeliveryZoneSettings[]>(initialDeliveryZones);
 
   // ── Notifications State ───────────────────────────────────────────
   const [notifications, setNotifications] = useState<NotificationSettings>(initialNotificationSettings);
 
-  // ── SEO State ─────────────────────────────────────────────────────
-  const [seo, setSeo] = useState<SeoSettings>(initialSeoSettings);
+  // ── Stats Collaborateurs ──────────────────────────────────────────
+  const totalUsers = users.length;
+  const activeUsersCount = users.filter((u) => u.status === 'actif').length;
+  const uniqueRolesCount = new Set(users.map((u) => u.role)).size;
 
   // ── Save Handler ──────────────────────────────────────────────────
   const handleSaveAll = () => {
@@ -187,12 +180,10 @@ export default function AdminParametresPage() {
 
   const navItems = [
     { key: 'boutique', label: 'Boutique & Général', icon: Store, desc: 'Coordonnées & identité' },
-    { key: 'utilisateurs', label: 'Collaborateurs', icon: Users, desc: 'Comptes & accès équipe' },
+    { key: 'collaborateurs', label: 'Collaborateurs', icon: Users, desc: 'Comptes & gestion d’équipe' },
     { key: 'roles', label: 'Rôles & Permissions', icon: ShieldCheck, desc: 'Matrice des droits' },
-    { key: 'paiement', label: 'Paiements & Passerelles', icon: CreditCard, desc: 'Wave, OM, CB & Espèces' },
     { key: 'livraison', label: 'Zones & Livraison', icon: Truck, desc: 'Tarifs & délais Saly/Dakar' },
     { key: 'notifications', label: 'Notifications & Alertes', icon: Bell, desc: 'WhatsApp, SMS & Email' },
-    { key: 'seo', label: 'SEO & Référencement', icon: Globe, desc: 'Google SERP & Réseaux' },
   ];
 
   const getRoleBadge = (roleKey: AdminRoleKey) => {
@@ -228,10 +219,10 @@ export default function AdminParametresPage() {
         </Button>
       </div>
 
-      {/* ── Layout en grille : Sidebar verticale + Contenu ───── */}
+      {/* ── Layout en grille : Sidebar verticale (Sticky) + Contenu ───── */}
       <div className="grid grid-cols-12 gap-6 items-start">
-        {/* Navigation latérale interne (Maquette 15) */}
-        <aside className="col-span-12 md:col-span-4 lg:col-span-3">
+        {/* Navigation latérale interne (Sticky) */}
+        <aside className="col-span-12 md:col-span-4 lg:col-span-3 sticky top-6 self-start z-10 space-y-4">
           <div className="rounded-xl border border-gray-200 bg-white p-2 shadow-xs space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -271,10 +262,10 @@ export default function AdminParametresPage() {
           <div className="mt-4 rounded-xl border border-gray-100 bg-gray-50/80 p-3.5 text-xs text-gray-500 space-y-2">
             <div className="flex items-center gap-2 font-semibold text-gray-700">
               <Sparkles className="h-3.5 w-3.5 text-[#c1647a]" />
-              <span>Système Décofleur</span>
+              <span>Backoffice Décofleur</span>
             </div>
             <p className="text-[11px] leading-relaxed">
-              Dernière mise à jour : 13 oct. 2026. Toutes les modifications prennent effet immédiatement.
+              Dernière mise à jour : 09 oct. 2026.<br />Toutes les modifications prennent effet immédiatement.<br />v1.0.0
             </p>
           </div>
         </aside>
@@ -480,24 +471,87 @@ export default function AdminParametresPage() {
           )}
 
           {/* ───────────────────────────────────────────────────────────
-              2. TAB : COLLABORATEURS & UTILISATEURS (Maquette 16)
+              2. TAB : COLLABORATEURS & ÉQUIPE
              ─────────────────────────────────────────────────────────── */}
-          {activeTab === 'utilisateurs' && (
+          {activeTab === 'collaborateurs' && (
             <div className="space-y-6 animate-in fade-in duration-200">
+              {/* KPIs de l'équipe */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <Card className="border-gray-200 shadow-2xs">
+                  <CardContent className="p-3.5 flex items-center justify-between">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                        Total Équipe
+                      </p>
+                      <p className="text-xl font-bold text-gray-900 mt-0.5">{totalUsers}</p>
+                      <p className="text-[10px] text-gray-400">Membres enregistrés</p>
+                    </div>
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-pink-50 text-[#c1647a]">
+                      <Users className="h-4 w-4" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-gray-200 shadow-2xs">
+                  <CardContent className="p-3.5 flex items-center justify-between">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                        Comptes Actifs
+                      </p>
+                      <p className="text-xl font-bold text-emerald-700 mt-0.5">{activeUsersCount}</p>
+                      <p className="text-[10px] text-emerald-600 font-medium">Opérationnels</p>
+                    </div>
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                      <UserCheck className="h-4 w-4" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-gray-200 shadow-2xs">
+                  <CardContent className="p-3.5 flex items-center justify-between">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                        Rôles Définis
+                      </p>
+                      <p className="text-xl font-bold text-blue-700 mt-0.5">{uniqueRolesCount}</p>
+                      <p className="text-[10px] text-blue-600 font-medium">Niveaux d'accès</p>
+                    </div>
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                      <ShieldCheck className="h-4 w-4" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-gray-200 shadow-2xs">
+                  <CardContent className="p-3.5 flex items-center justify-between">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                        Dernière Activité
+                      </p>
+                      <p className="text-base font-bold text-gray-900 mt-1">Aujourd'hui</p>
+                      <p className="text-[10px] text-gray-400">Connexions régulières</p>
+                    </div>
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-50 text-purple-600">
+                      <Clock className="h-4 w-4" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
               <Card className="border-gray-200 shadow-xs">
                 <CardHeader className="pb-4">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2">
                         <CardTitle className="text-base font-bold text-gray-900">
-                          Utilisateurs & Collaborateurs
+                          Membres & Collaborateurs
                         </CardTitle>
                         <Badge className="bg-[#c1647a]/10 text-[#c1647a] hover:bg-[#c1647a]/15 border-none font-mono">
                           {users.length} membres
                         </Badge>
                       </div>
                       <CardDescription className="text-xs text-gray-500">
-                        Comptes habilités à administrer la boutique, gérer les commandes et livraisons.
+                        Comptes habilités à administrer la boutique, gérer les commandes, les stocks et les livraisons.
                       </CardDescription>
                     </div>
 
@@ -509,8 +563,8 @@ export default function AdminParametresPage() {
                       size="sm"
                       className="bg-[#c1647a] hover:bg-[#a84d63] text-white gap-1.5 shadow-xs"
                     >
-                      <Plus className="h-4 w-4" />
-                      Ajouter un utilisateur
+                      <UserPlus className="h-4 w-4" />
+                      Ajouter un collaborateur
                     </Button>
                   </div>
 
@@ -596,6 +650,7 @@ export default function AdminParametresPage() {
                                         alt={user.name}
                                         width={32}
                                         height={32}
+                                        unoptimized
                                         className="h-full w-full object-cover"
                                       />
                                     ) : (
@@ -864,211 +919,7 @@ export default function AdminParametresPage() {
           )}
 
           {/* ───────────────────────────────────────────────────────────
-              4. TAB : PAIEMENTS & PASSERELLES
-             ─────────────────────────────────────────────────────────── */}
-          {activeTab === 'paiement' && (
-            <div className="space-y-6 animate-in fade-in duration-200">
-              <Card className="border-gray-200 shadow-xs">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-base font-bold text-gray-900">
-                        Passerelles de Paiement au Sénégal
-                      </CardTitle>
-                      <CardDescription className="text-xs text-gray-500">
-                        Activez et configurez Wave, Orange Money, Carte Bancaire et Espèces à la livraison.
-                      </CardDescription>
-                    </div>
-                    <Button
-                      onClick={handleSaveAll}
-                      size="sm"
-                      className="bg-[#c1647a] hover:bg-[#a84d63] text-white text-xs gap-1.5"
-                    >
-                      <Save className="h-3.5 w-3.5" />
-                      Enregistrer
-                    </Button>
-                  </div>
-                </CardHeader>
-
-                <CardContent className="space-y-4 pt-2 text-xs">
-                  {/* Wave Sénégal */}
-                  <div className="rounded-xl border border-cyan-100 bg-cyan-50/30 p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white border border-cyan-200 shadow-2xs">
-                          <Image src="/payment/wave.png" alt="Wave" width={24} height={24} className="object-contain" />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-gray-900 text-sm">Wave Sénégal (Paiement Instantané QR / Mobile)</h4>
-                          <p className="text-gray-500 text-[11px]">Frais passerelle standard : 1.0%</p>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={payment.wave.enabled}
-                        onCheckedChange={(checked) =>
-                          setPayment({ ...payment, wave: { ...payment.wave, enabled: checked } })
-                        }
-                      />
-                    </div>
-
-                    {payment.wave.enabled && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-cyan-100">
-                        <div className="space-y-1">
-                          <Label className="text-[11px] font-semibold text-gray-700">Identifiant Marchand Wave</Label>
-                          <Input
-                            value={payment.wave.merchantId}
-                            onChange={(e) =>
-                              setPayment({ ...payment, wave: { ...payment.wave, merchantId: e.target.value } })
-                            }
-                            className="h-8 text-xs font-mono bg-white"
-                          />
-                        </div>
-                        <div className="flex items-center justify-between pt-4">
-                          <span className="text-[11px] text-gray-600">Absorber les frais pour le client (0 FCFA facturé)</span>
-                          <Switch
-                            checked={payment.wave.absorbFees}
-                            onCheckedChange={(checked) =>
-                              setPayment({ ...payment, wave: { ...payment.wave, absorbFees: checked } })
-                            }
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Orange Money */}
-                  <div className="rounded-xl border border-orange-100 bg-orange-50/30 p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white border border-orange-200 shadow-2xs">
-                          <Image src="/payment/orange-money-black.svg" alt="Orange Money" width={24} height={24} className="object-contain" />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-gray-900 text-sm">Orange Money Sénégal (Orange Pay Pro)</h4>
-                          <p className="text-gray-500 text-[11px]">Frais passerelle standard : 1.0%</p>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={payment.orangeMoney.enabled}
-                        onCheckedChange={(checked) =>
-                          setPayment({ ...payment, orangeMoney: { ...payment.orangeMoney, enabled: checked } })
-                        }
-                      />
-                    </div>
-
-                    {payment.orangeMoney.enabled && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-orange-100">
-                        <div className="space-y-1">
-                          <Label className="text-[11px] font-semibold text-gray-700">Numéro Marchand Orange Money Pro</Label>
-                          <Input
-                            value={payment.orangeMoney.merchantNumber}
-                            onChange={(e) =>
-                              setPayment({ ...payment, orangeMoney: { ...payment.orangeMoney, merchantNumber: e.target.value } })
-                            }
-                            className="h-8 text-xs font-mono bg-white"
-                          />
-                        </div>
-                        <div className="flex items-center justify-between pt-4">
-                          <span className="text-[11px] text-gray-600">Absorber les frais de commission</span>
-                          <Switch
-                            checked={payment.orangeMoney.absorbFees}
-                            onCheckedChange={(checked) =>
-                              setPayment({ ...payment, orangeMoney: { ...payment.orangeMoney, absorbFees: checked } })
-                            }
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Carte Bancaire */}
-                  <div className="rounded-xl border border-blue-100 bg-blue-50/30 p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white border border-blue-200 shadow-2xs gap-1">
-                          <Image src="/payment/visa.svg" alt="Visa" width={18} height={12} className="object-contain" />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-gray-900 text-sm">Carte Bancaire Visa & Mastercard</h4>
-                          <p className="text-gray-500 text-[11px]">Passerelle sécurisée Stripe / Paydunya (2.5%)</p>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={payment.card.enabled}
-                        onCheckedChange={(checked) =>
-                          setPayment({ ...payment, card: { ...payment.card, enabled: checked } })
-                        }
-                      />
-                    </div>
-
-                    {payment.card.enabled && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-blue-100">
-                        <div className="space-y-1">
-                          <Label className="text-[11px] font-semibold text-gray-700">Fournisseur passerelle</Label>
-                          <Input
-                            value={payment.card.provider}
-                            onChange={(e) =>
-                              setPayment({ ...payment, card: { ...payment.card, provider: e.target.value } })
-                            }
-                            className="h-8 text-xs bg-white"
-                          />
-                        </div>
-                        <div className="flex items-center justify-between pt-4">
-                          <span className="text-[11px] text-gray-600">Absorber les frais de passerelle</span>
-                          <Switch
-                            checked={payment.card.absorbFees}
-                            onCheckedChange={(checked) =>
-                              setPayment({ ...payment, card: { ...payment.card, absorbFees: checked } })
-                            }
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Espèces à la livraison */}
-                  <div className="rounded-xl border border-emerald-100 bg-emerald-50/30 p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white border border-emerald-200 shadow-2xs text-emerald-600 font-bold">
-                          F CFA
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-gray-900 text-sm">Paiement en espèces à la livraison</h4>
-                          <p className="text-gray-500 text-[11px]">Règlement direct auprès du livreur lors de la remise du bouquet.</p>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={payment.cash.enabled}
-                        onCheckedChange={(checked) =>
-                          setPayment({ ...payment, cash: { ...payment.cash, enabled: checked } })
-                        }
-                      />
-                    </div>
-
-                    {payment.cash.enabled && (
-                      <div className="pt-2 border-t border-emerald-100">
-                        <div className="max-w-xs space-y-1">
-                          <Label className="text-[11px] font-semibold text-gray-700">Plafond maximum autorisé (FCFA)</Label>
-                          <Input
-                            type="number"
-                            value={payment.cash.maxAmount}
-                            onChange={(e) =>
-                              setPayment({ ...payment, cash: { ...payment.cash, maxAmount: Number(e.target.value) } })
-                            }
-                            className="h-8 text-xs bg-white"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {/* ───────────────────────────────────────────────────────────
-              5. TAB : ZONES & LIVRAISON
+              4. TAB : ZONES & LIVRAISON
              ─────────────────────────────────────────────────────────── */}
           {activeTab === 'livraison' && (
             <div className="space-y-6 animate-in fade-in duration-200">
@@ -1290,127 +1141,6 @@ export default function AdminParametresPage() {
             </div>
           )}
 
-          {/* ───────────────────────────────────────────────────────────
-              7. TAB : SEO & RÉFÉRENCEMENT
-             ─────────────────────────────────────────────────────────── */}
-          {activeTab === 'seo' && (
-            <div className="space-y-6 animate-in fade-in duration-200">
-              <Card className="border-gray-200 shadow-xs">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-base font-bold text-gray-900">
-                        SEO & Référencement Google Dakar & Sénégal
-                      </CardTitle>
-                      <CardDescription className="text-xs text-gray-500">
-                        Optimisez la visibilité de votre boutique dans les résultats de recherche locaux.
-                      </CardDescription>
-                    </div>
-                    <Button
-                      onClick={handleSaveAll}
-                      size="sm"
-                      className="bg-[#c1647a] hover:bg-[#a84d63] text-white text-xs gap-1.5"
-                    >
-                      <Save className="h-3.5 w-3.5" />
-                      Enregistrer
-                    </Button>
-                  </div>
-                </CardHeader>
-
-                <CardContent className="space-y-4 pt-2 text-xs">
-                  {/* Prévisualisation SERP Google */}
-                  <div className="rounded-xl border border-blue-100 bg-blue-50/30 p-4 space-y-1.5">
-                    <span className="text-[10px] uppercase font-bold text-blue-700 tracking-wider">
-                      Aperçu dans les résultats Google
-                    </span>
-                    <div className="font-medium text-blue-900 text-sm leading-snug hover:underline cursor-pointer">
-                      {seo.metaTitle || 'Décofleur Plus'}
-                    </div>
-                    <div className="text-[11px] text-emerald-700 font-mono">
-                      https://decofleurplus.sn
-                    </div>
-                    <p className="text-[11px] text-gray-600 line-clamp-2 leading-relaxed">
-                      {seo.metaDescription || 'Fleuriste d’exception à Saly et Dakar...'}
-                    </p>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="metaTitle" className="font-semibold text-gray-700">
-                      Méta-titre par défaut (Balise Title)
-                    </Label>
-                    <Input
-                      id="metaTitle"
-                      value={seo.metaTitle}
-                      onChange={(e) => setSeo({ ...seo, metaTitle: e.target.value })}
-                      className="h-9 text-xs"
-                    />
-                    <div className="text-[10px] text-gray-400">
-                      Recommandé : entre 50 et 60 caractères ({seo.metaTitle.length} actuels).
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="metaDescription" className="font-semibold text-gray-700">
-                      Méta-description Google
-                    </Label>
-                    <Textarea
-                      id="metaDescription"
-                      rows={3}
-                      value={seo.metaDescription}
-                      onChange={(e) => setSeo({ ...seo, metaDescription: e.target.value })}
-                      className="text-xs resize-none"
-                    />
-                    <div className="text-[10px] text-gray-400">
-                      Recommandé : entre 140 et 160 caractères ({seo.metaDescription.length} actuels).
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="keywords" className="font-semibold text-gray-700">
-                      Mots-clés cibles séparés par des virgules
-                    </Label>
-                    <Input
-                      id="keywords"
-                      value={seo.keywords}
-                      onChange={(e) => setSeo({ ...seo, keywords: e.target.value })}
-                      className="h-9 text-xs"
-                    />
-                  </div>
-
-                  {/* Réseaux sociaux */}
-                  <div className="space-y-3 pt-3 border-t border-gray-100">
-                    <h4 className="font-semibold text-gray-900">Comptes sur les réseaux sociaux</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-[11px] text-gray-600">Instagram</Label>
-                        <Input
-                          value={seo.instagramUrl}
-                          onChange={(e) => setSeo({ ...seo, instagramUrl: e.target.value })}
-                          className="h-8 text-xs"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[11px] text-gray-600">Facebook</Label>
-                        <Input
-                          value={seo.facebookUrl}
-                          onChange={(e) => setSeo({ ...seo, facebookUrl: e.target.value })}
-                          className="h-8 text-xs"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[11px] text-gray-600">TikTok</Label>
-                        <Input
-                          value={seo.tiktokUrl}
-                          onChange={(e) => setSeo({ ...seo, tiktokUrl: e.target.value })}
-                          className="h-8 text-xs"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
         </main>
       </div>
 

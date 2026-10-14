@@ -69,19 +69,20 @@ Phase 3 — Back-office achevée avec succès (Tableau de bord, Commandes, Produ
 - **Routing:** French URL paths for the admin section (`/admin/tableau-de-bord`, `/admin/rapports`, `/admin/parametres`, etc.) to match public routing.
 
 ## Files Recently Modified
+- `components/admin/admin-sidebar.tsx`
+- `components/admin/admin-sidebar-context.tsx`
+- `app/admin/(protected)/layout.tsx`
+- `app/globals.css`
 - `app/admin/(protected)/rapports/page.tsx`
 - `app/admin/(protected)/parametres/page.tsx`
-- `components/admin/user-editor-dialog.tsx`
-- `components/ui/switch.tsx`
-- `components/ui/textarea.tsx`
-- `lib/admin/mock-data/settings.ts`
-- `lib/admin/mock-data/types.ts`
-- `lib/admin/mock-data/index.ts`
 - `docs/IMPLEMENTATION_PLAN.md`
 - `docs/IMPLEMENTATION_STATUS.md`
 
 ## Last Completed Task
-Implémentation complète du module Paramètres & Équipe (`/admin/parametres` — Maquettes 15 & 16) avec navigation latérale interne (Boutique & Général, Collaborateurs, Rôles & Permissions, Paiements Wave/OM/CB/Cash, Zones de livraison Saly/Dakar, Notifications WhatsApp/SMS/Email, SEO Google SERP preview), modale de gestion des collaborateurs (`UserEditorDialog`), et matrice de droits d'accès interactive.
+Refonte et ajustements du module Paramètres & Configuration (`/admin/parametres`) :
+- Rendu du sidebar de navigation interne persistant et fixe (`sticky top-6 self-start`).
+- Implémentation complète de l'onglet « Collaborateurs » avec 4 cartes KPI (Total Équipe, Comptes Actifs, Profils/Rôles, Activité Récente), tableau complet des membres avec avatars et statuts interactifs, modale `UserEditorDialog` pour l'ajout/modification, et maintien séparé de la matrice interactive « Rôles & Permissions ».
+- Suppression définitive des sections « Paiements & Passerelles » et « SEO & Référencement ».
 
 
 

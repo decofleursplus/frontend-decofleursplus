@@ -49,8 +49,6 @@ import {
   ChevronUp,
   PieChart as PieIcon,
   Wallet,
-  Maximize2,
-  Minimize2,
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -94,8 +92,7 @@ export default function AdminRapportsPage() {
   const [customStartDate, setCustomStartDate] = useState('2026-09-15');
   const [customEndDate, setCustomEndDate] = useState('2026-10-13');
 
-  // Fullscreen expanded Grand Livre modal
-  const [isFullscreenLogOpen, setIsFullscreenLogOpen] = useState(false);
+  // Financial log expanded state
   const [showAllTransactions, setShowAllTransactions] = useState(false);
 
   // Financial journal filters
@@ -1126,7 +1123,9 @@ export default function AdminRapportsPage() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredTransactions.slice(0, 10).map((tx) => (
+                      filteredTransactions
+                        .slice(0, showAllTransactions ? undefined : 10)
+                        .map((tx) => (
                         <TableRow key={tx.id} className="hover:bg-gray-50/50">
                           <TableCell className="text-xs text-gray-700 whitespace-nowrap py-3">
                             <div className="font-medium text-gray-900">
@@ -1184,9 +1183,9 @@ export default function AdminRapportsPage() {
               <div className="flex flex-col sm:flex-row items-center justify-between border-t border-gray-100 p-3 gap-3 text-xs text-gray-500">
                 <div className="flex items-center gap-2">
                   <span>
-                    Affichage de {Math.min(10, filteredTransactions.length)} sur {filteredTransactions.length} transaction(s)
+                    Affichage de {showAllTransactions ? filteredTransactions.length : Math.min(10, filteredTransactions.length)} sur {filteredTransactions.length} transaction(s)
                   </span>
-                  {filteredTransactions.length > 10 && (
+                  {!showAllTransactions && filteredTransactions.length > 10 && (
                     <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-600">
                       (10 premières lignes)
                     </span>
@@ -1197,201 +1196,25 @@ export default function AdminRapportsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setIsFullscreenLogOpen(true)}
+                    onClick={() => setShowAllTransactions(!showAllTransactions)}
                     className="h-8 gap-1.5 border-[#c1647a]/30 text-[#c1647a] hover:bg-pink-50 hover:text-[#a84d63] font-semibold text-xs shadow-xs"
                   >
-                    <Maximize2 className="h-3.5 w-3.5" />
-                    Voir plus (Vue plein écran)
+                    {showAllTransactions ? (
+                      <>
+                        <ChevronUp className="h-3.5 w-3.5" />
+                        Réduire à 10 lignes
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-3.5 w-3.5" />
+                        Voir plus de lignes ({filteredTransactions.length} transactions)
+                      </>
+                    )}
                   </Button>
                 )}
               </div>
             </CardContent>
           </Card>
-        </div>
-      )}
-
-      {/* ── Vue Plein Écran du Grand Livre ─────────────── */}
-      {isFullscreenLogOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-white overflow-y-auto p-4 sm:p-6 animate-in fade-in duration-200">
-          {/* Header du Grand Livre Plein Écran */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-gray-200 gap-3 shrink-0">
-            <div>
-              <div className="flex items-center gap-3">
-                <h2 className="text-xl font-bold text-gray-900">
-                  Grand Livre des Encaissements — Vue Plein Écran
-                </h2>
-                <Badge className="bg-[#c1647a]/10 text-[#c1647a] hover:bg-[#c1647a]/15 border-none font-mono">
-                  {filteredTransactions.length} transactions
-                </Badge>
-              </div>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Audit complet de l'ensemble des encaissements et commissions pour la période sélectionnée.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2.5">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsExportDialogOpen(true)}
-                className="h-9 gap-1.5 border-gray-200 text-gray-700 hover:bg-gray-50"
-              >
-                <Download className="h-4 w-4" />
-                Exporter
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => setIsFullscreenLogOpen(false)}
-                className="h-9 gap-1.5 bg-[#c1647a] hover:bg-[#a84d63] text-white"
-              >
-                <Minimize2 className="h-4 w-4" />
-                Réduire la vue
-              </Button>
-            </div>
-          </div>
-
-          {/* Toolbar de filtres en plein écran */}
-          <div className="flex flex-wrap items-center justify-between gap-3 py-3 border-b border-gray-100 shrink-0">
-            <div className="relative w-full sm:w-80">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Rechercher réf, commande, client..."
-                value={transactionSearch}
-                onChange={(e) => setTransactionSearch(e.target.value)}
-                className="pl-9 h-9 text-xs"
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <select
-                value={paymentMethodFilter}
-                onChange={(e) => setPaymentMethodFilter(e.target.value)}
-                className="h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs text-gray-700 shadow-xs focus:border-[#c1647a] focus:outline-none"
-              >
-                <option value="all">Tous les modes de paiement</option>
-                <option value="wave">Wave</option>
-                <option value="orange_money">Orange Money</option>
-                <option value="carte_bancaire">Carte Bancaire</option>
-                <option value="especes">Espèces</option>
-              </select>
-
-              <select
-                value={settlementStatusFilter}
-                onChange={(e) => setSettlementStatusFilter(e.target.value)}
-                className="h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs text-gray-700 shadow-xs focus:border-[#c1647a] focus:outline-none"
-              >
-                <option value="all">Tous les statuts</option>
-                <option value="encaisse">Encaissé</option>
-                <option value="en_attente">En attente</option>
-                <option value="rembourse">Remboursé</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Tableau scrollable adapté au contenu réel (sans espace vide) */}
-          <div className="w-full my-3 border rounded-xl overflow-x-auto shadow-xs">
-            <Table>
-              <TableHeader className="sticky top-0 bg-gray-50 z-10 shadow-xs">
-                <TableRow>
-                  <TableHead className="text-xs font-semibold text-gray-600 whitespace-nowrap">Date & Heure</TableHead>
-                  <TableHead className="text-xs font-semibold text-gray-600 whitespace-nowrap">Réf Transaction</TableHead>
-                  <TableHead className="text-xs font-semibold text-gray-600 whitespace-nowrap">Commande</TableHead>
-                  <TableHead className="text-xs font-semibold text-gray-600 whitespace-nowrap">Client</TableHead>
-                  <TableHead className="text-center text-xs font-semibold text-gray-600 whitespace-nowrap">Mode</TableHead>
-                  <TableHead className="text-right text-xs font-semibold text-gray-600 whitespace-nowrap">Montant Brut</TableHead>
-                  <TableHead className="text-right text-xs font-semibold text-gray-600 whitespace-nowrap">Frais Passerelle</TableHead>
-                  <TableHead className="text-right text-xs font-semibold text-gray-600 whitespace-nowrap">Montant Net</TableHead>
-                  <TableHead className="text-center text-xs font-semibold text-gray-600 whitespace-nowrap">Statut</TableHead>
-                  <TableHead className="text-right text-xs font-semibold text-gray-600 whitespace-nowrap">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredTransactions.map((tx) => (
-                  <TableRow key={tx.id} className="hover:bg-gray-50/70">
-                    <TableCell className="text-xs text-gray-600 whitespace-nowrap">
-                      {new Date(tx.date).toLocaleDateString('fr-FR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs font-medium text-gray-900 whitespace-nowrap">
-                      {tx.ref}
-                    </TableCell>
-                    <TableCell className="text-xs font-medium text-[#c1647a] whitespace-nowrap">
-                      {tx.orderRef}
-                    </TableCell>
-                    <TableCell className="text-xs whitespace-nowrap">
-                      <div className="font-medium text-gray-900">{tx.customerName}</div>
-                      <div className="text-[11px] text-gray-400">{tx.customerPhone}</div>
-                    </TableCell>
-                    <TableCell className="text-center whitespace-nowrap">{getMethodBadge(tx.paymentMethod)}</TableCell>
-                    <TableCell className="text-right font-medium text-xs text-gray-900 whitespace-nowrap">
-                      {formatCurrency(tx.grossAmount)}
-                    </TableCell>
-                    <TableCell className="text-right text-xs font-medium text-rose-600 whitespace-nowrap">
-                      {tx.gatewayFee > 0 ? `- ${formatCurrency(tx.gatewayFee)}` : '0 F'}
-                    </TableCell>
-                    <TableCell className="text-right font-bold text-xs text-emerald-700 whitespace-nowrap">
-                      {formatCurrency(tx.netAmount)}
-                    </TableCell>
-                    <TableCell className="text-center whitespace-nowrap">
-                      {getSettlementBadge(tx.status)}
-                    </TableCell>
-                    <TableCell className="text-right whitespace-nowrap">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedTransaction(tx);
-                          setIsDetailDialogOpen(true);
-                        }}
-                        className="h-8 w-8 p-0 text-gray-500 hover:text-gray-900"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Footer plein écran avec totaux (collé directement sous le tableau) */}
-          <div className="flex flex-wrap items-center justify-between border-t border-gray-200 pt-3 pb-2 text-xs shrink-0">
-            <div className="flex items-center gap-6">
-              <div>
-                <span className="text-gray-500">Total Brut : </span>
-                <span className="font-bold text-gray-900">
-                  {formatCurrency(filteredTransactions.reduce((acc, t) => acc + t.grossAmount, 0))}
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-500">Total Frais : </span>
-                <span className="font-bold text-rose-600">
-                  - {formatCurrency(filteredTransactions.reduce((acc, t) => acc + t.gatewayFee, 0))}
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-500">Total Net : </span>
-                <span className="font-extrabold text-emerald-600">
-                  {formatCurrency(filteredTransactions.reduce((acc, t) => acc + t.netAmount, 0))}
-                </span>
-              </div>
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsFullscreenLogOpen(false)}
-              className="text-xs"
-            >
-              Fermer la vue plein écran
-            </Button>
-          </div>
         </div>
       )}
 
