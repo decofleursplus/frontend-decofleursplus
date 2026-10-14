@@ -5,6 +5,7 @@ import { AuthProvider } from '@/components/auth-provider';
 import { CartProvider } from '@/components/cart-provider';
 import { SiteHeader } from '@/components/site-header';
 import { PwaRegistration } from '@/components/pwa-registration';
+import { FloatingWhatsApp } from '@/components/floating-whatsapp';
 
 export function RootShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -21,6 +22,7 @@ export function RootShell({ children }: { children: React.ReactNode }) {
         <SiteHeader />
         <PwaRegistration />
         {children}
+        <FloatingWhatsApp />
       </CartProvider>
     </AuthProvider>
   );

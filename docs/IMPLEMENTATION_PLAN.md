@@ -177,3 +177,34 @@
 - [x] **Image 2 — Suppression note FCFA / Commissions** : Suppression de la bannière informative jaune dans la modale d'export des rapports d'activité (`ExportReportDialog`).
 - [x] **Logique fix — Séparation Collaborateurs / Flotte Livraisons** : Retrait du rôle "Livreur" dans `UserEditorDialog` et dans le filtre de Paramètres. Exclusion des livreurs de la liste des collaborateurs au profit du module dédié `/admin/livraisons`, avec bandeau d'orientation et lien direct.
 
+## Phase 5 — Refonte & Harmonisation UI Côté Particulier (Intégration Maquette Client)
+- [x] **Bouton Flottant WhatsApp** : Implémentation du composant circulaire discret (52px, vert officiel `#25D366`, icône officielle, safe-area inset, message pré-rempli) persistant sur toute la vitrine publique.
+- [x] **Section « Notre univers » (Homepage)** : Grille responsive 2x5 ou 2x6 avec typographie Cormorant/Jost, icônes florales raffinées, micro-interactions tactiles et redirection vers les catégories du catalogue.
+- [x] **Bandeau Campagnes & Événements Saisonniers** : 4 cartes visuelles élégantes (Saint-Valentin, Fête des Mères, Offres du moment, Fraises d'exception) intégrées sans surcharger le design.
+- [x] **Scénographie & Demande de Devis** :
+  - Bloc d'appel à l'action sur la page d'accueil pour la scénographie sur mesure (mariages, hôtels, villas).
+  - Formulaire interactif de demande de devis sur mesure directement intégré dans `/evenements` avec bouton direct WhatsApp.
+- [x] **Page « À Propos » Enrichie (`/a-propos`)** :
+  - Déplacement des blocs éditoriaux de la maquette (Héritage familial & Primeur, les 8 Domaines de Savoir-Faire, les 7 Engagements et la Vision De Saly vers le Sénégal).
+  - Maintien d'un bloc signature sobre et épuré sur la page d'accueil.
+- [x] **Hero Section Homepage** : Enrichissement avec le sous-titre de la maquette et double CTA (Découvrir nos créations + Commander sur WhatsApp).
+- [x] **Page Dédiée & Tunnel Compact « Abonnements Floraux » (`/abonnements`)** :
+  - **Suppression du look « AI-generated » & Élimination du superflu** : Suppression du grand bandeau photo encombrant de 320px et des blocs verbeux de remplissage. Remplacement par un en-tête sobre et compact (`.abonnements-compact-header`).
+  - **Visibilité immédiate au 1er coup d'œil (100vh / Above the fold)** : L'ensemble des 3 offres et des tarifs est directement visible à l'écran dès l'arrivée sur la page sans avoir à scroller.
+  - **Tunnel séquentiel en 4 étapes fluides tenant sur le viewport** :
+    1. *Étape 1 : Formule* : Bascule de fréquence Hebdomadaire (4 passages) / Bimensuel (2 passages), 3 cartes compactes (*Particulier & Villa* 25 000 FCFA, *Prestige & Réception* 50 000 FCFA, *Entreprise & Hôtellerie* 22 500 FCFA) et sélecteur compact à 3 onglets sur mobile (*Villa*, *Prestige ⭐*, *Entreprise*).
+    2. *Étape 2 : Livraison & Coordonnées* : Formulaire direct avec rappel de l'offre choisie, sélecteur de jour de livraison (Mardi, Vendredi, Samedi) et repères locaux.
+    3. *Étape 3 : Paiement avec Vrais Logos Officiels* : Cartes de paiement interactives intégrant les logos authentiques : Wave Sénégal (`/payment/wave.png`), Orange Money sur fond `#FF7900` (`/payment/orange-money.svg`), et Carte Bancaire Visa / Mastercard (`/payment/visa.svg`, `/payment/mastercard.svg`). Saisie du compte Mobile Money avec réassurance 0% frais.
+    4. *Étape 4 : Confirmation & Ticket récapitulatif* : Écran de félicitations immédiat avec ticket de récapitulatif complet et bouton WhatsApp officiel (`#25D366`) pré-rempli pour notifier instantanément l'artisan.
+  - **FAQ Compacte en accordéon** : 4 questions pratiques placées sous le tunnel sans encombrer la vue initiale.
+- [x] **Refonte Haut de Gamme du Formulaire de Devis (`DevisForm`)** :
+  - Restructuration intégrale en 4 étapes numérotées : Cartes visuelles de sélection d'événement (Mariage, Fête, Hôtel, Villa, Paysage, Sur mesure), Grille d'entrées avec icônes élégantes (Date, Lieu, Budget, Nom, Téléphone, Email), et zone d'expression aérée.
+  - Élimination des collisions de texte et normalisation des hauteurs (touch targets 48px), bordures douces et focus rings végétaux.
+  - Double bouton d'action (Envoi classique + Validation directe WhatsApp avec message pré-rempli) et 3 pastilles de réassurance.
+- [x] **Correction Lisibilité & Contraste des Bannières Vitrine** :
+  - Élimination des textes blancs sur fond clair (`#fff` sur fond crème) sur `/evenements` au profit d'un badge rose poudré contrasté (`.banner-badge` avec `#a0254c`) et d'un conteneur en verre dépoli avec typographie sombre haute définition.
+  - Renforcement du scrim d'ombrage sur `/a-propos` et `/abonnements` via un double dégradé (horizontal 90deg + vertical 180deg) et ajout d'ombres portées typographiques (`text-shadow`), garantissant une lecture immédiate et sans fatigue visuelle sur ordinateur comme sur mobile.
+- [x] **Contrôle Qualité & Recette Visuelle** : Audit Playwright desktop et mobile (390px/1280px), vérification de l'alignement, des espacements, de l'absence totale d'overflow horizontal et de la cohérence globale sur toutes les pages refondues.
+
+
+

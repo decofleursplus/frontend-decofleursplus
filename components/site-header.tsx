@@ -87,6 +87,9 @@ export function SiteHeader() {
         ['/mariages', '/decoration', '/deuil', '/anniversaires', '/occasions'].includes(pathname)
       );
     }
+    if (href === '/abonnements') {
+      return pathname.startsWith('/abonnements');
+    }
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
@@ -275,6 +278,14 @@ export function SiteHeader() {
             )}
           </div>
 
+          {/* Abonnements Floraux */}
+          <Link
+            href="/abonnements"
+            className={`nav-link ${isActive('/abonnements') ? 'active' : ''}`}
+          >
+            Abonnements
+          </Link>
+
           {/* Delivery Dropdown */}
           <div
             className="nav-item-dropdown"
@@ -355,6 +366,7 @@ export function SiteHeader() {
               <Link href="/paniers-de-fruits" onClick={() => setMobileMenuOpen(false)}>↳ Paniers de fruits</Link>
               <Link href="/cadeaux" onClick={() => setMobileMenuOpen(false)}>↳ Cadeaux</Link>
               <Link href="/evenements" onClick={() => setMobileMenuOpen(false)}>Événements & Mariages</Link>
+              <Link href="/abonnements" onClick={() => setMobileMenuOpen(false)}>Abonnements floraux</Link>
               <Link href="/livraison" onClick={() => setMobileMenuOpen(false)}>Livraison à domicile</Link>
               <Link href="/a-propos" onClick={() => setMobileMenuOpen(false)}>À propos de nous</Link>
               <Link href="/blog" onClick={() => setMobileMenuOpen(false)}>Blog & Conseils</Link>
