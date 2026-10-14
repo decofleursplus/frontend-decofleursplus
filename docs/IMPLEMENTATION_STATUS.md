@@ -100,31 +100,7 @@ Phase 5 — Recette finale et livraison des améliorations côté particulier.
 - `docs/IMPLEMENTATION_PLAN.md`
 - `docs/IMPLEMENTATION_STATUS.md`
 
-- [x] Phase 5 — Refonte Compacte & Tunnel Épuré « Abonnements Floraux » (`/abonnements`) :
-  - **Suppression du look « AI-generated » & Allègement radical** : Retrait du bandeau hero photo encombrant de 320px et des blocs de remplissage textuel verbeux. Remplacement par un en-tête sobre et compact (`.abonnements-compact-header` avec badge fin, titre Georgia ciselé et sous-titre direct).
-  - **Visibilité immédiate au premier coup d'œil (Above the fold / 100vh)** : Les 3 formules et leurs tarifs sont directement visibles dès le chargement de la page sans défilement nécessaire sur desktop comme sur smartphone.
-  - **Tunnel séquentiel en 4 étapes compactes** :
-    1. *Étape 1 : Formule* : Bascule de rythme (Hebdomadaire 4 passages / Bimensuel 2 passages), 3 cartes compactes (*Particulier & Villa* à 25k FCFA/livraison, *Prestige & Réception* à 50k FCFA/livraison, *Entreprise & Hôtellerie* à 22.5k FCFA/livraison) et sélecteur à 3 onglets sur mobile (*Villa*, *Prestige ⭐*, *Entreprise*).
-    2. *Étape 2 : Livraison & Coordonnées* : Formulaire de livraison épuré avec bandeau de rappel de l'offre choisie, sélecteur de jour de livraison (Mardi, Vendredi, Samedi) et repères géographiques pour Saly / Petite Côte / Dakar.
-    3. *Étape 3 : Paiement avec VRAIS LOGOS OFFICIELS* : Cartes de paiement interactives affichant les véritables logos officiels : Wave Sénégal (`/payment/wave.png`), Orange Money avec son fond officiel `#FF7900` (`/payment/orange-money.svg`), et Carte Bancaire avec Visa & Mastercard (`/payment/visa.svg`, `/payment/mastercard.svg`). Champ dynamique pour le numéro Wave/Orange Money avec 0% de frais.
-    4. *Étape 4 : Confirmation & Ticket récapitulatif (Ultra-Compact)* : Écran de confirmation sobre et compact avec icône raffinée, titre discret, ticket récapitulatif épuré (formule, rythme, montant, jour, adresse, mode de règlement) et double action simple (*Nouvelle souscription* + *Retour à l'accueil*), sans bouton WhatsApp intrusif conformément aux retours utilisateur.
-  - **FAQ Compacte en accordéon** : 4 questions pratiques (mise en pause, échange de vases, zones, sans engagement) placées discrètement sous le tunnel.
-  - **Validation visuelle & Responsive** : Validation Playwright sur Desktop (1280x800) et Mobile (390x844), vérification du contraste des pastilles d'étapes (texte blanc net sur fond vert forêt) et zéro overflow.
-
-## Currently Working On
-Phase 5 — Validation finale avec l'utilisateur et synthèse des améliorations.
-
-## Next Tasks
-- 1. Présentation des améliorations à l'utilisateur.
-- 2. Accompagnement sur les derniers ajustements souhaités.
-
-## Remaining
-- *(Vitrine Particulier et Back-Office 100% responsives, fonctionnels et validés visuellement)*
-
-## Known Issues
-*(None)*
-
-
-
-
-
+- [x] Phase 5 — Refonte du Dégradé Vertical & Lisibilité des Cartes Campagnes (`app/page.tsx` & `app/globals.css`) :
+  - **Dégradé Vertical Haut vers le Bas** : Transition d'un dégradé horizontal vers un dégradé purement vertical (`180deg`) qui part d'une teinte sombre en haut pour descendre vers la base de la carte.
+  - **Image en Tête Fondue vers le Bas** : L'image haute définition (roses rouges, pivoines pastel, atelier d'artisan, corbeille de fraises) occupe le haut de la carte (`height: 60%`) et se dissout doucement vers le bas via un masque progressif (`linear-gradient(to bottom)`).
+  - **Lisibilité 100% Garantie & Rendu de Prestige** : Les blocs de texte (titre élégant Georgia, description et bouton pilule) reposent entièrement sur le fond sombre et profond de la base de la carte, garantissant une lisibilité absolue sans aucun parasite visuel, sublimé par un zoom fluide au survol (`scale: 1.06`).

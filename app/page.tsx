@@ -123,6 +123,8 @@ const seasonalCampaigns = [
     href: '/bouquets',
     theme: 'campaign-card-red',
     cta: 'Découvrir nos roses',
+    image: '/images/campaigns/valentin.jpg',
+    imageAlt: 'Roses rouges de Saint-Valentin',
   },
   {
     title: 'Fête des Mères',
@@ -131,6 +133,8 @@ const seasonalCampaigns = [
     href: '/boutique',
     theme: 'campaign-card-pink',
     cta: 'Voir les créations',
+    image: '/images/campaigns/meres.jpg',
+    imageAlt: 'Bouquet pastel pour la Fête des Mères',
   },
   {
     title: 'Promotions du moment',
@@ -139,6 +143,8 @@ const seasonalCampaigns = [
     href: '/boutique',
     theme: 'campaign-card-green',
     cta: 'Profiter des offres',
+    image: '/images/campaigns/promo.jpg',
+    imageAlt: 'Promotions florales de saison',
   },
   {
     title: 'Fraises d’exception',
@@ -147,6 +153,8 @@ const seasonalCampaigns = [
     href: '/paniers-de-fruits',
     theme: 'campaign-card-gold',
     cta: 'Commander nos primeurs',
+    image: '/images/campaigns/fraises.jpg',
+    imageAlt: 'Fraises fraîches du terroir',
   },
 ];
 
@@ -264,13 +272,29 @@ export default function HomePage() {
             <div className="campaigns-grid">
               {seasonalCampaigns.map((camp, idx) => (
                 <article key={idx} className={`campaign-card ${camp.theme}`}>
+                  {/* Image fondu à gauche dans le dégradé */}
+                  <div className="campaign-card-bg-wrap" aria-hidden="true">
+                    <Image
+                      src={camp.image}
+                      alt={camp.imageAlt}
+                      fill
+                      sizes="(max-width: 580px) 100vw, (max-width: 990px) 50vw, 300px"
+                      className="campaign-card-img"
+                    />
+                    <div className="campaign-card-mask" />
+                  </div>
+
                   <div className="campaign-card-content">
-                    <span className="campaign-badge">{camp.badge}</span>
-                    <h3 className="campaign-title">{camp.title}</h3>
-                    <p className="campaign-desc">{camp.desc}</p>
-                    <Link href={camp.href} className="campaign-btn">
-                      {camp.cta} <ArrowRight size={14} />
-                    </Link>
+                    <div className="campaign-card-top">
+                      <span className="campaign-badge">{camp.badge}</span>
+                    </div>
+                    <div className="campaign-card-bottom">
+                      <h3 className="campaign-title">{camp.title}</h3>
+                      <p className="campaign-desc">{camp.desc}</p>
+                      <Link href={camp.href} className="campaign-btn">
+                        {camp.cta} <ArrowRight size={14} />
+                      </Link>
+                    </div>
                   </div>
                 </article>
               ))}

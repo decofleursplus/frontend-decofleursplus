@@ -180,12 +180,13 @@
 ## Phase 5 — Refonte & Harmonisation UI Côté Particulier (Intégration Maquette Client)
 - [x] **Bouton Flottant WhatsApp** : Implémentation du composant circulaire discret (52px, vert officiel `#25D366`, icône officielle, safe-area inset, message pré-rempli) persistant sur toute la vitrine publique.
 - [x] **Section « Notre univers » (Homepage)** : Grille responsive 2x5 ou 2x6 avec typographie Cormorant/Jost, icônes florales raffinées, micro-interactions tactiles et redirection vers les catégories du catalogue.
-- [x] **Bandeau Campagnes & Événements Saisonniers** : 4 cartes visuelles élégantes (Saint-Valentin, Fête des Mères, Offres du moment, Fraises d'exception) intégrées sans surcharger le design.
+- [x] **Bandeau Campagnes & Événements Saisonniers Haute Définition** : 4 visuels d'artisanat floral d'exception générés sur mesure (Roses rouges Saint-Valentin, Pivoines pastel Fête des Mères, Atelier floral Promotions, Panier de fraises fraîches du terroir) incrustés à gauche avec un fondu horizontal progressif dans les dégradés thématiques, et micro-zoom fluide (scale 1.06) au survol.
 - [x] **Scénographie & Demande de Devis** :
   - Bloc d'appel à l'action sur la page d'accueil pour la scénographie sur mesure (mariages, hôtels, villas).
   - Formulaire interactif de demande de devis sur mesure directement intégré dans `/evenements` avec bouton direct WhatsApp.
-- [x] **Page « À Propos » Enrichie (`/a-propos`)** :
+- [x] **Page « À Propos » Enrichie & Hero Compact Luminous (`/a-propos`)** :
   - Déplacement des blocs éditoriaux de la maquette (Héritage familial & Primeur, les 8 Domaines de Savoir-Faire, les 7 Engagements et la Vision De Saly vers le Sénégal).
+  - Suppression du voile vert opaque étouffant et réduction de la hauteur du hero (de 320px à 175px desktop / 155px mobile). La photo de l'atelier et de l'artisan fleuriste rayonne désormais sur la droite avec un scrim doux à gauche pour la lisibilité.
   - Maintien d'un bloc signature sobre et épuré sur la page d'accueil.
 - [x] **Hero Section Homepage** : Enrichissement avec le sous-titre de la maquette et double CTA (Découvrir nos créations + Commander sur WhatsApp).
 - [x] **Page Dédiée & Tunnel Compact « Abonnements Floraux » (`/abonnements`)** :
