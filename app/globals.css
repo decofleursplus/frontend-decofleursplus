@@ -2104,46 +2104,6 @@
   color: #9AB09C;
 }
 
-/* ── Floating WhatsApp Action Button ── */
-.floating-whatsapp-btn {
-  position: fixed;
-  bottom: 28px;
-  right: 28px;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: #25D366;
-  color: #ffffff;
-  display: grid;
-  place-items: center;
-  box-shadow: 0 6px 20px rgba(37, 211, 102, 0.45);
-  z-index: 99;
-  text-decoration: none;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-}
-.floating-whatsapp-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 8px 24px rgba(37, 211, 102, 0.6);
-}
-.whatsapp-tooltip {
-  position: absolute;
-  right: 66px;
-  background: #1A341E;
-  color: #ffffff;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transform: translateX(8px);
-  transition: opacity 0.2s, transform 0.2s;
-}
-.floating-whatsapp-btn:hover .whatsapp-tooltip {
-  opacity: 1;
-  transform: translateX(0);
-}
 
 /* ── Mobile Drawer & Bottom Tab Bar ── */
 .mobile-drawer-overlay {
@@ -2776,12 +2736,6 @@
   }
   .bottom-badge.pink {
     background: var(--pink);
-  }
-  .floating-whatsapp-btn {
-    bottom: 74px;
-    right: 18px;
-    width: 50px;
-    height: 50px;
   }
 }
 
@@ -5808,12 +5762,12 @@
    DEMANDE DE DEVIS, PAGE À PROPOS ENRICHIE & BOUTON FLOTTANT WHATSAPP)
    ========================================================================== */
 
-/* ── 1. Bouton Flottant WhatsApp (52px Discret & Officiel) ── */
+/* ── 1. Bouton Flottant WhatsApp (Draggable & Aimantation Magnétique) ── */
 .floating-whatsapp-btn {
   position: fixed;
   right: 24px;
   bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-  z-index: 45;
+  z-index: 95;
   width: 52px;
   height: 52px;
   border-radius: 9999px;
@@ -5821,20 +5775,36 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 6px 18px rgba(37, 211, 102, 0.42), 0 2px 6px rgba(0, 0, 0, 0.12);
-  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.22s ease;
-  touch-action: manipulation;
-  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(37, 211, 102, 0.42), 0 2px 8px rgba(0, 0, 0, 0.15);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
   text-decoration: none;
+  will-change: left, top, transform;
 }
 
-.floating-whatsapp-btn:hover {
-  transform: scale(1.08) translateY(-2px);
-  box-shadow: 0 10px 24px rgba(37, 211, 102, 0.55), 0 3px 8px rgba(0, 0, 0, 0.15);
+.floating-whatsapp-btn.is-positioned {
+  transition: left 0.38s cubic-bezier(0.18, 0.89, 0.32, 1.28), 
+              top 0.38s cubic-bezier(0.18, 0.89, 0.32, 1.28), 
+              transform 0.22s ease, 
+              box-shadow 0.22s ease;
 }
 
-.floating-whatsapp-btn:active {
-  transform: scale(0.95);
+.floating-whatsapp-btn.is-dragging {
+  cursor: grabbing !important;
+  transform: scale(1.12) !important;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.32), 0 6px 16px rgba(37, 211, 102, 0.6) !important;
+  transition: transform 0.1s ease, box-shadow 0.1s ease !important;
+}
+
+.floating-whatsapp-btn:hover:not(.is-dragging) {
+  transform: scale(1.08);
+  box-shadow: 0 10px 24px rgba(37, 211, 102, 0.55), 0 3px 8px rgba(0, 0, 0, 0.18);
+}
+
+.floating-whatsapp-btn:active:not(.is-dragging) {
+  transform: scale(0.96);
 }
 
 .floating-whatsapp-ping {
@@ -5846,13 +5816,14 @@
   border-radius: 50%;
   background-color: #ffffff;
   border: 2px solid #25D366;
-  box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.85);
+  pointer-events: none;
 }
 
 @media (max-width: 768px) {
   .floating-whatsapp-btn {
     right: 16px;
-    bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
     width: 48px;
     height: 48px;
   }
