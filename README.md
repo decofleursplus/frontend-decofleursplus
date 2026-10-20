@@ -58,3 +58,4 @@ pnpm build
 - [État détaillé](docs/IMPLEMENTATION_STATUS.md)
 
 Les interfaces de démonstration utilisent les produits et photos visibles dans les maquettes. Le compte client et le panier sont locaux au navigateur ; aucune authentification, donnée de commande ou transaction réelle n’est reliée.
+
