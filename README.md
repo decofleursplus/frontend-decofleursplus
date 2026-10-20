@@ -11,6 +11,16 @@ pnpm dev
 
 Ouvrir ensuite `http://localhost:3000`.
 
+## Environnements déployés
+
+Le frontend est hébergé sur Vercel.
+
+| Environnement | URL du site                        | API utilisée                                             |
+| ------------- | ---------------------------------- | -------------------------------------------------------- |
+| Production    | https://www.decofleursplus.com     | https://backend-decofleursplus-production.up.railway.app |
+| Staging       | https://decofleursplus.vercel.app  | https://backend-decofleursplus-staging.up.railway.app    |
+| Local         | http://localhost:3000              | http://localhost:5000                                    |
+
 ## API backend
 
 Le backend ([backend-decofleursplus](https://github.com/decofleursplus/backend-decofleursplus)) est déployé sur Railway. Toutes les routes sont préfixées par `/api/v1`.
@@ -27,7 +37,12 @@ Pour relier le frontend à une API, définir l’URL dans `.env.local` :
 NEXT_PUBLIC_API_URL=https://backend-decofleursplus-staging.up.railway.app/api/v1
 ```
 
-Le backend n’accepte qu’une seule origine, définie par sa variable `CORS_ORIGIN` : y renseigner l’URL du frontend (staging ou production) dans les variables Railway de l’environnement correspondant.
+Le backend n’accepte qu’une seule origine, définie par sa variable `CORS_ORIGIN` sur Railway :
+
+| Backend Railway | `CORS_ORIGIN`                     |
+| --------------- | --------------------------------- |
+| Production      | `https://www.decofleursplus.com`  |
+| Staging         | `https://decofleursplus.vercel.app` |
 
 ## Vérifications
 
