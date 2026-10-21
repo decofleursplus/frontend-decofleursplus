@@ -25,6 +25,8 @@ import { ProductGrid } from '@/components/product-grid';
 import { SiteFooter } from '@/components/site-footer';
 import { TestimonialCarousel } from '@/components/testimonial-carousel';
 import { HomeFaq } from '@/components/home-faq';
+import { EventHero } from '@/components/event-hero';
+import { EventFeaturedRow } from '@/components/event-featured-row';
 
 // 12 univers d’excellence DécoFleur Plus
 const universCategories = [
@@ -164,77 +166,11 @@ export default function HomePage() {
   return (
     <>
       <main className="homepage-main">
-        {/* 1. Hero Section with Floral Background */}
-        <section className="prototype-hero hero-with-bg">
-          <div className="hero-bg-media" aria-hidden="true">
-            <Image
-              src="/images/hero.jpg"
-              alt=""
-              fill
-              priority
-              className="hero-bg-img"
-              sizes="100vw"
-            />
-            <div className="hero-bg-overlay" />
-          </div>
+        {/* 1. Dynamic Hero Section Coordinated with Active Event */}
+        <EventHero />
 
-          <div className="content-width hero-inner">
-            <div className="hero-content-left">
-
-              <h1 className="hero-headline">
-                Des fleurs, des fruits,<br />
-                des idées, <span className="headline-em">des émotions&nbsp;!</span>
-              </h1>
-
-
-
-              <div className="hero-actions">
-                <Link href="/boutique" className="button-pill-pink">
-                  voir le catalogue <ArrowRight size={17} />
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 2. Featured Row: Events Feature on Left + Products Grid on Right */}
-        <section className="featured-row-section content-width">
-          {/* Left Event Banner Card */}
-          <aside className="event-tall-card">
-            <div className="event-tall-header">
-              <h2>Événements &amp; Mariages</h2>
-              <p>Une scénographie florale sur mesure pour célébrer vos plus beaux moments.</p>
-              <Link href="/evenements" className="button-pill-pink button-small">
-                En savoir plus <ArrowRight size={14} />
-              </Link>
-            </div>
-            <div className="event-tall-image">
-              <Image
-                src="/images/mariage.jpg"
-                alt="Décoration de table pour mariage par Décofleur Plus"
-                fill
-                sizes="(max-width: 990px) 100vw, 320px"
-              />
-            </div>
-          </aside>
-
-          {/* Right Featured Products Grid */}
-          <div className="featured-products-col">
-            <div className="products-section-header">
-              <div className="header-title-wrap">
-                <Flower2 size={20} className="title-icon" />
-                <h2>Nos créations phares</h2>
-              </div>
-              <Link href="/boutique" className="view-all-link">
-                <span className="view-all-desktop">Voir tout le catalogue</span>
-                <span className="view-all-mobile">Voir tout</span>
-                <ArrowRight size={14} />
-              </Link>
-            </div>
-
-            <ProductGrid products={featured} />
-          </div>
-        </section>
+        {/* 2. Featured Row Coordinated with Active Event */}
+        <EventFeaturedRow />
         {/* 3. Notre Univers — Grille 12 univers */}
         <section className="univers-section" id="univers" aria-labelledby="univers-title">
           <div className="content-width">
