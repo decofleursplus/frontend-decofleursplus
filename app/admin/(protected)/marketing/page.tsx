@@ -55,10 +55,11 @@ import { CreateCouponDialog } from '@/components/admin/create-coupon-dialog';
 import { CreatePromotionDialog } from '@/components/admin/create-promotion-dialog';
 import { CreateCampaignDialog } from '@/components/admin/create-campaign-dialog';
 import { CartRecoveryConfigDialog } from '@/components/admin/cart-recovery-config-dialog';
+import { EventManagementView } from '@/components/admin/event-management-view';
 
 export default function AdminMarketingPage() {
-  // Main Top-level tab: 'coupons' | 'promotions' | 'campagnes' | 'paniers'
-  const [activeTab, setActiveTab] = useState<'coupons' | 'promotions' | 'campagnes' | 'paniers'>('coupons');
+  // Main Top-level tab: 'evenements' | 'coupons' | 'promotions' | 'campagnes' | 'paniers'
+  const [activeTab, setActiveTab] = useState<'evenements' | 'coupons' | 'promotions' | 'campagnes' | 'paniers'>('evenements');
 
   // State data
   const [coupons, setCoupons] = useState<AdminCoupon[]>(adminCoupons);
@@ -508,6 +509,24 @@ export default function AdminMarketingPage() {
       <div className="flex border-b border-[#e7e4dd] gap-2 overflow-x-auto no-scrollbar flex-nowrap pb-1">
         <button
           onClick={() => {
+            setActiveTab('evenements');
+            setSearchQuery('');
+          }}
+          className={`flex items-center gap-2 pb-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold transition-all border-b-2 -mb-[1px] whitespace-nowrap shrink-0 ${
+            activeTab === 'evenements'
+              ? 'border-[#24582d] text-[#24582d]'
+              : 'border-transparent text-gray-500 hover:text-gray-900'
+          }`}
+        >
+          <Calendar className="h-4 w-4 text-[#193e23]" />
+          <span>Événements & Célébrations</span>
+          <span className="ml-1 text-[11px] bg-zinc-100 text-zinc-700 px-2 py-0.5 rounded-full font-medium">
+            9
+          </span>
+        </button>
+
+        <button
+          onClick={() => {
             setActiveTab('coupons');
             setSearchQuery('');
           }}
@@ -578,6 +597,13 @@ export default function AdminMarketingPage() {
           </span>
         </button>
       </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          ONGLET 0 : ÉVÉNEMENTS & CÉLÉBRATIONS DU SÉNÉGAL ET DU MONDE
+      ────────────────────────────────────────────────────────────── */}
+      {activeTab === 'evenements' && (
+        <EventManagementView />
+      )}
 
       {/* ─────────────────────────────────────────────────────────────
           ONGLET 1 : CODES PROMO & COUPONS

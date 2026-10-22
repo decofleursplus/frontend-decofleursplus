@@ -39,6 +39,7 @@ export function SiteHeader() {
     const previousOverflow = document.body.style.overflow;
     const focusReturnTarget = menuTriggerRef.current;
     document.body.style.overflow = 'hidden';
+    document.body.classList.add('mobile-drawer-open');
     const focusCloseButton = window.requestAnimationFrame(() => menuCloseRef.current?.focus());
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setMobileMenuOpen(false);
@@ -60,6 +61,7 @@ export function SiteHeader() {
     window.addEventListener('keydown', closeOnEscape);
     return () => {
       document.body.style.overflow = previousOverflow;
+      document.body.classList.remove('mobile-drawer-open');
       window.cancelAnimationFrame(focusCloseButton);
       window.removeEventListener('keydown', closeOnEscape);
       focusReturnTarget?.focus();
@@ -168,6 +170,7 @@ export function SiteHeader() {
             className="brand-logo"
             style={{ width: 'auto' }}
           />
+          <span className="brand-tagline">Nature en Élégance</span>
         </Link>
 
         {/* Centered Search Bar */}
@@ -341,14 +344,17 @@ export function SiteHeader() {
         <div className="mobile-drawer-overlay" onClick={() => setMobileMenuOpen(false)}>
           <div id="mobile-navigation-drawer" className="mobile-drawer" role="dialog" aria-modal="true" aria-label="Menu de navigation" onClick={(e) => e.stopPropagation()}>
             <div className="mobile-drawer-header mt-16 pb-8">
-              <Image
-                src="/logo_decofleur_cropped.png"
-                alt="Décofleur Plus"
-                width={72}
-                height={52}
-                className="drawer-logo"
-                style={{ width: 'auto' }}
-              />
+              <div className="drawer-brand-block">
+                <Image
+                  src="/logo_decofleur_cropped.png"
+                  alt="Décofleur Plus"
+                  width={72}
+                  height={52}
+                  className="drawer-logo"
+                  style={{ width: 'auto' }}
+                />
+                <span className="brand-tagline">Nature en Élégance</span>
+              </div>
             
               <button
                 ref={menuCloseRef}

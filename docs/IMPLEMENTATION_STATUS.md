@@ -66,13 +66,39 @@ Phase 5 — Refonte & Harmonisation UI Côté Particulier (Intégration Maquette
   - **Hero À Propos & Abonnements (`.about-hero`)** : Remplacement du dégradé partiel par un double scrim protecteur riche (vignette horizontale 90deg + dégradé vertical 180deg) éliminant tout saignement du texte sur les fleurs claires.
   - **Typographie des héros** : Ajout d'ombres portées nettes (`text-shadow`), badge givré élégant (`.about-hero-badge`) et rendu 100% lisible et conforme WCAG sur desktop et smartphone.
 - [x] Phase 5 — Validation TypeScript (`tsc --noEmit`) & Audit visuel Playwright sur Desktop (1280px) et Mobile (390px) sans aucun débordement horizontal ni régression.
+- [x] Phase 6 — Système Dynamique d'Événements & Célébrations & Slogan de Marque :
+  - Intégration du slogan « Nature en Élégance » sous le logo Déco Fleur Plus dans le Header desktop et mobile drawer en police serif dorée/végétale (`#a8793b`).
+  - Composant `EventHero` immersif dynamique s'adaptant à l'événement sélectionné (Tabaski, Magal, Gamou, Korité, St Valentin, 8 Mars, Mères, Pères, Noël, ou mode Boutique standard).
+  - 8 palettes chromatiques thématiques (`emerald`, `ruby`, `gold`, `rose`, `amber`, `purple`, `festive`, `standard`).
+  - **Visuels culturels ultra-évocateurs** :
+    - *Tabaski (Aïd el-Kébir)* : Bélier Ladoum d'exception aux cornes majestueuses et compositions florales royales de banquet avec fruits tropicaux.
+    - *Grand Magal de Touba* : Grande Mosquée illuminée au crépuscule doré et urnes florales d'accueil et d'hospitalité (Berndé).
+    - *Gamou de Tivaouane* : Mosquée aux coupoles vertes sous une lumière spirituelle douce avec tubéreuses et lys blancs.
+    - *Korité (Aïd el-Fitr)* : Salon de fête convivial avec plateau de dattes, douceurs traditionnelles et compositions fleuries pastel.
+    - *Saint-Valentin* : Dîner romantique aux chandelles face aux vagues à Saly Portudal avec roses rouges velours et champagne.
+  - **Studio Scénographique & Cockpit en Direct (`/admin/marketing`)** :
+    - Remplacement de la grille classique par un concept créatif hors du commun "Cockpit Studio".
+    - *Master Stage central* avec simulateur d'écran de vitrine en temps réel et commutateur Desktop (1280px) / Mobile (390px).
+    - *Dock Scénographique horizontal* fluide et ergonomique avec miniatures panoramiques des 9 célébrations et filtres thématiques.
+    - Bouton d'action maître "Projeter & Publier sur la vitrine" permettant la bascule instantanée en 1 clic.
+  - **Ajustements Responsivité & Ergonomie Mobile** :
+    - Masquage propre du bouton flottant WhatsApp lors de l'ouverture du tiroir de navigation mobile (élimine tout chevauchement avec "Abonnements floraux").
+    - Symétrie et pleine largeur des boutons d'action du Hero sur smartphone pour un équilibre visuel parfait.
+    - Scrims de contraste adaptatifs par thème pour une lisibilité absolue sous toutes les conditions d'éclairage.
+  - **Simplification UI Back-Office Événements & Célébrations (/grill-me)** :
+    - Remplacement du cockpit simulateur complexe et du tableau dense par une grille moderne de cartes visuelles 16:9.
+    - Bandeau supérieur d'état en direct avec bascule instantanée en 1 clic vers la « Boutique standard » et lien « Voir le site ».
+    - Barre de contrôle épurée : pilules de catégories filtrables au clic et recherche textuelle sans menus déroulants redondants.
+    - Carte d'événement ergonomique : photo panoramique, badge de catégorie, menu discret à 3 points (`...`) pour duplication/suppression, switch On/Off en direct et bouton « Modifier ».
+    - Boîte de dialogue centrée `EditEventDialog` allégée et aérée (suppression du simulateur sombre lourd, formulaire fluide en 4 sections claires, sélecteur rapide des 4 créations associées et double validation « Enregistrer » / « Enregistrer & Mettre en direct »).
+    - Validation visuelle Playwright et 0 erreur TypeScript (`tsc --noEmit`).
 
-## Currently Working On
-Phase 5 — Recette finale et livraison des améliorations côté particulier.
+## Current Phase
+Phase 6 — Célébrations Saisonnières Dynamiques & Simplification UI Admin (Terminée & Validée)
 
 ## Next Tasks
-- 1. Synthèse client et présentation des refontes.
-- 2. Validation continue des retours clients sur la vitrine.
+- 1. Recette finale utilisateur et validation des flux d'événements.
+- 2. Préparation du déploiement en production ou perfectionnement du tunnel d'achat (panier, zones de livraison et paiement Mobile Money).
 
 ## Remaining
 - *(Vitrine Particulier et Back-Office 100% responsives et validés visuellement)*
