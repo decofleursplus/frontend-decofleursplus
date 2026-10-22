@@ -207,5 +207,34 @@
   - Renforcement du scrim d'ombrage sur `/a-propos` et `/abonnements` via un double dégradé (horizontal 90deg + vertical 180deg) et ajout d'ombres portées typographiques (`text-shadow`), garantissant une lecture immédiate et sans fatigue visuelle sur ordinateur comme sur mobile.
 - [x] **Contrôle Qualité & Recette Visuelle** : Audit Playwright desktop et mobile (390px/1280px), vérification de l'alignement, des espacements, de l'absence totale d'overflow horizontal et de la cohérence globale sur toutes les pages refondues.
 
+## Phase 6 — Célébrations & Événements Saisonniers Dynamiques & Slogan de Marque
+- [x] **Identité & Slogan Déco Fleur Plus** : Intégration du slogan officiel « Nature en Élégance » directement sous le logo Déco Fleur Plus dans le Header desktop et dans le drawer mobile en typographie fine serif italique dorée (`#a8793b`).
+- [x] **Grand Hero Événementiel Immersif (`EventHero`)** :
+  - Adaptation automatique du Hero de la page d'accueil à l'événement en cours sélectionné par l'administrateur.
+  - 8 thèmes chromatiques sur mesure (`emerald`, `ruby`, `gold`, `rose`, `amber`, `purple`, `festive`, `standard`).
+  - Visuels haute définition générés pour Tabaski, Magal de Touba, Gamou de Tivaouane, Korité, 8 Mars Journée des Droits des Femmes, Fête des Pères, Fête des Mères, Saint-Valentin et Noël.
+  - Badges officiels, titre d'accroche avec emphase calligraphiée, bouton d'action thématique et bouton direct WhatsApp express pré-rempli.
+- [x] **Section Coordonnée « Créations Dédiées à la Célébration » (`EventFeaturedRow`)** :
+  - Carte haute à gauche adaptée à la fête du moment.
+  - Grille de 4 bouquets, lys, orchidées ou corbeilles de fruits associées à l'événement.
+  - Titre dynamique et lien direct vers la collection thématique sans chevauchement responsive.
+- [x] **Studio Scénographique & Cockpit en Direct (`/admin/marketing`)** :
+  - Remplacement de la grille standard de cartes par un "Studio Scénographique" créatif hors de l'ordinaire.
+  - *Master Stage de simulation* intégrant un commutateur Desktop (1280px) et Mobile (390px) pour prévisualiser la scénographie en conditions réelles sans quitter le back-office.
+  - *Dock Scénographique horizontal* fluide et ergonomique avec miniatures panoramiques des 9 célébrations et filtres thématiques (Fêtes religieuses, Romance, Famille, Fin d'année).
+  - Barre de commande du cockpit avec projection & publication instantanée en 1 clic sur la vitrine.
+  - Boîte de dialogue d'édition avancée `EditEventDialog` synchronisée en temps réel avec le stockage réactif local.
+- [x] **Visuels Culturels Ultra-Évocateurs Haute Résolution** :
+  - *Tabaski (Aïd el-Kébir)* : Bélier Ladoum noble aux cornes dorées majestueuses aux côtés d'une table de fête avec lys blancs, roses crème et corbeilles de fruits tropicaux.
+  - *Grand Magal de Touba* : Grande Mosquée de Touba illuminée au crépuscule doré avec urnes florales royales d'accueil et d'hospitalité (Berndé).
+  - *Gamou de Tivaouane* : Mosquée aux coupoles vertes sous une lumière spirituelle douce avec tubéreuses parfumées et lys immaculés.
+  - *Korité (Aïd el-Fitr)* : Salon de fête chaleureux avec plateau de dattes dorées, douceurs traditionnelles et compositions fleuries printanières.
+  - *Saint-Valentin* : Dîner romantique aux chandelles sur une terrasse privée face aux vagues de Saly Portudal avec roses rouges passion et champagne.
+- [x] **Harmonisation Responsivité & Confort Mobile** :
+  - Masquage automatique du bouton flottant WhatsApp lors de l'ouverture du tiroir de navigation mobile (évite tout chevauchement avec "Abonnements floraux").
+  - Symétrie et pleine largeur des boutons d'action du Hero sur smartphone pour un équilibre visuel parfait.
+  - Scrims de contraste adaptatifs par thème pour une lisibilité absolue sous toutes les conditions d'éclairage.
+
+
 
 
