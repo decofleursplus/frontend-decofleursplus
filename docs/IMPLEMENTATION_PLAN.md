@@ -235,6 +235,39 @@
   - Symétrie et pleine largeur des boutons d'action du Hero sur smartphone pour un équilibre visuel parfait.
   - Scrims de contraste adaptatifs par thème pour une lisibilité absolue sous toutes les conditions d'éclairage.
 
-
-
-
+## Phase 7 — Refonte Vitrine & PWA Fidèle au Mockup Client (New Mockup)
+- [x] **Étape 1 — Génération & Intégration des Visuels Clés** :
+  - Génération de la boîte florale signature noire de luxe avec typographie dorée « Décofleur Plus — Nature en Élégance — » débordant de roses délicates (blush, pêche, corail, ivoire) et feuillage d'eucalyptus.
+  - Préparation des feuillages botaniques d'eucalyptus pour les coins d'écran (top-left & top-right).
+  - Visuel haute définition banquet de mariage pour la carte verticale « Événements & Mariages ».
+  - Visuel pour le bandeau « Cartes Cadeaux ».
+- [x] **Étape 2 — Feuilles Botaniques aux Coins d'Écran (`BotanicalCorners`)** :
+  - Implémentation du composant décoratif discret d'eucalyptus en superposition douce aux coins de l'écran, avec `pointer-events: none` et adaptation responsive sans débordement horizontal.
+- [x] **Étape 3 — Header & Mobile PWA 5 Onglets** :
+  - Header desktop : Topbar sombre avec repères locaux Saly/Mbour et contact, barre de recherche centrale élargie, icônes favoris et panier rose avec pastille.
+  - Header mobile : Hamburger menu gauche, logo centré « Nature en Élégance », icône recherche et panier rose avec badge.
+  - Bottom Tab Bar mobile (PWA) : Mise à niveau à 5 onglets tactiles conformes au mockup (Accueil en rose actif, Catégories avec icône grille, Favoris avec badge compteur, Panier avec pastille rose, Compte profil).
+- [x] **Étape 4 — Nouveau Hero Signature Fidèle au Mockup** :
+  - Badge rose « Bienvenue chez Décofleur Plus » avec cœur.
+  - Grand titre serif vert profond `#173f22` « Des fleurs, des idées, des émotions ».
+  - Sous-titre officiel artisanal avec puces végétales.
+  - Bouton pilule rose fuchsia « Découvrir nos produits → ».
+  - Bloc visuel droit : Boîte florale signature ronde noire + calligraphie cursive « L'élégance de la nature à chaque instant » et arabesques.
+  - Rendu mobile compact identique à la maquette smartphone.
+- [x] **Étape 5 — 7 Catégories Circulaires du Mockup** :
+  - 7 pastilles circulaires pastel avec icônes raffinées et libellés exacts (Bouquets élégants, Décoration sur mesure, Mariages & événements, Livraison à domicile, Paniers de fruits, Cadeaux, Location de vaisselle & matériel).
+  - Version desktop fluide et version mobile en 2 rangées / scroll tactile.
+- [x] **Étape 6 — Section Phare : Carte Événements & Grille 4 Produits** :
+  - Carte haute gauche « Événements & Mariages » avec photo banquet et bouton rose « En savoir plus → ».
+  - Grille droite « Nos produits phares » avec les 4 fiches exactes du mockup (Bouquet Élégance Rose, Panier de fruits tropicaux, Centre de table mariage, Coffret cadeau luxe) avec leurs prix FCFA, badges et avis.
+  - Défilement tactile adapté sur smartphone.
+- [x] **Étape 7 — Réassurance, Carte Cadeau & Avis Clients (« Ils nous font confiance »)** :
+  - 4 badges de réassurance (Livraison rapide, Paiement sécurisé Wave & OM, Fleurs fraîches, Service client).
+  - Bannière carte cadeau « Offrez des émotions avec nos cartes cadeaux » avec photo et bouton rose.
+  - Grille d'avis clients avec les 3 témoignages réels (Awa Diop, Mamadou Sarr, Fatou Bâ) et pagination par points.
+- [x] **Étape 8 — Footer Sombre & Calligraphie du Mockup** :
+  - Fond vert forêt `#132c1b` / `#16321f`, logo blanc/doré, Liens rapides, Réseaux sociaux, Inscription newsletter avec bouton rose, et citation calligraphique sur 3 lignes avec cœur central.
+- [x] **Étape 9 — Préservation & Liaison des Fonctionnalités Existantes** :
+  - Maintien du tunnel d'abonnements floraux, du devis scénographique sur mesure et des campagnes saisonnières, accessibles via navigation et bannières discrètes.
+- [x] **Étape 10 — Recette Visuelle (Desktop & Mobile) & Validation TypeScript** :
+  - Contrôle pixel-perfect, tests responsive 1280px et 390px, 0 erreur TypeScript (`tsc --noEmit`).
