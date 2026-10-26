@@ -64,7 +64,7 @@ export const mockupCategoriesList = [
 
 export function MockupCategories() {
   return (
-    <section className="mockup-categories-section py-4 sm:py-6" aria-label="Catégories principales">
+    <section className="mockup-categories-section" aria-label="Catégories principales">
       <div className="content-width">
         {/* Desktop: A continuous elegant white band with 7 columns divided by subtle vertical lines */}
         <div className="hidden md:grid md:grid-cols-7 bg-white rounded-2xl border border-neutral-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] py-4 px-2">
