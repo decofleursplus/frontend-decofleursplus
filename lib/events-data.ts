@@ -51,7 +51,7 @@ export const initialSeasonalEvents: SeasonalEvent[] = [
       'Bonjour DécoFleur Plus, je souhaite passer une commande spéciale pour la fête de Tabaski.',
     themeColor: 'emerald',
     bgImage: '/images/events/tabaski_evocative.jpg',
-    isActive: true,
+    isActive: false,
     collectionTitle: 'Créations d’Exception pour la Tabaski',
     collectionDesc:
       'Des centres de table harmonieux, des lys blancs immaculés et des corbeilles généreuses pour une célébration royale.',
@@ -373,7 +373,7 @@ export function getStoredSeasonalEvents(): SeasonalEvent[] {
  */
 export function getActiveSeasonalEvent(): SeasonalEvent {
   if (typeof window === 'undefined') {
-    return initialSeasonalEvents.find((e) => e.isActive) || initialSeasonalEvents[0];
+    return initialSeasonalEvents.find((e) => e.isActive) || standardBoutiqueEvent;
   }
   try {
     let activeId = localStorage.getItem(ACTIVE_EVENT_STORAGE_KEY);

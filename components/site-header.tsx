@@ -18,10 +18,12 @@ import {
   ChevronDown,
   House,
   Flower2,
+  LayoutGrid,
 } from 'lucide-react';
 import { FacebookIcon, InstagramIcon, TikTokIcon } from '@/components/icons';
 import { useCart } from '@/components/cart-provider';
 import { useAuth } from '@/components/auth-provider';
+import { BrandLogo } from '@/components/brand-logo';
 
 export function SiteHeader() {
   const { count, favorites } = useCart();
@@ -30,6 +32,7 @@ export function SiteHeader() {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const menuCloseRef = useRef<HTMLButtonElement>(null);
@@ -159,19 +162,8 @@ export function SiteHeader() {
           <Menu size={24} />
         </button>
 
-        {/* Brand Logo */}
-        <Link className="brand" href="/" aria-label="Décofleur Plus, accueil">
-          <Image
-            src="/logo_decofleur_cropped.png"
-            alt="Décofleur Plus - Nature en Élégance"
-            width={90}
-            height={66}
-            priority
-            className="brand-logo"
-            style={{ width: 'auto' }}
-          />
-          <span className="brand-tagline">Nature en Élégance</span>
-        </Link>
+        {/* Brand Logo matching client mockup */}
+        <BrandLogo variant="light" />
 
         {/* Centered Search Bar */}
         {!isAuthRoute && (
@@ -191,7 +183,7 @@ export function SiteHeader() {
           </form>
         )}
 
-        {/* Header Action Icons */}
+        {/* Desktop Header Action Icons */}
         <div className="header-actions">
           {!isAuthRoute && (
             <Link href="/favoris" className="action-icon-link" aria-label="Mes favoris">
@@ -223,7 +215,43 @@ export function SiteHeader() {
             </Link>
           )}
         </div>
+
+        {/* Mobile Header Action Icons (Search + Pink Cart) */}
+        {!isAuthRoute && (
+          <div className="mobile-header-actions">
+            <button
+              type="button"
+              className="mobile-header-btn"
+              onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+              aria-label="Rechercher"
+              aria-expanded={mobileSearchOpen}
+            >
+              <Search size={22} />
+            </button>
+            <Link href="/panier" className="mobile-header-btn mobile-cart-btn" aria-label="Mon panier">
+              <ShoppingCart size={22} />
+              <span className="mobile-cart-badge">{count}</span>
+            </Link>
+          </div>
+        )}
       </div>
+
+      {/* Mobile Expandable Search Bar */}
+      {mobileSearchOpen && !isAuthRoute && (
+        <div className="mobile-search-expand">
+          <form className="mobile-search-form" onSubmit={search} role="search">
+            <input
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Rechercher un produit, une catégorie…"
+            />
+            <button type="submit" aria-label="Rechercher">
+              <Search size={18} />
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* 3. Navigation Bar with Dropdowns (hidden on auth routes) */}
       {!isAuthRoute && (
@@ -345,15 +373,7 @@ export function SiteHeader() {
           <div id="mobile-navigation-drawer" className="mobile-drawer" role="dialog" aria-modal="true" aria-label="Menu de navigation" onClick={(e) => e.stopPropagation()}>
             <div className="mobile-drawer-header mt-16 pb-8">
               <div className="drawer-brand-block">
-                <Image
-                  src="/logo_decofleur_cropped.png"
-                  alt="Décofleur Plus"
-                  width={72}
-                  height={52}
-                  className="drawer-logo"
-                  style={{ width: 'auto' }}
-                />
-                <span className="brand-tagline">Nature en Élégance</span>
+                <BrandLogo variant="light" />
               </div>
             
               <button
@@ -395,25 +415,52 @@ export function SiteHeader() {
         </div>
       )}
 
-      {/* 5. Mobile Bottom Navigation Bar (as shown in phone mockup!) */}
+      {/* 5. Mobile Bottom Navigation Bar (5 tabs as shown in phone mockup) */}
       {!isAuthRoute && (
         <nav className="mobile-bottom-bar" aria-label="Navigation rapide">
-          <Link href="/" aria-current={pathname === '/' ? 'page' : undefined} className={`bottom-tab ${pathname === '/' ? 'active' : ''}`}>
+          <Link
+            href="/"
+            aria-current={pathname === '/' ? 'page' : undefined}
+            className={`bottom-tab ${pathname === '/' ? 'active' : ''}`}
+          >
             <span className="bottom-tab-icon-wrap"><House size={20} /></span>
             <span className="bottom-tab-label">Accueil</span>
           </Link>
-          <Link href="/boutique" aria-current={isActive('/boutique') ? 'page' : undefined} className={`bottom-tab ${isActive('/boutique') ? 'active' : ''}`}>
-            <span className="bottom-tab-icon-wrap"><Flower2 size={20} /></span>
+          <Link
+            href="/boutique"
+            aria-current={isActive('/boutique') ? 'page' : undefined}
+            className={`bottom-tab ${isActive('/boutique') ? 'active' : ''}`}
+          >
+            <span className="bottom-tab-icon-wrap"><LayoutGrid size={20} /></span>
             <span className="bottom-tab-label">Catégories</span>
           </Link>
-          <Link href="/panier" aria-current={pathname === '/panier' ? 'page' : undefined} className={`bottom-tab ${pathname === '/panier' ? 'active' : ''}`}>
+          <Link
+            href="/favoris"
+            aria-current={pathname === '/favoris' ? 'page' : undefined}
+            className={`bottom-tab ${pathname === '/favoris' ? 'active' : ''}`}
+          >
+            <span className="bottom-tab-icon-wrap">
+              <Heart size={20} />
+              {favorites.length > 0 && <span className="bottom-badge pink">{favorites.length}</span>}
+            </span>
+            <span className="bottom-tab-label">Favoris</span>
+          </Link>
+          <Link
+            href="/panier"
+            aria-current={pathname === '/panier' ? 'page' : undefined}
+            className={`bottom-tab ${pathname === '/panier' ? 'active' : ''}`}
+          >
             <span className="bottom-tab-icon-wrap">
               <ShoppingCart size={20} />
-              {count > 0 && <span className="bottom-badge pink">{count}</span>}
+              <span className="bottom-badge pink">{count}</span>
             </span>
             <span className="bottom-tab-label">Panier</span>
           </Link>
-          <Link href={isAuthenticated ? '/compte' : '/connexion'} aria-current={pathname.startsWith('/compte') ? 'page' : undefined} className={`bottom-tab ${pathname.startsWith('/compte') || pathname === '/connexion' ? 'active' : ''}`}>
+          <Link
+            href={isAuthenticated ? '/compte' : '/connexion'}
+            aria-current={pathname.startsWith('/compte') ? 'page' : undefined}
+            className={`bottom-tab ${pathname.startsWith('/compte') || pathname === '/connexion' ? 'active' : ''}`}
+          >
             <span className="bottom-tab-icon-wrap"><UserRound size={20} /></span>
             <span className="bottom-tab-label">Compte</span>
           </Link>

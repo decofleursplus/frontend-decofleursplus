@@ -5,10 +5,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, Sparkles, Calendar, Clock, ShieldCheck } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/icons';
+import { HeroMockup } from '@/components/hero-mockup';
 import {
   type SeasonalEvent,
   getActiveSeasonalEvent,
   initialSeasonalEvents,
+  standardBoutiqueEvent,
 } from '@/lib/events-data';
 
 interface EventHeroProps {
@@ -17,7 +19,7 @@ interface EventHeroProps {
 
 export function EventHero({ initialEvent }: EventHeroProps) {
   const [event, setEvent] = useState<SeasonalEvent>(
-    initialEvent || initialSeasonalEvents.find((e) => e.isActive) || initialSeasonalEvents[0]
+    initialEvent || standardBoutiqueEvent
   );
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -41,6 +43,11 @@ export function EventHero({ initialEvent }: EventHeroProps) {
       window.removeEventListener('storage', handleEventChange);
     };
   }, []);
+
+  // Si aucun événement saisonnier particulier n'est actif, afficher le Hero officiel du Mockup
+  if (event.id === 'standard') {
+    return <HeroMockup />;
+  }
 
   const whatsappUrl =
     'https://wa.me/221779417860?text=' +

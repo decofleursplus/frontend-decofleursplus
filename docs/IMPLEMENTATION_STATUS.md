@@ -1,7 +1,7 @@
 # Current Status
 
 ## Current Phase
-Phase 5 — Refonte & Harmonisation UI Côté Particulier (Intégration Maquette Client)
+Phase 7 — Refonte Vitrine & PWA Fidèle au Mockup Client (New Mockup) — En cours
 
 ## Completed
 *(Phases 1, 2 et 3 achevées — Back-office Desktop complet avec les 16 maquettes)*
@@ -94,14 +94,53 @@ Phase 5 — Refonte & Harmonisation UI Côté Particulier (Intégration Maquette
     - Validation visuelle Playwright et 0 erreur TypeScript (`tsc --noEmit`).
 
 ## Current Phase
-Phase 6 — Célébrations Saisonnières Dynamiques & Simplification UI Admin (Terminée & Validée)
+Phase 7 — Refonte Vitrine & PWA Fidèle au Mockup Client (New Mockup) — Terminée & Validée
+
+- [x] Phase 7 — Refonte Vitrine & PWA 100% Fidèle au Mockup Client :
+  1. *Hero Section Panoramique Compacte en Arrière-Plan (`components/hero-mockup.tsx`)* :
+     - Remplacement de la structure à colonnes séparées par une bannière compacte intégrée avec image d'arrière-plan panoramique `/images/hero-panoramic-mockup.jpg` (boîte ronde noire de luxe sur table de fleuriste en bois, vases et ambiance d'atelier à droite).
+     - Dégradé ivoire progressif fluide sur la gauche garantissant un contraste absolu pour les textes.
+     - Badge rose avec cœur (« Bienvenue chez Décofleur Plus »), grand titre serif vert profond `#173f22` (« Des fleurs, des idées, des émotions »), sous-titre artisanal et bouton pilule rose fuchsia avec flèche et flourish `—♡—`.
+     - Encart calligraphique en script rose (« L’élégance de la nature à chaque instant ») avec flourish et cœur en haut à droite.
+     - Format mobile compact (carte horizontale de 235px) avec image cadrée à droite, identique au smartphone de la maquette.
+  2. *7 Icônes Vectorielles SVG Sur Mesure (`components/mockup-categories.tsx`)* :
+     - Élimination des icônes génériques de librairie au profit de 7 illustrations vectorielles SVG fines et sur mesure reproduisant fidèlement les symboles de la maquette :
+       1. Bouquet élégant noué d'un ruban satiné
+       2. Rameau d'olivier végétal courbé
+       3. Deux anneaux de mariage entrelacés avec diamant scintillant
+       4. Camionnette de livraison vintage avec cœur
+       5. Corbeille de fruits tressée en osier avec ananas et raisins
+       6. Boîte cadeau chic avec grand ruban et nœud
+       7. Cloche de service de banquet sur plateau
+     - Pastilles circulaires pastel douces aux contours délicats.
+     - Grille 1 rangée sur grand écran et 2 rangées (4 + 3) centrées sur smartphone.
+  3. *Logo Bicolore Officiel & Searchbar Pilule (`components/brand-logo.tsx` & `components/site-header.tsx`)* :
+     - Création du composant SVG `BrandLogo` reproduisant la charte exacte de la maquette : grand 'D' vert forêt `#173f22` avec rameau végétal intérieur, texte « Décofleur Plus » en rose fuchsia/bordeaux `#c8436e` et sous-titre « — Nature en Élégance — » en vert.
+     - Version `variant="dark"` pour fond sombre (D blanc, texte blanc, sous-titre or).
+     - Searchbar centrale en forme de pilule épurée (`rounded-full`) avec bordure douce, loupe intégrée à droite et panier rose avec pastille.
+  4. *Footer Sombre Restructuré (`components/site-footer.tsx`)* :
+     - Fond vert forêt profond `#152e1e`.
+     - 4 colonnes compactes + colonne calligraphique à droite :
+       1. BrandLogo dark avec descriptif local sobre
+       2. Liens rapides en ligne avec barres de séparation `|` (Accueil | À propos | Contact / CGV | Mentions légales)
+       3. Réseaux sociaux en pastilles circulaires (Facebook, Instagram, TikTok, YouTube)
+       4. Inscription newsletter avec champ sombre et bouton rose carré à flèche diagonale `↗`
+       5. Citation calligraphique blanche/or sur 3 lignes (*« Des fleurs fraîches, un service d’exception pour vos plus beaux moments »*) avec cœur rose central et arabesques.
+  5. *Images Produits Phares Haute Définition (`lib/products.ts`)* :
+     - 4 créations générées en haute définition correspondant fidèlement aux photos de la maquette (Bouquet Élégance Rose, Panier de fruits tropicaux, Centre de table mariage banquet, Coffret cadeau luxe).
+  6. *Feuilles Botaniques d'Eucalyptus (`components/botanical-corners.tsx`)* :
+     - Rameaux d'eucalyptus délicatement disposés aux coins supérieurs de l'écran avec transparence naturelle.
+  7. *Navigation PWA Mobile (5 Onglets)* :
+     - Barre de navigation inférieure fixe à 5 onglets tactiles (`Accueil`, `Catégories`, `Favoris`, `Panier`, `Compte`).
+  8. *Validation Visuelle & Code* :
+     - 0 erreur TypeScript (`tsc --noEmit`), 0 débordement horizontal.
 
 ## Next Tasks
-- 1. Recette finale utilisateur et validation des flux d'événements.
-- 2. Préparation du déploiement en production ou perfectionnement du tunnel d'achat (panier, zones de livraison et paiement Mobile Money).
+- 1. Présentation des livrables et des captures d'écran responsive à l'utilisateur.
+- 2. Validation client finale et préparation de la mise en ligne.
 
 ## Remaining
-- *(Vitrine Particulier et Back-Office 100% responsives et validés visuellement)*
+- *(Vitrine Particulier et Back-Office 100% responsives, fidèles au mockup et validés visuellement)*
 
 ## Known Issues
 *(None)*
