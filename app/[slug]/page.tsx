@@ -28,7 +28,8 @@ import { ProductGrid } from '@/components/product-grid';
 import { SiteFooter } from '@/components/site-footer';
 import { ContactForm } from '@/components/contact-form';
 import { ContactMap } from '@/components/contact-map';
-import { DevisForm } from '@/components/devis-form';
+import { SharedDevisForm } from '@/components/shared-devis-form';
+import { BotanicalCorners } from '@/components/botanical-corners';
 
 const categories: Record<string, string> = {
   bouquets: 'Bouquets',
@@ -85,7 +86,8 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
   }
   if (slug === 'evenements') {
     return (
-      <>
+      <div className="relative min-h-screen bg-white text-[#1c2e20] overflow-x-hidden">
+        <BotanicalCorners />
         <main className="content-width page-main">
           <section className="page-banner shop-banner">
             <Image
@@ -120,17 +122,14 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
           </div>
           <ProductGrid products={products.filter((p) => p.category === 'Mariages' || p.category === 'Bouquets')} />
 
-          <div style={{ marginTop: '40px', marginBottom: '24px', display: 'flex', justifyContent: 'center' }}>
-            <a className="button-pill-pink" href="#devis" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-              <Calculator size={18} /> Demander un devis sur mesure
-            </a>
+          <div style={{ marginTop: '48px', marginBottom: '40px', display: 'flex', justifyContent: 'center' }}>
+            <Link className="button-pill-pink" href="/devis?type=evenements" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+              <Calculator size={18} /> Demander un devis sur mesure →
+            </Link>
           </div>
-
-          {/* Formulaire interactif de demande de devis */}
-          <DevisForm />
         </main>
         <SiteFooter />
-      </>
+      </div>
     );
   }
   if (slug === 'livraison') return <DeliveryPage />;
@@ -172,7 +171,8 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
 
 function CategoryPage({ title, slug }: { title: string; slug: string }) {
   return (
-    <>
+    <div className="relative min-h-screen bg-white text-[#1c2e20] overflow-x-hidden">
+      <BotanicalCorners />
       <main className="content-width page-main">
         <section className="page-banner shop-banner">
           <Image
@@ -209,7 +209,7 @@ function CategoryPage({ title, slug }: { title: string; slug: string }) {
         </div>
       </main>
       <SiteFooter />
-    </>
+    </div>
   );
 }
 
@@ -630,7 +630,7 @@ function AboutPage() {
           <Link className="button-pill-pink" href="/boutique">
             Découvrir notre boutique <ArrowRight size={15} />
           </Link>
-          <Link className="button-pill-outline" href="/evenements#devis">
+          <Link className="button-pill-outline" href="/devis?type=evenements">
             Demander un devis sur mesure <ArrowRight size={15} />
           </Link>
         </div>

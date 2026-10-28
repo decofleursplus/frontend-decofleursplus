@@ -57,7 +57,7 @@ export const mockupCategoriesList = [
     title: 'Location de vaisselle',
     shortTitle: 'Vaisselle',
     subtitle: 'Assiettes, verres & nappage',
-    href: '/evenements#devis',
+    href: '/location',
     iconSrc: '/images/categories/vaisselle.png',
   },
 ];

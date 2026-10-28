@@ -271,3 +271,54 @@
   - Maintien du tunnel d'abonnements floraux, du devis scénographique sur mesure et des campagnes saisonnières, accessibles via navigation et bannières discrètes.
 - [x] **Étape 10 — Recette Visuelle (Desktop & Mobile) & Validation TypeScript** :
   - Contrôle pixel-perfect, tests responsive 1280px et 390px, 0 erreur TypeScript (`tsc --noEmit`).
+
+## Phase 8 — Extensions Métier (Showcase Design System & Roadmap)
+
+### Étape 1 — Fondations de Données & Types Métier
+- [x] Définir les types TypeScript dans `lib/admin/mock-data/types.ts` pour Fournisseurs, Commandes d'approvisionnement, Réceptions, Factures fournisseurs, Prestations paysagisme, Réalisations, Devis, Équipements de location et Réservations.
+- [x] Créer les stores mock-data réactifs :
+  - `lib/admin/mock-data/suppliers.ts` (Fournisseurs, Commandes CF-2024-*, Réceptions, Factures FAC-2024-*)
+  - `lib/admin/mock-data/landscaping.ts` (Prestations, Réalisations avec images HD générées, Catégories)
+  - `lib/admin/mock-data/quotes.ts` (Demandes de devis DEV-2024-* avec pièces jointes et propositions)
+  - `lib/admin/mock-data/rentals.ts` (Équipements, Tarifs, Cautions, Réservations RL-2024-*, Disponibilités et Gantt timeline)
+- [x] Exporter l'ensemble dans `lib/admin/mock-data/index.ts`.
+
+### Étape 2 — Navigation & Header / Sidebar
+- [x] Mettre à jour `components/site-header.tsx` pour intégrer « Paysagisme » (dropdown Prestations, Réalisations, Devis) et « Location » dans la barre de navigation principale publique comme sur le mockup.
+- [x] Mettre à jour `components/admin/admin-sidebar.tsx` et le drawer mobile pour ajouter les liens :
+  - Fournisseurs (`/admin/fournisseurs`)
+  - Approvisionnements (`/admin/approvisionnements`)
+  - Devis (`/admin/devis`)
+  - Location (`/admin/location`)
+  - Paysagisme (`/admin/paysagisme`)
+
+### Étape 3 — Module B : Paysagisme et Aménagement Vert (Site public)
+- [x] Créer `app/paysagisme/page.tsx` (Maquette Écran 1) : Hero banner avec photo piscine villa de luxe HD, 4 pastilles circulaires (Jardins, Terrasses, Espaces pro, Entretien), et section "Nos réalisations" (Villas, Hôtels, Bureaux).
+- [x] Créer `app/paysagisme/prestations/page.tsx` (Maquette Écran 2) : Grille des 6 prestations avec visuels HD, descriptions et modal "En savoir plus", avec bannière CTA devis.
+- [x] Créer `app/paysagisme/realisations/page.tsx` (Maquette Écran 3) : Filtres en pilules et galerie en mosaïque avec modale de zoom/détail ("Villa Almadies", etc.).
+- [x] Créer `app/admin/(protected)/paysagisme/page.tsx` : Gestion des prestations et réalisations dans le back-office.
+
+### Étape 4 — Module C : Demande de Devis (Site public & Back-office)
+- [x] Créer `app/paysagisme/devis/page.tsx` (Maquette Écran 4) : Stepper 4 étapes (1 Informations, 2 Détails du projet, 3 Photos, 4 Validation), drag & drop d'upload de photos réelles avec aperçu/suppression, enregistrement local, référence DEV-2024-* et option WhatsApp.
+- [x] Créer `app/admin/(protected)/devis/page.tsx` : Tableau de bord de gestion des devis, vue détaillée avec photos du client, modification de statut et générateur de proposition commerciale chiffrée.
+
+### Étape 5 — Module D : Location Événementielle (Site public & Back-office)
+- [x] Créer `app/location/page.tsx` (Maquette Écran 5) : Hero banquet prestige HD, 4 catégories (Mobilier, Vaisselle, Décoration florale, Accessoires), "Nos équipements phares" (Table ronde, Chaise Chiavari, Arche florale, Centre de table), et modale de réservation interactive avec calcul du coût et de la caution séparée.
+- [x] Créer `app/admin/(protected)/location/page.tsx` (Maquette Écrans 12 & 13) :
+  - Onglet 1 : Réservations de location (RL-2024-*), statuts, suivi des cautions et remises.
+  - Onglet 2 : Calendrier / Planning interactif Mars 2024 (vue Gantt avec barres de réservation colorées selon le statut).
+  - Onglet 3 : Gestion du catalogue d'équipements de location.
+
+### Étape 6 — Module A : Fournisseurs et Approvisionnements (Back-office)
+- [x] Créer `app/admin/(protected)/fournisseurs/page.tsx` (Maquette Écran 6) : Tableau des fournisseurs (Flora Sénégal, Horti Plus, Green Supply, Afrifleurs, Eco Jardin) avec filtres, recherche, statut et modale "+ Ajouter un fournisseur".
+- [x] Créer `app/admin/(protected)/fournisseurs/[id]/page.tsx` (Maquette Écran 7) : Fiche détaillée fournisseur avec 5 onglets (Informations, Produits, Commandes, Factures, Historique).
+- [x] Créer `app/admin/(protected)/approvisionnements/page.tsx` (Maquette Écran 8) : Commandes fournisseurs CF-2024-* avec filtres par statut à onglets, recherche et modale de création "+ Nouvelle commande" avec export bon de commande.
+- [x] Créer `app/admin/(protected)/approvisionnements/reception/[id]/page.tsx` (Maquette Écran 9) : Réception de commande avec tableau des quantités reçues vs commandées, calcul d'écarts et bouton "Enregistrer la réception" synchronisé avec le stock.
+- [x] Créer `app/admin/(protected)/approvisionnements/factures/page.tsx` (Maquette Écran 10 / 12) : Factures fournisseurs FAC-2024-* avec onglets de statut (À payer, Payée, En retard, etc.) et modale "+ Ajouter une facture".
+
+### Étape 7 — Contrôle Qualité, Recette Visuelle & Tests
+- [x] Vérification TypeScript intégrale (`tsc --noEmit`) : 0 erreur.
+- [x] Vérification de la conformité visuelle avec `mockups/Décofleur Plus Design System Showcase.png` pour l'ensemble des 13 écrans.
+- [x] Validation responsive Desktop et Mobile.
+- [x] Vérification HTTP (200 OK sur les 13 routes).
+- [x] Mise à jour finale de la documentation (`IMPLEMENTATION_PLAN.md` & `IMPLEMENTATION_STATUS.md`).

@@ -1,0 +1,176 @@
+import { RentalEquipment, RentalReservation } from './types';
+
+export const initialRentalEquipment: RentalEquipment[] = [
+  {
+    id: 'table-ronde',
+    name: 'Table ronde',
+    category: 'mobilier',
+    categoryLabel: 'Mobilier événementiel',
+    pricePerDay: 25000,
+    deposit: 50000,
+    totalStock: 20,
+    availableStock: 20,
+    image: '/images/location/table-ronde.jpg',
+    description:
+      'Table de banquet ronde diamètre 180 cm pouvant accueillir confortablement 8 à 10 convives. Piètement pliant ultra-robuste en acier.',
+    dimensions: 'Diamètre 180 cm · Hauteur 74 cm · 8-10 personnes',
+    status: 'disponible',
+  },
+  {
+    id: 'chaise-chiavari',
+    name: 'Chaise Chiavari',
+    category: 'mobilier',
+    categoryLabel: 'Mobilier événementiel',
+    pricePerDay: 5000,
+    deposit: 10000,
+    totalStock: 150,
+    availableStock: 150,
+    image: '/images/location/chaise-chiavari.jpg',
+    description:
+      'L’incontournable chaise de réception et mariage de prestige en bois finition dorée / naturelle, livrée avec son coussin d’assise blanc capitonné.',
+    dimensions: 'Hauteur 92 cm · Assise 40x40 cm · Coussin déhoussable',
+    status: 'disponible',
+  },
+  {
+    id: 'arche-florale',
+    name: 'Arche florale',
+    category: 'decoration',
+    categoryLabel: 'Décoration florale',
+    pricePerDay: 40000,
+    deposit: 80000,
+    totalStock: 5,
+    availableStock: 5,
+    image: '/images/location/arche-florale.jpg',
+    description:
+      'Grande arche circulaire ou rectangulaire de cérémonie laïque ou religieuse, structure métallique renforcée autoportante avec garniture florale de roses et feuillage.',
+    dimensions: 'Diamètre 220 cm · Base lestée sécurité',
+    status: 'disponible',
+  },
+  {
+    id: 'centre-de-table',
+    name: 'Centre de table',
+    category: 'decoration',
+    categoryLabel: 'Décoration florale',
+    pricePerDay: 10000,
+    deposit: 20000,
+    totalStock: 30,
+    availableStock: 30,
+    image: '/images/location/centre-de-table.jpg',
+    description:
+      'Vase haut en cristal ou coupe dorée sur pied avec composition florale luxuriante et photophores en verre avec bougies LED sécurisées.',
+    dimensions: 'Hauteur 65 cm · Diamètre composition 45 cm',
+    status: 'disponible',
+  },
+  {
+    id: 'nappe-blanche',
+    name: 'Nappe blanche',
+    category: 'vaisselle',
+    categoryLabel: 'Vaisselle & arts de la table',
+    pricePerDay: 3000,
+    deposit: 5000,
+    totalStock: 200,
+    availableStock: 200,
+    image: '/images/location/nappe-blanche.jpg',
+    description:
+      'Nappe ronde ou rectangulaire en coton peigné damassé de qualité hôtelière supérieure, retombée impeccable jusqu’au sol.',
+    dimensions: 'Diamètre 300 cm · 100% coton peigné traité anti-tache',
+    status: 'disponible',
+  },
+];
+
+export const initialRentalReservations: RentalReservation[] = [
+  {
+    id: 'RL-2024-0032',
+    clientName: 'Awa Diop',
+    clientEmail: 'awa.diop@orange.sn',
+    clientPhone: '+221 77 111 22 33',
+    equipmentId: 'table-ronde',
+    equipmentName: 'Table ronde (10 pièces)',
+    quantity: 10,
+    startDate: '15 mars 2024',
+    endDate: '17 mars 2024',
+    totalRental: 500000,
+    deposit: 100000,
+    status: 'confirmee',
+    notes: 'Mariage à l’Hôtel Teranga Saly. Livraison demandée le 15 matin.',
+  },
+  {
+    id: 'RL-2024-0011',
+    clientName: 'Mamadou Sarr',
+    clientEmail: 'm.sarr@gmail.com',
+    clientPhone: '+221 78 222 33 44',
+    equipmentId: 'chaise-chiavari',
+    equipmentName: 'Chaise Chiavari (80 pièces)',
+    quantity: 80,
+    startDate: '20 mars 2024',
+    endDate: '22 mars 2024',
+    totalRental: 800000,
+    deposit: 160000,
+    status: 'en_attente',
+    notes: 'En attente de versement de la caution.',
+  },
+  {
+    id: 'RL-2024-0010',
+    clientName: 'Hôtel Teranga',
+    clientEmail: 'evenements@hotelteranga.sn',
+    clientPhone: '+221 33 957 00 00',
+    equipmentId: 'arche-florale',
+    equipmentName: 'Arche florale (2 pièces)',
+    quantity: 2,
+    startDate: '18 mars 2024',
+    endDate: '19 mars 2024',
+    totalRental: 80000,
+    deposit: 80000,
+    status: 'en_cours',
+    notes: 'Matériel actuellement en cours de location sur site.',
+  },
+  {
+    id: 'RL-2024-0009',
+    clientName: 'Fatou Ba',
+    clientEmail: 'fatou.ba@gmail.com',
+    clientPhone: '+221 77 333 44 55',
+    equipmentId: 'centre-de-table',
+    equipmentName: 'Centre de table (15 pièces)',
+    quantity: 15,
+    startDate: '10 mars 2024',
+    endDate: '12 mars 2024',
+    totalRental: 300000,
+    deposit: 60000,
+    status: 'terminee',
+    notes: 'Matériel restitué en parfait état, caution remboursée.',
+  },
+  {
+    id: 'RL-2024-0005',
+    clientName: 'Ibrahim Diallo',
+    clientEmail: 'i.diallo@pro.sn',
+    clientPhone: '+221 76 444 55 66',
+    equipmentId: 'nappe-blanche',
+    equipmentName: 'Nappe blanche (50 pièces)',
+    quantity: 50,
+    startDate: '25 mars 2024',
+    endDate: '26 mars 2024',
+    totalRental: 150000,
+    deposit: 50000,
+    status: 'annulee',
+    notes: 'Annulation demandée par le client plus de 72h avant.',
+  },
+];
+
+export type GanttBooking = {
+  id: string; // RL-0025
+  equipmentName: string;
+  totalQuantity: number;
+  startDay: number; // 12
+  endDay: number; // 16
+  status: 'confirmee' | 'en_cours' | 'en_attente' | 'non_disponible';
+};
+
+export const initialGanttBookings: GanttBooking[] = [
+  { id: 'RL-0025', equipmentName: 'Table ronde (20)', totalQuantity: 20, startDay: 12, endDay: 16, status: 'confirmee' },
+  { id: 'RL-0035', equipmentName: 'Table ronde (20)', totalQuantity: 20, startDay: 18, endDay: 20, status: 'non_disponible' },
+  { id: 'RL-0031', equipmentName: 'Chaise Chiavari (150)', totalQuantity: 150, startDay: 11, endDay: 13, status: 'en_cours' },
+  { id: 'RL-0015', equipmentName: 'Chaise Chiavari (150)', totalQuantity: 150, startDay: 21, endDay: 22, status: 'confirmee' },
+  { id: 'RL-0030', equipmentName: 'Arche florale (5)', totalQuantity: 5, startDay: 11, endDay: 13, status: 'non_disponible' },
+  { id: 'RL-0029', equipmentName: 'Centre de table (30)', totalQuantity: 30, startDay: 14, endDay: 17, status: 'confirmee' },
+  { id: 'RL-0028', equipmentName: 'Nappe blanche (200)', totalQuantity: 200, startDay: 17, endDay: 21, status: 'non_disponible' },
+];

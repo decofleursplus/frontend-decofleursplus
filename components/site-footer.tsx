@@ -19,7 +19,7 @@ export function SiteFooter() {
   }
 
   return (
-    <footer className="bg-[#152e1e] text-neutral-200 pt-10 pb-8 mt-12 border-t border-[#1e442c]" role="contentinfo">
+    <footer className="bg-[#152e1e] text-neutral-200 pt-10 pb-24 md:pb-8 mt-12 border-t border-[#1e442c]" role="contentinfo">
       <div className="content-width">
         {/* Main 5-Column Grid matching the mockup */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-6 items-start pb-8 border-b border-white/10">
