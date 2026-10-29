@@ -18,7 +18,10 @@ import {
   Download,
   AlertCircle,
   Truck,
+  ReceiptText,
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { AdminDrawer } from '@/components/admin/admin-drawer';
 import { initialSupplierOrders, initialSuppliers } from '@/lib/admin/mock-data/suppliers';
 import { SupplierOrder, SupplierOrderStatus } from '@/lib/admin/mock-data/types';
 
@@ -77,7 +80,7 @@ export default function AdminApprovisionnementsPage() {
 
     setOrders([newOrder, ...orders]);
     setIsNewOrderModalOpen(false);
-    alert(`Commande ${newOrder.id} créée avec succès et bon de commande généré !`);
+    toast.success(`Commande ${newOrder.id} créée avec succès et bon de commande généré !`);
   };
 
   const filteredOrders = orders.filter((o) => {
@@ -112,20 +115,47 @@ export default function AdminApprovisionnementsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#173f22]">
-            Commande fournisseurs
+            Commandes fournisseurs
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Créez et suivez vos commandes d&apos;approvisionnement.
+            Créez et suivez vos commandes d&apos;approvisionnement et consultez vos factures d&apos;achat.
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsNewOrderModalOpen(true)}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-sm font-semibold shadow-sm transition-colors w-fit"
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Link
+            href="/admin/approvisionnements/factures"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-white hover:bg-muted text-gray-800 text-xs sm:text-sm font-semibold shadow-2xs transition-colors"
+            title="Consulter le grand livre des factures fournisseurs"
+          >
+            <ReceiptText size={17} className="text-[#173f22]" />
+            <span>Factures fournisseurs</span>
+            <span className="px-1.5 py-0.5 rounded-full bg-[#edf8ef] text-[#173f22] text-[11px] font-bold">
+              4
+            </span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => setIsNewOrderModalOpen(true)}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-xs sm:text-sm font-semibold shadow-sm transition-colors w-fit cursor-pointer"
+          >
+            <Plus size={18} /> Nouvelle commande
+          </button>
+        </div>
+      </div>
+
+      {/* ── Sous-navigation du Module Approvisionnements ── */}
+      <div className="flex items-center gap-2 border-b border-border pb-3">
+        <span className="px-4 py-2 rounded-lg text-sm font-semibold bg-[#193e23] text-white shadow-xs">
+          Bons de commande ({orders.length})
+        </span>
+        <Link
+          href="/admin/approvisionnements/factures"
+          className="px-4 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex items-center gap-2"
         >
-          <Plus size={18} /> Nouvelle commande
-        </button>
+          <ReceiptText size={16} />
+          Factures fournisseurs (4)
+        </Link>
       </div>
 
       {/* ── Onglets de Statut avec Compteurs (Maquette Écran 8) ── */}
@@ -269,159 +299,153 @@ export default function AdminApprovisionnementsPage() {
         </div>
       </div>
 
-      {/* ── Modale "+ Nouvelle commande" ── */}
-      {isNewOrderModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-2xl bg-white rounded-3xl overflow-hidden shadow-2xl border border-border max-h-[92vh] flex flex-col">
-            <div className="p-6 border-b border-border flex items-center justify-between bg-[#faf8f5]">
-              <h3 className="font-serif font-bold text-lg text-[#173f22]">
-                Créer une commande d&apos;approvisionnement
-              </h3>
+      {/* ── Side Drawer "+ Nouvelle commande" ── */}
+      <AdminDrawer
+        isOpen={isNewOrderModalOpen}
+        onClose={() => setIsNewOrderModalOpen(false)}
+        title="Créer une commande d'approvisionnement"
+        subtitle="Générez un bon de commande fournisseur officiel."
+        maxWidthClass="max-w-2xl"
+        footer={
+          <div className="flex justify-end gap-2.5 w-full">
+            <button
+              type="button"
+              onClick={() => setIsNewOrderModalOpen(false)}
+              className="px-4 py-2.5 rounded-xl border border-border font-semibold hover:bg-muted text-xs cursor-pointer transition-colors"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              form="new-order-form"
+              className="px-6 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white font-semibold shadow-xs text-xs cursor-pointer transition-colors"
+            >
+              Générer et transmettre le bon de commande
+            </button>
+          </div>
+        }
+      >
+        <form id="new-order-form" onSubmit={handleCreateOrder} className="space-y-5 text-xs">
+          <div>
+            <label className="block font-semibold text-muted-foreground mb-1">Fournisseur destinataire</label>
+            <select
+              value={selectedSupplierId}
+              onChange={(e) => setSelectedSupplierId(e.target.value)}
+              className="w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs transition-colors"
+            >
+              {initialSuppliers.map((s) => (
+                <option key={s.id} value={s.id}>{s.name} ({s.categories.join(', ')})</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block font-semibold text-muted-foreground">Lignes de commande</label>
               <button
                 type="button"
-                onClick={() => setIsNewOrderModalOpen(false)}
-                className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors"
+                onClick={handleAddItem}
+                className="text-[#c8436e] font-semibold hover:underline flex items-center gap-1 cursor-pointer"
               >
-                <X size={20} />
+                <Plus size={13} /> Ajouter un produit
               </button>
             </div>
 
-            <form onSubmit={handleCreateOrder} className="p-6 overflow-y-auto space-y-5 text-xs">
-              <div>
-                <label className="block font-semibold text-muted-foreground mb-1">Fournisseur destinataire</label>
-                <select
-                  value={selectedSupplierId}
-                  onChange={(e) => setSelectedSupplierId(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] outline-none text-xs"
-                >
-                  {initialSuppliers.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name} ({s.categories.join(', ')})</option>
+            <div className="border border-border rounded-xl overflow-hidden">
+              <table className="w-full text-xs">
+                <thead className="bg-[#faf8f5] text-muted-foreground">
+                  <tr>
+                    <th className="p-2 text-left">Produit</th>
+                    <th className="p-2 text-center w-16">Qté</th>
+                    <th className="p-2 text-right w-24">Prix unit.</th>
+                    <th className="p-2 text-right w-24">Total</th>
+                    <th className="p-2 w-8"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {orderItems.map((item, idx) => (
+                    <tr key={idx}>
+                      <td className="p-2">
+                        <input
+                          type="text"
+                          value={item.name}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setOrderItems((prev) =>
+                              prev.map((it, i) => (i === idx ? { ...it, name: val } : it))
+                            );
+                          }}
+                          className="w-full p-1.5 border border-border rounded-lg bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs"
+                        />
+                      </td>
+                      <td className="p-2">
+                        <input
+                          type="number"
+                          min={1}
+                          value={item.qty}
+                          onChange={(e) => {
+                            const val = Number(e.target.value) || 1;
+                            setOrderItems((prev) =>
+                              prev.map((it, i) => (i === idx ? { ...it, qty: val, total: val * it.unitPrice } : it))
+                            );
+                          }}
+                          className="w-full p-1.5 border border-border rounded-lg bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs text-center"
+                        />
+                      </td>
+                      <td className="p-2">
+                        <input
+                          type="number"
+                          min={0}
+                          value={item.unitPrice}
+                          onChange={(e) => {
+                            const val = Number(e.target.value) || 0;
+                            setOrderItems((prev) =>
+                              prev.map((it, i) => (i === idx ? { ...it, unitPrice: val, total: it.qty * val } : it))
+                            );
+                          }}
+                          className="w-full p-1.5 border border-border rounded-lg bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs text-right"
+                        />
+                      </td>
+                      <td className="p-2 text-right font-bold text-gray-800">
+                        {item.total.toLocaleString('fr-FR')} FCFA
+                      </td>
+                      <td className="p-2 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveItem(idx)}
+                          className="text-red-500 hover:text-red-700 p-1 cursor-pointer"
+                          title="Retirer la ligne"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </td>
+                    </tr>
                   ))}
-                </select>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block font-semibold text-muted-foreground">Lignes de commande</label>
-                  <button
-                    type="button"
-                    onClick={handleAddItem}
-                    className="text-[#c8436e] font-semibold hover:underline flex items-center gap-1"
-                  >
-                    <Plus size={13} /> Ajouter un produit
-                  </button>
-                </div>
-
-                <div className="border border-border rounded-xl overflow-hidden">
-                  <table className="w-full text-xs">
-                    <thead className="bg-[#faf8f5] text-muted-foreground">
-                      <tr>
-                        <th className="p-2 text-left">Produit</th>
-                        <th className="p-2 text-center w-16">Qté</th>
-                        <th className="p-2 text-right w-24">Prix unit.</th>
-                        <th className="p-2 text-right w-24">Total</th>
-                        <th className="p-2 w-8"></th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {orderItems.map((item, idx) => (
-                        <tr key={idx}>
-                          <td className="p-2">
-                            <input
-                              type="text"
-                              value={item.name}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setOrderItems((prev) =>
-                                  prev.map((it, i) => (i === idx ? { ...it, name: val } : it))
-                                );
-                              }}
-                              className="w-full p-1 border rounded"
-                            />
-                          </td>
-                          <td className="p-2">
-                            <input
-                              type="number"
-                              value={item.qty}
-                              onChange={(e) => {
-                                const val = Number(e.target.value) || 1;
-                                setOrderItems((prev) =>
-                                  prev.map((it, i) => (i === idx ? { ...it, qty: val, total: val * it.unitPrice } : it))
-                                );
-                              }}
-                              className="w-full p-1 border rounded text-center"
-                            />
-                          </td>
-                          <td className="p-2">
-                            <input
-                              type="number"
-                              value={item.unitPrice}
-                              onChange={(e) => {
-                                const val = Number(e.target.value) || 0;
-                                setOrderItems((prev) =>
-                                  prev.map((it, i) => (i === idx ? { ...it, unitPrice: val, total: it.qty * val } : it))
-                                );
-                              }}
-                              className="w-full p-1 border rounded text-right"
-                            />
-                          </td>
-                          <td className="p-2 text-right font-bold">
-                            {item.total.toLocaleString('fr-FR')} FCFA
-                          </td>
-                          <td className="p-2 text-center">
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveItem(idx)}
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot className="bg-[#faf8f5] font-bold text-xs">
-                      <tr>
-                        <td colSpan={3} className="p-2.5 text-right">Montant estimé :</td>
-                        <td className="p-2.5 text-right text-sm text-[#c8436e] font-extrabold">
-                          {subtotal.toLocaleString('fr-FR')} FCFA
-                        </td>
-                        <td></td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-muted-foreground mb-1">Notes &amp; Instructions de livraison</label>
-                <textarea
-                  rows={2}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] outline-none"
-                />
-              </div>
-
-              <div className="pt-3 border-t border-border flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsNewOrderModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-border font-semibold hover:bg-muted"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white font-semibold shadow-xs"
-                >
-                  Générer et transmettre le bon de commande
-                </button>
-              </div>
-            </form>
+                </tbody>
+                <tfoot className="bg-[#faf8f5] font-bold text-xs border-t border-border">
+                  <tr>
+                    <td colSpan={3} className="p-2.5 text-right text-gray-600">Montant estimé :</td>
+                    <td className="p-2.5 text-right text-sm text-[#c8436e] font-extrabold">
+                      {subtotal.toLocaleString('fr-FR')} FCFA
+                    </td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+
+          <div>
+            <label className="block font-semibold text-muted-foreground mb-1">Notes &amp; Instructions de livraison</label>
+            <textarea
+              rows={2}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs transition-colors"
+            />
+          </div>
+        </form>
+      </AdminDrawer>
     </div>
   );
 }

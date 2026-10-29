@@ -6373,9 +6373,8 @@
 .admin-page-title { margin: 0; color: #1e2a1f; font-family: Georgia, serif; font-size: 24px; font-weight: 600; line-height: 1.2; }
 .admin-page-subtitle { margin: 4px 0 0; color: var(--pink); font-weight: bolder; font-size: 13.5px; }
 
-/* ── Animations (admin) ────────────────────────── */
-@keyframes adminFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-.admin-content { animation: adminFadeIn 0.3s ease both; }
+@keyframes adminFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.admin-content { animation: adminFadeIn 0.25s ease-out; }
 @media (prefers-reduced-motion: reduce) { .admin-content { animation: none; } }
 
 /* ── Admin Responsive & PWA Navigation ─────────── */
@@ -6466,6 +6465,12 @@
 .admin-topbar-mobile-menu-btn:hover {
   background: #ffffff;
   border-color: var(--forest);
+}
+
+@media (min-width: 1024px) {
+  .admin-topbar-mobile-menu-btn {
+    display: none !important;
+  }
 }
 
 @media (max-width: 1023px) {

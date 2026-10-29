@@ -65,7 +65,7 @@ export default function LocationEvenementiellePage() {
       return;
     }
 
-    const ref = `RL-2024-${Math.floor(1000 + Math.random() * 9000)}`;
+    const ref = `RL-2026-${Math.floor(1000 + Math.random() * 9000)}`;
     setReservationSuccess(ref);
   };
 

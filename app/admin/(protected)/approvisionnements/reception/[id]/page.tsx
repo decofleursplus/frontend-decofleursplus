@@ -12,7 +12,9 @@ import {
   Calendar,
   Save,
   FileText,
+  Pencil,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { initialSupplierOrders } from '@/lib/admin/mock-data/suppliers';
 import { SupplierOrderItem } from '@/lib/admin/mock-data/types';
 
@@ -43,6 +45,7 @@ export default function AdminReceptionPage({ params }: { params: Promise<{ id: s
 
   const handleSaveReception = () => {
     setSavedSuccess(true);
+    toast.success(`Réception #${order.id} enregistrée ! Stocks mis à jour.`);
     setTimeout(() => setSavedSuccess(false), 4000);
   };
 
@@ -123,7 +126,12 @@ export default function AdminReceptionPage({ params }: { params: Promise<{ id: s
               <tr>
                 <th className="py-3.5 px-5">Produit</th>
                 <th className="py-3.5 px-5 text-center">Qté commandée</th>
-                <th className="py-3.5 px-5 text-center">Qté reçue</th>
+                <th className="py-3.5 px-5 text-center">
+                  <span className="inline-flex items-center gap-1.5 justify-center text-[#173f22] font-bold" title="Colonne éditable directement">
+                    Qté reçue
+                    <Pencil size={13} className="text-[#c8436e]" />
+                  </span>
+                </th>
                 <th className="py-3.5 px-5 text-right">Prix achat</th>
                 <th className="py-3.5 px-5 text-center">État</th>
               </tr>
@@ -138,13 +146,17 @@ export default function AdminReceptionPage({ params }: { params: Promise<{ id: s
                     {item.orderedQty}
                   </td>
                   <td className="py-4 px-5 text-center">
-                    <input
-                      type="number"
-                      min={0}
-                      value={item.receivedQty}
-                      onChange={(e) => handleQtyChange(item.id, Number(e.target.value))}
-                      className="w-20 px-2 py-1 rounded-lg border border-border bg-[#faf8f5] text-center font-bold text-xs outline-none focus:bg-white focus:border-[#193e23]"
-                    />
+                    <div className="relative inline-flex items-center justify-center">
+                      <input
+                        type="number"
+                        min={0}
+                        value={item.receivedQty}
+                        onChange={(e) => handleQtyChange(item.id, Number(e.target.value))}
+                        className="w-24 pl-3 pr-7 py-1.5 rounded-lg border border-[#c4d6c7] bg-white text-center font-bold text-xs outline-none focus:ring-2 focus:ring-[#193e23]/20 focus:border-[#193e23] shadow-2xs transition-all"
+                        title="Modifier la quantité reçue"
+                      />
+                      <Pencil size={11} className="absolute right-2 text-gray-400 pointer-events-none" />
+                    </div>
                   </td>
                   <td className="py-4 px-5 text-right font-mono font-medium text-muted-foreground">
                     {item.unitPrice.toLocaleString('fr-FR')} FCFA

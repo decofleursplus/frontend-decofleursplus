@@ -7,7 +7,6 @@ import {
   Plus,
   Search,
   Eye,
-  Pencil,
   Trash2,
   Phone,
   Mail,
@@ -17,7 +16,12 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  ToggleLeft,
+  ToggleRight,
+  Power,
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { AdminDrawer } from '@/components/admin/admin-drawer';
 import { initialSuppliers } from '@/lib/admin/mock-data/suppliers';
 import { Supplier, SupplierStatus } from '@/lib/admin/mock-data/types';
 
@@ -50,7 +54,7 @@ export default function AdminFournisseursPage() {
   const handleAddSupplier = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName || !newContact) {
-      alert('Veuillez renseigner le nom et le contact du fournisseur.');
+      toast.error('Veuillez renseigner le nom et le contact du fournisseur.');
       return;
     }
 
@@ -73,6 +77,7 @@ export default function AdminFournisseursPage() {
 
     setSuppliers([created, ...suppliers]);
     setIsAddModalOpen(false);
+    toast.success(`Fournisseur « ${created.name} » créé avec succès !`);
     setNewName('');
     setNewContact('');
   };
@@ -193,15 +198,26 @@ export default function AdminFournisseursPage() {
                       <button
                         type="button"
                         onClick={() => {
+                          const nextStatus: SupplierStatus = sup.status === 'actif' ? 'inactif' : 'actif';
                           const updated = suppliers.map((s) =>
-                            s.id === sup.id ? { ...s, status: s.status === 'actif' ? 'inactif' : 'actif' as SupplierStatus } : s
+                            s.id === sup.id ? { ...s, status: nextStatus } : s
                           );
                           setSuppliers(updated);
+                          if (nextStatus === 'actif') {
+                            toast.success(`Fournisseur « ${sup.name} » activé.`);
+                          } else {
+                            toast.info(`Fournisseur « ${sup.name} » désactivé.`);
+                          }
                         }}
-                        className="p-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground transition-colors"
-                        title="Changer statut"
+                        className={`p-1.5 rounded-lg border transition-all ${
+                          sup.status === 'actif'
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300'
+                            : 'border-border bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-700'
+                        }`}
+                        title={sup.status === 'actif' ? 'Désactiver le fournisseur' : 'Activer le fournisseur'}
+                        aria-label={sup.status === 'actif' ? 'Désactiver le fournisseur' : 'Activer le fournisseur'}
                       >
-                        <Pencil size={15} />
+                        {sup.status === 'actif' ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
                       </button>
                     </div>
                   </td>
@@ -244,135 +260,137 @@ export default function AdminFournisseursPage() {
         </div>
       </div>
 
-      {/* ── Modale "+ Ajouter un fournisseur" ── */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-lg bg-white rounded-3xl overflow-hidden shadow-2xl border border-border max-h-[92vh] flex flex-col">
-            <div className="p-6 border-b border-border flex items-center justify-between bg-[#faf8f5]">
-              <h3 className="font-serif font-bold text-lg text-[#173f22]">
-                Ajouter un nouveau fournisseur
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsAddModalOpen(false)}
-                className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <form onSubmit={handleAddSupplier} className="p-6 overflow-y-auto space-y-4 text-xs">
-              <div>
-                <label className="block font-semibold text-muted-foreground mb-1">Raison sociale / Nom *</label>
-                <input
-                  type="text"
-                  required
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder="Ex : Flora Sénégal"
-                  className="w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] outline-none text-xs"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold text-muted-foreground mb-1">Personne de contact *</label>
-                  <input
-                    type="text"
-                    required
-                    value={newContact}
-                    onChange={(e) => setNewContact(e.target.value)}
-                    placeholder="M. Diop"
-                    className="w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] outline-none text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-muted-foreground mb-1">Téléphone *</label>
-                  <input
-                    type="tel"
-                    required
-                    value={newPhone}
-                    onChange={(e) => setNewPhone(e.target.value)}
-                    placeholder="+221 77 123 45 67"
-                    className="w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] outline-none text-xs"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-muted-foreground mb-1">Email professionnel</label>
-                <input
-                  type="email"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  placeholder="contact@fournisseur.sn"
-                  className="w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] outline-none text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-muted-foreground mb-1">Catégories de produits (séparées par des virgules)</label>
-                <input
-                  type="text"
-                  value={newCategories}
-                  onChange={(e) => setNewCategories(e.target.value)}
-                  placeholder="Fleurs coupées, Roses, Terreaux..."
-                  className="w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] outline-none text-xs"
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block font-semibold text-muted-foreground mb-1">Conditions</label>
-                  <input
-                    type="text"
-                    value={newPaymentTerms}
-                    onChange={(e) => setNewPaymentTerms(e.target.value)}
-                    placeholder="30 jours"
-                    className="w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] outline-none text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-muted-foreground mb-1">Délai habituel</label>
-                  <input
-                    type="text"
-                    value={newLeadTime}
-                    onChange={(e) => setNewLeadTime(e.target.value)}
-                    placeholder="3 à 5 jours"
-                    className="w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] outline-none text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-muted-foreground mb-1">Minimum (FCFA)</label>
-                  <input
-                    type="number"
-                    value={newMinOrder}
-                    onChange={(e) => setNewMinOrder(e.target.value)}
-                    placeholder="50000"
-                    className="w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] outline-none text-xs"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-border flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-border font-semibold hover:bg-muted"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white font-semibold shadow-xs"
-                >
-                  Créer le fournisseur
-                </button>
-              </div>
-            </form>
+      {/* ── Side Drawer "+ Ajouter un fournisseur" ── */}
+      <AdminDrawer
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        title="Ajouter un nouveau fournisseur"
+        subtitle="Enregistrez un partenaire et ses conditions commerciales."
+        size="lg"
+        footer={
+          <div className="flex justify-end gap-2.5 w-full">
+            <button
+              type="button"
+              onClick={() => setIsAddModalOpen(false)}
+              className="px-4 py-2.5 rounded-xl border border-border font-semibold hover:bg-muted text-xs cursor-pointer transition-colors"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              form="add-supplier-form"
+              className="px-6 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white font-semibold shadow-xs text-xs cursor-pointer transition-colors"
+            >
+              Créer le fournisseur
+            </button>
           </div>
-        </div>
-      )}
+        }
+      >
+        <form id="add-supplier-form" onSubmit={handleAddSupplier} className="space-y-4 text-xs">
+          <div>
+            <label className="block font-semibold text-muted-foreground mb-1">Raison sociale / Nom *</label>
+            <input
+              type="text"
+              required
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Ex : Flora Sénégal"
+              className="w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs transition-colors"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-semibold text-muted-foreground mb-1">Personne de contact *</label>
+              <input
+                type="text"
+                required
+                value={newContact}
+                onChange={(e) => setNewContact(e.target.value)}
+                placeholder="M. Diop"
+                className="w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-muted-foreground mb-1">Téléphone *</label>
+              <input
+                type="tel"
+                required
+                value={newPhone}
+                onChange={(e) => setNewPhone(e.target.value)}
+                placeholder="+221 77 123 45 67"
+                className="w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs transition-colors"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-semibold text-muted-foreground mb-1">Email professionnel</label>
+            <input
+              type="email"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              placeholder="contact@fournisseur.sn"
+              className="w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block font-semibold text-muted-foreground mb-1">Adresse / Localité</label>
+            <input
+              type="text"
+              value={newAddress}
+              onChange={(e) => setNewAddress(e.target.value)}
+              placeholder="Dakar, Sénégal"
+              className="w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block font-semibold text-muted-foreground mb-1">Catégories de produits (séparées par des virgules)</label>
+            <input
+              type="text"
+              value={newCategories}
+              onChange={(e) => setNewCategories(e.target.value)}
+              placeholder="Fleurs coupées, Roses, Terreaux..."
+              className="w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs transition-colors"
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="block font-semibold text-muted-foreground mb-1">Conditions</label>
+              <input
+                type="text"
+                value={newPaymentTerms}
+                onChange={(e) => setNewPaymentTerms(e.target.value)}
+                placeholder="30 jours"
+                className="w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-muted-foreground mb-1">Délai habituel</label>
+              <input
+                type="text"
+                value={newLeadTime}
+                onChange={(e) => setNewLeadTime(e.target.value)}
+                placeholder="3 à 5 jours"
+                className="w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-muted-foreground mb-1">Minimum (FCFA)</label>
+              <input
+                type="number"
+                value={newMinOrder}
+                onChange={(e) => setNewMinOrder(e.target.value)}
+                placeholder="50000"
+                className="w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs transition-colors"
+              />
+            </div>
+          </div>
+        </form>
+      </AdminDrawer>
     </div>
   );
 }
