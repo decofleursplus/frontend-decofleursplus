@@ -531,5 +531,183 @@ export type SeoSettings = {
   tiktokUrl: string;
 };
 
+/* ── Fournisseurs & Approvisionnements (Module A) ── */
+export type SupplierStatus = 'actif' | 'inactif';
 
+export type Supplier = {
+  id: string;
+  name: string;
+  contactPerson: string;
+  phone: string;
+  email: string;
+  address: string;
+  categories: string[];
+  paymentTerms: string;
+  leadTime: string;
+  minOrder: number;
+  status: SupplierStatus;
+  notes?: string;
+  totalOrders?: number;
+  totalSpent?: number;
+};
 
+export type SupplierOrderStatus =
+  | 'brouillon'
+  | 'a_valider'
+  | 'validee'
+  | 'envoyee'
+  | 'en_cours'
+  | 'receptionnee'
+  | 'annulee';
+
+export type SupplierOrderItem = {
+  id: string;
+  productId?: string;
+  name: string;
+  orderedQty: number;
+  receivedQty: number;
+  unitPrice: number;
+  total: number;
+  status: 'complete' | 'partielle' | 'en_attente';
+};
+
+export type SupplierOrder = {
+  id: string; // CF-2024-0012
+  supplierId: string;
+  supplierName: string;
+  date: string;
+  expectedDate: string;
+  items: SupplierOrderItem[];
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  status: SupplierOrderStatus;
+  notes?: string;
+};
+
+export type SupplierInvoiceStatus =
+  | 'a_verifier'
+  | 'a_payer'
+  | 'payee'
+  | 'en_retard'
+  | 'contestee'
+  | 'annulee';
+
+export type SupplierInvoice = {
+  id: string; // FAC-2024-0045
+  supplierId: string;
+  supplierName: string;
+  orderId?: string;
+  date: string;
+  dueDate: string;
+  amount: number;
+  status: SupplierInvoiceStatus;
+  notes?: string;
+};
+
+/* ── Paysagisme & Aménagement Vert (Module B) ── */
+export type LandscapePrestation = {
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  category: string;
+  image: string;
+  benefits?: string[];
+  features?: string[];
+};
+
+export type LandscapeProjectCategory =
+  | 'jardins'
+  | 'terrasses'
+  | 'villas'
+  | 'hotels'
+  | 'bureaux';
+
+export type LandscapeProject = {
+  id: string;
+  title: string;
+  category: LandscapeProjectCategory;
+  categoryLabel: string;
+  location: string;
+  description: string;
+  image: string;
+  featured?: boolean;
+  tags: string[];
+};
+
+/* ── Demandes de Devis (Module C) ── */
+export type QuoteStatus =
+  | 'nouvelle'
+  | 'en_cours'
+  | 'devis_envoye'
+  | 'acceptee'
+  | 'refusee'
+  | 'terminee';
+
+export type LandscapeQuote = {
+  id: string; // DEV-2024-0089
+  createdAt: string;
+  clientName: string;
+  clientEmail: string;
+  clientPhone: string;
+  company?: string;
+  prestationType: string;
+  spaceType: string;
+  surfaceArea: string;
+  desiredDate: string;
+  location: string;
+  description: string;
+  budget?: string;
+  maintenanceFrequency?: string;
+  photos: string[];
+  status: QuoteStatus;
+  notes?: string;
+  quoteAmount?: number;
+  quoteItems?: { description: string; qty: number; unitPrice: number; total: number }[];
+};
+
+/* ── Location Événementielle (Module D) ── */
+export type RentalEquipmentCategory =
+  | 'mobilier'
+  | 'vaisselle'
+  | 'decoration'
+  | 'accessoires';
+
+export type RentalEquipment = {
+  id: string;
+  name: string;
+  category: RentalEquipmentCategory;
+  categoryLabel: string;
+  pricePerDay: number;
+  deposit: number; // caution
+  totalStock: number;
+  availableStock: number;
+  image: string;
+  description: string;
+  dimensions?: string;
+  status: 'disponible' | 'stock_faible' | 'indisponible';
+};
+
+export type RentalReservationStatus =
+  | 'en_attente'
+  | 'confirmee'
+  | 'en_cours'
+  | 'terminee'
+  | 'annulee';
+
+export type RentalReservation = {
+  id: string; // RL-2024-0032
+  clientName: string;
+  clientEmail: string;
+  clientPhone: string;
+  equipmentId: string;
+  equipmentName: string;
+  quantity: number;
+  startDate: string; // 2024-03-15
+  endDate: string; // 2024-03-17
+  totalRental: number;
+  deposit: number;
+  status: RentalReservationStatus;
+  notes?: string;
+};

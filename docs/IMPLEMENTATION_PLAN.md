@@ -235,6 +235,90 @@
   - Symétrie et pleine largeur des boutons d'action du Hero sur smartphone pour un équilibre visuel parfait.
   - Scrims de contraste adaptatifs par thème pour une lisibilité absolue sous toutes les conditions d'éclairage.
 
+## Phase 7 — Refonte Vitrine & PWA Fidèle au Mockup Client (New Mockup)
+- [x] **Étape 1 — Génération & Intégration des Visuels Clés** :
+  - Génération de la boîte florale signature noire de luxe avec typographie dorée « Décofleur Plus — Nature en Élégance — » débordant de roses délicates (blush, pêche, corail, ivoire) et feuillage d'eucalyptus.
+  - Préparation des feuillages botaniques d'eucalyptus pour les coins d'écran (top-left & top-right).
+  - Visuel haute définition banquet de mariage pour la carte verticale « Événements & Mariages ».
+  - Visuel pour le bandeau « Cartes Cadeaux ».
+- [x] **Étape 2 — Feuilles Botaniques aux Coins d'Écran (`BotanicalCorners`)** :
+  - Implémentation du composant décoratif discret d'eucalyptus en superposition douce aux coins de l'écran, avec `pointer-events: none` et adaptation responsive sans débordement horizontal.
+- [x] **Étape 3 — Header & Mobile PWA 5 Onglets** :
+  - Header desktop : Topbar sombre avec repères locaux Saly/Mbour et contact, barre de recherche centrale élargie, icônes favoris et panier rose avec pastille.
+  - Header mobile : Hamburger menu gauche, logo centré « Nature en Élégance », icône recherche et panier rose avec badge.
+  - Bottom Tab Bar mobile (PWA) : Mise à niveau à 5 onglets tactiles conformes au mockup (Accueil en rose actif, Catégories avec icône grille, Favoris avec badge compteur, Panier avec pastille rose, Compte profil).
+- [x] **Étape 4 — Nouveau Hero Signature Fidèle au Mockup** :
+  - Badge rose « Bienvenue chez Décofleur Plus » avec cœur.
+  - Grand titre serif vert profond `#173f22` « Des fleurs, des idées, des émotions ».
+  - Sous-titre officiel artisanal avec puces végétales.
+  - Bouton pilule rose fuchsia « Découvrir nos produits → ».
+  - Bloc visuel droit : Boîte florale signature ronde noire + calligraphie cursive « L'élégance de la nature à chaque instant » et arabesques.
+  - Rendu mobile compact identique à la maquette smartphone.
+- [x] **Étape 5 — 7 Catégories Circulaires du Mockup** :
+  - 7 pastilles circulaires pastel avec icônes raffinées et libellés exacts (Bouquets élégants, Décoration sur mesure, Mariages & événements, Livraison à domicile, Paniers de fruits, Cadeaux, Location de vaisselle & matériel).
+  - Version desktop fluide et version mobile en 2 rangées / scroll tactile.
+- [x] **Étape 6 — Section Phare : Carte Événements & Grille 4 Produits** :
+  - Carte haute gauche « Événements & Mariages » avec photo banquet et bouton rose « En savoir plus → ».
+  - Grille droite « Nos produits phares » avec les 4 fiches exactes du mockup (Bouquet Élégance Rose, Panier de fruits tropicaux, Centre de table mariage, Coffret cadeau luxe) avec leurs prix FCFA, badges et avis.
+  - Défilement tactile adapté sur smartphone.
+- [x] **Étape 7 — Réassurance, Carte Cadeau & Avis Clients (« Ils nous font confiance »)** :
+  - 4 badges de réassurance (Livraison rapide, Paiement sécurisé Wave & OM, Fleurs fraîches, Service client).
+  - Bannière carte cadeau « Offrez des émotions avec nos cartes cadeaux » avec photo et bouton rose.
+  - Grille d'avis clients avec les 3 témoignages réels (Awa Diop, Mamadou Sarr, Fatou Bâ) et pagination par points.
+- [x] **Étape 8 — Footer Sombre & Calligraphie du Mockup** :
+  - Fond vert forêt `#132c1b` / `#16321f`, logo blanc/doré, Liens rapides, Réseaux sociaux, Inscription newsletter avec bouton rose, et citation calligraphique sur 3 lignes avec cœur central.
+- [x] **Étape 9 — Préservation & Liaison des Fonctionnalités Existantes** :
+  - Maintien du tunnel d'abonnements floraux, du devis scénographique sur mesure et des campagnes saisonnières, accessibles via navigation et bannières discrètes.
+- [x] **Étape 10 — Recette Visuelle (Desktop & Mobile) & Validation TypeScript** :
+  - Contrôle pixel-perfect, tests responsive 1280px et 390px, 0 erreur TypeScript (`tsc --noEmit`).
 
+## Phase 8 — Extensions Métier (Showcase Design System & Roadmap)
 
+### Étape 1 — Fondations de Données & Types Métier
+- [x] Définir les types TypeScript dans `lib/admin/mock-data/types.ts` pour Fournisseurs, Commandes d'approvisionnement, Réceptions, Factures fournisseurs, Prestations paysagisme, Réalisations, Devis, Équipements de location et Réservations.
+- [x] Créer les stores mock-data réactifs :
+  - `lib/admin/mock-data/suppliers.ts` (Fournisseurs, Commandes CF-2024-*, Réceptions, Factures FAC-2024-*)
+  - `lib/admin/mock-data/landscaping.ts` (Prestations, Réalisations avec images HD générées, Catégories)
+  - `lib/admin/mock-data/quotes.ts` (Demandes de devis DEV-2024-* avec pièces jointes et propositions)
+  - `lib/admin/mock-data/rentals.ts` (Équipements, Tarifs, Cautions, Réservations RL-2024-*, Disponibilités et Gantt timeline)
+- [x] Exporter l'ensemble dans `lib/admin/mock-data/index.ts`.
 
+### Étape 2 — Navigation & Header / Sidebar
+- [x] Mettre à jour `components/site-header.tsx` pour intégrer « Paysagisme » (dropdown Prestations, Réalisations, Devis) et « Location » dans la barre de navigation principale publique comme sur le mockup.
+- [x] Mettre à jour `components/admin/admin-sidebar.tsx` et le drawer mobile pour ajouter les liens :
+  - Fournisseurs (`/admin/fournisseurs`)
+  - Approvisionnements (`/admin/approvisionnements`)
+  - Devis (`/admin/devis`)
+  - Location (`/admin/location`)
+  - Paysagisme (`/admin/paysagisme`)
+
+### Étape 3 — Module B : Paysagisme et Aménagement Vert (Site public)
+- [x] Créer `app/paysagisme/page.tsx` (Maquette Écran 1) : Hero banner avec photo piscine villa de luxe HD, 4 pastilles circulaires (Jardins, Terrasses, Espaces pro, Entretien), et section "Nos réalisations" (Villas, Hôtels, Bureaux).
+- [x] Créer `app/paysagisme/prestations/page.tsx` (Maquette Écran 2) : Grille des 6 prestations avec visuels HD, descriptions et modal "En savoir plus", avec bannière CTA devis.
+- [x] Créer `app/paysagisme/realisations/page.tsx` (Maquette Écran 3) : Filtres en pilules et galerie en mosaïque avec modale de zoom/détail ("Villa Almadies", etc.).
+- [x] Créer `app/admin/(protected)/paysagisme/page.tsx` : Gestion des prestations et réalisations dans le back-office.
+
+### Étape 4 — Module C : Demande de Devis (Site public & Back-office)
+- [x] Créer `app/paysagisme/devis/page.tsx` (Maquette Écran 4) : Stepper 4 étapes (1 Informations, 2 Détails du projet, 3 Photos, 4 Validation), drag & drop d'upload de photos réelles avec aperçu/suppression, enregistrement local, référence DEV-2024-* et option WhatsApp.
+- [x] Créer `app/admin/(protected)/devis/page.tsx` : Tableau de bord de gestion des devis, vue détaillée avec photos du client, modification de statut et générateur de proposition commerciale chiffrée.
+
+### Étape 5 — Module D : Location Événementielle (Site public & Back-office)
+- [x] Créer `app/location/page.tsx` (Maquette Écran 5) : Hero banquet prestige HD, 4 catégories (Mobilier, Vaisselle, Décoration florale, Accessoires), "Nos équipements phares" (Table ronde, Chaise Chiavari, Arche florale, Centre de table), et modale de réservation interactive avec calcul du coût et de la caution séparée.
+- [x] Créer `app/admin/(protected)/location/page.tsx` (Maquette Écrans 12 & 13) :
+  - Onglet 1 : Réservations de location (RL-2024-*), statuts, suivi des cautions et remises.
+  - Onglet 2 : Calendrier / Planning interactif Mars 2024 (vue Gantt avec barres de réservation colorées selon le statut).
+  - Onglet 3 : Gestion du catalogue d'équipements de location.
+
+### Étape 6 — Module A : Fournisseurs et Approvisionnements (Back-office)
+- [x] Créer `app/admin/(protected)/fournisseurs/page.tsx` (Maquette Écran 6) : Tableau des fournisseurs (Flora Sénégal, Horti Plus, Green Supply, Afrifleurs, Eco Jardin) avec filtres, recherche, statut et modale "+ Ajouter un fournisseur".
+- [x] Créer `app/admin/(protected)/fournisseurs/[id]/page.tsx` (Maquette Écran 7) : Fiche détaillée fournisseur avec 5 onglets (Informations, Produits, Commandes, Factures, Historique).
+- [x] Créer `app/admin/(protected)/approvisionnements/page.tsx` (Maquette Écran 8) : Commandes fournisseurs CF-2024-* avec filtres par statut à onglets, recherche et modale de création "+ Nouvelle commande" avec export bon de commande.
+- [x] Créer `app/admin/(protected)/approvisionnements/reception/[id]/page.tsx` (Maquette Écran 9) : Réception de commande avec tableau des quantités reçues vs commandées, calcul d'écarts et bouton "Enregistrer la réception" synchronisé avec le stock.
+- [x] Créer `app/admin/(protected)/approvisionnements/factures/page.tsx` (Maquette Écran 10 / 12) : Factures fournisseurs FAC-2024-* avec onglets de statut (À payer, Payée, En retard, etc.) et modale "+ Ajouter une facture".
+
+### Étape 7 — Contrôle Qualité, Recette Visuelle & Tests
+- [x] Vérification TypeScript intégrale (`tsc --noEmit`) : 0 erreur.
+- [x] Vérification de la conformité visuelle avec `mockups/Décofleur Plus Design System Showcase.png` pour l'ensemble des 13 écrans.
+- [x] Validation responsive Desktop et Mobile.
+- [x] Vérification HTTP (200 OK sur les 13 routes).
+- [x] Mise à jour finale de la documentation (`IMPLEMENTATION_PLAN.md` & `IMPLEMENTATION_STATUS.md`).

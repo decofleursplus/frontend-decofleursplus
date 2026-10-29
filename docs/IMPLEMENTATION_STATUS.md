@@ -1,7 +1,7 @@
 # Current Status
 
 ## Current Phase
-Phase 5 — Refonte & Harmonisation UI Côté Particulier (Intégration Maquette Client)
+Phase 7 — Refonte Vitrine & PWA Fidèle au Mockup Client (New Mockup) — En cours
 
 ## Completed
 *(Phases 1, 2 et 3 achevées — Back-office Desktop complet avec les 16 maquettes)*
@@ -94,17 +94,105 @@ Phase 5 — Refonte & Harmonisation UI Côté Particulier (Intégration Maquette
     - Validation visuelle Playwright et 0 erreur TypeScript (`tsc --noEmit`).
 
 ## Current Phase
-Phase 6 — Célébrations Saisonnières Dynamiques & Simplification UI Admin (Terminée & Validée)
+Phase 7 — Refonte Vitrine & PWA Fidèle au Mockup Client (New Mockup) — Terminée & Validée
+
+- [x] Phase 7 — Refonte Vitrine & PWA 100% Fidèle au Mockup Client :
+  1. *Hero Section Panoramique Compacte en Arrière-Plan (`components/hero-mockup.tsx`)* :
+     - Remplacement de la structure à colonnes séparées par une bannière compacte intégrée avec image d'arrière-plan panoramique `/images/hero-panoramic-mockup.jpg` (boîte ronde noire de luxe sur table de fleuriste en bois, vases et ambiance d'atelier à droite).
+     - Dégradé ivoire progressif fluide sur la gauche garantissant un contraste absolu pour les textes.
+     - Badge rose avec cœur (« Bienvenue chez Décofleur Plus »), grand titre serif vert profond `#173f22` (« Des fleurs, des idées, des émotions »), sous-titre artisanal et bouton pilule rose fuchsia avec flèche et flourish `—♡—`.
+     - Encart calligraphique en script rose (« L’élégance de la nature à chaque instant ») avec flourish et cœur en haut à droite.
+     - Format mobile compact (carte horizontale de 235px) avec image cadrée à droite, identique au smartphone de la maquette.
+  2. *7 Icônes Vectorielles SVG Sur Mesure (`components/mockup-categories.tsx`)* :
+     - Élimination des icônes génériques de librairie au profit de 7 illustrations vectorielles SVG fines et sur mesure reproduisant fidèlement les symboles de la maquette :
+       1. Bouquet élégant noué d'un ruban satiné
+       2. Rameau d'olivier végétal courbé
+       3. Deux anneaux de mariage entrelacés avec diamant scintillant
+       4. Camionnette de livraison vintage avec cœur
+       5. Corbeille de fruits tressée en osier avec ananas et raisins
+       6. Boîte cadeau chic avec grand ruban et nœud
+       7. Cloche de service de banquet sur plateau
+     - Pastilles circulaires pastel douces aux contours délicats.
+     - Grille 1 rangée sur grand écran et 2 rangées (4 + 3) centrées sur smartphone.
+  3. *Logo Bicolore Officiel & Searchbar Pilule (`components/brand-logo.tsx` & `components/site-header.tsx`)* :
+     - Création du composant SVG `BrandLogo` reproduisant la charte exacte de la maquette : grand 'D' vert forêt `#173f22` avec rameau végétal intérieur, texte « Décofleur Plus » en rose fuchsia/bordeaux `#c8436e` et sous-titre « — Nature en Élégance — » en vert.
+     - Version `variant="dark"` pour fond sombre (D blanc, texte blanc, sous-titre or).
+     - Searchbar centrale en forme de pilule épurée (`rounded-full`) avec bordure douce, loupe intégrée à droite et panier rose avec pastille.
+  4. *Footer Sombre Restructuré (`components/site-footer.tsx`)* :
+     - Fond vert forêt profond `#152e1e`.
+     - 4 colonnes compactes + colonne calligraphique à droite :
+       1. BrandLogo dark avec descriptif local sobre
+       2. Liens rapides en ligne avec barres de séparation `|` (Accueil | À propos | Contact / CGV | Mentions légales)
+       3. Réseaux sociaux en pastilles circulaires (Facebook, Instagram, TikTok, YouTube)
+       4. Inscription newsletter avec champ sombre et bouton rose carré à flèche diagonale `↗`
+       5. Citation calligraphique blanche/or sur 3 lignes (*« Des fleurs fraîches, un service d’exception pour vos plus beaux moments »*) avec cœur rose central et arabesques.
+  5. *Images Produits Phares Haute Définition (`lib/products.ts`)* :
+     - 4 créations générées en haute définition correspondant fidèlement aux photos de la maquette (Bouquet Élégance Rose, Panier de fruits tropicaux, Centre de table mariage banquet, Coffret cadeau luxe).
+  6. *Feuilles Botaniques d'Eucalyptus (`components/botanical-corners.tsx`)* :
+     - Rameaux d'eucalyptus délicatement disposés aux coins supérieurs de l'écran avec transparence naturelle.
+  7. *Navigation PWA Mobile (5 Onglets)* :
+     - Barre de navigation inférieure fixe à 5 onglets tactiles (`Accueil`, `Catégories`, `Favoris`, `Panier`, `Compte`).
+  8. *Validation Visuelle & Code* :
+     - 0 erreur TypeScript (`tsc --noEmit`), 0 débordement horizontal.
+
+## Current Phase
+Phase 8 — Extensions Métier (Showcase Design System & Roadmap) — En cours
+
+## Completed
+*(Phases 1 à 7 complètes : Vitrine, Boutique, Back-Office 16 maquettes, PWA, Célébrations & Mockup Showcase)*
+- [x] Phase 8 — Audit approfondi de `roadmap.md` et de `mockups/Décofleur Plus Design System Showcase.png` (13 écrans détaillés).
+- [x] Phase 8 — Génération en très haute définition de l'ensemble des 16 visuels d'artisanat paysager et mobilier événementiel (Hero villa piscine, Villas d'exception, Hôtels & patios de Saly, Bureaux & murs végétaux, 6 prestations de paysagisme, Hero banquet événementiel, Table ronde, Chaise Chiavari) sauvegardés dans `public/images/paysagisme/` et `public/images/location/`.
+- [x] Phase 8 — Établissement du plan de développement dans `docs/IMPLEMENTATION_PLAN.md`.
+- [x] Phase 8 — Étape 1 : Fondations de données & Types TypeScript (`types.ts`, `suppliers.ts`, `landscaping.ts`, `quotes.ts`, `rentals.ts`) avec simulation complète des stocks, commandes d'approvisionnement, réceptions, factures, prestations et réservations de location.
+- [x] Phase 8 — Étape 2 : Intégration de la navigation dans `components/site-header.tsx` (Menu déroulant Paysagisme & lien Location) et dans `components/admin/admin-sidebar.tsx` & drawer mobile (Fournisseurs, Approvisionnements, Stock, Clients, Devis, Location, Paysagisme).
+- [x] Phase 8 — Étape 3 : Module B — Paysagisme et Aménagement Vert :
+  - Page vitrine `/paysagisme` (Écran 1 du mockup) : Hero avec villa et piscine de prestige, 4 pastilles rondes de services, section réalisations d'exception.
+  - Page prestations `/paysagisme/prestations` (Écran 2) : 6 cartes avec photos HD, modale "En savoir plus", bandeau CTA devis.
+  - Page réalisations `/paysagisme/realisations` (Écran 3) : Filtres par catégorie et galerie mosaïque avec modale plein écran.
+  - Page d'administration `/admin/paysagisme` : Gestion du catalogue de prestations et des projets du portfolio.
+- [x] Phase 8 — Étape 4 : Module C — Demande de Devis :
+  - Formulaire interactif `/paysagisme/devis` (Écran 4) : Stepper en 4 étapes, upload drag-and-drop de photos réelles avec aperçu et suppression, génération automatique de référence DEV-2024-* et bouton de confirmation WhatsApp.
+  - Tableau de bord back-office `/admin/devis` : Suivi des devis, consultation des photos soumises, mise à jour des statuts et générateur de devis chiffré.
+- [x] Phase 8 — Étape 5 : Module D — Location Événementielle :
+  - Page vitrine `/location` (Écran 5) : Hero banquet d'exception, 4 catégories, équipements phares en FCFA avec disponibilité en direct et modale de réservation interactive avec calcul de durée et caution séparée.
+  - Back-office `/admin/location` (Écrans 12 & 13) :
+    - Onglet 1 : Réservations RL-2024-* avec statuts, suivi des cautions et vérification du retour matériel.
+    - Onglet 2 : Calendrier / Planning interactif Gantt de Mars 2024 avec barres de réservation colorées par statut.
+    - Onglet 3 : Gestion du catalogue matériel avec prix journalier et caution.
+- [x] Phase 8 — Étape 6 : Module A — Fournisseurs & Approvisionnements :
+  - Page `/admin/fournisseurs` (Écran 6) : Tableau des 5 fournisseurs partenaires, badges d'état, recherche, pagination et modale d'ajout.
+  - Page détail `/admin/fournisseurs/[id]` (Écran 7) : Fiche complète fournisseur avec 5 onglets (Informations, Produits, Commandes, Factures, Historique).
+  - Page `/admin/approvisionnements` (Écran 8) : Commandes d'achats CF-2024-*, onglets de statut avec compteurs, modale de commande avec calcul automatique.
+  - Page `/admin/approvisionnements/reception/[id]` (Écran 9) : Réception de commande #CF-2024-0012, pointage des quantités reçues vs commandées, statuts Partielle/Complète, synchronisation avec le stock.
+  - Page `/admin/approvisionnements/factures` (Écran 10 / 12) : Factures fournisseurs FAC-2024-*, onglets de règlement, modale d'enregistrement de facture.
+- [x] Phase 8 — Ajustements Ergonomiques & UX Step-by-Step (Validés /grill-me) :
+  1. *Hero Panoramique en Arrière-plan (`/paysagisme` & `/location`)* : Remplacement du layout 2 colonnes par une image panoramique pleine largeur en fond (`paysagisme-hero.jpg` et `location-hero.jpg`) avec dégradé doux protecteur et typographie blanche à fort contraste.
+  2. *Suppression des fils d'Ariane & Rehaussement du Hero* : Retrait de la navigation `Accueil > ...` pour remonter le hero et rendre immédiatement visibles les 4 pastilles de services/catégories sans défilement forcé.
+  3. *Flou protecteur Backdrop-Blur sur les Cartes (`image copy 2.png`)* : Ajout d'un conteneur en verre dépoli (`backdrop-blur-md bg-black/45`) derrière le titre et la description sur toutes les cartes de réalisations pour une lisibilité absolue.
+  4. *Side Drawer Latéral Réalisations (`image copy 3.png`)* : Remplacement de la modale centrée par un panneau latéral droit fluide (`Sheet` / drawer) éliminant tout conflit de défilement vertical.
+  5. *Élimination des Étoiles AI Sparkles (`image copy 4.png`)* : Suppression systématique de l'icône sparkles sur tous les badges.
+  6. *Formulaire de Devis Partagé & Dynamique (`components/shared-devis-form.tsx` & `/devis`)* :
+     - Formulaire universel partagé entre Paysagisme et Événements avec bascule dynamique des prestations et types de lieux.
+     - Suppression de la case à cocher d'entretien régulier (`image copy 5.png`).
+     - Suppression du bouton direct WhatsApp de confirmation (`image copy 6.png`).
+     - Stepper condensé en 3 étapes tenant confortablement dans la hauteur d'écran (VH).
+  7. *Refonte Ergonomique du Catalogue Location (`/location`)* :
+     - Réduction de l'encombrement vertical des 4 catégories phares.
+     - Ajout d'une barre latérale de filtrage (`aside`) pour le catalogue (recherche textuelle, catégories avec compteurs, tri par prix, filtre stock en direct et réinitialisation).
+     - Suppression du bouton de confirmation WhatsApp dans la modale de réservation (`image copy 7.png`).
+  8. *Fond Blanc Pur & Footers Généraux* : Remplacement du fond crème/rose par `bg-white` sur toutes les pages et intégration du composant `<SiteFooter />`.
+
+## Current Phase
+Phase 8 — Extensions Métier (Showcase Design System & Roadmap) — Terminée & Validée
+
+## Current Task
+Toutes les 13 maquettes du Showcase Design System sont fidèlement implémentées, enrichies avec les visuels HD générés, typées en TypeScript sans erreur et validées en production locale.
 
 ## Next Tasks
-- 1. Recette finale utilisateur et validation des flux d'événements.
-- 2. Préparation du déploiement en production ou perfectionnement du tunnel d'achat (panier, zones de livraison et paiement Mobile Money).
+- Présentation et validation finale avec l'utilisateur.
 
 ## Remaining
-- *(Vitrine Particulier et Back-Office 100% responsives et validés visuellement)*
-
-## Known Issues
-*(None)*
+- Aucun élément bloquant. La roadmap et le mockup showcase sont 100% couverts.
 
 ## Technical Decisions
 - **Data Layer:** Static TypeScript arrays in `lib/admin/mock-data/` to simulate the DB.

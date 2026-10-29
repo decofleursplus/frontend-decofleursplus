@@ -15,11 +15,16 @@ export function AdminTopbar() {
       <div className="admin-topbar-brand">
         <button
           type="button"
-          onClick={toggleMobileDrawer}
-          className="admin-topbar-mobile-menu-btn lg:hidden"
+          id="admin-topbar-menu-trigger"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleMobileDrawer();
+          }}
+          className="admin-topbar-mobile-menu-btn lg:hidden touch-manipulation cursor-pointer"
           aria-label="Ouvrir le menu de navigation"
         >
-          <Menu size={20} />
+          <Menu size={22} className="pointer-events-none" />
         </button>
 
         <Link href="/admin/tableau-de-bord" className="flex items-center gap-2">

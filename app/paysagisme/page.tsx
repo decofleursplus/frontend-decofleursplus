@@ -1,0 +1,241 @@
+import Image from 'next/image';
+import Link from 'next/link';
+import { ArrowRight, Trees, Building2, SunMedium, Scissors } from 'lucide-react';
+import { BotanicalCorners } from '@/components/botanical-corners';
+import { SiteFooter } from '@/components/site-footer';
+
+export const metadata = {
+  title: 'Paysagisme & Aménagement Vert | Décofleur Plus',
+  description:
+    'Conception, aménagement et entretien d’espaces verts pour villas, terrasses, hôtels et entreprises au Sénégal.',
+};
+
+export default function PaysagismePage() {
+  return (
+    <div className="relative min-h-screen bg-white text-[#1c2e20] overflow-x-hidden">
+      <BotanicalCorners />
+
+      <main className="content-width px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+        {/* ── 1. Hero Banner Panoramique Compact (Hauteur Réduite) ── */}
+        <section className="relative w-full rounded-xl overflow-hidden min-h-[280px] sm:min-h-[310px] lg:min-h-[340px] flex items-center p-6 sm:p-8 lg:p-10 mb-6 sm:mb-8 shadow-md border border-[#e6ded5]">
+          <Image
+            src="/images/paysagisme/paysagisme-hero.jpg"
+            alt="Aménagement paysager d'exception avec villa et piscine par Décofleur Plus"
+            fill
+            priority
+            className="object-cover"
+            sizes="100vw"
+          />
+          {/* Dégradé doux et protecteur pour lisibilité optimale */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/25 pointer-events-none" />
+
+          <div className="relative z-10 max-w-xl text-white">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-white tracking-tight leading-tight mb-3 drop-shadow-sm">
+              Paysagisme &amp; Aménagement Vert
+            </h1>
+            <p className="text-xs sm:text-sm lg:text-base text-white/90 font-medium leading-relaxed mb-5 max-w-lg">
+              Des espaces de vie plus beaux, plus verts, plus inspirants. Conception, aménagement et entretien de vos espaces extérieurs et intérieurs.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                href="/devis?type=paysagisme"
+                className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-[#c8436e] hover:bg-[#b0355d] text-white font-medium text-xs sm:text-sm shadow-md transition-all active:scale-95"
+              >
+                Demander un devis
+                <ArrowRight size={15} />
+              </Link>
+              <Link
+                href="/paysagisme/prestations"
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-md text-white border border-white/30 font-medium text-xs sm:text-sm transition-all"
+              >
+                Découvrir nos prestations
+              </Link>
+            </div>
+          </div>
+
+          <div className="absolute bottom-3 right-5 hidden md:flex items-center gap-2 text-white/80 text-[11px] font-medium backdrop-blur-md bg-black/35 px-3 py-1 rounded-full border border-white/15">
+            <span>Villa Almadies</span>
+            <span>·</span>
+            <span>Dakar &amp; Saly</span>
+          </div>
+        </section>
+
+        {/* ── 2. Bandeau Catégories / Services Compact (Taille Réduite) ── */}
+        <section className="mb-8 sm:mb-12">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5">
+            <Link
+              href="/paysagisme/prestations#conception-jardins"
+              className="flex items-center gap-3 p-3 rounded-xl bg-white border border-[#eae3d9] hover:border-[#173f22]/30 hover:shadow-2xs transition-all group"
+            >
+              <div className="w-9 h-9 rounded-full bg-[#eef7f0] flex items-center justify-center text-[#193e23] shrink-0 group-hover:scale-105 transition-transform">
+                <Trees size={18} />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-xs font-bold text-[#173f22] truncate">Jardins &amp; parcs</h2>
+                <span className="text-[10px] text-[#627765] block truncate">Création sur mesure</span>
+              </div>
+            </Link>
+
+            <Link
+              href="/paysagisme/prestations#terrasses-balcons"
+              className="flex items-center gap-3 p-3 rounded-xl bg-white border border-[#eae3d9] hover:border-[#173f22]/30 hover:shadow-2xs transition-all group"
+            >
+              <div className="w-9 h-9 rounded-full bg-[#eef7f0] flex items-center justify-center text-[#193e23] shrink-0 group-hover:scale-105 transition-transform">
+                <SunMedium size={18} />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-xs font-bold text-[#173f22] truncate">Terrasses &amp; balcons</h2>
+                <span className="text-[10px] text-[#627765] block truncate">Végétalisation urbaine</span>
+              </div>
+            </Link>
+
+            <Link
+              href="/paysagisme/prestations#espaces-professionnels"
+              className="flex items-center gap-3 p-3 rounded-xl bg-white border border-[#eae3d9] hover:border-[#173f22]/30 hover:shadow-2xs transition-all group"
+            >
+              <div className="w-9 h-9 rounded-full bg-[#eef7f0] flex items-center justify-center text-[#193e23] shrink-0 group-hover:scale-105 transition-transform">
+                <Building2 size={18} />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-xs font-bold text-[#173f22] truncate">Espaces pro</h2>
+                <span className="text-[10px] text-[#627765] block truncate">Hôtels, bureaux, restos</span>
+              </div>
+            </Link>
+
+            <Link
+              href="/paysagisme/prestations#entretien-espaces-verts"
+              className="flex items-center gap-3 p-3 rounded-xl bg-white border border-[#eae3d9] hover:border-[#173f22]/30 hover:shadow-2xs transition-all group"
+            >
+              <div className="w-9 h-9 rounded-full bg-[#eef7f0] flex items-center justify-center text-[#193e23] shrink-0 group-hover:scale-105 transition-transform">
+                <Scissors size={18} />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-xs font-bold text-[#173f22] truncate">Entretien &amp; suivi</h2>
+                <span className="text-[10px] text-[#627765] block truncate">Soins &amp; arrosage</span>
+              </div>
+            </Link>
+          </div>
+        </section>
+
+        {/* ── 3. Section "Nos réalisations" (Sans Eyebrow Encombrant) ── */}
+        <section className="mb-12 sm:mb-16">
+          <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3 mb-6">
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#173f22]">
+                Nos réalisations
+              </h2>
+              <p className="text-xs sm:text-sm text-[#5f7463] mt-1">
+                Conceptions paysagères d&apos;exception sur la Petite Côte et à Dakar
+              </p>
+            </div>
+            <Link
+              href="/paysagisme/realisations"
+              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-[#c8436e] hover:text-[#a0254c] transition-colors"
+            >
+              Voir toutes nos réalisations <ArrowRight size={15} />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6">
+            {/* Carte 1 : Villas & résidences */}
+            <div className="group relative rounded-2xl overflow-hidden border border-[#e8dfd5] shadow-2xs hover:shadow-lg transition-all aspect-[4/3]">
+              <Image
+                src="/images/paysagisme/paysagisme-villas.jpg"
+                alt="Villas & résidences"
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                sizes="(max-width: 768px) 100vw, 33vw"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              
+              <div className="absolute bottom-3 left-3 right-3 p-3.5 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-white">
+                <div className="text-[11px] text-[#f5c6cb] font-medium mb-0.5">Saly &amp; Almadies</div>
+                <h3 className="text-base font-serif font-bold text-white">Villas &amp; résidences</h3>
+                <p className="text-xs text-white/85 mt-0.5 line-clamp-2">
+                  Des jardins sur mesure conçus pour résister au climat tropical et sublimer votre villa.
+                </p>
+                <div className="mt-2 pt-2 border-t border-white/15 flex justify-end">
+                  <Link href="/paysagisme/realisations" className="text-xs font-semibold text-[#f5c6cb] hover:text-white transition-colors">
+                    Découvrir ›
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Carte 2 : Hôtels & restaurants */}
+            <div className="group relative rounded-2xl overflow-hidden border border-[#e8dfd5] shadow-2xs hover:shadow-lg transition-all aspect-[4/3]">
+              <Image
+                src="/images/paysagisme/paysagisme-hotels.jpg"
+                alt="Hôtels & restaurants"
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                sizes="(max-width: 768px) 100vw, 33vw"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              
+              <div className="absolute bottom-3 left-3 right-3 p-3.5 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-white">
+                <div className="text-[11px] text-[#f5c6cb] font-medium mb-0.5">Petite Côte &amp; Somone</div>
+                <h3 className="text-base font-serif font-bold text-white">Hôtels &amp; restaurants</h3>
+                <p className="text-xs text-white/85 mt-0.5 line-clamp-2">
+                  Des espaces paysagers d&apos;accueil et de détente pour vos hôtes et convives.
+                </p>
+                <div className="mt-2 pt-2 border-t border-white/15 flex justify-end">
+                  <Link href="/paysagisme/realisations" className="text-xs font-semibold text-[#f5c6cb] hover:text-white transition-colors">
+                    Découvrir ›
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Carte 3 : Bureaux & entreprises */}
+            <div className="group relative rounded-2xl overflow-hidden border border-[#e8dfd5] shadow-2xs hover:shadow-lg transition-all aspect-[4/3]">
+              <Image
+                src="/images/paysagisme/paysagisme-bureaux.jpg"
+                alt="Bureaux & entreprises"
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                sizes="(max-width: 768px) 100vw, 33vw"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              
+              <div className="absolute bottom-3 left-3 right-3 p-3.5 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-white">
+                <div className="text-[11px] text-[#f5c6cb] font-medium mb-0.5">Plateau &amp; Dakar</div>
+                <h3 className="text-base font-serif font-bold text-white">Bureaux &amp; entreprises</h3>
+                <p className="text-xs text-white/85 mt-0.5 line-clamp-2">
+                  Des murs végétaux et atriums biophiles pour le bien-être de vos collaborateurs.
+                </p>
+                <div className="mt-2 pt-2 border-t border-white/15 flex justify-end">
+                  <Link href="/paysagisme/realisations" className="text-xs font-semibold text-[#f5c6cb] hover:text-white transition-colors">
+                    Découvrir ›
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── 4. Bannière d'Appel à l'Action & Devis (Sans Eyebrow) ── */}
+        <section className="relative rounded-3xl overflow-hidden p-6 sm:p-10 text-white bg-[#14321d] mb-14 shadow-md border border-[#234c2d]">
+          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+            <div className="max-w-xl">
+              <h2 className="text-xl sm:text-2xl font-serif font-bold text-white">
+                Un projet d&apos;aménagement ? Discutons de vos besoins.
+              </h2>
+              <p className="text-[#d8ebd9] text-xs sm:text-sm mt-1.5 leading-relaxed">
+                Nos architectes paysagistes et jardiniers d&apos;art se déplacent à Saly, Dakar et sur toute la Petite Côte pour concevoir votre projet sur mesure.
+              </p>
+            </div>
+            <Link
+              href="/devis?type=paysagisme"
+              className="shrink-0 inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#c8436e] hover:bg-[#b0355d] text-white font-medium text-xs sm:text-sm shadow-md transition-all active:scale-95"
+            >
+              Demander un devis <ArrowRight size={16} />
+            </Link>
+          </div>
+        </section>
+      </main>
+
+      <SiteFooter />
+    </div>
+  );
+}
