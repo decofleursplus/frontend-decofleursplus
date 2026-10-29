@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -18,6 +19,11 @@ import {
   Download,
   Smartphone,
   CheckCircle2,
+  Building2,
+  Boxes,
+  FileSpreadsheet,
+  Armchair,
+  Trees,
 } from 'lucide-react';
 import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
 import { logoutAdmin } from '@/app/admin/connexion/actions';
@@ -31,9 +37,14 @@ type InstallPromptEvent = Event & {
 
 // Seuls les modules n'apparaissant pas dans le bottom navbar (Dashboard, Commandes, Produits, Livraisons)
 const drawerMenuItems = [
-  { label: 'Catégories', href: '/admin/categories', icon: FolderTree },
-  { label: 'Clients & CRM', href: '/admin/clients', icon: Users },
+  { label: 'Fournisseurs', href: '/admin/fournisseurs', icon: Building2 },
+  { label: 'Approvisionnements', href: '/admin/approvisionnements', icon: Boxes },
   { label: 'Gestion du Stock', href: '/admin/stock', icon: Package },
+  { label: 'Clients & CRM', href: '/admin/clients', icon: Users },
+  { label: 'Demandes de Devis', href: '/admin/devis', icon: FileSpreadsheet },
+  { label: 'Location de Matériel', href: '/admin/location', icon: Armchair },
+  { label: 'Paysagisme & Projets', href: '/admin/paysagisme', icon: Trees },
+  { label: 'Catégories', href: '/admin/categories', icon: FolderTree },
   { label: 'Marketing & Promos', href: '/admin/marketing', icon: Megaphone },
   { label: 'Blog & Articles', href: '/admin/blog', icon: FileText },
   { label: 'Rapports & Finances', href: '/admin/rapports', icon: BarChart3 },
@@ -47,6 +58,21 @@ export function AdminMobileDrawer() {
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
   const [isStandalone, setIsStandalone] = useState(false);
   const [isIosSafari, setIsIosSafari] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Fermer le drawer avec la touche Echap
+  useEffect(() => {
+    if (!isMobileDrawerOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeMobileDrawer();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileDrawerOpen, closeMobileDrawer]);
 
   // Écoute de l'événement PWA installable
   useEffect(() => {
@@ -113,11 +139,11 @@ export function AdminMobileDrawer() {
     }
   };
 
-  if (!isMobileDrawerOpen) return null;
+  if (!mounted || !isMobileDrawerOpen) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 lg:hidden flex"
+      className="fixed inset-0 z-[80] lg:hidden flex"
       role="dialog"
       aria-modal="true"
       aria-label="Menu de navigation du back-office"
@@ -289,6 +315,7 @@ export function AdminMobileDrawer() {
           </form>
         </div>
       </aside>
-    </div>
+    </div>,
+    document.body
   );
 }
