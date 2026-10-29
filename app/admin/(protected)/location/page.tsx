@@ -25,6 +25,9 @@ import {
   User,
   Phone,
   Calendar,
+  CalendarDays,
+  BarChart3,
+  ArrowRightLeft,
   Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -69,6 +72,7 @@ export default function AdminLocationPage() {
   const [selectedWeekIndex, setSelectedWeekIndex] = useState(1); // Semaine 2
   const [ganttSearch, setGanttSearch] = useState('');
   const [ganttCategory, setGanttCategory] = useState('all');
+  const [mobileGanttView, setMobileGanttView] = useState<'agenda' | 'gantt'>('agenda');
 
   // Reservation Drawer state
   const [selectedReservation, setSelectedReservation] = useState<RentalReservation | null>(null);
@@ -407,18 +411,18 @@ export default function AdminLocationPage() {
         <button
           type="button"
           onClick={() => handleOpenEquipmentDrawer()}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-sm font-semibold shadow-sm transition-colors w-fit cursor-pointer"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-sm font-semibold shadow-sm transition-colors w-full sm:w-auto cursor-pointer"
         >
           <Plus size={18} /> Ajouter un équipement
         </button>
       </div>
 
       {/* ── Onglets Principaux du Module ── */}
-      <div className="flex items-center gap-2 border-b border-border pb-3">
+      <div className="flex items-center gap-2 border-b border-border pb-3 overflow-x-auto scrollbar-none">
         <button
           type="button"
           onClick={() => setActiveTab('calendrier')}
-          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer shrink-0 ${
             activeTab === 'calendrier'
               ? 'bg-[#193e23] text-white shadow-sm'
               : 'text-muted-foreground hover:text-foreground hover:bg-muted'
@@ -429,7 +433,7 @@ export default function AdminLocationPage() {
         <button
           type="button"
           onClick={() => setActiveTab('reservations')}
-          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer shrink-0 ${
             activeTab === 'reservations'
               ? 'bg-[#193e23] text-white shadow-sm'
               : 'text-muted-foreground hover:text-foreground hover:bg-muted'
@@ -440,7 +444,7 @@ export default function AdminLocationPage() {
         <button
           type="button"
           onClick={() => setActiveTab('equipements')}
-          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer shrink-0 ${
             activeTab === 'equipements'
               ? 'bg-[#193e23] text-white shadow-sm'
               : 'text-muted-foreground hover:text-foreground hover:bg-muted'
@@ -456,8 +460,8 @@ export default function AdminLocationPage() {
           {/* Barre de contrôles principale du calendrier */}
           <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-border shadow-xs">
             {/* Recherche & Catégorie */}
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/40 border border-border text-xs w-60">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/40 border border-border text-xs w-full sm:w-60">
                 <Search size={14} className="text-muted-foreground" />
                 <input
                   type="text"
@@ -480,7 +484,7 @@ export default function AdminLocationPage() {
               <select
                 value={ganttCategory}
                 onChange={(e) => setGanttCategory(e.target.value)}
-                className="px-3 py-2 rounded-xl bg-muted/40 border border-border text-xs font-medium outline-none cursor-pointer"
+                className="w-full sm:w-auto px-3 py-2 rounded-xl bg-muted/40 border border-border text-xs font-medium outline-none cursor-pointer"
               >
                 <option value="all">Toutes les catégories</option>
                 <option value="mobilier">Mobilier événementiel</option>
@@ -576,19 +580,26 @@ export default function AdminLocationPage() {
               </div>
 
               {/* Raccourcis semaines */}
-              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
                 {weeksOfMonth.map((w, idx) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => setSelectedWeekIndex(idx)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    className={`px-3 py-1 rounded-xl text-center flex flex-col items-center justify-center min-w-[58px] shrink-0 transition-all cursor-pointer ${
                       selectedWeekIndex === idx
                         ? 'bg-[#173f22] text-white shadow-xs'
-                        : 'bg-[#faf8f5] border border-border text-muted-foreground hover:bg-muted'
+                        : 'bg-[#faf8f5] border border-border text-muted-foreground hover:bg-muted hover:text-foreground'
                     }`}
                   >
-                    {w.shortLabel}
+                    <span className="text-xs font-bold leading-tight">S{idx + 1}</span>
+                    <span
+                      className={`text-[10px] leading-tight whitespace-nowrap mt-0.5 ${
+                        selectedWeekIndex === idx ? 'text-white/85 font-medium' : 'text-muted-foreground'
+                      }`}
+                    >
+                      ({w.startDay}-{w.endDay})
+                    </span>
                   </button>
                 ))}
               </div>
@@ -627,204 +638,312 @@ export default function AdminLocationPage() {
             </div>
           </div>
 
-          {/* Grille Gantt / Planning Temporel Dynamique */}
-          <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
-            <div className="overflow-x-auto no-scrollbar">
-              <div
-                className="min-w-full"
-                style={{
-                  minWidth: viewMode === 'semaine' ? '820px' : '1100px',
-                }}
+          {/* Commutateur de vue mobile : Agenda Chronologique vs Grille Gantt */}
+          <div className="lg:hidden flex items-center justify-between bg-white p-3 rounded-2xl border border-border shadow-2xs">
+            <span className="text-xs font-semibold text-[#173f22]">Affichage :</span>
+            <div className="flex items-center gap-1 bg-[#faf8f5] p-1 rounded-xl border border-border/70">
+              <button
+                type="button"
+                onClick={() => setMobileGanttView('agenda')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer inline-flex items-center gap-1.5 ${
+                  mobileGanttView === 'agenda'
+                    ? 'bg-[#193e23] text-white shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
               >
-                {/* En-tête des colonnes temporelles */}
-                <div className="flex border-b border-border bg-[#faf8f5] text-xs font-semibold text-muted-foreground">
-                  {/* Colonne titre Équipements */}
-                  <div className="w-56 shrink-0 p-3.5 border-r border-border text-[#173f22] flex items-center justify-between">
-                    <span>Équipements ({ganttEquipmentRows.length})</span>
-                    <span className="text-[10px] text-muted-foreground font-normal">Disponibilité</span>
-                  </div>
+                <CalendarDays size={14} className="shrink-0" />
+                <span>Agenda</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileGanttView('gantt')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer inline-flex items-center gap-1.5 ${
+                  mobileGanttView === 'gantt'
+                    ? 'bg-[#193e23] text-white shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <BarChart3 size={14} className="shrink-0" />
+                <span>Planning Gantt</span>
+              </button>
+            </div>
+          </div>
 
-                  {/* Timeline Days Header */}
+          {/* ── Mode 1 : Agenda Chronologique Mobile (lg:hidden) ── */}
+          {mobileGanttView === 'agenda' && (
+            <div className="lg:hidden space-y-3">
+              {activePeriodBookings.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-border p-8 text-center text-xs text-muted-foreground">
+                  Aucune réservation active sur cette période ({MONTH_NAMES[currentMonth]} {currentYear}).
+                </div>
+              ) : (
+                activePeriodBookings.map((b) => (
                   <div
-                    className="flex-1 grid"
-                    style={{
-                      gridTemplateColumns: `repeat(${timelineDays.length}, minmax(0, 1fr))`,
-                    }}
+                    key={b.id}
+                    onClick={() => openReservationDetails(b.id)}
+                    className="bg-white rounded-2xl border border-border p-4 shadow-xs space-y-2.5 active:scale-[0.99] transition-transform cursor-pointer"
                   >
-                    {timelineDays.map((day) => {
-                      const weekend = isWeekendDay(day);
-                      return (
-                        <div
-                          key={day}
-                          className={`p-2.5 text-center border-r border-border last:border-r-0 flex flex-col items-center justify-center transition-colors ${
-                            weekend ? 'bg-amber-50/40 text-[#173f22]' : ''
-                          }`}
-                        >
-                          <span
-                            className={`text-[10px] uppercase font-bold tracking-wider ${
-                              weekend ? 'text-[#c8436e]' : 'text-muted-foreground'
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <span className="font-mono font-bold text-xs text-[#173f22] block">
+                          {b.id}
+                        </span>
+                        <span className="font-bold text-sm text-foreground">
+                          {b.equipmentName}
+                        </span>
+                      </div>
+                      <span
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                          b.status === 'confirmee'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : b.status === 'en_cours'
+                            ? 'bg-blue-100 text-blue-800'
+                            : b.status === 'en_attente'
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-rose-100 text-rose-800'
+                        }`}
+                      >
+                        {b.status === 'confirmee'
+                          ? 'Confirmée'
+                          : b.status === 'en_cours'
+                          ? 'En cours'
+                          : b.status === 'en_attente'
+                          ? 'En attente'
+                          : 'Non dispo'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 bg-[#faf8f5] p-2.5 rounded-xl border border-border/60 text-xs">
+                      <div>
+                        <span className="text-muted-foreground block text-[11px]">Client</span>
+                        <span className="font-semibold text-foreground truncate block">{b.clientName || 'Réservé'}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block text-[11px]">Période</span>
+                        <span className="font-semibold text-foreground">
+                          du {b.startDay} au {b.endDay} {MONTH_NAMES[currentMonth].slice(0, 4)}.
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs pt-1 border-t border-border/40 text-muted-foreground">
+                      <span>Quantité : <strong className="text-foreground">{b.totalQuantity} unités</strong></span>
+                      <span className="text-[#173f22] font-semibold">
+                        Gérer la réservation →
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* Grille Gantt / Planning Temporel Dynamique */}
+          <div className={`${mobileGanttView === 'gantt' ? 'block' : 'hidden lg:block'} space-y-2`}>
+            {/* Indication tactile de défilement sur mobile */}
+            <div className="lg:hidden flex items-center gap-2 p-2.5 bg-blue-50/70 text-blue-800 rounded-xl text-xs border border-blue-200">
+              <ArrowRightLeft size={14} className="shrink-0 text-blue-600" />
+              <span>Glissez horizontalement pour parcourir les {timelineDays.length} jours du calendrier.</span>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
+              <div className="overflow-x-auto no-scrollbar">
+                <div
+                  className="min-w-full"
+                  style={{
+                    minWidth: viewMode === 'semaine' ? '820px' : '1100px',
+                  }}
+                >
+                  {/* En-tête des colonnes temporelles */}
+                  <div className="flex border-b border-border bg-[#faf8f5] text-xs font-semibold text-muted-foreground">
+                    {/* Colonne titre Équipements */}
+                    <div className="w-56 shrink-0 p-3.5 border-r border-border text-[#173f22] flex items-center justify-between">
+                      <span>Équipements ({ganttEquipmentRows.length})</span>
+                      <span className="text-[10px] text-muted-foreground font-normal">Disponibilité</span>
+                    </div>
+
+                    {/* Timeline Days Header */}
+                    <div
+                      className="flex-1 grid"
+                      style={{
+                        gridTemplateColumns: `repeat(${timelineDays.length}, minmax(0, 1fr))`,
+                      }}
+                    >
+                      {timelineDays.map((day) => {
+                        const weekend = isWeekendDay(day);
+                        return (
+                          <div
+                            key={day}
+                            className={`p-2.5 text-center border-r border-border last:border-r-0 flex flex-col items-center justify-center transition-colors ${
+                              weekend ? 'bg-amber-50/40 text-[#173f22]' : ''
                             }`}
                           >
-                            {getDayName(day)}
-                          </span>
-                          <span className="text-xs font-extrabold text-foreground mt-0.5">
-                            {day}
-                          </span>
-                        </div>
-                      );
-                    })}
+                            <span
+                              className={`text-[10px] uppercase font-bold tracking-wider ${
+                                weekend ? 'text-[#c8436e]' : 'text-muted-foreground'
+                              }`}
+                            >
+                              {getDayName(day)}
+                            </span>
+                            <span className="text-xs font-extrabold text-foreground mt-0.5">
+                              {day}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
 
-                {/* Lignes du Gantt pour chaque équipement */}
-                {ganttEquipmentRows.length === 0 ? (
-                  <div className="p-8 text-center text-xs text-muted-foreground">
-                    Aucun équipement ne correspond aux filtres appliqués.
-                  </div>
-                ) : (
-                  ganttEquipmentRows.map((eq, rowIdx) => {
-                    // Find matching bookings for this equipment
-                    const normE = eq.name.toLowerCase();
-                    const eqBookings = activePeriodBookings.filter((b) => {
-                      const normB = b.equipmentName.toLowerCase();
-                      return normB.includes(normE) || normE.includes(normB.split(' ')[0]);
-                    });
+                  {/* Lignes du Gantt pour chaque équipement */}
+                  {ganttEquipmentRows.length === 0 ? (
+                    <div className="p-8 text-center text-xs text-muted-foreground">
+                      Aucun équipement ne correspond aux filtres appliqués.
+                    </div>
+                  ) : (
+                    ganttEquipmentRows.map((eq, rowIdx) => {
+                      // Find matching bookings for this equipment
+                      const normE = eq.name.toLowerCase();
+                      const eqBookings = activePeriodBookings.filter((b) => {
+                        const normB = b.equipmentName.toLowerCase();
+                        return normB.includes(normE) || normE.includes(normB.split(' ')[0]);
+                      });
 
-                    return (
-                      <div
-                        key={eq.id}
-                        className="flex border-b border-border last:border-b-0 items-center min-h-[64px] hover:bg-muted/10 transition-colors"
-                      >
-                        {/* Cellule Nom Équipement & Stock */}
-                        <div className="w-56 shrink-0 p-3.5 border-r border-border font-medium text-xs text-foreground flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 truncate">
-                            <Armchair size={15} className="text-[#c8436e] shrink-0" />
-                            <div className="truncate">
-                              <span className="font-semibold block truncate">
-                                {eq.name} ({eq.totalStock})
-                              </span>
-                              <span className="text-[10px] text-muted-foreground block">
-                                {eq.availableStock} dispo · {eq.pricePerDay.toLocaleString('fr-FR')} F/j
-                              </span>
+                      return (
+                        <div
+                          key={eq.id}
+                          className="flex border-b border-border last:border-b-0 items-center min-h-[64px] hover:bg-muted/10 transition-colors"
+                        >
+                          {/* Cellule Nom Équipement & Stock */}
+                          <div className="w-56 shrink-0 p-3.5 border-r border-border font-medium text-xs text-foreground flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 truncate">
+                              <Armchair size={15} className="text-[#c8436e] shrink-0" />
+                              <div className="truncate">
+                                <span className="font-semibold block truncate">
+                                  {eq.name} ({eq.totalStock})
+                                </span>
+                                <span className="text-[10px] text-muted-foreground block">
+                                  {eq.availableStock} dispo · {eq.pricePerDay.toLocaleString('fr-FR')} F/j
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        {/* Timeline Track */}
-                        <div className="flex-1 relative h-12 flex items-center">
-                          {/* Lignes verticales de repère */}
-                          <div
-                            className="absolute inset-0 grid pointer-events-none"
-                            style={{
-                              gridTemplateColumns: `repeat(${timelineDays.length}, minmax(0, 1fr))`,
-                            }}
-                          >
-                            {timelineDays.map((d, di) => {
-                              const weekend = isWeekendDay(d);
+                          {/* Timeline Track */}
+                          <div className="flex-1 relative h-12 flex items-center">
+                            {/* Lignes verticales de repère */}
+                            <div
+                              className="absolute inset-0 grid pointer-events-none"
+                              style={{
+                                gridTemplateColumns: `repeat(${timelineDays.length}, minmax(0, 1fr))`,
+                              }}
+                            >
+                              {timelineDays.map((d, di) => {
+                                const weekend = isWeekendDay(d);
+                                return (
+                                  <div
+                                    key={di}
+                                    className={`border-r border-border/40 last:border-r-0 h-full ${
+                                      weekend ? 'bg-amber-50/20' : ''
+                                    }`}
+                                  />
+                                );
+                              })}
+                            </div>
+
+                            {/* Barres de réservation colorées */}
+                            {eqBookings.map((b) => {
+                              let leftOffsetPercent = 0;
+                              let widthPercent = 0;
+                              let isCutLeft = false;
+                              let isCutRight = false;
+
+                              if (viewMode === 'semaine') {
+                                const vStart = Math.max(b.startDay, currentWeek.startDay);
+                                const vEnd = Math.min(b.endDay, currentWeek.endDay);
+                                const totalWeekDays = timelineDays.length;
+
+                                leftOffsetPercent =
+                                  ((vStart - currentWeek.startDay) / totalWeekDays) * 100;
+                                widthPercent =
+                                  ((vEnd - vStart + 1) / totalWeekDays) * 100;
+
+                                isCutLeft = b.startDay < currentWeek.startDay;
+                                isCutRight = b.endDay > currentWeek.endDay;
+                              } else {
+                                leftOffsetPercent =
+                                  ((b.startDay - 1) / daysInMonth) * 100;
+                                widthPercent =
+                                  ((b.endDay - b.startDay + 1) / daysInMonth) * 100;
+                              }
+
+                              let bgClass =
+                                'bg-emerald-500 hover:bg-emerald-600 text-white';
+                              if (b.status === 'en_cours')
+                                bgClass = 'bg-blue-500 hover:bg-blue-600 text-white';
+                              if (b.status === 'en_attente')
+                                bgClass =
+                                  'bg-amber-400 hover:bg-amber-500 text-slate-900';
+                              if (b.status === 'non_disponible')
+                                bgClass = 'bg-rose-500 hover:bg-rose-600 text-white';
+
                               return (
-                                <div
-                                  key={di}
-                                  className={`border-r border-border/40 last:border-r-0 h-full ${
-                                    weekend ? 'bg-amber-50/20' : ''
-                                  }`}
-                                />
+                                <button
+                                  type="button"
+                                  key={b.id}
+                                  onClick={() => openReservationDetails(b.id)}
+                                  style={{
+                                    left: `${Math.max(0, leftOffsetPercent)}%`,
+                                    width: `${Math.min(100, Math.max(2, widthPercent))}%`,
+                                  }}
+                                  className={`absolute h-7.5 rounded-lg px-2 flex items-center justify-center text-[10px] font-bold shadow-xs cursor-pointer hover:scale-[1.01] hover:ring-2 hover:ring-black/20 hover:z-20 transition-all ${bgClass}`}
+                                  title={`${b.id} — ${b.clientName || 'Réservé'} (${b.equipmentName})\nDu ${b.startDay} au ${b.endDay} ${MONTH_NAMES[currentMonth]} ${currentYear}\nStatut : ${b.status}\nCliquer pour inspecter ou modifier.`}
+                                >
+                                  <span className="truncate flex items-center gap-1">
+                                    {isCutLeft && <span>◀</span>}
+                                    <span>{b.id}</span>
+                                    {viewMode === 'semaine' && b.clientName && (
+                                      <span className="opacity-90 font-medium truncate hidden md:inline">
+                                        · {b.clientName}
+                                      </span>
+                                    )}
+                                    {isCutRight && <span>▶</span>}
+                                  </span>
+                                </button>
                               );
                             })}
                           </div>
-
-                          {/* Barres de réservation colorées */}
-                          {eqBookings.map((b) => {
-                            let leftOffsetPercent = 0;
-                            let widthPercent = 0;
-                            let isCutLeft = false;
-                            let isCutRight = false;
-
-                            if (viewMode === 'semaine') {
-                              const vStart = Math.max(b.startDay, currentWeek.startDay);
-                              const vEnd = Math.min(b.endDay, currentWeek.endDay);
-                              const totalWeekDays = timelineDays.length;
-
-                              leftOffsetPercent =
-                                ((vStart - currentWeek.startDay) / totalWeekDays) * 100;
-                              widthPercent =
-                                ((vEnd - vStart + 1) / totalWeekDays) * 100;
-
-                              isCutLeft = b.startDay < currentWeek.startDay;
-                              isCutRight = b.endDay > currentWeek.endDay;
-                            } else {
-                              leftOffsetPercent =
-                                ((b.startDay - 1) / daysInMonth) * 100;
-                              widthPercent =
-                                ((b.endDay - b.startDay + 1) / daysInMonth) * 100;
-                            }
-
-                            let bgClass =
-                              'bg-emerald-500 hover:bg-emerald-600 text-white';
-                            if (b.status === 'en_cours')
-                              bgClass = 'bg-blue-500 hover:bg-blue-600 text-white';
-                            if (b.status === 'en_attente')
-                              bgClass =
-                                'bg-amber-400 hover:bg-amber-500 text-slate-900';
-                            if (b.status === 'non_disponible')
-                              bgClass = 'bg-rose-500 hover:bg-rose-600 text-white';
-
-                            return (
-                              <button
-                                type="button"
-                                key={b.id}
-                                onClick={() => openReservationDetails(b.id)}
-                                style={{
-                                  left: `${Math.max(0, leftOffsetPercent)}%`,
-                                  width: `${Math.min(100, Math.max(2, widthPercent))}%`,
-                                }}
-                                className={`absolute h-7.5 rounded-lg px-2 flex items-center justify-center text-[10px] font-bold shadow-xs cursor-pointer hover:scale-[1.01] hover:ring-2 hover:ring-black/20 hover:z-20 transition-all ${bgClass}`}
-                                title={`${b.id} — ${b.clientName || 'Réservé'} (${b.equipmentName})\nDu ${b.startDay} au ${b.endDay} ${MONTH_NAMES[currentMonth]} ${currentYear}\nStatut : ${b.status}\nCliquer pour inspecter ou modifier.`}
-                              >
-                                <span className="truncate flex items-center gap-1">
-                                  {isCutLeft && <span>◀</span>}
-                                  <span>{b.id}</span>
-                                  {viewMode === 'semaine' && b.clientName && (
-                                    <span className="opacity-90 font-medium truncate hidden md:inline">
-                                      · {b.clientName}
-                                    </span>
-                                  )}
-                                  {isCutRight && <span>▶</span>}
-                                </span>
-                              </button>
-                            );
-                          })}
                         </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-
-            {/* Légende du Planning */}
-            <div className="p-4 border-t border-border bg-[#faf8f5] flex flex-wrap items-center justify-between text-xs gap-4">
-              <div className="flex flex-wrap items-center gap-5">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-full bg-emerald-500" />
-                  <span className="text-muted-foreground">Confirmée</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-full bg-blue-500" />
-                  <span className="text-muted-foreground">En cours</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-full bg-amber-400" />
-                  <span className="text-muted-foreground">En attente</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-full bg-rose-500" />
-                  <span className="text-muted-foreground">Non disponible</span>
+                      );
+                    })
+                  )}
                 </div>
               </div>
 
-              <span className="text-xs text-muted-foreground italic">
-                Cliquez sur une barre de réservation pour modifier ses dates ou libérer le matériel.
-              </span>
+              {/* Légende du Planning */}
+              <div className="p-4 border-t border-border bg-[#faf8f5] flex flex-wrap items-center justify-between text-xs gap-4">
+                <div className="flex flex-wrap items-center gap-5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full bg-emerald-500" />
+                    <span className="text-muted-foreground">Confirmée</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full bg-blue-500" />
+                    <span className="text-muted-foreground">En cours</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full bg-amber-400" />
+                    <span className="text-muted-foreground">En attente</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full bg-rose-500" />
+                    <span className="text-muted-foreground">Non disponible</span>
+                  </div>
+                </div>
+
+                <span className="text-xs text-muted-foreground italic">
+                  Cliquez sur une barre de réservation pour modifier ses dates ou libérer le matériel.
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -894,8 +1013,71 @@ export default function AdminLocationPage() {
             />
           </div>
 
-          {/* Tableau des réservations */}
-          <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
+          {/* ── Liste Mobile des Réservations (lg:hidden) ── */}
+          <div className="lg:hidden space-y-3">
+            {filteredReservations.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-border p-8 text-center text-muted-foreground text-sm">
+                Aucune réservation ne correspond aux critères sélectionnés.
+              </div>
+            ) : (
+              filteredReservations.map((res) => (
+                <div key={res.id} className="bg-white rounded-2xl border border-border p-4 shadow-xs space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <span className="font-mono font-bold text-sm text-[#173f22] block">
+                        {res.id}
+                      </span>
+                      <span className="font-semibold text-foreground text-sm">
+                        {res.clientName}
+                      </span>
+                      <span className="text-xs text-muted-foreground block">
+                        {res.clientPhone}
+                      </span>
+                    </div>
+                    <div className="shrink-0">
+                      {getStatusBadge(res.status)}
+                    </div>
+                  </div>
+
+                  <div className="bg-[#faf8f5] p-3 rounded-xl border border-border/60 text-xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Équipement</span>
+                      <span className="font-semibold text-foreground">{res.equipmentName}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Période</span>
+                      <span className="text-foreground">{res.startDate} au {res.endDate}</span>
+                    </div>
+                    <div className="flex items-center justify-between pt-1 border-t border-border/40">
+                      <div>
+                        <span className="text-muted-foreground block text-[11px]">Montant location</span>
+                        <span className="font-bold text-[#c8436e] text-sm">
+                          {res.totalRental.toLocaleString('fr-FR')} FCFA
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-muted-foreground block text-[11px]">Caution</span>
+                        <span className="text-foreground font-semibold">
+                          {res.deposit.toLocaleString('fr-FR')} FCFA
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => openReservationDetails(res.id)}
+                    className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-border text-xs font-semibold text-[#173f22] bg-white hover:bg-muted/60 transition-all cursor-pointer shadow-2xs"
+                  >
+                    Détails &amp; Suivi de réservation
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Tableau des réservations Desktop (hidden lg:block) */}
+          <div className="hidden lg:block bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="bg-[#faf8f5] text-xs font-semibold text-[#526655] border-b border-border">

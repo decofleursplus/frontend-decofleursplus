@@ -7,8 +7,10 @@ import {
   ClipboardList,
   ShoppingBag,
   Truck,
+  Menu,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
 
 const directTabs = [
   {
@@ -35,6 +37,7 @@ const directTabs = [
 
 export function AdminMobileTabBar() {
   const pathname = usePathname();
+  const { isMobileDrawerOpen, toggleMobileDrawer } = useAdminSidebar();
 
   return (
     <nav
@@ -65,6 +68,28 @@ export function AdminMobileTabBar() {
             </Link>
           );
         })}
+
+        {/* 5ème Onglet : Menu Complet du Back-office */}
+        <button
+          type="button"
+          id="admin-bottom-menu-trigger"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleMobileDrawer();
+          }}
+          aria-expanded={isMobileDrawerOpen}
+          aria-label="Ouvrir le menu complet du back-office"
+          className={cn(
+            'admin-mobile-tab-item touch-manipulation cursor-pointer',
+            isMobileDrawerOpen && 'active'
+          )}
+        >
+          <span className="admin-mobile-tab-icon-wrap">
+            <Menu size={20} strokeWidth={isMobileDrawerOpen ? 2.4 : 1.9} className="pointer-events-none" />
+          </span>
+          <span className="admin-mobile-tab-label">Menu</span>
+        </button>
       </div>
     </nav>
   );

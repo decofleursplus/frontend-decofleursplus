@@ -122,10 +122,10 @@ export default function AdminApprovisionnementsPage() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 w-full sm:w-auto">
           <Link
             href="/admin/approvisionnements/factures"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-white hover:bg-muted text-gray-800 text-xs sm:text-sm font-semibold shadow-2xs transition-colors"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-white hover:bg-muted text-gray-800 text-xs sm:text-sm font-semibold shadow-2xs transition-colors w-full sm:w-auto"
             title="Consulter le grand livre des factures fournisseurs"
           >
             <ReceiptText size={17} className="text-[#173f22]" />
@@ -137,7 +137,7 @@ export default function AdminApprovisionnementsPage() {
           <button
             type="button"
             onClick={() => setIsNewOrderModalOpen(true)}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-xs sm:text-sm font-semibold shadow-sm transition-colors w-fit cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-xs sm:text-sm font-semibold shadow-sm transition-colors w-full sm:w-auto cursor-pointer"
           >
             <Plus size={18} /> Nouvelle commande
           </button>
@@ -145,13 +145,13 @@ export default function AdminApprovisionnementsPage() {
       </div>
 
       {/* ── Sous-navigation du Module Approvisionnements ── */}
-      <div className="flex items-center gap-2 border-b border-border pb-3">
-        <span className="px-4 py-2 rounded-lg text-sm font-semibold bg-[#193e23] text-white shadow-xs">
+      <div className="flex items-center gap-2 border-b border-border pb-3 overflow-x-auto no-scrollbar">
+        <span className="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-[#193e23] text-white shadow-xs shrink-0">
           Bons de commande ({orders.length})
         </span>
         <Link
           href="/admin/approvisionnements/factures"
-          className="px-4 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex items-center gap-2"
+          className="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex items-center gap-2 shrink-0"
         >
           <ReceiptText size={16} />
           Factures fournisseurs (4)
@@ -217,15 +217,15 @@ export default function AdminApprovisionnementsPage() {
       </div>
 
       {/* ── Recherche & Filtres Déroulants (Maquette Écran 8) ── */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white p-3.5 rounded-2xl border border-border shadow-xs">
-        <div className="flex items-center gap-3 flex-1">
-          <Search size={18} className="text-muted-foreground shrink-0" />
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-border shadow-xs">
+        <div className="flex items-center gap-3 flex-1 bg-muted/30 px-3 py-2 rounded-xl border border-border">
+          <Search size={16} className="text-muted-foreground shrink-0" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Rechercher une commande..."
-            className="w-full text-sm bg-transparent outline-none placeholder:text-muted-foreground"
+            className="w-full text-xs sm:text-sm bg-transparent outline-none placeholder:text-muted-foreground"
           />
         </div>
 
@@ -233,7 +233,7 @@ export default function AdminApprovisionnementsPage() {
           <select
             value={supplierFilter}
             onChange={(e) => setSupplierFilter(e.target.value)}
-            className="px-3 py-2 rounded-xl bg-muted/40 border border-border text-xs font-medium outline-none"
+            className="w-full sm:w-auto px-3 py-2 rounded-xl bg-muted/40 border border-border text-xs font-medium outline-none cursor-pointer"
           >
             <option value="all">Tous les fournisseurs</option>
             {initialSuppliers.map((s) => (
@@ -243,8 +243,61 @@ export default function AdminApprovisionnementsPage() {
         </div>
       </div>
 
-      {/* ── Tableau des Commandes (Maquette Écran 8) ── */}
-      <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
+      {/* ── Liste Mobile des Commandes (visible sur < lg) ── */}
+      <div className="lg:hidden space-y-3">
+        {filteredOrders.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-border p-8 text-center text-muted-foreground text-xs">
+            Aucune commande ne correspond aux filtres sélectionnés.
+          </div>
+        ) : (
+          filteredOrders.map((order) => (
+            <div
+              key={order.id}
+              className="bg-white rounded-2xl border border-border p-4 shadow-2xs space-y-3"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <Link
+                  href={`/admin/approvisionnements/reception/${order.id}`}
+                  className="font-mono font-bold text-sm text-[#173f22] hover:text-[#c8436e] flex items-center gap-1.5"
+                >
+                  <Boxes size={15} className="text-[#c8436e]" />
+                  <span>{order.id}</span>
+                </Link>
+                {getStatusBadge(order.status)}
+              </div>
+
+              <div className="text-xs bg-[#faf8f5] p-3 rounded-xl border border-border/80 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Fournisseur :</span>
+                  <span className="font-semibold text-foreground">{order.supplierName}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Date :</span>
+                  <span className="text-foreground">{order.date}</span>
+                </div>
+                <div className="flex items-center justify-between pt-1 border-t border-border/60">
+                  <span className="text-muted-foreground">Montant total :</span>
+                  <span className="font-extrabold text-sm text-[#c8436e]">
+                    {order.total.toLocaleString('fr-FR')} FCFA
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end pt-2 border-t border-border">
+                <Link
+                  href={`/admin/approvisionnements/reception/${order.id}`}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#edf8ef] hover:bg-[#d8eedb] text-[#193e23] font-semibold text-xs transition-colors"
+                >
+                  <Eye size={14} /> Vérifier la réception
+                </Link>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* ── Tableau des Commandes Desktop (visible sur >= lg) ── */}
+      <div className="hidden lg:block bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-[#faf8f5] text-xs font-semibold text-[#526655] border-b border-border">
@@ -305,7 +358,7 @@ export default function AdminApprovisionnementsPage() {
         onClose={() => setIsNewOrderModalOpen(false)}
         title="Créer une commande d'approvisionnement"
         subtitle="Générez un bon de commande fournisseur officiel."
-        maxWidthClass="max-w-2xl"
+        size="lg"
         footer={
           <div className="flex justify-end gap-2.5 w-full">
             <button

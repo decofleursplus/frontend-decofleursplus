@@ -99,13 +99,13 @@ export function AdminDrawer({
         <div className="px-5 py-4 sm:px-6 sm:py-4.5 border-b border-border flex items-center justify-between bg-white shrink-0 z-10 shadow-2xs">
           <div className="flex items-center gap-3 min-w-0 pr-2">
             {icon && (
-              <div className="p-2 rounded-xl bg-forest-green/10 text-forest-green shrink-0">
+              <div className="p-2 rounded-xl bg-[#173f22]/10 text-[#173f22] shrink-0">
                 {icon}
               </div>
             )}
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-base sm:text-lg font-serif font-bold text-forest-green truncate">
+                <h2 className="text-base sm:text-lg font-serif font-bold text-[#173f22] truncate">
                   {title}
                 </h2>
                 {headerExtra}
@@ -133,9 +133,9 @@ export function AdminDrawer({
           {children}
         </div>
 
-        {/* Pied de page sticky en bas */}
+        {/* Pied de page sticky en bas avec safe-area mobile */}
         {footer && (
-          <div className="px-5 py-3.5 sm:px-6 sm:py-4 border-t border-border bg-[#faf8f5] flex items-center justify-end gap-3 shrink-0 z-10 shadow-2xs">
+          <div className="px-5 py-3.5 sm:px-6 sm:py-4 pb-[max(14px,env(safe-area-inset-bottom))] border-t border-border bg-[#faf8f5] flex items-center justify-end gap-3 shrink-0 z-10 shadow-2xs">
             {footer}
           </div>
         )}

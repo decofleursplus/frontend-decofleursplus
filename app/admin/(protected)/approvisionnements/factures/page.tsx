@@ -182,22 +182,22 @@ export default function AdminFacturesPage() {
         <button
           type="button"
           onClick={() => setIsAddDrawerOpen(true)}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-sm font-semibold shadow-sm transition-colors w-fit cursor-pointer"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-sm font-semibold shadow-sm transition-colors w-full sm:w-auto cursor-pointer"
         >
           <Plus size={18} /> Ajouter une facture
         </button>
       </div>
 
       {/* ── Sous-navigation du Module Approvisionnements ── */}
-      <div className="flex items-center gap-2 border-b border-border pb-3">
+      <div className="flex items-center gap-2 border-b border-border pb-3 overflow-x-auto scrollbar-none">
         <Link
           href="/admin/approvisionnements"
-          className="px-4 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex items-center gap-2"
+          className="px-4 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex items-center gap-2 shrink-0"
         >
           <ShoppingBag size={16} />
           Bons de commande
         </Link>
-        <span className="px-4 py-2 rounded-lg text-sm font-semibold bg-[#193e23] text-white shadow-xs flex items-center gap-2">
+        <span className="px-4 py-2 rounded-lg text-sm font-semibold bg-[#193e23] text-white shadow-xs flex items-center gap-2 shrink-0">
           <Receipt size={16} />
           Factures fournisseurs ({invoices.length})
         </span>
@@ -269,7 +269,7 @@ export default function AdminFacturesPage() {
           <select
             value={supplierFilter}
             onChange={(e) => setSupplierFilter(e.target.value)}
-            className="px-3 py-2 rounded-xl bg-muted/40 border border-border text-xs font-medium outline-none cursor-pointer"
+            className="w-full sm:w-auto px-3 py-2 rounded-xl bg-muted/40 border border-border text-xs font-medium outline-none cursor-pointer"
           >
             <option value="all">Tous les fournisseurs</option>
             {initialSuppliers.map((s) => (
@@ -281,8 +281,60 @@ export default function AdminFacturesPage() {
         </div>
       </div>
 
-      {/* ── Tableau des Factures (Maquette Écran 10) ── */}
-      <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
+      {/* ── Liste Mobile (lg:hidden) ── */}
+      <div className="lg:hidden space-y-3">
+        {filteredInvoices.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-border p-8 text-center text-muted-foreground text-sm">
+            Aucune facture ne correspond aux critères sélectionnés.
+          </div>
+        ) : (
+          filteredInvoices.map((inv) => (
+            <div key={inv.id} className="bg-white rounded-2xl border border-border p-4 shadow-xs space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <span className="font-mono font-bold text-sm text-[#173f22] block">
+                    {inv.id}
+                  </span>
+                  <span className="font-semibold text-foreground text-xs">
+                    {inv.supplierName}
+                  </span>
+                </div>
+                <div className="shrink-0">
+                  {getStatusBadge(inv.status)}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 bg-[#faf8f5] p-3 rounded-xl border border-border/60 text-xs">
+                <div>
+                  <span className="text-muted-foreground block text-[11px]">Émission</span>
+                  <span className="text-foreground font-medium">{inv.date}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block text-[11px]">Échéance</span>
+                  <span className="text-foreground font-medium">{inv.dueDate}</span>
+                </div>
+                <div className="col-span-2 pt-2 border-t border-border/40 flex items-center justify-between">
+                  <span className="text-muted-foreground text-[11px]">Montant TTC</span>
+                  <span className="font-bold text-[#c8436e] text-sm">
+                    {inv.amount.toLocaleString('fr-FR')} FCFA
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleOpenDetails(inv)}
+                className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl border border-border text-xs font-semibold text-[#173f22] bg-white hover:bg-muted/60 transition-all cursor-pointer shadow-2xs"
+              >
+                <Eye size={14} /> Consulter la facture & détails
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* ── Tableau des Factures Desktop (hidden lg:block) ── */}
+      <div className="hidden lg:block bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-[#faf8f5] text-xs font-semibold text-[#526655] border-b border-border">
@@ -504,7 +556,7 @@ export default function AdminFacturesPage() {
               <button
                 type="submit"
                 form="invoice-details-form"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-forest-green hover:bg-[#13321c] text-white text-xs font-semibold shadow-sm transition-colors cursor-pointer"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#173f22] hover:bg-[#102d18] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
               >
                 <Save size={16} /> Enregistrer les modifications
               </button>

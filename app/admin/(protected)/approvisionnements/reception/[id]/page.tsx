@@ -118,8 +118,63 @@ export default function AdminReceptionPage({ params }: { params: Promise<{ id: s
         </div>
       )}
 
-      {/* ── Tableau de Réception (Maquette Écran 9) ── */}
-      <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
+      {/* ── Liste Mobile (lg:hidden) ── */}
+      <div className="lg:hidden space-y-3">
+        {items.map((item) => (
+          <div key={item.id} className="bg-white rounded-2xl border border-border p-4 shadow-xs space-y-3">
+            <div className="flex items-start justify-between gap-2">
+              <span className="font-bold text-foreground text-sm leading-snug">
+                {item.name}
+              </span>
+              {item.status === 'complete' ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 shrink-0">
+                  <CheckCircle2 size={12} /> Complète
+                </span>
+              ) : item.status === 'partielle' ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 shrink-0">
+                  <AlertTriangle size={12} /> Partielle
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-yellow-100 text-yellow-800 shrink-0">
+                  <Clock size={12} /> En attente
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 bg-[#faf8f5] p-3 rounded-xl border border-border/60 text-xs">
+              <div>
+                <span className="text-muted-foreground block text-[11px]">Qté commandée</span>
+                <span className="font-mono font-bold text-foreground">{item.orderedQty}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block text-[11px]">Prix achat</span>
+                <span className="font-mono font-bold text-muted-foreground">{item.unitPrice.toLocaleString('fr-FR')} FCFA</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 pt-1 border-t border-dashed border-border/80">
+              <label className="text-xs font-semibold text-[#173f22] flex items-center gap-1.5">
+                <Pencil size={12} className="text-[#c8436e]" />
+                Qté reçue :
+              </label>
+              <div className="relative inline-flex items-center">
+                <input
+                  type="number"
+                  min={0}
+                  value={item.receivedQty}
+                  onChange={(e) => handleQtyChange(item.id, Number(e.target.value))}
+                  className="w-28 pl-3 pr-8 py-2 rounded-xl border border-[#c4d6c7] bg-white text-center font-bold text-sm outline-none focus:ring-2 focus:ring-[#193e23]/20 focus:border-[#193e23] shadow-2xs transition-all"
+                  title="Modifier la quantité reçue"
+                />
+                <Pencil size={12} className="absolute right-2.5 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Tableau de Réception Desktop (hidden lg:block) ── */}
+      <div className="hidden lg:block bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-[#faf8f5] text-xs font-semibold text-[#526655] border-b border-border">
@@ -181,23 +236,23 @@ export default function AdminReceptionPage({ params }: { params: Promise<{ id: s
             </tbody>
           </table>
         </div>
+      </div>
 
-        {/* ── Boutons d'Action (Maquette Écran 9) ── */}
-        <div className="p-5 border-t border-border bg-[#faf8f5] flex items-center justify-between gap-4">
-          <Link
-            href="/admin/approvisionnements"
-            className="px-5 py-2.5 rounded-xl border border-border bg-white text-xs font-semibold hover:bg-muted transition-colors"
-          >
-            Retour aux commandes
-          </Link>
-          <button
-            type="button"
-            onClick={handleSaveReception}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-xs font-bold shadow-sm transition-colors active:scale-95"
-          >
-            <Save size={16} /> Enregistrer la réception
-          </button>
-        </div>
+      {/* ── Boutons d'Action (Responsive) ── */}
+      <div className="p-4 sm:p-5 rounded-2xl border border-border bg-white shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <Link
+          href="/admin/approvisionnements"
+          className="px-5 py-2.5 rounded-xl border border-border bg-white text-xs font-semibold hover:bg-muted transition-colors text-center"
+        >
+          Retour aux commandes
+        </Link>
+        <button
+          type="button"
+          onClick={handleSaveReception}
+          className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-xs font-bold shadow-sm transition-colors active:scale-95"
+        >
+          <Save size={16} /> Enregistrer la réception
+        </button>
       </div>
     </div>
   );

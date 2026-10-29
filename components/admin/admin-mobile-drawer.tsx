@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -57,6 +58,21 @@ export function AdminMobileDrawer() {
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
   const [isStandalone, setIsStandalone] = useState(false);
   const [isIosSafari, setIsIosSafari] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Fermer le drawer avec la touche Echap
+  useEffect(() => {
+    if (!isMobileDrawerOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeMobileDrawer();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileDrawerOpen, closeMobileDrawer]);
 
   // Écoute de l'événement PWA installable
   useEffect(() => {
@@ -123,11 +139,11 @@ export function AdminMobileDrawer() {
     }
   };
 
-  if (!isMobileDrawerOpen) return null;
+  if (!mounted || !isMobileDrawerOpen) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 lg:hidden flex"
+      className="fixed inset-0 z-[80] lg:hidden flex"
       role="dialog"
       aria-modal="true"
       aria-label="Menu de navigation du back-office"
@@ -299,6 +315,7 @@ export function AdminMobileDrawer() {
           </form>
         </div>
       </aside>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -182,13 +182,17 @@ export function SiteHeader() {
         {/* Mobile menu button */}
         <button
           ref={menuTriggerRef}
-          className="mobile-menu-trigger"
-          onClick={() => setMobileMenuOpen(true)}
+          className="mobile-menu-trigger touch-manipulation cursor-pointer"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setMobileMenuOpen(true);
+          }}
           aria-label="Ouvrir le menu"
           aria-expanded={mobileMenuOpen}
           aria-controls="mobile-navigation-drawer"
         >
-          <Menu size={24} />
+          <Menu size={24} className="pointer-events-none" />
         </button>
 
         {/* Brand Logo matching client mockup */}

@@ -98,22 +98,22 @@ export default function AdminFournisseursPage() {
         <button
           type="button"
           onClick={() => setIsAddModalOpen(true)}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-sm font-semibold shadow-sm transition-colors w-fit"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-sm font-semibold shadow-sm transition-colors w-full sm:w-fit cursor-pointer"
         >
           <Plus size={18} /> Ajouter un fournisseur
         </button>
       </div>
 
       {/* ── Recherche & Filtres (Maquette Écran 6) ── */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white p-3.5 rounded-2xl border border-border shadow-xs">
-        <div className="flex items-center gap-3 flex-1">
-          <Search size={18} className="text-muted-foreground shrink-0" />
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-border shadow-xs">
+        <div className="flex items-center gap-3 flex-1 bg-muted/30 px-3 py-2 rounded-xl border border-border">
+          <Search size={16} className="text-muted-foreground shrink-0" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Rechercher un fournisseur..."
-            className="w-full text-sm bg-transparent outline-none placeholder:text-muted-foreground"
+            className="w-full text-xs sm:text-sm bg-transparent outline-none placeholder:text-muted-foreground"
           />
         </div>
 
@@ -121,7 +121,7 @@ export default function AdminFournisseursPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as 'all' | SupplierStatus)}
-            className="px-3 py-2 rounded-xl bg-muted/40 border border-border text-xs font-medium outline-none"
+            className="w-full sm:w-auto px-3 py-2 rounded-xl bg-muted/40 border border-border text-xs font-medium outline-none cursor-pointer"
           >
             <option value="all">Tous les statuts</option>
             <option value="actif">Actif</option>
@@ -130,8 +130,112 @@ export default function AdminFournisseursPage() {
         </div>
       </div>
 
-      {/* ── Tableau des Fournisseurs (Maquette Écran 6) ── */}
-      <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
+      {/* ── Liste Mobile (visible sur < lg) ── */}
+      <div className="lg:hidden space-y-3">
+        {filteredSuppliers.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-border p-8 text-center text-muted-foreground text-xs">
+            Aucun fournisseur ne correspond à vos filtres.
+          </div>
+        ) : (
+          filteredSuppliers.map((sup) => (
+            <div
+              key={sup.id}
+              className="bg-white rounded-2xl border border-border p-4 shadow-2xs space-y-3"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <Link
+                  href={`/admin/fournisseurs/${sup.id}`}
+                  className="flex items-center gap-2.5 font-bold text-sm text-[#173f22] hover:text-[#c8436e] transition-colors"
+                >
+                  <div className="w-9 h-9 rounded-xl bg-[#edf8ef] text-[#193e23] flex items-center justify-center font-bold text-xs shrink-0">
+                    {sup.name.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <span className="block leading-snug">{sup.name}</span>
+                    <span className="text-[11px] font-normal text-muted-foreground">Réf : {sup.id}</span>
+                  </div>
+                </Link>
+
+                {sup.status === 'actif' ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                    <CheckCircle2 size={11} /> Actif
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-red-50 text-red-600 border border-red-200 shrink-0">
+                    <XCircle size={11} /> Inactif
+                  </span>
+                )}
+              </div>
+
+              <div className="text-xs bg-[#faf8f5] p-3 rounded-xl border border-border/80 space-y-1.5">
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span>Contact :</span>
+                  <span className="font-semibold text-foreground">{sup.contactPerson}</span>
+                </div>
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span>Téléphone :</span>
+                  <a href={`tel:${sup.phone}`} className="font-medium text-[#193e23] hover:underline flex items-center gap-1">
+                    <Phone size={11} /> {sup.phone}
+                  </a>
+                </div>
+                {sup.email && (
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span>Email :</span>
+                    <span className="font-medium text-foreground truncate max-w-[200px]">{sup.email}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-1">
+                {sup.categories.map((cat, idx) => (
+                  <span
+                    key={idx}
+                    className="px-2 py-0.5 rounded-md bg-muted/40 border border-border text-[10.5px] text-[#4b5e4f]"
+                  >
+                    {cat}
+                  </span>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-border gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextStatus: SupplierStatus = sup.status === 'actif' ? 'inactif' : 'actif';
+                    const updated = suppliers.map((s) =>
+                      s.id === sup.id ? { ...s, status: nextStatus } : s
+                    );
+                    setSuppliers(updated);
+                    if (nextStatus === 'actif') {
+                      toast.success(`Fournisseur « ${sup.name} » activé.`);
+                    } else {
+                      toast.info(`Fournisseur « ${sup.name} » désactivé.`);
+                    }
+                  }}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                    sup.status === 'actif'
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                      : 'border-border bg-gray-50 text-gray-500 hover:bg-gray-100'
+                  }`}
+                >
+                  {sup.status === 'actif' ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
+                  <span>{sup.status === 'actif' ? 'Désactiver' : 'Activer'}</span>
+                </button>
+
+                <Link
+                  href={`/admin/fournisseurs/${sup.id}`}
+                  className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-[#193e23] hover:bg-[#14321c] text-white text-xs font-semibold transition-colors"
+                >
+                  <Eye size={13} /> Fiche
+                </Link>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* ── Tableau des Fournisseurs Desktop (visible sur >= lg) ── */}
+      <div className="hidden lg:block bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-[#faf8f5] text-xs font-semibold text-[#526655] border-b border-border">
@@ -190,7 +294,7 @@ export default function AdminFournisseursPage() {
                     <div className="flex items-center justify-end gap-1.5">
                       <Link
                         href={`/admin/fournisseurs/${sup.id}`}
-                        className="p-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground transition-colors"
+                        className="p-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground transition-colors cursor-pointer"
                         title="Consulter la fiche détaillée"
                       >
                         <Eye size={15} />
@@ -209,7 +313,7 @@ export default function AdminFournisseursPage() {
                             toast.info(`Fournisseur « ${sup.name} » désactivé.`);
                           }
                         }}
-                        className={`p-1.5 rounded-lg border transition-all ${
+                        className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
                           sup.status === 'actif'
                             ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300'
                             : 'border-border bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-700'

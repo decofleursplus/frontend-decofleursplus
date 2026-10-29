@@ -227,7 +227,7 @@ export default function AdminPaysagismePage() {
               handleOpenProjectDrawer();
             }
           }}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-sm font-semibold shadow-sm transition-colors w-fit"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-sm font-semibold shadow-sm transition-colors w-full sm:w-auto"
         >
           <Plus size={18} />
           {activeTab === 'prestations' ? 'Ajouter une prestation' : 'Ajouter une réalisation'}
@@ -235,11 +235,11 @@ export default function AdminPaysagismePage() {
       </div>
 
       {/* ── Onglets de Navigation ── */}
-      <div className="flex items-center gap-2 border-b border-border pb-3">
+      <div className="flex items-center gap-2 border-b border-border pb-3 overflow-x-auto scrollbar-none">
         <button
           type="button"
           onClick={() => setActiveTab('prestations')}
-          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all shrink-0 ${
             activeTab === 'prestations'
               ? 'bg-[#193e23] text-white shadow-sm'
               : 'text-muted-foreground hover:text-foreground hover:bg-muted'
@@ -250,7 +250,7 @@ export default function AdminPaysagismePage() {
         <button
           type="button"
           onClick={() => setActiveTab('realisations')}
-          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all shrink-0 ${
             activeTab === 'realisations'
               ? 'bg-[#193e23] text-white shadow-sm'
               : 'text-muted-foreground hover:text-foreground hover:bg-muted'
@@ -438,7 +438,7 @@ export default function AdminPaysagismePage() {
             <button
               type="submit"
               form="prestation-form"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-forest-green hover:bg-[#13321c] text-white text-xs font-semibold shadow-sm transition-colors cursor-pointer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#173f22] hover:bg-[#102d18] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
             >
               <Save size={16} />
               {editingPrestationId ? 'Enregistrer les modifications' : 'Créer la prestation'}
@@ -559,7 +559,7 @@ export default function AdminPaysagismePage() {
             <button
               type="submit"
               form="project-form"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-forest-green hover:bg-[#13321c] text-white text-xs font-semibold shadow-sm transition-colors cursor-pointer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#173f22] hover:bg-[#102d18] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
             >
               <Save size={16} />
               {editingProjectId ? 'Enregistrer les modifications' : 'Ajouter au portfolio'}

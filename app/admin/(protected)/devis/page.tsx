@@ -188,8 +188,65 @@ export default function AdminDevisPage() {
         />
       </div>
 
-      {/* ── Tableau des Devis ── */}
-      <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
+      {/* ── Liste Mobile des Devis (lg:hidden) ── */}
+      <div className="lg:hidden space-y-3">
+        {filteredQuotes.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-border p-8 text-center text-muted-foreground text-sm">
+            Aucune demande de devis ne correspond aux critères sélectionnés.
+          </div>
+        ) : (
+          filteredQuotes.map((quote) => (
+            <div key={quote.id} className="bg-white rounded-2xl border border-border p-4 shadow-xs space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <span className="font-mono font-bold text-sm text-[#173f22] block">
+                    {quote.id}
+                  </span>
+                  <span className="font-semibold text-foreground text-sm">
+                    {quote.clientName}
+                  </span>
+                  <span className="text-xs text-muted-foreground block">
+                    {quote.clientPhone}
+                  </span>
+                </div>
+                <div className="shrink-0">
+                  {getStatusBadge(quote.status)}
+                </div>
+              </div>
+
+              <div className="bg-[#faf8f5] p-3 rounded-xl border border-border/60 text-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Prestation</span>
+                  <span className="font-semibold text-foreground">{quote.prestationType}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Espace</span>
+                  <span className="text-foreground">{quote.spaceType} ({quote.surfaceArea} m²)</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Lieu</span>
+                  <span className="text-foreground">{quote.location}</span>
+                </div>
+                <div className="flex items-center justify-between pt-1 border-t border-border/40 text-[11px]">
+                  <span className="text-muted-foreground">Date de demande</span>
+                  <span className="text-muted-foreground">{quote.createdAt}</span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => openQuoteDetail(quote)}
+                className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#edf8ef] hover:bg-[#d8eedb] text-[#193e23] font-semibold text-xs transition-colors shadow-2xs"
+              >
+                <Eye size={14} /> Traiter la demande de devis
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* ── Tableau des Devis Desktop (hidden lg:block) ── */}
+      <div className="hidden lg:block bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-[#faf8f5] text-xs font-semibold text-[#526655] border-b border-border">
@@ -362,7 +419,80 @@ export default function AdminDevisPage() {
                 </button>
               </div>
 
-              <div className="border border-border rounded-xl overflow-hidden">
+              {/* ── Version Mobile : Cartes empilées (sm:hidden) ── */}
+              <div className="sm:hidden space-y-3">
+                {quoteItems.map((item, idx) => (
+                  <div key={idx} className="p-3 rounded-xl border border-border bg-[#faf8f5] space-y-2.5">
+                    <div>
+                      <label className="text-[11px] font-semibold text-muted-foreground block mb-1">Désignation</label>
+                      <input
+                        type="text"
+                        value={item.description}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setQuoteItems((prev) =>
+                            prev.map((it, i) => (i === idx ? { ...it, description: val } : it))
+                          );
+                        }}
+                        placeholder="Description de la prestation..."
+                        className="w-full p-2 rounded-lg border border-border bg-white outline-none text-xs focus:ring-1 focus:ring-forest-green"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[11px] font-semibold text-muted-foreground block mb-1">Quantité</label>
+                        <input
+                          type="number"
+                          value={item.qty}
+                          onChange={(e) => {
+                            const val = Number(e.target.value) || 1;
+                            setQuoteItems((prev) =>
+                              prev.map((it, i) => (i === idx ? { ...it, qty: val, total: val * it.unitPrice } : it))
+                            );
+                          }}
+                          className="w-full p-2 rounded-lg border border-border bg-white text-center outline-none text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-semibold text-muted-foreground block mb-1">Prix unit. (FCFA)</label>
+                        <input
+                          type="number"
+                          value={item.unitPrice}
+                          onChange={(e) => {
+                            const val = Number(e.target.value) || 0;
+                            setQuoteItems((prev) =>
+                              prev.map((it, i) => (i === idx ? { ...it, unitPrice: val, total: it.qty * val } : it))
+                            );
+                          }}
+                          className="w-full p-2 rounded-lg border border-border bg-white text-right outline-none text-xs"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between pt-2 border-t border-border/60">
+                      <span className="text-xs font-bold text-[#c8436e]">
+                        Total : {item.total.toLocaleString('fr-FR')} FCFA
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeQuoteItem(idx)}
+                        className="text-red-500 hover:text-red-700 p-1.5 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-1 text-xs cursor-pointer"
+                      >
+                        <Trash2 size={13} /> Supprimer
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                <div className="p-3.5 rounded-xl bg-[#faf8f5] border border-border flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#173f22]">Total Estimé :</span>
+                  <span className="text-sm font-extrabold text-[#c8436e]">
+                    {totalQuoteAmount.toLocaleString('fr-FR')} FCFA
+                  </span>
+                </div>
+              </div>
+
+              {/* ── Version Desktop : Tableau (hidden sm:block) ── */}
+              <div className="hidden sm:block border border-border rounded-xl overflow-hidden">
                 <table className="w-full text-xs">
                   <thead className="bg-[#faf8f5] text-muted-foreground">
                     <tr>
