@@ -9,6 +9,7 @@
     "test:qa:e2e": "playwright test tests/e2e",
     "test:qa:live": "playwright test tests/e2e/live-showcase.spec.ts --headed",
     "test:qa:all-visual": "playwright test tests/e2e/all-journeys-visual.spec.ts --headed",
+    "test:qa:interactive": "playwright test tests/e2e/all-actions-interactive.spec.ts --headed",
     "test:qa:ui": "playwright test --ui",
     "test:qa:report": "playwright show-report",
     "dev": "next dev",

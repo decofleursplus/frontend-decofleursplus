@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help dev build start lint typecheck health test test-api test-e2e test-live test-all-visual test-ui test-report clean install
+.PHONY: help dev build start lint typecheck health test test-api test-e2e test-live test-all-visual test-interactive test-ui test-report clean install
 
 # ==============================================================================
 # 🌸 DécoFleur Plus — Commandes Utiles & Suite de Tests QA
@@ -57,6 +57,9 @@ test-live: ## Ouvre le navigateur Chromium visible et anime le parcours vitrine
 
 test-all-visual: ## 🎬 Lance le GRAND TEST VISUEL de TOUS les parcours (Vitrine, Espace Client & Back-Office)
 	pnpm exec playwright test tests/e2e/all-journeys-visual.spec.ts --headed
+
+test-interactive: ## 🚀 Test interactif complet (Créations, Clics, Stepper +/-, Suppressions, Modales en direct à l'écran)
+	pnpm exec playwright test tests/e2e/all-actions-interactive.spec.ts --headed
 
 test-ui: ## Ouvre l'interface interactive graphique Playwright (Timeline, DOM, Rejeu)
 	pnpm exec playwright test --ui

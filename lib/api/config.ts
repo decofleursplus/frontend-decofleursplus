@@ -3,8 +3,11 @@
  */
 
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  'https://backend-decofleursplus-staging.up.railway.app/api/v1';
+  typeof window !== 'undefined'
+    ? '/api/v1'
+    : (process.env.INTERNAL_API_URL ||
+       process.env.NEXT_PUBLIC_API_URL ||
+       'https://backend-decofleursplus-staging.up.railway.app/api/v1');
 
 export const AUTH_TOKEN_KEY = 'decofleur_jwt';
 export const ADMIN_TOKEN_KEY = 'decofleur_admin_jwt';
