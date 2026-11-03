@@ -1,0 +1,873 @@
+{
+  "config": {
+    "argv": [
+      "/home/supermass/.nvm/versions/node/v23.1.0/bin/node",
+      "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/node_modules/@playwright/test/cli.js",
+      "test",
+      "tests/e2e/all-journeys-visual.spec.ts",
+      "--headed"
+    ],
+    "configFile": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/playwright.config.ts",
+    "rootDir": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "api-tests",
+        "name": "api-tests",
+        "testDir": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "/tests\\/api\\/.*\\.spec\\.ts/"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "e2e-browser",
+        "name": "e2e-browser",
+        "testDir": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "/tests\\/e2e\\/.*\\.spec\\.ts/"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "filteredProjects": [
+      {
+        "grep": {},
+        "grepInvert": null,
+        "outputDir": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "name": "api-tests",
+        "testDir": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests",
+        "snapshotDir": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests",
+        "testIgnore": [],
+        "testMatch": {},
+        "timeout": 60000,
+        "use": {
+          "baseURL": "http://localhost:3000",
+          "trace": "retain-on-failure",
+          "screenshot": "only-on-failure",
+          "video": "retain-on-failure",
+          "extraHTTPHeaders": {
+            "Accept": "application/json"
+          },
+          "headless": false
+        },
+        "dependencies": [],
+        "ignoreSnapshots": false,
+        "__projectId": "api-tests"
+      },
+      {
+        "grep": {},
+        "grepInvert": null,
+        "outputDir": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "name": "e2e-browser",
+        "testDir": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests",
+        "snapshotDir": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests",
+        "testIgnore": [],
+        "testMatch": {},
+        "timeout": 60000,
+        "use": {
+          "baseURL": "http://localhost:3000",
+          "trace": "retain-on-failure",
+          "screenshot": "only-on-failure",
+          "video": "retain-on-failure",
+          "extraHTTPHeaders": {
+            "Accept": "application/json"
+          },
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36",
+          "viewport": {
+            "width": 1280,
+            "height": 720
+          },
+          "screen": {
+            "width": 1920,
+            "height": 1080
+          },
+          "deviceScaleFactor": 1,
+          "isMobile": false,
+          "hasTouch": false,
+          "defaultBrowserType": "chromium",
+          "headless": false
+        },
+        "dependencies": [],
+        "ignoreSnapshots": false,
+        "__projectId": "e2e-browser"
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "html",
+        {
+          "outputFolder": "playwright-report",
+          "open": "never"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/qa-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "default",
+    "updateSourceMethod": "patch",
+    "version": "1.64.1",
+    "workers": 1,
+    "webServer": {
+      "command": "pnpm run dev",
+      "url": "http://localhost:3000",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "e2e/all-journeys-visual.spec.ts",
+      "file": "e2e/all-journeys-visual.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "🌺 GRAND TEST VISUEL DÉCOFLEUR PLUS — TOUS LES PARCOURS EN DIRECT",
+          "file": "e2e/all-journeys-visual.spec.ts",
+          "line": 12,
+          "column": 15,
+          "specs": [
+            {
+              "title": "01. Vitrine : Exploration Accueil, Hero & Bouquets Vedettes",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-journeys-visual.spec.ts",
+                        "line": 12,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e-browser",
+                  "projectName": "e2e-browser",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8960,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🌸 --- CHAPITRE 1 : PARCOURS CLIENT PUBLIC ---\n"
+                        },
+                        {
+                          "text": "📍 1. Accueil & Découverte de la boutique...\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-03T21:51:04.198Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-journeys-visual.spec.ts",
+                            "line": 12,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "be193cda1557e92cd9b9-7c2c3a6c50e393a12275",
+              "file": "e2e/all-journeys-visual.spec.ts",
+              "line": 19,
+              "column": 7
+            },
+            {
+              "title": "02. Catalogue : Recherche, Filtres de Prix & Grille Boutique",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-journeys-visual.spec.ts",
+                        "line": 12,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e-browser",
+                  "projectName": "e2e-browser",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7583,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "📍 2. Navigation vers la Boutique & Filtres dynamiques...\n"
+                        },
+                        {
+                          "text": "   🔍 Saisie de la recherche \"Orchidée\"...\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-03T21:51:13.438Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-journeys-visual.spec.ts",
+                            "line": 12,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "be193cda1557e92cd9b9-14fdc58b37f60faea70e",
+              "file": "e2e/all-journeys-visual.spec.ts",
+              "line": 42,
+              "column": 7
+            },
+            {
+              "title": "03. Produit & Panier : Fiche détaillée, Variantes & Ajout au Panier",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-journeys-visual.spec.ts",
+                        "line": 12,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e-browser",
+                  "projectName": "e2e-browser",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 11568,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "📍 3. Consultation d une fiche produit & Ajout au Panier...\n"
+                        },
+                        {
+                          "text": "   🛒 Ajout de la composition au panier...\n"
+                        },
+                        {
+                          "text": "   🛍️ Ouverture du panier d achat...\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-03T21:51:21.039Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-journeys-visual.spec.ts",
+                            "line": 12,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "be193cda1557e92cd9b9-fb100b20bb4214e40e37",
+              "file": "e2e/all-journeys-visual.spec.ts",
+              "line": 62,
+              "column": 7
+            },
+            {
+              "title": "04. Tunnel de Commande : Coordonnées, Zones & Modes de Paiement",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-journeys-visual.spec.ts",
+                        "line": 12,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e-browser",
+                  "projectName": "e2e-browser",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5089,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "📍 4. Tunnel de commande & Calcul des frais de livraison...\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-03T21:51:32.625Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-journeys-visual.spec.ts",
+                            "line": 12,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "be193cda1557e92cd9b9-f9a92978006b1e90791f",
+              "file": "e2e/all-journeys-visual.spec.ts",
+              "line": 103,
+              "column": 7
+            },
+            {
+              "title": "05. Événementiel & Devis : Formulaire Mariage & Décoration Sur-Mesure",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-journeys-visual.spec.ts",
+                        "line": 12,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e-browser",
+                  "projectName": "e2e-browser",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5528,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "📍 5. Demande de devis événementiel sur-mesure (/devis)...\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-03T21:51:37.746Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-journeys-visual.spec.ts",
+                            "line": 12,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "be193cda1557e92cd9b9-1b344bf13ffb49d7f772",
+              "file": "e2e/all-journeys-visual.spec.ts",
+              "line": 131,
+              "column": 7
+            },
+            {
+              "title": "06. Abonnements Floraux : Formules Particulier, Prestige & Entreprise",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-journeys-visual.spec.ts",
+                        "line": 12,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e-browser",
+                  "projectName": "e2e-browser",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6064,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "📍 6. Formules d abonnements récurrents (/abonnements)...\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-03T21:51:43.295Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-journeys-visual.spec.ts",
+                            "line": 12,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "be193cda1557e92cd9b9-0abbc3bb4c4aebc56b82",
+              "file": "e2e/all-journeys-visual.spec.ts",
+              "line": 143,
+              "column": 7
+            },
+            {
+              "title": "07. Services Spécialisés : Location de Matériel & Paysagisme",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-journeys-visual.spec.ts",
+                        "line": 12,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e-browser",
+                  "projectName": "e2e-browser",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8182,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "📍 7. Découverte de la Location (/location) et du Paysagisme (/paysagisme)...\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-03T21:51:49.386Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-journeys-visual.spec.ts",
+                            "line": 12,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "be193cda1557e92cd9b9-faa2e35f6235d3c70705",
+              "file": "e2e/all-journeys-visual.spec.ts",
+              "line": 155,
+              "column": 7
+            },
+            {
+              "title": "08. Blog Floral & Conseils d Artisans",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-journeys-visual.spec.ts",
+                        "line": 12,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e-browser",
+                  "projectName": "e2e-browser",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4249,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "📍 8. Consultation du Blog floral (/blog)...\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-03T21:51:57.588Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-journeys-visual.spec.ts",
+                            "line": 12,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "be193cda1557e92cd9b9-1570ad4f7307b452c29c",
+              "file": "e2e/all-journeys-visual.spec.ts",
+              "line": 168,
+              "column": 7
+            },
+            {
+              "title": "09. Espace Client : Inscription, Connexion & Tableau de Bord",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-journeys-visual.spec.ts",
+                        "line": 12,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e-browser",
+                  "projectName": "e2e-browser",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 9163,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n👤 --- CHAPITRE 2 : ESPACE CLIENT AUTHENTIFIÉ ---\n"
+                        },
+                        {
+                          "text": "📍 9. Page de connexion client (/connexion)...\n"
+                        },
+                        {
+                          "text": "   🔑 Saisie identifiants : qa-faker-standard-mw182hob-df7e@qa-decofleur.test\n"
+                        },
+                        {
+                          "text": "   🏠 Découverte de l Espace Client (/compte)...\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-03T21:52:01.862Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-journeys-visual.spec.ts",
+                            "line": 12,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "be193cda1557e92cd9b9-fe0d39527dc58b3c820c",
+              "file": "e2e/all-journeys-visual.spec.ts",
+              "line": 181,
+              "column": 7
+            },
+            {
+              "title": "10. Compte Client : Carnet d Adresses & Préférences de Notification",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-journeys-visual.spec.ts",
+                        "line": 12,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e-browser",
+                  "projectName": "e2e-browser",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 9384,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "📍 10. Carnet d adresses & Préférences notifications...\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-03T21:52:11.045Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-journeys-visual.spec.ts",
+                            "line": 12,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "be193cda1557e92cd9b9-23a186dd3edbc5103da6",
+              "file": "e2e/all-journeys-visual.spec.ts",
+              "line": 208,
+              "column": 7
+            },
+            {
+              "title": "11. Back-Office : Sécurité Admin & Tableau de Bord Opérationnel",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-journeys-visual.spec.ts",
+                        "line": 12,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e-browser",
+                  "projectName": "e2e-browser",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 51147,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🛡️ --- CHAPITRE 3 : ESPACE ADMINISTRATION BACK-OFFICE ---\n"
+                        },
+                        {
+                          "text": "📍 11. Connexion au Back-Office & KPIs Tableau de Bord...\n"
+                        },
+                        {
+                          "text": "   📦 Back-Office : Suivi des Commandes (/admin/commandes)...\n"
+                        },
+                        {
+                          "text": "   🌹 Back-Office : Catalogue Produits & Variantes (/admin/produits)...\n"
+                        },
+                        {
+                          "text": "   🗂️ Back-Office : Catégories Florales (/admin/categories)...\n"
+                        },
+                        {
+                          "text": "   📊 Back-Office : Inventaire & Alertes de Stock (/admin/stock)...\n"
+                        },
+                        {
+                          "text": "   📑 Back-Office : Chiffrage des Devis (/admin/devis)...\n"
+                        },
+                        {
+                          "text": "   🚚 Back-Office : Logistique & Courses Livreurs (/admin/livraisons)...\n"
+                        },
+                        {
+                          "text": "   👥 Back-Office : CRM & Fiches Clients (/admin/clients)...\n"
+                        },
+                        {
+                          "text": "   🎟️ Back-Office : Campagnes & Codes Promo (/admin/marketing)...\n"
+                        },
+                        {
+                          "text": "   🌿 Back-Office : Contrats d Abonnements (/admin/abonnements)...\n"
+                        },
+                        {
+                          "text": "   📈 Back-Office : Rapports Financiers (/admin/rapports)...\n"
+                        },
+                        {
+                          "text": "   ⚙️ Back-Office : Paramètres & Équipe (/admin/parametres)...\n"
+                        },
+                        {
+                          "text": "🎉 TOUS LES PARCOURS ONT ÉTÉ VISUALISÉS ET VALIDÉS AVEC SUCCÈS !\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-03T21:52:20.452Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-journeys-visual.spec.ts",
+                            "line": 12,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "be193cda1557e92cd9b9-089c15e66f1a153b5be8",
+              "file": "e2e/all-journeys-visual.spec.ts",
+              "line": 225,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-11-03T21:50:42.902Z",
+    "duration": 148942.096,
+    "expected": 11,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}
