@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, Flower2, Sparkles, Heart } from 'lucide-react';
 import { products as allProducts, type Product } from '@/lib/products';
+import { getFeaturedProducts } from '@/lib/api/catalog';
 import { ProductGrid } from '@/components/product-grid';
 import {
   type SeasonalEvent,
@@ -17,6 +18,7 @@ export function EventFeaturedRow() {
   const [event, setEvent] = useState<SeasonalEvent>(
     initialSeasonalEvents.find((e) => e.isActive) || standardBoutiqueEvent
   );
+  const [liveFeaturedProducts, setLiveFeaturedProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     setEvent(getActiveSeasonalEvent());
@@ -28,6 +30,17 @@ export function EventFeaturedRow() {
     window.addEventListener('decofleur-event-changed', handleEventChange);
     window.addEventListener('storage', handleEventChange);
 
+    // Charger les produits vedettes réels depuis l'API
+    getFeaturedProducts(4)
+      .then((items) => {
+        if (items && items.length > 0) {
+          setLiveFeaturedProducts(items);
+        }
+      })
+      .catch(() => {
+        // Fallback discret
+      });
+
     return () => {
       window.removeEventListener('decofleur-event-changed', handleEventChange);
       window.removeEventListener('storage', handleEventChange);
@@ -37,13 +50,14 @@ export function EventFeaturedRow() {
   const isSpecialEvent = event.id !== 'standard';
 
   // Filtrer les produits mis en avant pour cet événement
+  const pool = liveFeaturedProducts.length > 0 ? liveFeaturedProducts : allProducts;
   const eventProducts: Product[] = isSpecialEvent && event.featuredProductIds?.length > 0
-    ? allProducts.filter(
+    ? pool.filter(
         (p) =>
           event.featuredProductIds.includes(p.id) ||
           event.featuredProductIds.includes(p.slug)
       )
-    : allProducts.slice(0, 4);
+    : pool.slice(0, 4);
 
   // S'assurer d'avoir au moins 4 produits pour une grille équilibrée
   const displayProducts =
@@ -51,7 +65,7 @@ export function EventFeaturedRow() {
       ? eventProducts.slice(0, 4)
       : [
           ...eventProducts,
-          ...allProducts.filter((p) => !eventProducts.some((ep) => ep.id === p.id)),
+          ...pool.filter((p) => !eventProducts.some((ep) => ep.id === p.id)),
         ].slice(0, 4);
 
   return (

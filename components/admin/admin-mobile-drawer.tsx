@@ -24,6 +24,7 @@ import {
   FileSpreadsheet,
   Armchair,
   Trees,
+  Repeat,
 } from 'lucide-react';
 import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
 import { logoutAdmin } from '@/app/admin/connexion/actions';
@@ -37,6 +38,7 @@ type InstallPromptEvent = Event & {
 
 // Seuls les modules n'apparaissant pas dans le bottom navbar (Dashboard, Commandes, Produits, Livraisons)
 const drawerMenuItems = [
+  { label: 'Abonnements', href: '/admin/abonnements', icon: Repeat },
   { label: 'Fournisseurs', href: '/admin/fournisseurs', icon: Building2 },
   { label: 'Approvisionnements', href: '/admin/approvisionnements', icon: Boxes },
   { label: 'Gestion du Stock', href: '/admin/stock', icon: Package },

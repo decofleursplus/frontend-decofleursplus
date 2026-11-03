@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { adminOrders } from '@/lib/admin/mock-data/orders';
-import type { OrderStatus } from '@/lib/admin/mock-data/types';
+import type { OrderStatus, AdminOrder } from '@/lib/admin/mock-data/types';
+import { getAdminOrders, updateAdminOrderStatus } from '@/lib/api/admin/orders';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -39,13 +40,16 @@ import {
   Check,
   ArrowUpDown,
   ShoppingBag,
+  RefreshCw,
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
 export default function AdminOrdersPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [orders, setOrders] = useState(adminOrders);
+  const [orders, setOrders] = useState<AdminOrder[]>(adminOrders);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Applied filters state
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -102,7 +106,29 @@ export default function AdminOrdersPage() {
     }).format(amount);
   };
 
-  const handleUpdateStatus = (orderId: string, newStatus: OrderStatus) => {
+  const loadOrders = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+
+    try {
+      const res = await getAdminOrders();
+      if (res?.orders) {
+        setOrders(res.orders);
+      }
+    } catch {
+      toast.error('Erreur lors du chargement des commandes');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
+
+  const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus) => {
+    const previousOrders = [...orders];
     setOrders((prev) =>
       prev.map((order) =>
         order.id === orderId ? { ...order, status: newStatus } : order
@@ -110,15 +136,23 @@ export default function AdminOrdersPage() {
     );
 
     const statusLabels: Record<string, string> = {
+      nouvelle: 'Nouvelle',
       en_preparation: 'En préparation',
       en_livraison: 'En livraison',
       livree: 'Livrée',
       annulee: 'Annulée',
+      remboursee: 'Remboursée',
     };
 
-    toast.success('Statut mis à jour', {
-      description: `La commande est maintenant "${statusLabels[newStatus] || newStatus}".`,
-    });
+    try {
+      await updateAdminOrderStatus(orderId, { status: newStatus });
+      toast.success('Statut mis à jour', {
+        description: `La commande est maintenant "${statusLabels[newStatus] || newStatus}".`,
+      });
+    } catch {
+      setOrders(previousOrders);
+      toast.error('Échec de la mise à jour du statut sur le serveur.');
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -199,12 +233,24 @@ export default function AdminOrdersPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="admin-page-header">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="admin-page-title text-[#1e2a1f] font-bold">Gestion des commandes</h1>
           <p className="admin-page-subtitle text-gray-500 mt-1">
             Suivez et traitez les commandes de vos clients.
           </p>
+        </div>
+        <div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => loadOrders(true)}
+            disabled={loading || refreshing}
+            className="h-10 text-xs text-gray-700 bg-white border-[#e7e4dd] hover:bg-gray-50"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? 'animate-spin text-[#c1647a]' : ''}`} />
+            Actualiser
+          </Button>
         </div>
       </div>
 

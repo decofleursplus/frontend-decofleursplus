@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import {
   FileSpreadsheet,
@@ -20,14 +20,19 @@ import {
   Mail,
   User,
   Building,
+  RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
+import { Button } from '@/components/ui/button';
 import { initialQuotes } from '@/lib/admin/mock-data/quotes';
 import { LandscapeQuote, QuoteStatus } from '@/lib/admin/mock-data/types';
+import { getAdminQuotes, updateAdminQuoteStatus } from '@/lib/api/admin/quotes';
 
 export default function AdminDevisPage() {
   const [quotes, setQuotes] = useState<LandscapeQuote[]>(initialQuotes);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | QuoteStatus>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedQuote, setSelectedQuote] = useState<LandscapeQuote | null>(null);
@@ -35,17 +40,47 @@ export default function AdminDevisPage() {
   // Quote editing/creation within modal
   const [quoteItems, setQuoteItems] = useState<{ description: string; qty: number; unitPrice: number; total: number }[]>([]);
 
+  const loadQuotes = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+
+    try {
+      const res = await getAdminQuotes();
+      if (res?.quotes) {
+        setQuotes(res.quotes);
+      }
+    } catch {
+      toast.error('Erreur lors du chargement des devis');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadQuotes();
+  }, [loadQuotes]);
+
   const openQuoteDetail = (quote: LandscapeQuote) => {
     setSelectedQuote(quote);
     setQuoteItems(quote.quoteItems || []);
   };
 
-  const updateQuoteStatus = (newStatus: QuoteStatus) => {
+  const updateQuoteStatus = async (newStatus: QuoteStatus) => {
     if (!selectedQuote) return;
+    const previous = { ...selectedQuote };
     const updated = { ...selectedQuote, status: newStatus };
     setQuotes((prev) => prev.map((q) => (q.id === selectedQuote.id ? updated : q)));
     setSelectedQuote(updated);
-    toast.success(`Statut du devis ${selectedQuote.id} mis à jour : ${newStatus}`);
+
+    try {
+      await updateAdminQuoteStatus(selectedQuote.id, { status: newStatus });
+      toast.success(`Statut du devis ${selectedQuote.id} mis à jour : ${newStatus}`);
+    } catch {
+      setQuotes((prev) => prev.map((q) => (q.id === selectedQuote.id ? previous : q)));
+      setSelectedQuote(previous);
+      toast.error('Erreur lors de la mise à jour du statut');
+    }
   };
 
   const addQuoteItem = () => {
@@ -61,7 +96,7 @@ export default function AdminDevisPage() {
 
   const totalQuoteAmount = quoteItems.reduce((acc, item) => acc + item.total, 0);
 
-  const saveCommercialProposal = () => {
+  const saveCommercialProposal = async () => {
     if (!selectedQuote) return;
     const updated: LandscapeQuote = {
       ...selectedQuote,
@@ -71,9 +106,18 @@ export default function AdminDevisPage() {
     };
     setQuotes((prev) => prev.map((q) => (q.id === selectedQuote.id ? updated : q)));
     setSelectedQuote(updated);
-    toast.success(
-      `Proposition commerciale chiffrée (${totalQuoteAmount.toLocaleString('fr-FR')} FCFA) enregistrée et statut passé à "Devis envoyé" !`
-    );
+
+    try {
+      await updateAdminQuoteStatus(selectedQuote.id, {
+        status: 'devis_envoye',
+        quotedAmount: totalQuoteAmount,
+      });
+      toast.success(
+        `Proposition commerciale chiffrée (${totalQuoteAmount.toLocaleString('fr-FR')} FCFA) enregistrée et statut passé à "Devis envoyé" !`
+      );
+    } catch {
+      toast.warning('Proposition enregistrée localement (erreur de synchronisation API)');
+    }
   };
 
   const filteredQuotes = quotes.filter((q) => {
@@ -114,6 +158,18 @@ export default function AdminDevisPage() {
           <p className="text-sm text-muted-foreground mt-1">
             Suivez et préparez les propositions commerciales pour les projets de paysagisme et d’aménagement végétal.
           </p>
+        </div>
+        <div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => loadQuotes(true)}
+            disabled={loading || refreshing}
+            className="h-10 text-xs text-gray-700 bg-white border-[#e7e4dd] hover:bg-gray-50"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? 'animate-spin text-[#c1647a]' : ''}`} />
+            Actualiser
+          </Button>
         </div>
       </div>
 

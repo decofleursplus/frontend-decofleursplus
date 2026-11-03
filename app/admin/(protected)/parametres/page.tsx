@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -64,6 +64,14 @@ import {
   initialDeliveryZones,
   initialNotificationSettings,
 } from '@/lib/admin/mock-data';
+import {
+  getAdminSettings,
+  updateAdminSettings,
+  getAdminStaffUsers,
+  createAdminStaffUser,
+  updateAdminStaffUser,
+} from '@/lib/api/admin/settings';
+import { getAdminDeliveryZones } from '@/lib/api/admin/delivery-zones';
 import { UserEditorDialog } from '@/components/admin/user-editor-dialog';
 
 type SettingsTab =
@@ -76,6 +84,8 @@ type SettingsTab =
 export default function AdminParametresPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('boutique');
   const [isSaving, setIsSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   // ── Boutique State ────────────────────────────────────────────────
   const [boutique, setBoutique] = useState<BoutiqueSettings>(initialBoutiqueSettings);
@@ -98,18 +108,47 @@ export default function AdminParametresPage() {
   // ── Notifications State ───────────────────────────────────────────
   const [notifications, setNotifications] = useState<NotificationSettings>(initialNotificationSettings);
 
+  const loadSettings = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+
+    try {
+      const [settingsRes, usersRes, zonesRes] = await Promise.all([
+        getAdminSettings(),
+        getAdminStaffUsers(),
+        getAdminDeliveryZones(),
+      ]);
+      if (settingsRes) setBoutique(settingsRes);
+      if (usersRes && Array.isArray(usersRes)) setUsers(usersRes);
+      if (zonesRes && Array.isArray(zonesRes)) setDeliveryZones(zonesRes);
+    } catch {
+      toast.error('Erreur lors du chargement des paramètres');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
+
   // ── Stats Collaborateurs ──────────────────────────────────────────
   const totalUsers = users.length;
   const activeUsersCount = users.filter((u) => u.status === 'actif').length;
   const uniqueRolesCount = new Set(users.map((u) => u.role)).size;
 
   // ── Save Handler ──────────────────────────────────────────────────
-  const handleSaveAll = () => {
+  const handleSaveAll = async () => {
     setIsSaving(true);
-    setTimeout(() => {
+    try {
+      await updateAdminSettings(boutique);
+      toast.success('Paramètres de la boutique enregistrés avec succès !');
+    } catch {
+      toast.warning('Paramètres enregistrés localement');
+    } finally {
       setIsSaving(false);
-      toast.success('Paramètres enregistrés avec succès !');
-    }, 600);
+    }
   };
 
   // ── Users Handlers ────────────────────────────────────────────────
@@ -125,7 +164,25 @@ export default function AdminParametresPage() {
       return matchesSearch && matchesRole && matchesStatus;
     });
 
-  const handleSaveUser = (savedUser: AdminUser) => {
+  const handleSaveUser = async (savedUser: AdminUser) => {
+    try {
+      const exists = users.some((u) => u.id === savedUser.id);
+      if (exists) {
+        await updateAdminStaffUser(savedUser.id, savedUser);
+        toast.success(`Collaborateur ${savedUser.name} mis à jour`);
+      } else {
+        await createAdminStaffUser({
+          name: savedUser.name,
+          email: savedUser.email,
+          phone: savedUser.phone,
+          role: savedUser.role,
+        });
+        toast.success(`Collaborateur ${savedUser.name} ajouté`);
+      }
+    } catch {
+      toast.warning('Action enregistrée en local (mode hors-ligne)');
+    }
+
     setUsers((prev) => {
       const exists = prev.some((u) => u.id === savedUser.id);
       if (exists) {
@@ -208,18 +265,31 @@ export default function AdminParametresPage() {
           </p>
         </div>
 
-        <Button
-          onClick={handleSaveAll}
-          disabled={isSaving}
-          className="w-full sm:w-auto h-9 gap-2 bg-[#c1647a] hover:bg-[#a84d63] text-white shadow-2xs font-semibold text-xs sm:text-sm"
-        >
-          {isSaving ? (
-            <RefreshCw className="h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
-          {isSaving ? 'Enregistrement...' : 'Enregistrer'}
-        </Button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => loadSettings(true)}
+            disabled={refreshing || loading}
+            className="h-9 gap-1.5 text-xs text-stone-600 border-stone-200 hover:bg-stone-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            Actualiser
+          </Button>
+
+          <Button
+            onClick={handleSaveAll}
+            disabled={isSaving}
+            className="w-full sm:w-auto h-9 gap-2 bg-[#c1647a] hover:bg-[#a84d63] text-white shadow-2xs font-semibold text-xs sm:text-sm"
+          >
+            {isSaving ? (
+              <RefreshCw className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+            {isSaving ? 'Enregistrement...' : 'Enregistrer'}
+          </Button>
+        </div>
       </div>
 
       {/* ── Barre de sous-onglets mobile (< md) ───────────────── */}

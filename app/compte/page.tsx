@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -8,11 +11,59 @@ import {
   Star,
   Crown,
   ArrowRight,
+  Loader2,
 } from 'lucide-react';
+import { useAuth } from '@/components/auth-provider';
+import {
+  getCustomerProfile,
+  getCustomerAddresses,
+  CustomerProfile,
+  CustomerAddress,
+} from '@/lib/api/customer';
 import { demoOrders } from '@/lib/account-data';
 import { formatPrice } from '@/lib/products';
 
 export default function AccountDashboard() {
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const [profile, setProfile] = useState<CustomerProfile | null>(null);
+  const [addresses, setAddresses] = useState<CustomerAddress[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadAccountData() {
+      try {
+        const [p, addrs] = await Promise.allSettled([
+          getCustomerProfile(),
+          getCustomerAddresses(),
+        ]);
+
+        if (active) {
+          if (p.status === 'fulfilled') setProfile(p.value);
+          if (addrs.status === 'fulfilled') setAddresses(addrs.value);
+        }
+      } catch {
+        // Fallback discret
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    if (isAuthenticated) {
+      loadAccountData();
+    } else if (!authLoading) {
+      setLoading(false);
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [isAuthenticated, authLoading]);
+
+  const displayName = user?.name ? user.name.split(' ')[0] : 'cher client';
+  const defaultAddress = addresses.find((a) => a.isDefault) || addresses[0];
+
   return (
     <div className="account-dashboard-wrapper">
       {/* Title Header */}
@@ -20,7 +71,7 @@ export default function AccountDashboard() {
         <div>
           <h1 className="account-title">Mon compte</h1>
           <p className="account-intro">
-            Bienvenue Fatou ! Voici un aperçu de votre espace personnel.
+            Bienvenue {displayName} ! Voici un aperçu de votre espace personnel.
           </p>
         </div>
       </div>
@@ -32,7 +83,7 @@ export default function AccountDashboard() {
             <PackageCheck size={20} />
           </div>
           <div className="stat-text-wrap">
-            <strong className="stat-number">12</strong>
+            <strong className="stat-number">{profile?.ordersCount ?? 0}</strong>
             <span className="stat-label">Commandes</span>
           </div>
         </div>
@@ -42,7 +93,9 @@ export default function AccountDashboard() {
             <Star size={20} />
           </div>
           <div className="stat-text-wrap">
-            <strong className="stat-number">28 500</strong>
+            <strong className="stat-number">
+              {(profile?.loyaltyPoints ?? 0).toLocaleString('fr-FR')}
+            </strong>
             <span className="stat-label">Points fidélité</span>
           </div>
         </div>
@@ -52,7 +105,9 @@ export default function AccountDashboard() {
             <Crown size={20} />
           </div>
           <div className="stat-text-wrap">
-            <strong className="stat-number gold-color">Gold</strong>
+            <strong className="stat-number gold-color">
+              {profile?.loyaltyTier || 'Bronze'}
+            </strong>
             <span className="stat-label">Votre niveau</span>
           </div>
         </div>
@@ -62,7 +117,7 @@ export default function AccountDashboard() {
             <MapPin size={20} />
           </div>
           <div className="stat-text-wrap">
-            <strong className="stat-number">3</strong>
+            <strong className="stat-number">{addresses.length}</strong>
             <span className="stat-label">Adresses enregistrées</span>
           </div>
         </div>
@@ -158,14 +213,28 @@ export default function AccountDashboard() {
               <MapPin size={20} />
             </div>
             <div className="address-box-body">
-              <div className="address-title-badge">
-                <strong>Maison - Saly</strong>
-                <span className="badge-default">Par défaut</span>
-              </div>
-              <p className="address-lines">
-                Route de Saly, Résidence les Palmiers<br />
-                Saly, Mbour - Sénégal
-              </p>
+              {defaultAddress ? (
+                <>
+                  <div className="address-title-badge">
+                    <strong>{defaultAddress.name}</strong>
+                    {defaultAddress.isDefault && <span className="badge-default">Par défaut</span>}
+                  </div>
+                  <p className="address-lines">
+                    {defaultAddress.street}
+                    <br />
+                    {defaultAddress.city} - Sénégal
+                    <br />
+                    <span style={{ color: 'var(--muted)', fontSize: '12px' }}>Tél : {defaultAddress.phone}</span>
+                  </p>
+                </>
+              ) : (
+                <p className="address-lines">
+                  Aucune adresse enregistrée.{' '}
+                  <Link href="/compte/adresses" style={{ color: 'var(--pink)', textDecoration: 'underline' }}>
+                    En ajouter une
+                  </Link>
+                </p>
+              )}
             </div>
           </div>
         </section>

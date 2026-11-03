@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -21,7 +21,11 @@ import {
   ArrowRight,
   ArrowLeft,
   ChevronRight,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
+import { useAuth } from '@/components/auth-provider';
+import { subscribeToPlan, CustomerSubscription } from '@/lib/api/subscriptions';
 
 export interface PlanConfig {
   id: 'particulier' | 'prestige' | 'entreprise';
@@ -125,6 +129,22 @@ export function SubscriptionForm({
     notes: '',
   });
 
+  const { user } = useAuth();
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [createdSubscription, setCreatedSubscription] = useState<CustomerSubscription | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        name: prev.name || user.name || '',
+        email: prev.email || user.email || '',
+        phone: prev.phone || user.phone || '',
+      }));
+    }
+  }, [user]);
+
   const selectedPlan = subscriptionPlans.find((p) => p.id === selectedPlanId) || subscriptionPlans[0];
   const monthlyTotal = frequency === 'hebdomadaire' ? selectedPlan.monthlyPriceHebdo : selectedPlan.monthlyPriceBimensuel;
   const deliveriesCount = frequency === 'hebdomadaire' ? 4 : 2;
@@ -140,6 +160,55 @@ export function SubscriptionForm({
     setSelectedPlanId(id);
     setMobilePlanTab(id);
     setCurrentStep('details');
+  }
+
+  async function handleConfirmSubscription() {
+    setSubmitting(true);
+    setSubmitError('');
+
+    const planMap: Record<string, 'PARTICULIER' | 'PRESTIGE' | 'ENTREPRISE'> = {
+      particulier: 'PARTICULIER',
+      prestige: 'PRESTIGE',
+      entreprise: 'ENTREPRISE',
+    };
+    const freqMap: Record<string, 'HEBDOMADAIRE' | 'BIMENSUELLE'> = {
+      hebdomadaire: 'HEBDOMADAIRE',
+      bimensuelle: 'BIMENSUELLE',
+    };
+    const dayMap: Record<string, 'MARDI' | 'VENDREDI' | 'SAMEDI'> = {
+      Mardi: 'MARDI',
+      Vendredi: 'VENDREDI',
+      Samedi: 'SAMEDI',
+    };
+    const payMap: Record<string, 'WAVE' | 'ORANGE_MONEY' | 'CARD'> = {
+      wave: 'WAVE',
+      orange_money: 'ORANGE_MONEY',
+      card: 'CARD',
+    };
+
+    const res = await subscribeToPlan({
+      plan: planMap[selectedPlanId],
+      frequency: freqMap[frequency],
+      deliveryDay: dayMap[deliveryDay],
+      recipientName: formData.name || 'Client Décofleur',
+      phone: formData.phone || '+221779417860',
+      email: formData.email || undefined,
+      location: formData.location,
+      address: formData.address || 'Saly Portudal',
+      notes: formData.notes || undefined,
+      paymentMethod: payMap[paymentMethod] || 'WAVE',
+      paymentPhone: formData.paymentPhone || formData.phone || undefined,
+    });
+
+    setSubmitting(false);
+
+    if (res.success && res.subscription) {
+      setCreatedSubscription(res.subscription);
+      setOrderId(res.subscription.subscriptionNumber);
+      setCurrentStep('confirmation');
+    } else {
+      setSubmitError(res.error || 'Une erreur est survenue lors de la souscription.');
+    }
   }
 
   return (
@@ -604,11 +673,33 @@ export function SubscriptionForm({
               </div>
             )}
 
+            {submitError && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.75rem 1rem',
+                  marginTop: '1rem',
+                  marginBottom: '1rem',
+                  background: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  borderRadius: '12px',
+                  color: '#dc2626',
+                  fontSize: '0.875rem',
+                }}
+              >
+                <AlertCircle size={18} />
+                <span>{submitError}</span>
+              </div>
+            )}
+
             <div className="sub-actions-row">
               <button
                 type="button"
                 className="button-pill-outline sub-btn-back"
                 onClick={() => setCurrentStep('details')}
+                disabled={submitting}
               >
                 <ArrowLeft size={16} />
                 <span>Modifier coordonnées</span>
@@ -617,10 +708,20 @@ export function SubscriptionForm({
               <button
                 type="button"
                 className="button-pill-pink sub-btn-next"
-                onClick={() => setCurrentStep('confirmation')}
+                onClick={handleConfirmSubscription}
+                disabled={submitting}
               >
-                <span>Confirmer</span>
-                <Check size={18} />
+                {submitting ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    <span>Création en cours...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Confirmer la souscription</span>
+                    <Check size={18} />
+                  </>
+                )}
               </button>
             </div>
 
@@ -693,6 +794,10 @@ export function SubscriptionForm({
 
             {/* Actions sans bouton WhatsApp */}
             <div className="confirm-actions-row">
+              <Link href="/compte/abonnements" className="button-pill-pink sub-btn-action">
+                Voir mes abonnements
+              </Link>
+
               <button
                 type="button"
                 className="button-pill-outline sub-btn-action"
@@ -704,7 +809,7 @@ export function SubscriptionForm({
                 Nouvelle souscription
               </button>
 
-              <Link href="/" className="button-pill-pink sub-btn-action">
+              <Link href="/" className="button-pill-outline sub-btn-action">
                 Retour à l’accueil
               </Link>
             </div>

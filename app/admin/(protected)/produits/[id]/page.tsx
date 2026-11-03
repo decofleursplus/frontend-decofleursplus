@@ -3,19 +3,51 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { adminProducts } from '@/lib/admin/mock-data/products';
+import { getAdminProductById, updateAdminProduct, deleteAdminProduct } from '@/lib/api/admin/products';
+import type { AdminProduct } from '@/lib/admin/mock-data/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowLeft, Save, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, Image as ImageIcon, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const { id } = use(params);
   
-  const product = adminProducts.find(p => p.id === id);
+  const [product, setProduct] = useState<AdminProduct | null>(() => adminProducts.find(p => p.id === id) || null);
+  const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    async function load() {
+      try {
+        const p = await getAdminProductById(id);
+        if (active && p) {
+          setProduct(p);
+        }
+      } catch (err) {
+        console.error('Erreur chargement produit:', err);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    load();
+    return () => { active = false; };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-[#c1647a]" />
+        <p className="text-gray-500 text-sm">Chargement du produit...</p>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -29,14 +61,49 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     );
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!product) return;
+
     setIsSubmitting(true);
-    // Simulate save
-    setTimeout(() => {
-      setIsSubmitting(false);
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get('name') as string;
+    const description = (formData.get('description') as string) || '';
+    const price = Number(formData.get('price')) || product.price;
+    const promoPrice = formData.get('promo') ? Number(formData.get('promo')) : undefined;
+    const statusVal = (formData.get('status') as string) === 'actif' ? 'ACTIVE' : 'HIDDEN';
+
+    try {
+      await updateAdminProduct(product.id, {
+        name,
+        description,
+        basePrice: price,
+        promoPrice,
+        status: statusVal,
+      });
+      toast.success('Produit mis à jour avec succès');
       router.push('/admin/produits');
-    }, 1000);
+    } catch {
+      toast.error('Erreur lors de la mise à jour');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!product) return;
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer définitivement « ${product.name} » ?`)) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteAdminProduct(product.id);
+      toast.success('Produit supprimé');
+      router.push('/admin/produits');
+    } catch {
+      toast.error('Impossible de supprimer le produit');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -49,27 +116,34 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           </Button>
           <div className="min-w-0">
             <h1 className="text-xl font-semibold text-[#1e2a1f]">Modifier le produit</h1>
-            <p className="text-sm text-gray-500 truncate max-w-[240px] sm:max-w-none">{product.name}</p>
+            <p className="text-sm text-gray-500 truncate max-w-[240px] sm:max-w-none">{product?.name || 'Chargement...'}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-          <Button variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 flex-1 sm:flex-initial">
-            <Trash2 className="mr-1.5 h-4 w-4" />
+          <Button 
+            type="button"
+            variant="outline" 
+            onClick={handleDelete}
+            disabled={isDeleting || isSubmitting}
+            className="border-red-200 text-red-600 hover:bg-red-50 flex-1 sm:flex-initial"
+          >
+            {isDeleting ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Trash2 className="mr-1.5 h-4 w-4" />}
             Supprimer
           </Button>
           <Button 
+            type="submit"
+            form="edit-product-form"
             variant="cta"
             className="bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs flex-1 sm:flex-initial" 
-            onClick={handleSubmit}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isDeleting}
           >
-            <Save className="mr-1.5 h-4 w-4 text-white" />
+            {isSubmitting ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin text-white" /> : <Save className="mr-1.5 h-4 w-4 text-white" />}
             {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
           </Button>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-3">
+      <form id="edit-product-form" onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-3">
         {/* Main Column */}
         <div className="md:col-span-2 space-y-6">
           {/* General Information */}

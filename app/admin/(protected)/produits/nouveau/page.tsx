@@ -6,21 +6,53 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowLeft, Upload, Save, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Upload, Save, Image as ImageIcon, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
+import { createAdminProduct } from '@/lib/api/admin/products';
 
 export default function NewProductPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
-    // Simulate save
-    setTimeout(() => {
-      setIsSubmitting(false);
+
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get('name') as string;
+    const description = (formData.get('description') as string) || '';
+    const price = Number(formData.get('price')) || 0;
+    const promoPrice = formData.get('promo') ? Number(formData.get('promo')) : undefined;
+    const sku = (formData.get('sku') as string) || '';
+    const stock = Number(formData.get('stock')) || 0;
+    const statusVal = (formData.get('status') as string) === 'actif' ? 'ACTIVE' : 'HIDDEN';
+    const category = (formData.get('category') as string) || 'bouquets';
+
+    try {
+      await createAdminProduct({
+        name,
+        description,
+        categoryId: category,
+        basePrice: price,
+        promoPrice,
+        status: statusVal,
+        variants: [
+          {
+            name: 'Standard',
+            sku: sku || `PRD-${Date.now().toString().slice(-6)}`,
+            price,
+            stock,
+          },
+        ],
+      });
+      toast.success('Produit créé avec succès !');
       router.push('/admin/produits');
-    }, 1000);
+    } catch {
+      toast.error('Erreur lors de la création du produit');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -40,18 +72,28 @@ export default function NewProductPage() {
             Annuler
           </Button>
           <Button 
+            type="submit"
+            form="new-product-form"
             variant="cta"
             className="bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs flex-1 sm:flex-initial" 
-            onClick={handleSubmit}
             disabled={isSubmitting}
           >
-            <Save className="mr-2 h-4 w-4 text-white" />
-            {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin text-white" />
+                Enregistrement...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4 text-white" />
+                Enregistrer
+              </>
+            )}
           </Button>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-3">
+      <form id="new-product-form" onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-3">
         {/* Main Column */}
         <div className="md:col-span-2 space-y-6">
           {/* General Information */}
@@ -62,12 +104,13 @@ export default function NewProductPage() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nom du produit</Label>
-                <Input id="name" placeholder="Ex: Bouquet Élégance Rose" required className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20" />
+                <Input id="name" name="name" placeholder="Ex: Bouquet Élégance Rose" required className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
                 <textarea 
                   id="description" 
+                  name="description"
                   rows={5}
                   className="flex w-full rounded-md border border-[#e7e4dd] bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#24582d]/20 disabled:cursor-not-allowed disabled:opacity-50"
                   placeholder="Décrivez votre produit en détail..."
@@ -85,21 +128,21 @@ export default function NewProductPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="price">Prix (FCFA)</Label>
-                  <Input id="price" type="number" placeholder="0" required className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20" />
+                  <Input id="price" name="price" type="number" placeholder="0" required className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="promo">Prix promotionnel (optionnel)</Label>
-                  <Input id="promo" type="number" placeholder="0" className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20" />
+                  <Input id="promo" name="promo" type="number" placeholder="0" className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="sku">Référence (SKU)</Label>
-                  <Input id="sku" placeholder="Ex: BOU-001" className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20" />
+                  <Input id="sku" name="sku" placeholder="Ex: BOU-001" className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="stock">Quantité en stock</Label>
-                  <Input id="stock" type="number" placeholder="0" className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20" />
+                  <Input id="stock" name="stock" type="number" placeholder="0" className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20" />
                 </div>
               </div>
             </CardContent>
@@ -118,6 +161,7 @@ export default function NewProductPage() {
                 <Label htmlFor="status">Statut</Label>
                 <select 
                   id="status" 
+                  name="status"
                   className="flex h-9 w-full items-center justify-between rounded-md border border-[#e7e4dd] bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-[#24582d]/20"
                 >
                   <option value="actif">Actif</option>
@@ -128,6 +172,7 @@ export default function NewProductPage() {
                 <Label htmlFor="category">Catégorie</Label>
                 <select 
                   id="category" 
+                  name="category"
                   className="flex h-9 w-full items-center justify-between rounded-md border border-[#e7e4dd] bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-[#24582d]/20"
                 >
                   <option value="bouquets">Bouquets</option>
