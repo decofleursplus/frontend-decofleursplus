@@ -43,8 +43,8 @@ export function RegisterForm() {
 
       setCreatedUser(user);
       setIsSuccess(true);
-    } catch {
-      setFeedback('Une erreur est survenue lors de la création du compte.');
+    } catch (err: any) {
+      setFeedback(err?.message || 'Une erreur est survenue lors de la création du compte.');
       setIsSubmitting(false);
     }
   }

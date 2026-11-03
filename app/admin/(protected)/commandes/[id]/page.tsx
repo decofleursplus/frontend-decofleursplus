@@ -1,16 +1,61 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState, useEffect } from 'react';
 import { adminOrders } from '@/lib/admin/mock-data/orders';
+import type { AdminOrder } from '@/lib/admin/mock-data/types';
+import { getAdminOrderById, updateAdminOrderStatus } from '@/lib/api/admin/orders';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Printer, Truck, MapPin, CreditCard, User } from 'lucide-react';
+import { ArrowLeft, Printer, Truck, MapPin, CreditCard, User, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const order = adminOrders.find(o => o.id === id);
+  const [order, setOrder] = useState<AdminOrder | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const found = await getAdminOrderById(id);
+        if (active) setOrder(found);
+      } catch {
+        if (active) setOrder(adminOrders.find((o) => o.id === id || o.ref === id) || null);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  const handleSetInDelivery = async () => {
+    if (!order) return;
+    setUpdating(true);
+    try {
+      const updated = await updateAdminOrderStatus(order.id, { status: 'en_livraison' });
+      setOrder(updated);
+      toast.success('Commande passée en livraison avec succès !');
+    } catch {
+      toast.error('Erreur lors du changement de statut');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-[#c1647a]" />
+        <p className="text-gray-500 text-sm">Chargement de la commande...</p>
+      </div>
+    );
+  }
 
   if (!order) {
     return (
@@ -82,14 +127,25 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Button variant="outline" className="flex-1 sm:flex-none border-[#e7e4dd] text-gray-600 text-xs sm:text-sm">
+          <Button
+            variant="outline"
+            onClick={() => window.print()}
+            className="flex-1 sm:flex-none border-[#e7e4dd] text-gray-600 text-xs sm:text-sm"
+          >
             <Printer className="mr-1.5 h-3.5 w-3.5" />
             Imprimer
           </Button>
-          <Button variant="cta" className="flex-1 sm:flex-none bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs text-xs sm:text-sm">
-            <Truck className="mr-1.5 h-3.5 w-3.5 text-white" />
-            Mettre en livraison
-          </Button>
+          {order.status !== 'en_livraison' && order.status !== 'livree' && (
+            <Button
+              variant="cta"
+              onClick={handleSetInDelivery}
+              disabled={updating}
+              className="flex-1 sm:flex-none bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs text-xs sm:text-sm"
+            >
+              {updating ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin text-white" /> : <Truck className="mr-1.5 h-3.5 w-3.5 text-white" />}
+              Mettre en livraison
+            </Button>
+          )}
         </div>
       </div>
 

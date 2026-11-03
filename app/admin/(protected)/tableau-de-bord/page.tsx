@@ -1,9 +1,8 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { dashboardKpis, salesChartData } from '@/lib/admin/mock-data';
-import { adminOrders } from '@/lib/admin/mock-data/orders';
-import { ArrowUpRight, ArrowDownRight, Users, CreditCard, ShoppingBag, TrendingUp, Package } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Users, CreditCard, ShoppingBag, TrendingUp, Package, RefreshCw, Loader2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
@@ -21,6 +20,7 @@ import {
   ArcElement
 } from 'chart.js';
 import { Line, Doughnut } from 'react-chartjs-2';
+import { getAdminDashboard, DashboardData } from '@/lib/api/admin/dashboard';
 
 ChartJS.register(
   CategoryScale,
@@ -35,6 +35,29 @@ ChartJS.register(
 );
 
 export default function AdminDashboardPage() {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function loadDashboard(isRefresh = false) {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+
+    try {
+      const res = await getAdminDashboard();
+      setData(res);
+    } catch (err) {
+      console.error('Erreur chargement dashboard admin:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }
+
+  useEffect(() => {
+    loadDashboard();
+  }, []);
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -46,25 +69,32 @@ export default function AdminDashboardPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'en_preparation':
+      case 'PREPARATION':
+      case 'PROCESSING':
         return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">En préparation</Badge>;
       case 'en_livraison':
+      case 'SHIPPED':
+      case 'IN_DELIVERY':
         return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">En livraison</Badge>;
       case 'livree':
+      case 'DELIVERED':
         return <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Livrée</Badge>;
       case 'annulee':
+      case 'CANCELLED':
         return <Badge className="bg-red-100 text-red-800 hover:bg-red-200">Annulée</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
   };
 
+  const salesPoints = data?.salesChart || [];
   const lineChartData = {
-    labels: salesChartData.map(d => d.label),
+    labels: salesPoints.map(d => d.label),
     datasets: [
       {
         fill: true,
         label: 'Ventes',
-        data: salesChartData.map(d => d.sales),
+        data: salesPoints.map(d => d.sales),
         borderColor: '#c1647a',
         backgroundColor: 'rgba(193, 100, 122, 0.2)', // Pink with opacity
         tension: 0.4,
@@ -127,20 +157,20 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const orderDistributionDataArray = [
-    { name: 'Livrées', value: 59, color: '#22c55e' },
-    { name: 'En préparation', value: 19, color: '#eab308' },
-    { name: 'En livraison', value: 9, color: '#3b82f6' },
-    { name: 'Annulées', value: 8, color: '#ef4444' },
-    { name: 'Remboursées', value: 5, color: '#6b7280' },
+  const orderDistributionList = data?.orderDistribution || [
+    { name: 'Livrées', value: 59, color: '#22c55e', count: 75 },
+    { name: 'En préparation', value: 19, color: '#eab308', count: 25 },
+    { name: 'En livraison', value: 9, color: '#3b82f6', count: 12 },
+    { name: 'Annulées', value: 8, color: '#ef4444', count: 10 },
+    { name: 'Remboursées', value: 5, color: '#6b7280', count: 6 },
   ];
 
   const doughnutData = {
-    labels: orderDistributionDataArray.map(d => d.name),
+    labels: orderDistributionList.map(d => d.name),
     datasets: [
       {
-        data: orderDistributionDataArray.map(d => d.value),
-        backgroundColor: orderDistributionDataArray.map(d => d.color),
+        data: orderDistributionList.map(d => d.value),
+        backgroundColor: orderDistributionList.map(d => d.color),
         borderWidth: 0,
       },
     ],
@@ -167,13 +197,22 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="admin-page-header">
+      <div className="admin-page-header flex items-center justify-between">
         <div>
           <h1 className="admin-page-title">Tableau de bord</h1>
           <p className="admin-page-subtitle">
             Aperçu des performances de votre boutique Décofleur Plus.
           </p>
         </div>
+        <button
+          type="button"
+          onClick={() => loadDashboard(true)}
+          disabled={loading || refreshing}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-2xs"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin text-[#c1647a]' : ''}`} />
+          <span>Actualiser</span>
+        </button>
       </div>
 
       {/* KPI Cards */}
@@ -186,11 +225,11 @@ export default function AdminDashboardPage() {
           </CardHeader>
           <CardContent className="p-3 sm:p-5 pt-0">
             <div className="text-base sm:text-2xl font-bold text-[#1e2a1f] truncate">
-              {formatCurrency(dashboardKpis.revenue)}
+              {formatCurrency(data?.kpis?.revenue ?? 0)}
             </div>
             <p className="text-[11px] sm:text-xs text-green-600 flex items-center mt-1 truncate">
               <ArrowUpRight className="mr-0.5 h-3 w-3 shrink-0" />
-              <span>+{dashboardKpis.revenueDelta}%</span>
+              <span>+{(data?.kpis?.revenueDelta ?? 0)}%</span>
               <span className="text-gray-400 ml-1 hidden sm:inline">par rapport au mois dernier</span>
               <span className="text-gray-400 ml-1 sm:hidden">vs m-1</span>
             </p>
@@ -205,11 +244,11 @@ export default function AdminDashboardPage() {
           </CardHeader>
           <CardContent className="p-3 sm:p-5 pt-0">
             <div className="text-base sm:text-2xl font-bold text-[#1e2a1f]">
-              {dashboardKpis.orders}
+              {data?.kpis?.orders ?? 0}
             </div>
             <p className="text-[11px] sm:text-xs text-green-600 flex items-center mt-1 truncate">
               <ArrowUpRight className="mr-0.5 h-3 w-3 shrink-0" />
-              <span>+{dashboardKpis.ordersDelta}%</span>
+              <span>+{(data?.kpis?.ordersDelta ?? 0)}%</span>
               <span className="text-gray-400 ml-1 hidden sm:inline">par rapport au mois dernier</span>
               <span className="text-gray-400 ml-1 sm:hidden">vs m-1</span>
             </p>
@@ -224,11 +263,11 @@ export default function AdminDashboardPage() {
           </CardHeader>
           <CardContent className="p-3 sm:p-5 pt-0">
             <div className="text-base sm:text-2xl font-bold text-[#1e2a1f]">
-              {dashboardKpis.customers}
+              {data?.kpis?.customers ?? 0}
             </div>
             <p className="text-[11px] sm:text-xs text-green-600 flex items-center mt-1 truncate">
               <ArrowUpRight className="mr-0.5 h-3 w-3 shrink-0" />
-              <span>+{dashboardKpis.customersDelta}%</span>
+              <span>+{(data?.kpis?.customersDelta ?? 0)}%</span>
               <span className="text-gray-400 ml-1 hidden sm:inline">par rapport au mois dernier</span>
               <span className="text-gray-400 ml-1 sm:hidden">vs m-1</span>
             </p>
@@ -243,11 +282,11 @@ export default function AdminDashboardPage() {
           </CardHeader>
           <CardContent className="p-3 sm:p-5 pt-0">
             <div className="text-base sm:text-2xl font-bold text-[#1e2a1f]">
-              {dashboardKpis.products}
+              {data?.kpis?.products ?? 0}
             </div>
             <p className="text-[11px] sm:text-xs text-green-600 flex items-center mt-1 truncate">
               <ArrowUpRight className="mr-0.5 h-3 w-3 shrink-0" />
-              <span>+{dashboardKpis.productsDelta}%</span>
+              <span>+{(data?.kpis?.productsDelta ?? 0)}%</span>
               <span className="text-gray-400 ml-1 hidden sm:inline">par rapport au mois dernier</span>
               <span className="text-gray-400 ml-1 sm:hidden">vs m-1</span>
             </p>
@@ -280,7 +319,7 @@ export default function AdminDashboardPage() {
             <div className="overflow-x-auto max-h-[300px]">
               <Table>
                 <TableBody>
-                  {adminOrders.slice(0, 5).map((order) => (
+                  {(data?.recentOrders && data.recentOrders.length > 0 ? data.recentOrders : []).map((order) => (
                     <TableRow key={order.id} className="text-xs sm:text-sm">
                       <TableCell className="py-2.5 px-2">
                         <div className="font-semibold text-[#1e2a1f] truncate max-w-[110px] sm:max-w-none">
@@ -321,7 +360,7 @@ export default function AdminDashboardPage() {
                 <Doughnut data={doughnutData} options={doughnutOptions} />
               </div>
               <div className="w-full sm:w-1/2 grid grid-cols-2 sm:grid-cols-1 gap-2 sm:space-y-3 sm:pl-3">
-                {orderDistributionDataArray.map((item, index) => (
+                {orderDistributionList.map((item, index) => (
                   <div key={index} className="flex items-center justify-between text-xs sm:text-sm">
                     <div className="flex items-center gap-1.5 truncate">
                       <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
@@ -342,17 +381,17 @@ export default function AdminDashboardPage() {
           </CardHeader>
           <CardContent className="p-3 sm:p-6 pt-0">
             <div className="space-y-4 sm:space-y-6">
-              {[
-                { name: 'Bouquet Élégance Rose', sales: 124, revenue: 3100000, stock: 'En stock', image: '/images/bouquet-passion.jpg' },
-                { name: 'Panier de Fruits', sales: 85, revenue: 1530000, stock: 'Faible', image: '/images/fruits.jpg' },
-                { name: 'Orchidée Phalaenopsis', sales: 62, revenue: 1860000, stock: 'En stock', image: '/images/orchidee.jpg' },
-                { name: 'Plante Monstera', sales: 45, revenue: 540000, stock: 'En stock', image: '/images/plante-monstera.jpg' },
-              ].map((product, i) => (
-                <div key={i} className="flex items-center justify-between gap-3">
+              {(data?.topProducts && data.topProducts.length > 0 ? data.topProducts : [
+                { id: '1', name: 'Bouquet Élégance Rose', sales: 124, revenue: 3100000, stock: 'En stock', image: '/images/bouquet-passion.jpg' },
+                { id: '2', name: 'Panier de Fruits', sales: 85, revenue: 1530000, stock: 'Faible', image: '/images/fruits.jpg' },
+                { id: '3', name: 'Orchidée Phalaenopsis', sales: 62, revenue: 1860000, stock: 'En stock', image: '/images/orchidee.jpg' },
+                { id: '4', name: 'Plante Monstera', sales: 45, revenue: 540000, stock: 'En stock', image: '/images/plante-monstera.jpg' },
+              ]).map((product, i) => (
+                <div key={product.id || i} className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                     <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gray-100 overflow-hidden relative shrink-0 border border-gray-100">
                       <Image 
-                        src={product.image} 
+                        src={product.image || '/images/bouquet-passion.jpg'} 
                         alt={product.name}
                         fill
                         unoptimized

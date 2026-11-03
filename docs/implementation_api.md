@@ -1,0 +1,449 @@
+# 📋 Plan d'Implémentation API — DécoFleur Plus (Branche staging)
+
+**Date de début :** 2026-11-03  
+**Backend Staging :** `https://backend-decofleursplus-staging.up.railway.app/api/v1`  
+**Backend Local :** `http://localhost:5000/api/v1`  
+**Stratégie globale :** Client d'abord (Phases 0 à 5) → Admin ensuite (Phases 6 à 10) → Recette & Tests (Phase 11)  
+**Total des tâches :** 44 tâches réparties en 12 phases structurées  
+
+---
+
+## 📑 Sommaire des Phases
+
+### Partie 1 : Espace Public & Client (Phases 0 à 5)
+- [Phase 0 : Infrastructure & Client API](#phase-0--infrastructure--client-api) (Tâches 0.1 à 0.3)
+- [Phase 1 : Authentification & Espace Client](#phase-1--authentification--espace-client) (Tâches 1.1 à 1.5)
+- [Phase 2 : Catalogue Public & Vitrine](#phase-2--catalogue-public--vitrine) (Tâches 2.1 à 2.4)
+- [Phase 3 : Panier, Promotions & Devis Événementiels](#phase-3--panier-promotions--devis-événementiels) (Tâches 3.1 à 3.4)
+- [Phase 4 : Tunnel de Commande, Livraisons & NabooPay](#phase-4--tunnel-de-commande-livraisons--naboopay) (Tâches 4.1 à 4.5)
+- [Phase 5 : Blog Floral & Abonnements Publics](#phase-5--blog-floral--abonnements-publics) (Tâches 5.1 à 5.3)
+
+### Partie 2 : Espace Administration & Back-Office (Phases 6 à 10)
+- [Phase 6 : Authentification Admin & Tableau de Bord](#phase-6--authentification-admin--tableau-de-bord) (Tâches 6.1 à 6.3)
+- [Phase 7 : Catalogue Admin & Inventaire de Stock](#phase-7--catalogue-admin--inventaire-de-stock) (Tâches 7.1 à 7.4)
+- [Phase 8 : Commandes, Devis & Livraisons Admin](#phase-8--commandes-devis--livraisons-admin) (Tâches 8.1 à 8.5)
+- [Phase 9 : CRM Clients & Marketing Admin](#phase-9--crm-clients--marketing-admin) (Tâches 9.1 à 9.3)
+- [Phase 10 : Blog, Abonnements & Paramètres Boutique](#phase-10--blog-abonnements--paramètres-boutique) (Tâches 10.1 à 10.3)
+
+### Partie 3 : Clôture & Optimisations (Phase 11)
+- [Phase 11 : Recette E2E, Nettoyage & Sécurité](#phase-11--recette-e2e-nettoyage--sécurité) (Tâches 11.1 à 11.2)
+
+---
+
+## Phase 0 : Infrastructure & Client API
+
+### Tâche 0.1 : Variables d'environnement & Configuration Base API
+- **Fichiers :** `.env.local`, `.env.example`, `lib/api/config.ts`
+- **Endpoints :** `GET /health`
+- **Description :** Configurer l'URL de base de l'API avec fallback configurable (`NEXT_PUBLIC_API_URL`, valeur par défaut : `https://backend-decofleursplus-staging.up.railway.app/api/v1`). Ajouter le timeout, les en-têtes standard (`Content-Type: application/json`), et la fonction de healthcheck.
+- **Critères d'acceptation :**
+  - La variable `NEXT_PUBLIC_API_URL` est documentée dans `.env.example`.
+  - Un appel de test sur `/health` retourne `{ success: true, data: { status: "UP" } }`.
+- **Statut :** ⬜ À faire
+
+### Tâche 0.2 : Client HTTP générique & Gestionnaire d'erreurs
+- **Fichiers :** `lib/api/client.ts`, `lib/api/types.ts`
+- **Endpoints :** Tous
+- **Description :** Créer un wrapper universel `apiClient` autour de `fetch` gérant : l'injection automatique du token JWT (`Authorization: Bearer`), le formatage de l'enveloppe `{ success, data, error }`, les codes d'erreur backend (`VALIDATION_ERROR`, `UNAUTHORIZED`, `CONFLICT_ERROR`), et la gestion des sessions expirées (redirection / notification).
+- **Critères d'acceptation :**
+  - Réponses typées avec generics TypeScript `<T>`.
+  - En cas de 401, le token invalide est nettoyé et l'utilisateur est déconnecté proprement.
+  - Les erreurs de validation Zod (`error.details`) sont propagées de manière lisible pour les formulaires.
+- **Statut :** ⬜ À faire
+
+### Tâche 0.3 : Synchronisation du Token JWT & Session
+- **Fichiers :** `lib/api/auth-token.ts`, `components/auth-provider.tsx`
+- **Endpoints :** Aucun (Infrastructure client)
+- **Description :** Centraliser le stockage sécurisé du token JWT (`decofleur_jwt`) et des informations utilisateur. Configurer les helpers d'accès côté client et côté middleware Next.js si requis.
+- **Critères d'acceptation :**
+  - Le token est persisté et rechargé au refresh de page.
+  - La déconnexion supprime immédiatement le token et réinitialise l'état utilisateur.
+- **Statut :** ⬜ À faire
+
+---
+
+## Phase 1 : Authentification & Espace Client
+
+### Tâche 1.1 : Connexion & Inscription dynamique
+- **Fichiers :** `components/auth-provider.tsx`, `app/connexion/page.tsx`, `app/inscription/page.tsx`, `lib/api/auth.ts`
+- **Endpoints :** `POST /auth/register`, `POST /auth/login`
+- **Description :** Remplacer le système mock `localStorage` actuel par les vrais appels API backend. Accepter email ou téléphone international dans `POST /auth/login`. Vérifier réellement le mot de passe via bcrypt côté serveur.
+- **Critères d'acceptation :**
+  - Inscription crée le compte en base avec rôle `CLIENT` et connecte l'utilisateur.
+  - Connexion avec mauvais mot de passe affiche un message d'erreur clair.
+  - Les boutons sociaux Google/Facebook sont annotés ou désactivés en V1.
+- **Statut :** ⬜ À faire
+
+### Tâche 1.2 : Récupération du profil de session & Reconnexion automatique
+- **Fichiers :** `lib/api/auth.ts`, `components/auth-provider.tsx`
+- **Endpoints :** `GET /auth/me`, `GET /customers/me`
+- **Description :** Au chargement de l'application, si un token JWT est présent, valider sa fraîcheur via `GET /auth/me` et charger le profil enrichi via `GET /customers/me`.
+- **Critères d'acceptation :**
+  - L'état utilisateur (`user`) est immédiatement synchronisé avec la base.
+  - Si le token est expiré, la session est invalidée sans crash UI.
+- **Statut :** ⬜ À faire
+
+### Tâche 1.3 : Mise à jour du profil client & Mot de passe
+- **Fichiers :** `app/compte/informations/page.tsx`, `lib/api/customer.ts`
+- **Endpoints :** `PATCH /customers/me`, `PATCH /customers/me/password`
+- **Description :** Raccorder le formulaire de profil (nom, prénom, téléphone) et le formulaire de changement de mot de passe (mot de passe actuel + nouveau mot de passe).
+- **Critères d'acceptation :**
+  - Les modifications de profil sont sauvegardées en base et répercutées dans l'état global.
+  - Le changement de mot de passe valide la complexité et confirme la mise à jour.
+- **Statut :** ⬜ À faire
+
+### Tâche 1.4 : Carnet d'adresses de livraison du client
+- **Fichiers :** `app/compte/adresses/page.tsx`, `lib/api/customer.ts`
+- **Endpoints :** `GET /customers/me/addresses`, `POST /customers/me/addresses`, `PATCH /customers/me/addresses/:id`, `DELETE /customers/me/addresses/:id`, `POST /customers/me/addresses/:id/default`
+- **Description :** Remplacer les adresses factices par le carnet d'adresses réel de l'utilisateur. Permettre l'ajout, la modification, la suppression et la sélection de l'adresse par défaut.
+- **Critères d'acceptation :**
+  - La liste affiche les adresses réelles du compte.
+  - La première adresse créée est automatiquement définie par défaut.
+- **Statut :** ⬜ À faire
+
+### Tâche 1.5 : Programme de Fidélité & Statistiques
+- **Fichiers :** `app/compte/fidelite/page.tsx`, `app/compte/page.tsx`
+- **Endpoints :** `GET /customers/me`
+- **Description :** Afficher les points de fidélité réels, le niveau atteint (`Bronze`, `Silver`, `Gold`, `Platinum`), les dépenses cumulées et le nombre total de commandes.
+- **Critères d'acceptation :**
+  - La jauge de niveau et le solde de points reflètent exactement les données de `data.customer.loyaltyPoints`.
+- **Statut :** ⬜ À faire
+
+---
+
+## Phase 2 : Catalogue Public & Vitrine
+
+### Tâche 2.1 : Service API Catalogue
+- **Fichiers :** `lib/api/catalog.ts`, `lib/types/catalog.ts`
+- **Endpoints :** `GET /categories`, `GET /categories/:slug`, `GET /products`, `GET /products/:slug`
+- **Description :** Définir les fonctions client pour interroger les catégories et produits avec filtres (recherche, sous-catégories, minPrice, maxPrice, sort, featured, pagination). Adapter les formats de données pour compatibilité avec les composants front.
+- **Critères d'acceptation :**
+  - Typage strict des réponses backend (avec `variants`, `sizes`, `compareAtPrice`).
+- **Statut :** ⬜ À faire
+
+### Tâche 2.2 : Page d'accueil dynamique
+- **Fichiers :** `app/page.tsx`, `components/featured-products.tsx`, `components/category-slider.tsx`
+- **Endpoints :** `GET /products?featured=true&limit=8`, `GET /categories`
+- **Description :** Remplacer les données statiques d'accueil par les produits vedettes (`isFeatured: true`) et la liste dynamique des catégories.
+- **Critères d'acceptation :**
+  - Les 8 bouquets vedettes s'affichent avec leurs prix réels, images R2 et badges promos calculés.
+- **Statut :** ⬜ À faire
+
+### Tâche 2.3 : Page Boutique & Filtres avancés
+- **Fichiers :** `app/boutique/page.tsx`, `components/product-filters.tsx`, `components/product-grid.tsx`
+- **Endpoints :** `GET /products`, `GET /categories`
+- **Description :** Dynamiser la grille boutique : pagination, recherche texte, filtre par catégorie/sous-catégorie, filtre par tranche de prix et tri (`newest`, `price_asc`, `price_desc`, `name`).
+- **Critères d'acceptation :**
+  - Le changement de filtre ou de page déclenche une requête API fluide sans rechargement complet.
+  - État vide géré avec message bienveillant si aucun produit ne correspond.
+- **Statut :** ⬜ À faire
+
+### Tâche 2.4 : Page Détail Produit
+- **Fichiers :** `app/produit/[slug]/page.tsx`, `components/product-details.tsx`
+- **Endpoints :** `GET /products/:slug`, `GET /products?category=...&limit=4`
+- **Description :** Afficher le produit complet par son slug : galerie d'images, sélection de variante/taille avec delta de prix, affichage du stock disponible, et produits similaires de la même catégorie.
+- **Critères d'acceptation :**
+  - Si un produit est masqué (`status: HIDDEN`) ou inexistant, la page renvoie un 404 propre.
+  - La sélection d'une variante met à jour le prix affiché et injecte le bon `variantId` dans le panier.
+- **Statut :** ⬜ À faire
+
+---
+
+## Phase 3 : Panier, Promotions & Devis Événementiels
+
+### Tâche 3.1 : Validation de Code Promo dans le Panier
+- **Fichiers :** `app/panier/page.tsx`, `components/cart-summary.tsx`, `lib/api/marketing.ts`
+- **Endpoints :** `POST /coupons/validate`
+- **Description :** Connecter le champ de code promo du panier à l'endpoint de vérification. Déduire le montant de remise (`discountAmount`) ou offrir la livraison si coupon `free_shipping`.
+- **Critères d'acceptation :**
+  - Message d'erreur explicite si le coupon est expiré, quota atteint ou sous-total insuffisant.
+  - Application visuelle de la réduction dans le récapitulatif du panier.
+- **Statut :** ⬜ À faire
+
+### Tâche 3.2 : Bannières de Promotions Actives
+- **Fichiers :** `components/promo-banner.tsx`, `lib/api/marketing.ts`
+- **Endpoints :** `GET /promotions/active`
+- **Description :** Charger les promotions en cours et afficher la bannière promotionnelle en haut du site (ex: « -20% sur tous les bouquets ronds ce week-end »).
+- **Critères d'acceptation :**
+  - La bannière se masque automatiquement si aucune promotion n'est active.
+- **Statut :** ⬜ À faire
+
+### Tâche 3.3 : Formulaire de Devis Événementiel avec Upload d'Images
+- **Fichiers :** `app/devis/page.tsx`, `components/devis-form.tsx`, `lib/api/quotes.ts`
+- **Endpoints :** `POST /quotes/uploads`, `POST /quotes`
+- **Description :** Permettre l'upload d'images d'inspiration directement vers le stockage Cloudflare R2, puis soumettre le devis complet. Si le client est connecté, le devis est automatiquement relié à son compte.
+- **Critères d'acceptation :**
+  - Affichage de la référence de devis générée (`DEV-AAAA-NNNN`) après soumission réussie.
+  - Possibilité de continuer la conversation sur WhatsApp avec la référence pré-remplie.
+- **Statut :** ⬜ À faire
+
+### Tâche 3.4 : Espace Client — Mes Devis
+- **Fichiers :** `app/compte/devis/page.tsx`, `lib/api/quotes.ts`
+- **Endpoints :** `GET /quotes/mine`
+- **Description :** Lister les devis soumis par l'utilisateur connecté avec statut en temps réel (`Nouveau`, `En étude`, `Envoyé`, `Accepté`) et montant chiffré dès qu'il est validé par l'équipe.
+- **Critères d'acceptation :**
+  - Consultation de la fiche de devis avec détail des options et notes.
+- **Statut :** ⬜ À faire
+
+---
+
+## Phase 4 : Tunnel de Commande, Livraisons & NabooPay
+
+### Tâche 4.1 : Zones de Livraison & Devis Panier
+- **Fichiers :** `app/commande/page.tsx`, `lib/api/orders.ts`
+- **Endpoints :** `GET /delivery-zones`, `POST /orders/quote`
+- **Description :** Charger les zones de livraison actives (Saly, Mbour, Dakar, Somone...) et leurs tarifs réels (standard, express, gratuit au-delà d'un seuil). Calculer le récapitulatif chiffré serveur via `POST /orders/quote`.
+- **Critères d'acceptation :**
+  - Les frais de livraison sont calculés dynamiquement selon la zone choisie.
+  - Option retrait boutique (`PICKUP`) avec frais à 0 FCFA.
+- **Statut :** ⬜ À faire
+
+### Tâche 4.2 : Création de Commande & Passerelle NabooPay
+- **Fichiers :** `app/commande/page.tsx`, `lib/api/orders.ts`
+- **Endpoints :** `POST /orders`
+- **Description :** Valider la commande avec authentification obligatoire. Envoi strict des données (`variantId`, quantité, options d'emballage cadeau, zone, adresse, méthode de paiement). Redirection immédiate vers `checkoutUrl` pour Wave, Orange Money, Free Money ou Carte.
+- **Critères d'acceptation :**
+  - Si paiement en ligne : redirection fluide vers la page de paiement sécurisée NabooPay.
+  - Si paiement à la livraison : redirection vers `/commande/confirmation`.
+  - Le panier est vidé dès que la commande est enregistrée avec succès.
+- **Statut :** ⬜ À faire
+
+### Tâche 4.3 : Écrans de Confirmation & Reprise de Paiement
+- **Fichiers :** `app/commande/confirmation/page.tsx`, `app/commande/paiement-echoue/page.tsx`, `lib/api/payment.ts`
+- **Endpoints :** `GET /orders/mine/:orderNumber`, `POST /orders/mine/:orderNumber/pay`
+- **Description :** Afficher le récapitulatif complet de la commande confirmée. En cas d'échec ou d'annulation sur la passerelle NabooPay, permettre de relancer un paiement via `POST /orders/mine/:orderNumber/pay`.
+- **Critères d'acceptation :**
+  - Récupération du statut en temps réel de la commande (`PAID`, `PENDING`).
+  - Le bouton « Réessayer le paiement » génère un nouveau lien NabooPay fonctionnel.
+- **Statut :** ⬜ À faire
+
+### Tâche 4.4 : Historique des Commandes Client
+- **Fichiers :** `app/compte/commandes/page.tsx`, `app/compte/commandes/[id]/page.tsx`
+- **Endpoints :** `GET /orders/mine`, `GET /orders/mine/:orderNumber`, `POST /orders/mine/:orderNumber/cancel`
+- **Description :** Liste paginée des commandes du client avec badge de statut, articles commandés, adresse et montant total. Possibilité d'annuler une commande tant qu'elle est en attente ou payée (`PENDING`/`PAID`).
+- **Critères d'acceptation :**
+  - L'annulation met à jour le statut immédiatement et remet les articles en stock.
+- **Statut :** ⬜ À faire
+
+### Tâche 4.5 : Suivi de Livraison en Direct
+- **Fichiers :** `app/compte/suivi/[id]/page.tsx`, `lib/api/delivery.ts`
+- **Endpoints :** `GET /orders/mine/:orderNumber/tracking`
+- **Description :** Afficher le parcours de livraison en 4 étapes (`Préparation`, `Prise en charge`, `En cours d'acheminement`, `Livré`), avec les informations du livreur assigné et l'heure estimée.
+- **Critères d'acceptation :**
+  - Synchronisation de la barre de progression avec le statut réel de la livraison.
+- **Statut :** ⬜ À faire
+
+---
+
+## Phase 5 : Blog Floral & Abonnements Publics
+
+### Tâche 5.1 : Consultation du Blog Floral & Likes
+- **Fichiers :** `app/blog/page.tsx`, `app/blog/[slug]/page.tsx`, `lib/api/blog.ts`
+- **Endpoints :** `GET /blog/articles`, `GET /blog/articles/:slug`, `POST /blog/articles/:slug/like`, `GET /blog/categories`, `GET /blog/authors`
+- **Description :** Dynamiser le flux d'articles, la recherche par mots-clés, le filtre par catégorie et étiquette, la lecture d'un article avec temps de lecture et articles recommandés, et le bouton like sans authentification.
+- **Critères d'acceptation :**
+  - Le compteur de vues et de likes s'incrémente de façon réactive.
+- **Statut :** ⬜ À faire
+
+### Tâche 5.2 : Formules & Souscription d'Abonnement Floral
+- **Fichiers :** `app/abonnements/page.tsx`, `components/subscription-wizard.tsx`, `lib/api/subscriptions.ts`
+- **Endpoints :** `GET /subscriptions/plans`, `POST /subscriptions`
+- **Description :** Charger les formules officielles (`Particulier`, `Prestige`, `Entreprise`) avec tarifs hebdomadaire/bimensuel. Permettre la souscription interactive en 4 étapes (formule, fréquence, jour de livraison, coordonnées).
+- **Critères d'acceptation :**
+  - Génération de la référence unique `ABO-XXXXXX`.
+- **Statut :** ⬜ À faire
+
+### Tâche 5.3 : Espace Client — Gestion des Abonnements
+- **Fichiers :** `app/compte/abonnements/page.tsx`, `lib/api/subscriptions.ts`
+- **Endpoints :** `GET /subscriptions/mine`, `GET /subscriptions/mine/:subscriptionNumber`, `PATCH /subscriptions/mine/:subscriptionNumber/pause`, `PATCH /subscriptions/mine/:subscriptionNumber/resume`, `PATCH /subscriptions/mine/:subscriptionNumber/cancel`
+- **Description :** Permettre au client de consulter ses abonnements, de suspendre temporairement les passages (ex: congés) ou de les réactiver en un clic.
+- **Critères d'acceptation :**
+  - Changement d'état immédiat avec notification de confirmation.
+- **Statut :** ⬜ À faire
+
+---
+
+## Phase 6 : Authentification Admin & Tableau de Bord
+
+### Tâche 6.1 : Connexion Staff & Sécurisation Back-Office
+- **Fichiers :** `app/admin/connexion/page.tsx`, `components/admin/admin-guard.tsx`, `lib/api/admin-auth.ts`
+- **Endpoints :** `POST /auth/login`, `GET /auth/me`
+- **Description :** Remplacer le faux cookie `admin_auth=true` par une vraie authentification JWT. Vérifier que le compte possède un rôle staff autorisé (`ADMIN`, `MANAGER`, `FLORIST`, `DELIVERY`, `SALES`, `ACCOUNTANT`).
+- **Critères d'acceptation :**
+  - Un compte `CLIENT` standard tentant de se connecter à l'admin est rejeté avec un message d'accès refusé.
+  - Redirection automatique vers `/admin/connexion` si non authentifié.
+- **Statut :** ⬜ À faire
+
+### Tâche 6.2 : Tableau de Bord d'Administration
+- **Fichiers :** `app/admin/page.tsx`, `components/admin/dashboard-stats.tsx`, `lib/api/admin-dashboard.ts`
+- **Endpoints :** `GET /admin/dashboard`
+- **Description :** Connecter les 4 KPIs principaux (Chiffre d'affaires, Commandes, Clients, Produits), le graphique d'évolution des ventes, la distribution des commandes par statut, les commandes récentes et le top produits.
+- **Critères d'acceptation :**
+  - Données réelles agrégées affichées sans mocks.
+- **Statut :** ⬜ À faire
+
+### Tâche 6.3 : Rapports Financiers & Transactions
+- **Fichiers :** `app/admin/rapports/page.tsx`, `lib/api/admin-dashboard.ts`
+- **Endpoints :** `GET /admin/reports`, `GET /admin/reports/transactions`
+- **Description :** Raccorder les filtres de période (`today`, `7days`, `30days`, `this_month`, `this_year`, `custom`), le comparatif N vs N-1, la ventilation par zone et méthode de paiement, ainsi que le journal financier des transactions avec calcul des frais NabooPay.
+- **Critères d'acceptation :**
+  - Totaux bruts, frais de passerelle et montants nets cohérents avec la comptabilité.
+- **Statut :** ⬜ À faire
+
+---
+
+## Phase 7 : Catalogue Admin & Inventaire de Stock
+
+### Tâche 7.1 : Upload de Médias Produits & Catégories
+- **Fichiers :** `components/admin/image-uploader.tsx`, `lib/api/admin-upload.ts`
+- **Endpoints :** `POST /admin/uploads?folder=products`, `POST /admin/uploads?folder=categories`
+- **Description :** Créer un composant d'upload drag-and-drop envoyant les fichiers en `multipart/form-data` vers Cloudflare R2 via l'API, avec prévisualisation et barre de progression.
+- **Critères d'acceptation :**
+  - Support de 1 à 10 fichiers simultanés (JPEG, PNG, WebP, max 5 Mo).
+  - Renvoi direct des URLs publiques utilisables dans les formulaires.
+- **Statut :** ⬜ À faire
+
+### Tâche 7.2 : Gestion des Catégories & Sous-Catégories
+- **Fichiers :** `app/admin/categories/page.tsx`, `lib/api/admin-catalog.ts`
+- **Endpoints :** `POST /admin/categories`, `PATCH /admin/categories/:id`, `DELETE /admin/categories/:id`, `POST /admin/subcategories`, `PATCH /admin/subcategories/:id`, `DELETE /admin/subcategories/:id`
+- **Description :** Interface complète de gestion de la hiérarchie des catégories, avec photo de couverture, slug auto, description et réorganisation.
+- **Critères d'acceptation :**
+  - Création, modification et suppression fonctionnelles avec confirmation modale.
+- **Statut :** ⬜ À faire
+
+### Tâche 7.3 : Gestion des Produits Catalogue
+- **Fichiers :** `app/admin/produits/page.tsx`, `app/admin/produits/nouveau/page.tsx`, `app/admin/produits/[id]/page.tsx`
+- **Endpoints :** `GET /admin/products`, `GET /admin/products/:id`, `POST /admin/products`, `PATCH /admin/products/:id`, `DELETE /admin/products/:id`
+- **Description :** Gestion complète du catalogue : création avec variantes de tailles, prix de base et prix barré promo (`compareAtPrice`), statut (`ACTIVE`, `HIDDEN`, `ON_QUOTE`, `PROMO`), photo principale et galerie.
+- **Critères d'acceptation :**
+  - La suppression logique passe le produit en `HIDDEN`.
+  - La recherche et le filtre par statut fonctionnent côté admin.
+- **Statut :** ⬜ À faire
+
+### Tâche 7.4 : Gestion des Stocks & Mouvements d'Inventaire
+- **Fichiers :** `app/admin/stock/page.tsx`, `lib/api/admin-catalog.ts`
+- **Endpoints :** `GET /admin/inventory`, `POST /admin/inventory/:variantId/movements`, `GET /admin/stock-movements`
+- **Description :** Suivi en temps réel des stocks par variante de produit, filtre alerte stock bas (`lowStock=true`), saisie des mouvements (`ENTRY`, `EXIT`, `ADJUSTMENT`) avec motif et historique des modifications.
+- **Critères d'acceptation :**
+  - Un mouvement d'inventaire met à jour instantanément la quantité en stock.
+- **Statut :** ⬜ À faire
+
+---
+
+## Phase 8 : Commandes, Devis & Livraisons Admin
+
+### Tâche 8.1 : Gestion des Commandes Back-Office
+- **Fichiers :** `app/admin/commandes/page.tsx`, `app/admin/commandes/[id]/page.tsx`, `lib/api/admin-orders.ts`
+- **Endpoints :** `GET /admin/orders`, `GET /admin/orders/:id`, `PATCH /admin/orders/:id`, `PATCH /admin/orders/:id/status`
+- **Description :** Liste complète avec compteurs par statut (`counts`), recherche client/référence, détail complet de commande, saisie de notes internes et transitions de cycle de vie (`PENDING` → `PAID` → `PREPARING` → `READY` → `IN_DELIVERY` → `DELIVERED`).
+- **Critères d'acceptation :**
+  - Changement de statut avec historique d'événements enregistré.
+- **Statut :** ⬜ À faire
+
+### Tâche 8.2 : Configuration des Zones de Livraison
+- **Fichiers :** `app/admin/livraisons/zones/page.tsx` (ou modal dédié), `lib/api/admin-orders.ts`
+- **Endpoints :** `GET /admin/delivery-zones`, `POST /admin/delivery-zones`, `PATCH /admin/delivery-zones/:id`, `DELETE /admin/delivery-zones/:id`
+- **Description :** Interface de paramétrage des zones géographiques : nom de zone, tarif standard, tarif express, seuil de gratuité et délai estimé.
+- **Critères d'acceptation :**
+  - Les modifications de zones sont immédiatement appliquées au tunnel de commande client.
+- **Statut :** ⬜ À faire
+
+### Tâche 8.3 : Back-Office des Devis Événementiels
+- **Fichiers :** `app/admin/devis/page.tsx`, `app/admin/devis/[id]/page.tsx`, `lib/api/admin-quotes.ts`
+- **Endpoints :** `GET /admin/quotes`, `GET /admin/quotes/:id`, `PATCH /admin/quotes/:id`, `PATCH /admin/quotes/:id/status`
+- **Description :** Créer l'écran back-office de gestion des devis : visualisation des demandes, saisie du montant chiffré (`quotedAmount`), passage au statut `SENT`, `ACCEPTED` ou `REFUSED`, et notes administratives internes.
+- **Critères d'acceptation :**
+  - Le devis chiffré devient visible côté client avec montant mis à jour.
+- **Statut :** ⬜ À faire
+
+### Tâche 8.4 : Gestion des Livraisons & Assignation
+- **Fichiers :** `app/admin/livraisons/page.tsx`, `lib/api/admin-deliveries.ts`
+- **Endpoints :** `GET /admin/deliveries`, `GET /admin/deliveries/:id`, `PATCH /admin/deliveries/:id`, `POST /admin/deliveries/:id/assign`, `POST /admin/deliveries/:id/start`, `POST /admin/deliveries/:id/complete`, `POST /admin/deliveries/:id/fail`
+- **Description :** Tableau de bord logistique : assignation d'un livreur disponible, suivi du statut de la course, validation manuelle ou gestion des échecs de livraison.
+- **Critères d'acceptation :**
+  - L'assignation d'un livreur incrémente son compteur de courses en cours.
+- **Statut :** ⬜ À faire
+
+### Tâche 8.5 : Flotte de Livreurs
+- **Fichiers :** `app/admin/livreurs/page.tsx`, `lib/api/admin-deliveries.ts`
+- **Endpoints :** `GET /admin/drivers`, `GET /admin/drivers/:id`, `POST /admin/drivers`, `PATCH /admin/drivers/:id`, `DELETE /admin/drivers/:id`
+- **Description :** Gestion de la flotte de livreurs : ajout d'un livreur avec véhicule (moto, van), numéro de téléphone, statut de disponibilité (`AVAILABLE`, `UNAVAILABLE`) et historique de courses.
+- **Critères d'acceptation :**
+  - Ajout et modification d'un profil livreur fonctionnels.
+- **Statut :** ⬜ À faire
+
+---
+
+## Phase 9 : CRM Clients & Marketing Admin
+
+### Tâche 9.1 : CRM Clients & Segmentation
+- **Fichiers :** `app/admin/clients/page.tsx`, `app/admin/clients/[id]/page.tsx`, `lib/api/admin-customers.ts`
+- **Endpoints :** `GET /admin/customers`, `GET /admin/customers/:id`, `PATCH /admin/customers/:id`
+- **Description :** Liste paginée des clients avec filtres de segments (`particulier`, `entreprise`, `vip`), recherche multi-critères, fiche client détaillée avec historique des 10 dernières commandes, LTV, panier moyen, et modification du segment ou notes internes.
+- **Critères d'acceptation :**
+  - Affichage précis des statistiques CRM et modification du statut/segment.
+- **Statut :** ⬜ À faire
+
+### Tâche 9.2 : Gestion des Codes Promo & Promotions Catalogue
+- **Fichiers :** `app/admin/marketing/page.tsx`, `lib/api/admin-marketing.ts`
+- **Endpoints :** `GET/POST /admin/marketing/coupons`, `GET/PATCH/DELETE /admin/marketing/coupons/:id`, `GET/POST/PATCH/DELETE /admin/marketing/promotions[/:id]`
+- **Description :** Onglets de gestion des coupons (pourcentage, montant fixe, livraison offerte, dates, quotas d'utilisation) et des campagnes de promotion catalogue (bannières, réductions par catégorie ou produit).
+- **Critères d'acceptation :**
+  - Création d'un coupon immédiatement utilisable dans le panier client.
+- **Statut :** ⬜ À faire
+
+### Tâche 9.3 : Campagnes de Communication & Paniers Abandonnés
+- **Fichiers :** `app/admin/marketing/campagnes/page.tsx`, `app/admin/marketing/paniers-abandonnes/page.tsx`, `lib/api/admin-marketing.ts`
+- **Endpoints :** `GET/POST/PATCH/DELETE /admin/marketing/campaigns[/:id]`, `POST /admin/marketing/campaigns/:id/send`, `GET /admin/marketing/abandoned-carts`, `POST /admin/marketing/abandoned-carts/:id/remind`, `GET/PUT /admin/marketing/abandoned-carts/settings`
+- **Description :** Suivi des campagnes de communication (WhatsApp, SMS, Email) et gestion des paniers abandonnés avec déclenchement de relance et configuration des délais automatiques.
+- **Critères d'acceptation :**
+  - Envoi ou simulation de relance panier abandonné réussi.
+- **Statut :** ⬜ À faire
+
+---
+
+## Phase 10 : Blog, Abonnements & Paramètres Boutique
+
+### Tâche 10.1 : Gestion Éditoriale du Blog
+- **Fichiers :** `app/admin/blog/page.tsx`, `lib/api/admin-blog.ts`
+- **Endpoints :** `GET/POST/PATCH/DELETE /admin/blog/articles[/:id]`, `POST/PATCH/DELETE /admin/blog/categories[/:id]`, `POST/PATCH/DELETE /admin/blog/authors[/:id]`
+- **Description :** Back-office complet de publication : éditeur d'article (titre, slug auto, cover image, markdown, tags, SEO, statut brouillon/publié), gestion des catégories d'articles et des profils d'auteurs fleuristes.
+- **Critères d'acceptation :**
+  - Un article publié apparaît immédiatement sur la page publique `/blog`.
+- **Statut :** ⬜ À faire
+
+### Tâche 10.2 : Gestion des Abonnements Floraux & Passages
+- **Fichiers :** `app/admin/abonnements/page.tsx`, `lib/api/admin-subscriptions.ts`
+- **Endpoints :** `GET /admin/subscriptions`, `GET /admin/subscriptions/:id`, `PATCH /admin/subscriptions/:id/status`, `PATCH /admin/subscriptions/deliveries/:deliveryId`
+- **Description :** Suivi des contrats d'abonnements, calendrier des passages récurrents, validation de livraison d'un passage et enregistrement de l'échange/restitution de vase (`vaseReturned: true`).
+- **Critères d'acceptation :**
+  - Validation d'un passage de livraison avec mise à jour du statut.
+- **Statut :** ⬜ À faire
+
+### Tâche 10.3 : Paramètres de la Boutique & Équipe Staff
+- **Fichiers :** `app/admin/parametres/page.tsx`, `lib/api/admin-settings.ts`
+- **Endpoints :** `GET/PUT /admin/settings`, `GET /admin/roles`, `GET/POST/GET/PUT/DELETE /admin/users[/:id]`
+- **Description :** Configuration générale (coordonnées Dakar/Saly, horaires, devises, notifications WhatsApp/Email, SEO), matrice des permissions par rôle, et gestion des collaborateurs (création avec rôle et mot de passe, désactivation, suppression).
+- **Critères d'acceptation :**
+  - La modification des coordonnées boutique est répercutée sur le footer et les pages de contact du site.
+  - La création d'un collaborateur staff lui permet de se connecter avec ses droits dédiés.
+- **Statut :** ⬜ À faire
+
+---
+
+## Phase 11 : Recette E2E, Nettoyage & Sécurité
+
+### Tâche 11.1 : Tests d'Intégration Bout en Bout (Parcours Client & Admin)
+- **Fichiers :** Ensemble de l'application
+- **Description :** Validation complète du parcours d'achat (Sélection bouquet → Ajout panier → Code promo → Tunnel commande → Paiement → Suivi de livraison), ainsi que de la gestion back-office (Préparation commande → Assignation livreur → Clôture livraison).
+- **Critères d'acceptation :**
+  - Zéro erreur 500 ou crash React non intercepté.
+  - Expérience utilisateur fluide et réactive sur mobile et desktop.
+- **Statut :** ⬜ À faire
+
+### Tâche 11.2 : Nettoyage des Mocks & Optimisation Bundle
+- **Fichiers :** `lib/products.ts`, composants nettoyés
+- **Description :** Supprimer les données codées en dur superflues, vérifier les logs de build Next.js, s'assurer que toutes les pages dynamiques se compilent sans warning TypeScript.
+- **Critères d'acceptation :**
+  - `npm run build` s'exécute avec succès sans aucune erreur de compilation.
+- **Statut :** ⬜ À faire

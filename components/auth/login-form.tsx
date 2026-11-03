@@ -32,8 +32,8 @@ export function LoginForm() {
       setTimeout(() => {
         router.push('/compte');
       }, 500);
-    } catch {
-      setFeedback('Identifiant ou mot de passe incorrect.');
+    } catch (err: any) {
+      setFeedback(err?.message || 'Identifiant ou mot de passe incorrect.');
       setIsSubmitting(false);
     }
   }

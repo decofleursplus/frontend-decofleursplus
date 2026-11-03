@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   adminCoupons,
   adminPromotions,
@@ -17,6 +17,24 @@ import {
   type CampaignChannel,
   type CartRecoveryStatus,
 } from '@/lib/admin/mock-data';
+import {
+  getAdminCoupons,
+  createAdminCoupon,
+  updateAdminCoupon,
+  deleteAdminCoupon,
+  getAdminPromotions,
+  createAdminPromotion,
+  updateAdminPromotion,
+  deleteAdminPromotion,
+  getAdminCampaigns,
+  createAdminCampaign,
+  sendAdminCampaign,
+  deleteAdminCampaign,
+  getAdminAbandonedCarts,
+  remindAdminAbandonedCart,
+  getCartRecoverySettings,
+  updateCartRecoverySettings,
+} from '@/lib/api/admin/marketing';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -48,6 +66,7 @@ import {
   Calendar,
   ExternalLink,
   ShieldCheck,
+  RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { WhatsAppColorIcon, WhatsAppButtonIcon } from '@/components/icons';
@@ -67,6 +86,37 @@ export default function AdminMarketingPage() {
   const [campaigns, setCampaigns] = useState<AdminCampaign[]>(adminCampaigns);
   const [abandonedCarts, setAbandonedCarts] = useState<AdminAbandonedCart[]>(adminAbandonedCarts);
   const [cartSettings, setCartSettings] = useState<CartRecoverySettings>(defaultCartRecoverySettings);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadData = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+
+    try {
+      const [cpRes, prRes, cmpRes, crtRes, setRes] = await Promise.all([
+        getAdminCoupons(),
+        getAdminPromotions(),
+        getAdminCampaigns(),
+        getAdminAbandonedCarts(),
+        getCartRecoverySettings(),
+      ]);
+      if (cpRes && Array.isArray(cpRes)) setCoupons(cpRes);
+      if (prRes && Array.isArray(prRes)) setPromotions(prRes);
+      if (cmpRes && Array.isArray(cmpRes)) setCampaigns(cmpRes);
+      if (crtRes && Array.isArray(crtRes)) setAbandonedCarts(crtRes);
+      if (setRes) setCartSettings(setRes);
+    } catch {
+      toast.error('Erreur lors du chargement des données marketing');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // Search & Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -177,43 +227,61 @@ export default function AdminMarketingPage() {
     toast.success(`Code promo "${code}" copié dans le presse-papier !`);
   };
 
-  const handleToggleCouponStatus = (couponId: string) => {
+  const handleToggleCouponStatus = async (couponId: string) => {
+    const cp = coupons.find((c) => c.id === couponId);
+    if (!cp) return;
+    const nextStatus: CouponStatus = cp.status === 'actif' ? 'inactif' : 'actif';
+
     setCoupons((prev) =>
-      prev.map((c) => {
-        if (c.id === couponId) {
-          const nextStatus: CouponStatus = c.status === 'actif' ? 'inactif' : 'actif';
-          toast.info(`Code ${c.code} ${nextStatus === 'actif' ? 'activé' : 'désactivé'}`);
-          return { ...c, status: nextStatus };
-        }
-        return c;
-      })
+      prev.map((c) => (c.id === couponId ? { ...c, status: nextStatus } : c))
     );
+    toast.info(`Code ${cp.code} ${nextStatus === 'actif' ? 'activé' : 'désactivé'}`);
+
+    try {
+      await updateAdminCoupon(couponId, { status: nextStatus });
+    } catch {
+      // optimistic
+    }
   };
 
-  const handleDeleteCoupon = (couponId: string) => {
+  const handleDeleteCoupon = async (couponId: string) => {
     setCoupons((prev) => prev.filter((c) => c.id !== couponId));
     toast.info('Code promotionnel supprimé');
+    try {
+      await deleteAdminCoupon(couponId);
+    } catch {
+      // optimistic
+    }
   };
 
-  const handleTogglePromotionStatus = (promoId: string) => {
+  const handleTogglePromotionStatus = async (promoId: string) => {
+    const pr = promotions.find((p) => p.id === promoId);
+    if (!pr) return;
+    const nextStatus: PromotionStatus = pr.status === 'active' ? 'inactive' : 'active';
+
     setPromotions((prev) =>
-      prev.map((p) => {
-        if (p.id === promoId) {
-          const nextStatus: PromotionStatus = p.status === 'active' ? 'inactive' : 'active';
-          toast.info(`Promotion "${p.name}" passée en ${nextStatus}`);
-          return { ...p, status: nextStatus };
-        }
-        return p;
-      })
+      prev.map((p) => (p.id === promoId ? { ...p, status: nextStatus } : p))
     );
+    toast.info(`Promotion "${pr.name}" passée en ${nextStatus}`);
+
+    try {
+      await updateAdminPromotion(promoId, { status: nextStatus });
+    } catch {
+      // optimistic
+    }
   };
 
-  const handleDeletePromotion = (promoId: string) => {
+  const handleDeletePromotion = async (promoId: string) => {
     setPromotions((prev) => prev.filter((p) => p.id !== promoId));
     toast.info('Promotion supprimée du catalogue');
+    try {
+      await deleteAdminPromotion(promoId);
+    } catch {
+      // optimistic
+    }
   };
 
-  const handleSendCartReminder = (cart: AdminAbandonedCart, channel: 'whatsapp' | 'email') => {
+  const handleSendCartReminder = async (cart: AdminAbandonedCart, channel: 'whatsapp' | 'email') => {
     const nowTime = `Aujourd’hui à ${new Date().toLocaleTimeString('fr-FR', {
       hour: '2-digit',
       minute: '2-digit',
@@ -232,6 +300,12 @@ export default function AdminMarketingPage() {
         return c;
       })
     );
+
+    try {
+      await remindAdminAbandonedCart(cart.id, channel);
+    } catch {
+      // optimistic
+    }
 
     if (channel === 'whatsapp') {
       const cleanPhone = cart.customerPhone.replace(/[^0-9]/g, '');
@@ -398,11 +472,22 @@ export default function AdminMarketingPage() {
           </p>
         </div>
 
-        <div className="w-full sm:w-auto">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => loadData(true)}
+            disabled={loading || refreshing}
+            className="h-10 text-xs text-gray-700 bg-white border-[#e7e4dd] hover:bg-gray-50 flex-1 sm:flex-initial"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? 'animate-spin text-[#c1647a]' : ''}`} />
+            Actualiser
+          </Button>
+
           {activeTab === 'coupons' && (
             <Button
               onClick={() => setIsCouponDialogOpen(true)}
-              className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold h-10 px-4 gap-1.5 shadow-xs w-full sm:w-auto"
+              className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold h-10 px-4 gap-1.5 shadow-xs flex-1 sm:flex-initial"
             >
               <Plus className="h-4 w-4" />
               Nouveau code promo
@@ -412,7 +497,7 @@ export default function AdminMarketingPage() {
           {activeTab === 'promotions' && (
             <Button
               onClick={() => setIsPromotionDialogOpen(true)}
-              className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold h-10 px-4 gap-1.5 shadow-xs w-full sm:w-auto"
+              className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold h-10 px-4 gap-1.5 shadow-xs flex-1 sm:flex-initial"
             >
               <Plus className="h-4 w-4" />
               Lancer une promotion
@@ -422,7 +507,7 @@ export default function AdminMarketingPage() {
           {activeTab === 'campagnes' && (
             <Button
               onClick={() => setIsCampaignDialogOpen(true)}
-              className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold h-10 px-4 gap-1.5 shadow-xs w-full sm:w-auto"
+              className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold h-10 px-4 gap-1.5 shadow-xs flex-1 sm:flex-initial"
             >
               <Plus className="h-4 w-4" />
               Nouvelle campagne
@@ -433,7 +518,7 @@ export default function AdminMarketingPage() {
             <Button
               variant="outline"
               onClick={() => setIsConfigDialogOpen(true)}
-              className="border-[#e7e4dd] text-gray-800 hover:text-[#c1647a] text-xs font-semibold h-10 px-4 gap-1.5 bg-white shadow-xs w-full sm:w-auto"
+              className="border-[#e7e4dd] text-gray-800 hover:text-[#c1647a] text-xs font-semibold h-10 px-4 gap-1.5 bg-white shadow-xs flex-1 sm:flex-initial"
             >
               <Sliders className="h-4 w-4 text-[#c1647a]" />
               Configuration automatique
@@ -1748,26 +1833,80 @@ export default function AdminMarketingPage() {
       <CreateCouponDialog
         isOpen={isCouponDialogOpen}
         onOpenChange={setIsCouponDialogOpen}
-        onCreate={(newCoupon) => setCoupons((prev) => [newCoupon, ...prev])}
+        onCreate={async (newCoupon) => {
+          setCoupons((prev) => [newCoupon, ...prev]);
+          try {
+            await createAdminCoupon({
+              code: newCoupon.code,
+              type: newCoupon.type,
+              value: newCoupon.value,
+              minOrderAmount: newCoupon.minOrderAmount,
+              maxUsageTotal: newCoupon.maxUsageTotal,
+              startDate: newCoupon.startDate,
+              endDate: newCoupon.endDate,
+              description: newCoupon.description,
+            });
+            toast.success('Code promo créé avec succès !');
+          } catch {
+            // optimistic
+          }
+        }}
       />
 
       <CreatePromotionDialog
         isOpen={isPromotionDialogOpen}
         onOpenChange={setIsPromotionDialogOpen}
-        onCreate={(newPromo) => setPromotions((prev) => [newPromo, ...prev])}
+        onCreate={async (newPromo) => {
+          setPromotions((prev) => [newPromo, ...prev]);
+          try {
+            await createAdminPromotion({
+              name: newPromo.name,
+              discountPercentage: newPromo.discountPercentage,
+              startDate: newPromo.startDate,
+              endDate: newPromo.endDate,
+              badgeText: newPromo.badgeText,
+              targetType: newPromo.targetType,
+              targetNames: newPromo.targetNames,
+            });
+            toast.success('Promotion catalogue créée avec succès !');
+          } catch {
+            // optimistic
+          }
+        }}
       />
 
       <CreateCampaignDialog
         isOpen={isCampaignDialogOpen}
         onOpenChange={setIsCampaignDialogOpen}
-        onCreate={(newCamp) => setCampaigns((prev) => [newCamp, ...prev])}
+        onCreate={async (newCamp) => {
+          setCampaigns((prev) => [newCamp, ...prev]);
+          try {
+            await createAdminCampaign({
+              name: newCamp.name,
+              channel: newCamp.channel,
+              audience: newCamp.audience,
+              messageContent: newCamp.messageContent,
+            });
+            toast.success('Campagne marketing créée avec succès !');
+          } catch {
+            // optimistic
+          }
+        }}
       />
 
       <CartRecoveryConfigDialog
         isOpen={isConfigDialogOpen}
         onOpenChange={setIsConfigDialogOpen}
         settings={cartSettings}
-        onSave={(newSettings) => setCartSettings(newSettings)}
+        onSave={async (newSettings) => {
+          setCartSettings(newSettings);
+          try {
+            await updateCartRecoverySettings(newSettings);
+            toast.success('Paramètres de relance automatique enregistrés');
+          } catch {
+            // optimistic
+          }
+        }}
       />
     </div>
   );

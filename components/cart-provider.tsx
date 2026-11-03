@@ -14,6 +14,7 @@ type CartContextValue = {
   add: (product: Product, quantity?: number, options?: CartOptions) => void;
   change: (lineId: string, quantity: number) => void;
   remove: (lineId: string) => void;
+  clear: () => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -64,6 +65,7 @@ export function CartProvider({ children }: Readonly<{ children: React.ReactNode 
       ? current.filter((item) => item.lineId !== lineId)
       : current.map((item) => item.lineId === lineId ? { ...item, quantity } : item)),
     remove: (lineId) => setItems((current) => current.filter((item) => item.lineId !== lineId)),
+    clear: () => setItems([]),
   }), [favorites, items]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

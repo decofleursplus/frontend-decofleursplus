@@ -1,6 +1,14 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import {
+  loginUser as apiLoginUser,
+  registerUser as apiRegisterUser,
+  getCurrentUser,
+  logoutUser as apiLogoutUser,
+} from '@/lib/api/auth';
+import { getAuthToken } from '@/lib/api/auth-token';
+import { ApiUser } from '@/lib/api/types';
 
 export type User = {
   id: string;
@@ -10,6 +18,7 @@ export type User = {
   avatar?: string;
   provider: 'google' | 'facebook' | 'email';
   createdAt?: string;
+  role?: string;
 };
 
 export const DEFAULT_USER: User = {
@@ -43,216 +52,174 @@ type AuthContextType = {
     autoLogin?: boolean,
   ) => Promise<User>;
   loginUser: (userToLogin: User) => void;
+  updateUser: (updatedData: Partial<User>) => void;
   logout: () => void;
   resetToDefault: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const AUTH_STORAGE_KEY = 'decofleur_auth_session';
-const REGISTERED_USERS_KEY = 'decofleur_registered_users';
+const USER_SESSION_KEY = 'decofleur_user_session';
 
-function normalizePhone(val: string): string {
-  return val.replace(/[\s\-\.\(\)]/g, '').toLowerCase();
-}
-
-function getStoredUsers(): User[] {
-  if (typeof window === 'undefined') return DEMO_USERS;
-  try {
-    const raw = localStorage.getItem(REGISTERED_USERS_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch {
-    // fallback
-  }
-  return DEMO_USERS;
-}
-
-function getInitialUser(): User | null {
-  if (typeof window === 'undefined') {
-    return DEFAULT_USER;
-  }
-  try {
-    const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-    if (stored === 'guest') {
-      return null;
-    }
-    if (stored) {
-      return JSON.parse(stored);
-    }
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(DEFAULT_USER));
-    return DEFAULT_USER;
-  } catch {
-    return DEFAULT_USER;
-  }
+function mapApiUserToUser(apiUser: ApiUser): User {
+  return {
+    id: apiUser.id,
+    name: apiUser.name || `${apiUser.firstName || ''} ${apiUser.lastName || ''}`.trim() || 'Client',
+    email: apiUser.email,
+    phone: apiUser.phone,
+    avatar: apiUser.avatar,
+    provider: apiUser.provider || 'email',
+    createdAt: apiUser.createdAt,
+    role: apiUser.role,
+  };
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(getInitialUser);
-  const isLoading = false;
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  // Synchronisation initiale : vérifier le token JWT existant
   useEffect(() => {
-    // ensure registered users initialized in storage
-    try {
-      if (!localStorage.getItem(REGISTERED_USERS_KEY)) {
-        localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(DEMO_USERS));
+    let isMounted = true;
+
+    async function initSession() {
+      const token = getAuthToken();
+      if (!token) {
+        if (isMounted) {
+          setUser(null);
+          setIsLoading(false);
+        }
+        return;
       }
-    } catch {
-      // ignore
+
+      // Tenter de charger le profil en cache pour un rendu rapide
+      try {
+        const cached = localStorage.getItem(USER_SESSION_KEY);
+        if (cached && isMounted) {
+          setUser(JSON.parse(cached));
+        }
+      } catch {
+        // Ignorer l'erreur de cache
+      }
+
+      // Valider le token auprès du serveur backend
+      try {
+        const apiUser = await getCurrentUser();
+        if (isMounted && apiUser) {
+          const freshUser = mapApiUserToUser(apiUser);
+          setUser(freshUser);
+          localStorage.setItem(USER_SESSION_KEY, JSON.stringify(freshUser));
+        }
+      } catch (error) {
+        console.warn('[Auth] Token invalide ou expiré, réinitialisation de la session');
+        if (isMounted) {
+          apiLogoutUser();
+          localStorage.removeItem(USER_SESSION_KEY);
+          setUser(null);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    initSession();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const login = useCallback(async (identifier: string, password = ''): Promise<User> => {
+    setIsLoading(true);
+    try {
+      const authData = await apiLoginUser({
+        identifier,
+        password,
+      });
+
+      const loggedUser = mapApiUserToUser(authData.user);
+      setUser(loggedUser);
+      localStorage.setItem(USER_SESSION_KEY, JSON.stringify(loggedUser));
+      return loggedUser;
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
-  async function login(identifier: string): Promise<User> {
-    const cleanId = identifier.trim();
-    const storedUsers = getStoredUsers();
-
-    // Check if match by email or phone
-    const normalizedInput = normalizePhone(cleanId);
-    const existing = storedUsers.find(
-      (u) =>
-        u.email.toLowerCase() === cleanId.toLowerCase() ||
-        normalizePhone(u.phone) === normalizedInput,
-    );
-
-    let loggedUser: User;
-    if (existing) {
-      loggedUser = existing;
-    } else {
-      const isEmail = cleanId.includes('@');
-      const displayName = isEmail
-        ? cleanId.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-        : `Client ${cleanId.slice(-4) || 'Décofleur'}`;
-
-      loggedUser = {
-        id: `usr_${Date.now()}`,
-        name: displayName,
-        email: isEmail ? cleanId : `${cleanId.replace(/[^0-9]/g, '')}@client-decofleur.sn`,
-        phone: isEmail ? '+221 77 800 12 34' : cleanId,
-        provider: 'email',
-        createdAt: new Date().toISOString(),
-      };
-
-      // save to registered list
+  const register = useCallback(
+    async (
+      data: { name: string; email: string; phone: string; password?: string },
+      autoLogin = true,
+    ): Promise<User> => {
+      setIsLoading(true);
       try {
-        const nextUsers = [...storedUsers, loggedUser];
-        localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(nextUsers));
-      } catch {
-        // ignore
+        const authData = await apiRegisterUser({
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          password: data.password || 'Pass1234!',
+        });
+
+        const newUser = mapApiUserToUser(authData.user);
+        if (autoLogin) {
+          setUser(newUser);
+          localStorage.setItem(USER_SESSION_KEY, JSON.stringify(newUser));
+        }
+        return newUser;
+      } finally {
+        setIsLoading(false);
       }
-    }
+    },
+    [],
+  );
 
-    setUser(loggedUser);
-    try {
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(loggedUser));
-    } catch {
-      // ignore
-    }
-    return loggedUser;
-  }
+  const loginWithGoogle = useCallback(async (): Promise<User> => {
+    // V1 : Non supporté côté serveur, message informatif
+    throw new Error('La connexion avec Google sera bientôt disponible.');
+  }, []);
 
-  async function loginWithGoogle(): Promise<User> {
-    const googleUser: User = {
-      id: `g_${Date.now()}`,
-      name: 'Fatou Ba',
-      email: 'fatou.ba@gmail.com',
-      phone: '+221 77 123 45 67',
-      provider: 'google',
-      avatar: '/images/hero.webp',
-      createdAt: new Date().toISOString(),
-    };
+  const loginWithFacebook = useCallback(async (): Promise<User> => {
+    // V1 : Non supporté côté serveur, message informatif
+    throw new Error('La connexion avec Facebook sera bientôt disponible.');
+  }, []);
 
-    setUser(googleUser);
-    try {
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(googleUser));
-    } catch {
-      // ignore
-    }
-    return googleUser;
-  }
-
-  async function loginWithFacebook(): Promise<User> {
-    const fbUser: User = {
-      id: `fb_${Date.now()}`,
-      name: 'Sally Diop',
-      email: 'sally.diop@facebook.com',
-      phone: '+221 77 941 78 60',
-      provider: 'facebook',
-      createdAt: new Date().toISOString(),
-    };
-
-    setUser(fbUser);
-    try {
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(fbUser));
-    } catch {
-      // ignore
-    }
-    return fbUser;
-  }
-
-  async function register(
-    data: { name: string; email: string; phone: string },
-    autoLogin = false,
-  ): Promise<User> {
-    const newUser: User = {
-      id: `usr_${Date.now()}`,
-      name: data.name.trim(),
-      email: data.email.trim(),
-      phone: data.phone.trim(),
-      provider: 'email',
-      createdAt: new Date().toISOString(),
-    };
-
-    // Save to users list
-    try {
-      const current = getStoredUsers();
-      const updated = [newUser, ...current.filter((u) => u.email !== newUser.email)];
-      localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
-
-    if (autoLogin) {
-      setUser(newUser);
-      try {
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newUser));
-      } catch {
-        // ignore
-      }
-    }
-
-    return newUser;
-  }
-
-  function loginUser(userToLogin: User) {
+  const loginUser = useCallback((userToLogin: User) => {
     setUser(userToLogin);
     try {
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userToLogin));
+      localStorage.setItem(USER_SESSION_KEY, JSON.stringify(userToLogin));
     } catch {
-      // ignore
+      // Ignorer
     }
-  }
+  }, []);
 
-  function logout() {
+  const updateUser = useCallback((updatedData: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const nextUser = { ...prev, ...updatedData };
+      try {
+        localStorage.setItem(USER_SESSION_KEY, JSON.stringify(nextUser));
+      } catch {
+        // Ignorer
+      }
+      return nextUser;
+    });
+  }, []);
+
+  const logout = useCallback(() => {
+    apiLogoutUser();
     setUser(null);
     try {
-      localStorage.setItem(AUTH_STORAGE_KEY, 'guest');
+      localStorage.removeItem(USER_SESSION_KEY);
     } catch {
-      // ignore
+      // Ignorer
     }
-  }
+  }, []);
 
-  function resetToDefault() {
-    setUser(DEFAULT_USER);
-    try {
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(DEFAULT_USER));
-    } catch {
-      // ignore
-    }
-  }
+  const resetToDefault = useCallback(() => {
+    logout();
+  }, [logout]);
 
   return (
     <AuthContext.Provider
@@ -265,6 +232,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loginWithFacebook,
         register,
         loginUser,
+        updateUser,
         logout,
         resetToDefault,
       }}

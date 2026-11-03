@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   adminDeliveries,
   adminDrivers,
@@ -8,6 +8,15 @@ import {
   type DeliveryDriver,
   type DeliveryStatus,
 } from '@/lib/admin/mock-data';
+import {
+  getAdminDeliveries,
+  getAdminDrivers,
+  assignDeliveryDriver,
+  completeAdminDelivery,
+  failAdminDelivery,
+  createAdminDriver,
+  updateAdminDriver,
+} from '@/lib/api/admin/deliveries';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -37,6 +46,7 @@ import {
   Phone,
   Power,
   ChevronRight,
+  RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AssignDriverDialog } from '@/components/admin/assign-driver-dialog';
@@ -51,6 +61,31 @@ export default function AdminDeliveriesPage() {
   // Deliveries and Drivers State
   const [deliveries, setDeliveries] = useState<AdminDelivery[]>(adminDeliveries);
   const [drivers, setDrivers] = useState<DeliveryDriver[]>(adminDrivers);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadData = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+
+    try {
+      const [delRes, drvRes] = await Promise.all([
+        getAdminDeliveries(),
+        getAdminDrivers(true),
+      ]);
+      if (delRes?.deliveries) setDeliveries(delRes.deliveries);
+      if (drvRes && Array.isArray(drvRes)) setDrivers(drvRes);
+    } catch {
+      toast.error('Erreur lors du chargement des livraisons et livreurs');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // Status Sub-Pill Filter on courses tab
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -192,7 +227,7 @@ export default function AdminDeliveriesPage() {
   };
 
   // Status change helper
-  const handleStatusChange = (deliveryId: string, newStatus: DeliveryStatus) => {
+  const handleStatusChange = async (deliveryId: string, newStatus: DeliveryStatus) => {
     setDeliveries((prev) =>
       prev.map((d) => {
         if (d.id === deliveryId) {
@@ -220,10 +255,21 @@ export default function AdminDeliveriesPage() {
     if (selectedDelivery && selectedDelivery.id === deliveryId) {
       setSelectedDelivery((prev) => (prev ? { ...prev, status: newStatus } : null));
     }
+
+    try {
+      if (newStatus === 'livree') {
+        await completeAdminDelivery(deliveryId, {});
+      } else if (newStatus === 'echec') {
+        await failAdminDelivery(deliveryId, { reason: 'Signalé par l’administrateur' });
+      }
+      toast.success(`Statut mis à jour : ${newStatus}`);
+    } catch {
+      toast.warning('Statut mis à jour localement');
+    }
   };
 
   // Driver assignment handler
-  const handleAssignDriver = (
+  const handleAssignDriver = async (
     deliveryId: string,
     driverId: string,
     timeSlot: string,
@@ -282,10 +328,21 @@ export default function AdminDeliveriesPage() {
           : null
       );
     }
+
+    try {
+      await assignDeliveryDriver(deliveryId, {
+        driverId,
+        timeSlot,
+        note: notes,
+      });
+      toast.success(`Livreur ${drv.name} assigné avec succès`);
+    } catch {
+      toast.warning('Assignation enregistrée localement');
+    }
   };
 
   // Complete delivery handler
-  const handleCompleteDelivery = (deliveryId: string, recipientName: string, notes?: string) => {
+  const handleCompleteDelivery = async (deliveryId: string, recipientName: string, notes?: string) => {
     const now = new Date();
     const timeFormatted = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     const dateFormatted = `Aujourd'hui à ${timeFormatted}`;
@@ -344,25 +401,54 @@ export default function AdminDeliveriesPage() {
           : null
       );
     }
+
+    try {
+      await completeAdminDelivery(deliveryId, { recipientName, notes });
+      toast.success('Livraison marquée comme effectuée !');
+    } catch {
+      toast.warning('Livraison validée localement');
+    }
   };
 
   // Add new driver
-  const handleAddDriver = (newDriver: DeliveryDriver) => {
+  const handleAddDriver = async (newDriver: DeliveryDriver) => {
     setDrivers((prev) => [newDriver, ...prev]);
+    try {
+      await createAdminDriver({
+        name: newDriver.name,
+        phone: newDriver.phone,
+        vehicle: newDriver.vehicle,
+        vehiclePlate: newDriver.vehiclePlate,
+      });
+      toast.success('Nouveau livreur enregistré dans la base');
+    } catch {
+      toast.warning('Livreur ajouté localement');
+    }
   };
 
   // Toggle driver status
-  const handleToggleDriverStatus = (driverId: string) => {
+  const handleToggleDriverStatus = async (driverId: string) => {
+    const drv = drivers.find((d) => d.id === driverId);
+    if (!drv) return;
+    const nextStatus = drv.status === 'disponible' ? 'indisponible' : 'disponible';
+
     setDrivers((prev) =>
-      prev.map((drv) => {
-        if (drv.id === driverId) {
-          const nextStatus = drv.status === 'disponible' ? 'indisponible' : 'disponible';
-          toast.info(`${drv.name} est maintenant marqué comme ${nextStatus}`);
-          return { ...drv, status: nextStatus };
+      prev.map((d) => {
+        if (d.id === driverId) {
+          return { ...d, status: nextStatus };
         }
-        return drv;
+        return d;
       })
     );
+    toast.info(`${drv.name} est maintenant marqué comme ${nextStatus}`);
+
+    try {
+      await updateAdminDriver(driverId, {
+        availability: nextStatus === 'disponible' ? 'AVAILABLE' : 'OFFLINE',
+      });
+    } catch {
+      // Keep optimistic
+    }
   };
 
   // Modals opening helpers
@@ -384,12 +470,24 @@ export default function AdminDeliveriesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="admin-page-header">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="admin-page-title text-[#1e2a1f] font-bold">Gestion des livraisons</h1>
           <p className="admin-page-subtitle text-gray-500 mt-1">
             Supervisez les expéditions en temps réel, assignez vos livreurs et assurez le suivi des colis.
           </p>
+        </div>
+        <div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => loadData(true)}
+            disabled={loading || refreshing}
+            className="h-10 text-xs text-gray-700 bg-white border-[#e7e4dd] hover:bg-gray-50"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? 'animate-spin text-[#c1647a]' : ''}`} />
+            Actualiser
+          </Button>
         </div>
       </div>
 

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { adminCustomers } from '@/lib/admin/mock-data/customers';
 import type { AdminCustomer } from '@/lib/admin/mock-data/types';
+import { getAdminCustomers, updateAdminCustomer } from '@/lib/api/admin/customers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -47,14 +48,37 @@ import {
   Check,
   TrendingDown,
   ArrowUpDown,
+  RefreshCw,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { SendEmailDialog } from '@/components/admin/send-email-dialog';
+import { toast } from 'sonner';
 
 export default function AdminCustomersPage() {
-  const [customers] = useState<AdminCustomer[]>(adminCustomers);
+  const [customers, setCustomers] = useState<AdminCustomer[]>(adminCustomers);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const loadCustomers = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+
+    try {
+      const res = await getAdminCustomers();
+      if (res?.customers) setCustomers(res.customers);
+    } catch {
+      toast.error('Erreur lors du chargement des clients');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCustomers();
+  }, [loadCustomers]);
 
   // Segment Pill Filter: 'all' | 'vip' | 'entreprise' | 'particulier' | 'inactif'
   const [segmentFilter, setSegmentFilter] = useState<
@@ -246,12 +270,24 @@ export default function AdminCustomersPage() {
   return (
     <div className="space-y-6">
       {/* Header — Clean without Exporter CSV */}
-      <div className="admin-page-header">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="admin-page-title text-2xl font-bold text-[#1e2a1f]">Clients & CRM</h1>
           <p className="admin-page-subtitle text-sm text-gray-500">
             Gérez votre base de clients, suivez leur valeur et communiquez directement avec eux.
           </p>
+        </div>
+        <div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => loadCustomers(true)}
+            disabled={loading || refreshing}
+            className="h-10 text-xs text-gray-700 bg-white border-[#e7e4dd] hover:bg-gray-50"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? 'animate-spin text-[#c1647a]' : ''}`} />
+            Actualiser
+          </Button>
         </div>
       </div>
 

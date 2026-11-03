@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import {
   reportsDatasets,
@@ -10,6 +10,7 @@ import {
   type PaymentMethodType,
   type SettlementStatus,
 } from '@/lib/admin/mock-data';
+import { getAdminReports, getAdminFinancialTransactions } from '@/lib/api/admin/reports';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -106,8 +107,55 @@ export default function AdminRapportsPage() {
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Current Dataset based on period
-  const dataset = reportsDatasets[selectedPeriod] || reportsDatasets['30days'];
+  // Dynamic Dataset based on period
+  const [dataset, setDataset] = useState(reportsDatasets[selectedPeriod] || reportsDatasets['30days']);
+  const [transactions, setTransactions] = useState<FinancialTransaction[]>(financialTransactions);
+
+  // Charger le rapport de ventes selon la période
+  useEffect(() => {
+    let active = true;
+    async function loadReports() {
+      try {
+        const res = await getAdminReports({
+          preset: selectedPeriod,
+          startDate: selectedPeriod === 'custom' ? customStartDate : undefined,
+          endDate: selectedPeriod === 'custom' ? customEndDate : undefined,
+        });
+        if (active && res) {
+          setDataset(res);
+        }
+      } catch (err) {
+        console.error('Erreur chargement rapport:', err);
+      }
+    }
+    loadReports();
+    return () => {
+      active = false;
+    };
+  }, [selectedPeriod, customStartDate, customEndDate]);
+
+  // Charger les transactions financières
+  useEffect(() => {
+    let active = true;
+    async function loadTransactions() {
+      try {
+        const res = await getAdminFinancialTransactions({
+          search: transactionSearch,
+          paymentMethod: paymentMethodFilter,
+          status: settlementStatusFilter,
+        });
+        if (active && res?.items) {
+          setTransactions(res.items);
+        }
+      } catch (err) {
+        console.error('Erreur chargement transactions:', err);
+      }
+    }
+    loadTransactions();
+    return () => {
+      active = false;
+    };
+  }, [transactionSearch, paymentMethodFilter, settlementStatusFilter]);
 
   // Currency Formatter
   const formatCurrency = (amount: number) => {
@@ -119,17 +167,34 @@ export default function AdminRapportsPage() {
   };
 
   // Refresh handler
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsRefreshing(true);
-    setTimeout(() => {
-      setIsRefreshing(false);
+    try {
+      const [rep, txs] = await Promise.all([
+        getAdminReports({
+          preset: selectedPeriod,
+          startDate: selectedPeriod === 'custom' ? customStartDate : undefined,
+          endDate: selectedPeriod === 'custom' ? customEndDate : undefined,
+        }),
+        getAdminFinancialTransactions({
+          search: transactionSearch,
+          paymentMethod: paymentMethodFilter,
+          status: settlementStatusFilter,
+        }),
+      ]);
+      if (rep) setDataset(rep);
+      if (txs?.items) setTransactions(txs.items);
       toast.success('Données analytiques et financières actualisées');
-    }, 500);
+    } catch {
+      toast.error('Erreur lors de l’actualisation des données');
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   // Filtered transactions for financial log
   const filteredTransactions = useMemo(() => {
-    return financialTransactions.filter((tx) => {
+    return transactions.filter((tx) => {
       const matchesSearch =
         tx.ref.toLowerCase().includes(transactionSearch.toLowerCase()) ||
         tx.orderRef.toLowerCase().includes(transactionSearch.toLowerCase()) ||
@@ -144,7 +209,7 @@ export default function AdminRapportsPage() {
 
       return matchesSearch && matchesMethod && matchesStatus;
     });
-  }, [transactionSearch, paymentMethodFilter, settlementStatusFilter]);
+  }, [transactions, transactionSearch, paymentMethodFilter, settlementStatusFilter]);
 
   // Chart 1: Sales Evolution Line Chart
   const salesChartData = {

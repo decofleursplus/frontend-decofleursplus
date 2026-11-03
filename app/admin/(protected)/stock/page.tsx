@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { adminProducts } from '@/lib/admin/mock-data/products';
 import { initialStockMovements } from '@/lib/admin/mock-data/stock';
 import type { AdminProduct, StockMovement, StockMovementType } from '@/lib/admin/mock-data/types';
+import { getAdminProducts } from '@/lib/api/admin/products';
+import { getStockMovements, recordStockMovement } from '@/lib/api/admin/stock';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -41,16 +43,41 @@ import {
   CheckCircle2,
   Maximize2,
   FileText,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AdminStockPage() {
   const [products, setProducts] = useState<AdminProduct[]>(adminProducts);
   const [movements, setMovements] = useState<StockMovement[]>(initialStockMovements);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function loadStockData(isRefresh = false) {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+
+    try {
+      const [prodsRes, mvtsRes] = await Promise.all([
+        getAdminProducts({ limit: 100 }),
+        getStockMovements({ limit: 50 }),
+      ]);
+      if (prodsRes?.items && prodsRes.items.length > 0) setProducts(prodsRes.items);
+      if (mvtsRes && Array.isArray(mvtsRes) && mvtsRes.length > 0) setMovements(mvtsRes);
+    } catch {
+      toast.error('Erreur lors du chargement des données de stock');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }
+
+  useEffect(() => {
+    loadStockData();
+  }, []);
 
   // State for viewing full movement reason modal
   const [selectedMovementForReason, setSelectedMovementForReason] = useState<StockMovement | null>(null);
-
 
   // Main page tab: 'etat-stock' | 'historique'
   const [mainTab, setMainTab] = useState<'etat-stock' | 'historique'>('etat-stock');
@@ -236,6 +263,20 @@ export default function AdminStockPage() {
 
     setMovements((prev) => [newMovement, ...prev]);
 
+    // 3. Sync with backend API
+    const typeMapping: Record<StockMovementType, 'IN' | 'OUT' | 'ADJUSTMENT'> = {
+      entree: 'IN',
+      sortie: 'OUT',
+      ajustement: 'ADJUSTMENT',
+    };
+    recordStockMovement(selectedProduct.id, {
+      type: typeMapping[adjustType] || 'ADJUSTMENT',
+      quantity: adjustType === 'ajustement' ? Math.abs(finalStock - previousStock) : adjustQuantity,
+      reason: finalReason,
+    }).catch((err) => {
+      console.warn('[Stock Adjustment API]', err);
+    });
+
     toast.success(`Stock mis à jour pour « ${selectedProduct.name} »`, {
       description: `Stock passé de ${previousStock} à ${finalStock} unités.`,
     });
@@ -307,13 +348,23 @@ export default function AdminStockPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="admin-page-header">
+      <div className="admin-page-header flex items-center justify-between">
         <div>
           <h1 className="admin-page-title text-[#1e2a1f] font-bold">Gestion du stock</h1>
           <p className="admin-page-subtitle text-gray-500 mt-1">
             Suivez vos niveaux d&apos;inventaire, anticipez les réapprovisionnements et suivez les mouvements.
           </p>
         </div>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => loadStockData(true)}
+          disabled={loading || refreshing}
+          className="h-10 text-xs text-gray-700 bg-white border-[#e7e4dd] hover:bg-gray-50"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? 'animate-spin text-[#c1647a]' : ''}`} />
+          Actualiser
+        </Button>
       </div>
 
       {/* Main Top Navigation Tabs */}
