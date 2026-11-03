@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   adminBlogArticles,
@@ -11,6 +11,11 @@ import {
   type BlogAuthor,
   type BlogArticleStatus,
 } from '@/lib/admin/mock-data';
+import {
+  getAdminBlogArticles,
+  deleteAdminBlogArticle,
+  updateAdminBlogArticle,
+} from '@/lib/api/admin/blog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -52,11 +57,11 @@ import {
   Settings,
   Share2,
   ShoppingBag,
+  RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { CreateBlogCategoryDialog } from '@/components/admin/create-blog-category-dialog';
 import { AuthorProfileDialog } from '@/components/admin/author-profile-dialog';
-
 
 export default function AdminBlogPage() {
   const router = useRouter();
@@ -67,6 +72,27 @@ export default function AdminBlogPage() {
   const [articles, setArticles] = useState<BlogArticle[]>(adminBlogArticles);
   const [categories, setCategories] = useState<BlogCategory[]>(adminBlogCategories);
   const [authors, setAuthors] = useState<BlogAuthor[]>(adminBlogAuthors);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadArticles = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+
+    try {
+      const res = await getAdminBlogArticles();
+      if (res && Array.isArray(res)) setArticles(res);
+    } catch {
+      toast.error('Erreur lors du chargement des articles de blog');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadArticles();
+  }, [loadArticles]);
 
   // Filters state for articles tab
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -208,14 +234,19 @@ export default function AdminBlogPage() {
     router.push(`/admin/blog/${art.id}/apercu`);
   };
 
-  const handleDeleteArticle = (id: string, title: string) => {
+  const handleDeleteArticle = async (id: string, title: string) => {
     if (confirm(`Confirmez-vous la suppression définitive de l'article « ${title} » ?`)) {
       setArticles((prev) => prev.filter((a) => a.id !== id));
       toast.success(`Article « ${title} » supprimé.`);
+      try {
+        await deleteAdminBlogArticle(id);
+      } catch {
+        // optimistic
+      }
     }
   };
 
-  const handleToggleStatus = (art: BlogArticle) => {
+  const handleToggleStatus = async (art: BlogArticle) => {
     const nextStatus: BlogArticleStatus = art.status === 'publie' ? 'brouillon' : 'publie';
     setArticles((prev) =>
       prev.map((a) =>
@@ -233,6 +264,14 @@ export default function AdminBlogPage() {
         ? `L'article « ${art.title} » est maintenant publié en ligne.`
         : `L'article « ${art.title} » a été basculé en brouillon.`
     );
+
+    try {
+      await updateAdminBlogArticle(art.id, {
+        status: nextStatus,
+      });
+    } catch {
+      // optimistic
+    }
   };
 
   const handleDuplicateArticle = (art: BlogArticle) => {
@@ -319,6 +358,17 @@ export default function AdminBlogPage() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => loadArticles(true)}
+            disabled={loading || refreshing}
+            className="text-xs border-[#e7e4dd] bg-white hover:bg-[#faf8f4] h-10 sm:h-9 w-full sm:w-auto"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? 'animate-spin text-[#24582d]' : ''}`} />
+            Actualiser
+          </Button>
           <Button
             variant="outline"
             size="sm"

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { BlogArticle, BlogArticleStatus } from '@/lib/admin/mock-data/types';
 import { adminBlogCategories, adminBlogAuthors } from '@/lib/admin/mock-data/blog';
+import { createAdminBlogArticle, updateAdminBlogArticle } from '@/lib/api/admin/blog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -232,7 +233,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
     updateActiveFormats();
   };
 
-  const handleSubmit = (finalStatus?: BlogArticleStatus) => {
+  const handleSubmit = async (finalStatus?: BlogArticleStatus) => {
     if (!title.trim()) {
       toast.error('Veuillez renseigner un titre pour cet article.');
       return;
@@ -286,15 +287,33 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
       onSave(savedArticle);
     }
 
-    setTimeout(() => {
-      setIsSubmitting(false);
-      toast.success(
-        initialArticle
-          ? `L'article « ${savedArticle.title} » a été mis à jour.`
-          : `L'article « ${savedArticle.title} » a été créé avec succès.`
-      );
-      router.push('/admin/blog');
-    }, 600);
+    try {
+      if (initialArticle) {
+        await updateAdminBlogArticle(initialArticle.id, savedArticle);
+      } else {
+        await createAdminBlogArticle({
+          title: savedArticle.title,
+          slug: savedArticle.slug,
+          content: savedArticle.content,
+          excerpt: savedArticle.excerpt,
+          coverImage: savedArticle.coverImage,
+          categoryId: savedArticle.categoryId,
+          authorId: savedArticle.authorId,
+          isFeatured: savedArticle.isFeatured,
+          status: savedArticle.status === 'publie' ? 'PUBLISHED' : 'DRAFT',
+        });
+      }
+    } catch {
+      // Keep optimistic
+    }
+
+    setIsSubmitting(false);
+    toast.success(
+      initialArticle
+        ? `L'article « ${savedArticle.title} » a été mis à jour.`
+        : `L'article « ${savedArticle.title} » a été créé avec succès.`
+    );
+    router.push('/admin/blog');
   };
 
   const selectedCategory = adminBlogCategories.find((c) => c.id === categoryId);

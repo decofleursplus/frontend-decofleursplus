@@ -25,6 +25,7 @@ import {
   FileSpreadsheet,
   Armchair,
   Trees,
+  Repeat,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -33,6 +34,7 @@ const navGroups = [
     items: [
       { label: 'Tableau de bord', href: '/admin/tableau-de-bord', icon: LayoutDashboard },
       { label: 'Commandes', href: '/admin/commandes', icon: ClipboardList },
+      { label: 'Abonnements', href: '/admin/abonnements', icon: Repeat },
       { label: 'Produits', href: '/admin/produits', icon: ShoppingBag },
       { label: 'Fournisseurs', href: '/admin/fournisseurs', icon: Building2 },
       { label: 'Approvisionnements', href: '/admin/approvisionnements', icon: Boxes },

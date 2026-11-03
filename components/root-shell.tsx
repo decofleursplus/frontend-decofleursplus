@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { AuthProvider } from '@/components/auth-provider';
 import { CartProvider } from '@/components/cart-provider';
+import { PromotionBanner } from '@/components/promotion-banner';
 import { SiteHeader } from '@/components/site-header';
 import { PwaRegistration } from '@/components/pwa-registration';
 import { FloatingWhatsApp } from '@/components/floating-whatsapp';
@@ -19,6 +20,7 @@ export function RootShell({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
       <CartProvider>
+        <PromotionBanner />
         <SiteHeader />
         <PwaRegistration />
         {children}

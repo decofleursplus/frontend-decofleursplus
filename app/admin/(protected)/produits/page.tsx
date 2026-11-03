@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { adminProducts as initialProducts } from '@/lib/admin/mock-data/products';
 import type { AdminProduct } from '@/lib/admin/mock-data/types';
+import { getAdminProducts, deleteAdminProduct } from '@/lib/api/admin/products';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -47,6 +48,8 @@ import {
   Check,
   AlertTriangle,
   ArrowUpDown,
+  RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -54,6 +57,8 @@ import { toast } from 'sonner';
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<AdminProduct[]>(initialProducts);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Applied filters state
@@ -61,6 +66,29 @@ export default function AdminProductsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedStock, setSelectedStock] = useState<string>('all');
   const [selectedSort, setSelectedSort] = useState<string>('default');
+
+  async function loadProducts(isRefresh = false) {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+
+    try {
+      const res = await getAdminProducts({
+        search: searchQuery || undefined,
+        category: selectedCategory !== 'all' ? selectedCategory : undefined,
+        status: selectedStatus !== 'all' ? selectedStatus : undefined,
+      });
+      setProducts(res.items);
+    } catch {
+      toast.error('Erreur lors du chargement des produits');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }
+
+  useEffect(() => {
+    loadProducts();
+  }, [selectedCategory, selectedStatus]);
 
   // Draft filters inside drawer (applied only when clicking "Appliquer")
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -175,11 +203,17 @@ export default function AdminProductsPage() {
       });
   }, [products, searchQuery, selectedCategory, selectedStatus, selectedStock, selectedSort]);
 
-  const confirmDeleteProduct = () => {
+  const confirmDeleteProduct = async () => {
     if (!productToDelete) return;
-    setProducts((prev) => prev.filter((p) => p.id !== productToDelete.id));
-    toast.success(`Le produit "${productToDelete.name}" a été supprimé`);
-    setProductToDelete(null);
+    try {
+      await deleteAdminProduct(productToDelete.id);
+      setProducts((prev) => prev.filter((p) => p.id !== productToDelete.id));
+      toast.success(`Le produit "${productToDelete.name}" a été supprimé`);
+    } catch {
+      toast.error('Impossible de supprimer le produit');
+    } finally {
+      setProductToDelete(null);
+    }
   };
 
   const categories = [
@@ -224,14 +258,26 @@ export default function AdminProductsPage() {
             Gérez votre catalogue de fleurs, plantes et cadeaux.
           </p>
         </div>
-        <Button
-          variant="cta"
-          className="bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs w-full sm:w-auto"
-          render={<Link href="/admin/produits/nouveau" />}
-        >
-          <Plus className="mr-2 h-4 w-4 text-white" />
-          Ajouter un produit
-        </Button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => loadProducts(true)}
+            disabled={loading || refreshing}
+            className="h-10 text-xs text-gray-700 bg-white border-[#e7e4dd] hover:bg-gray-50"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? 'animate-spin text-[#c1647a]' : ''}`} />
+            Actualiser
+          </Button>
+          <Button
+            variant="cta"
+            className="bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs w-full sm:w-auto"
+            render={<Link href="/admin/produits/nouveau" />}
+          >
+            <Plus className="mr-2 h-4 w-4 text-white" />
+            Ajouter un produit
+          </Button>
+        </div>
       </div>
 
       {/* Categories Quick Tabs */}

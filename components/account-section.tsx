@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useState, useEffect } from 'react';
 import {
   Crown,
   Gem,
@@ -15,10 +15,40 @@ import {
   Share2,
   Star,
   Check,
+  Plus,
+  Trash2,
+  Lock,
+  Loader2,
+  Calendar,
+  Pause,
+  Play,
+  XCircle,
 } from 'lucide-react';
 import { FacebookIcon, WhatsAppIcon } from '@/components/icons';
+import { useAuth } from '@/components/auth-provider';
+import {
+  getCustomerProfile,
+  updateCustomerProfile,
+  changeCustomerPassword,
+  getCustomerAddresses,
+  createCustomerAddress,
+  deleteCustomerAddress,
+  setDefaultCustomerAddress,
+  CustomerProfile,
+  CustomerAddress,
+} from '@/lib/api/customer';
+import { getMyQuotes, QuoteItem } from '@/lib/api/quotes';
+import {
+  getMySubscriptions,
+  pauseMySubscription,
+  resumeMySubscription,
+  cancelMySubscription,
+  CustomerSubscription,
+} from '@/lib/api/subscriptions';
 
 const sectionMeta: Record<string, { title: string; description: string }> = {
+  abonnements: { title: 'Mes abonnements floraux', description: 'Gérez vos formules florales hebdomadaires et bimensuelles avec livraison automatique à Saly et Petite Côte.' },
+  devis: { title: 'Mes devis événementiels', description: 'Consultez et suivez l’état de vos demandes de scénographie et devis sur mesure.' },
   adresses: { title: 'Mes adresses', description: 'Gérez les adresses utilisées pour vos livraisons.' },
   informations: { title: 'Mes informations', description: 'Mettez à jour vos coordonnées personnelles.' },
   fidelite: { title: 'Programme de fidélité', description: 'Cumulez des points et profitez d’avantages exclusifs !' },
@@ -31,9 +61,175 @@ const sectionMeta: Record<string, { title: string; description: string }> = {
 
 export function AccountSection({ section }: { section: string }) {
   const page = sectionMeta[section];
+  const { user, updateUser } = useAuth();
   const [notice, setNotice] = useState('');
+  const [errorNotice, setErrorNotice] = useState('');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [copiedReferral, setCopiedReferral] = useState(false);
+
+  // Profil client
+  const [profile, setProfile] = useState<CustomerProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+
+  // Mot de passe
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
+
+  // Adresses
+  const [addresses, setAddresses] = useState<CustomerAddress[]>([]);
+  const [addressesLoading, setAddressesLoading] = useState(false);
+  const [newAddrName, setNewAddrName] = useState('');
+  const [newAddrStreet, setNewAddrStreet] = useState('');
+  const [newAddrCity, setNewAddrCity] = useState('Saly Portudal');
+  const [newAddrPhone, setNewAddrPhone] = useState('');
+  const [newAddrDefault, setNewAddrDefault] = useState(false);
+  const [addressSubmitting, setAddressSubmitting] = useState(false);
+
+  // Devis
+  const [quotes, setQuotes] = useState<QuoteItem[]>([]);
+  const [quotesLoading, setQuotesLoading] = useState(false);
+
+  // Abonnements floraux
+  const [subscriptions, setSubscriptions] = useState<CustomerSubscription[]>([]);
+  const [subscriptionsLoading, setSubscriptionsLoading] = useState(false);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
+  // Chargement des données selon la section active
+  useEffect(() => {
+    let active = true;
+
+    async function loadData() {
+      if (section === 'informations' || section === 'fidelite') {
+        try {
+          setProfileLoading(true);
+          const p = await getCustomerProfile();
+          if (active && p) {
+            setProfile(p);
+            setFirstName(p.firstName || '');
+            setLastName(p.lastName || '');
+            setPhone(p.phone || '');
+            setEmail(p.email || '');
+          }
+        } catch {
+          if (active && user) {
+            const parts = (user.name || '').split(' ');
+            setFirstName(parts[0] || '');
+            setLastName(parts.slice(1).join(' ') || '');
+            setPhone(user.phone || '');
+            setEmail(user.email || '');
+          }
+        } finally {
+          if (active) setProfileLoading(false);
+        }
+      }
+
+      if (section === 'adresses') {
+        try {
+          setAddressesLoading(true);
+          const addrs = await getCustomerAddresses();
+          if (active) setAddresses(addrs || []);
+        } catch {
+          // ignore
+        } finally {
+          if (active) setAddressesLoading(false);
+        }
+      }
+
+      if (section === 'devis') {
+        try {
+          setQuotesLoading(true);
+          const q = await getMyQuotes();
+          if (active) setQuotes(q || []);
+        } catch {
+          // ignore
+        } finally {
+          if (active) setQuotesLoading(false);
+        }
+      }
+
+      if (section === 'abonnements') {
+        try {
+          setSubscriptionsLoading(true);
+          const subs = await getMySubscriptions();
+          if (active) setSubscriptions(subs || []);
+        } catch {
+          // ignore
+        } finally {
+          if (active) setSubscriptionsLoading(false);
+        }
+      }
+    }
+
+    loadData();
+    return () => {
+      active = false;
+    };
+  }, [section, user]);
+
+  async function handlePauseSubscription(sub: CustomerSubscription) {
+    if (!window.confirm('Voulez-vous mettre en pause cet abonnement floral ?')) return;
+    setActionLoadingId(sub.id);
+    try {
+      const ok = await pauseMySubscription(sub.subscriptionNumber);
+      if (ok) {
+        setSubscriptions((prev) =>
+          prev.map((s) => (s.id === sub.id ? { ...s, status: 'PAUSED' } : s))
+        );
+        setNotice('Abonnement mis en pause.');
+      } else {
+        setErrorNotice('Erreur lors de la mise en pause.');
+      }
+    } catch {
+      setErrorNotice('Erreur réseau.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  }
+
+  async function handleResumeSubscription(sub: CustomerSubscription) {
+    setActionLoadingId(sub.id);
+    try {
+      const ok = await resumeMySubscription(sub.subscriptionNumber);
+      if (ok) {
+        setSubscriptions((prev) =>
+          prev.map((s) => (s.id === sub.id ? { ...s, status: 'ACTIVE' } : s))
+        );
+        setNotice('Abonnement réactivé avec succès.');
+      } else {
+        setErrorNotice('Erreur lors de la réactivation.');
+      }
+    } catch {
+      setErrorNotice('Erreur réseau.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  }
+
+  async function handleCancelSubscription(sub: CustomerSubscription) {
+    if (!window.confirm('Êtes-vous sûr de vouloir résilier cet abonnement floral ?')) return;
+    setActionLoadingId(sub.id);
+    try {
+      const ok = await cancelMySubscription(sub.subscriptionNumber);
+      if (ok) {
+        setSubscriptions((prev) =>
+          prev.map((s) => (s.id === sub.id ? { ...s, status: 'CANCELLED' } : s))
+        );
+        setNotice('Abonnement résilié.');
+      } else {
+        setErrorNotice('Erreur lors de la résiliation.');
+      }
+    } catch {
+      setErrorNotice('Erreur réseau.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  }
 
   if (!page) {
     return (
@@ -42,6 +238,117 @@ export function AccountSection({ section }: { section: string }) {
         <Link href="/compte">Retour au tableau de bord</Link>
       </section>
     );
+  }
+
+  async function handleSaveProfile(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setNotice('');
+    setErrorNotice('');
+    try {
+      setProfileLoading(true);
+      const updated = await updateCustomerProfile({
+        firstName,
+        lastName,
+        phone,
+      });
+      setProfile(updated);
+      updateUser({
+        name: `${firstName} ${lastName}`.trim(),
+        phone,
+      });
+      setNotice('Vos informations personnelles ont été enregistrées avec succès.');
+      setTimeout(() => setNotice(''), 4000);
+    } catch (err: any) {
+      setErrorNotice(err.message || 'Erreur lors de la mise à jour du profil.');
+    } finally {
+      setProfileLoading(false);
+    }
+  }
+
+  async function handleChangePassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setNotice('');
+    setErrorNotice('');
+    if (newPassword.length < 6) {
+      setErrorNotice('Le nouveau mot de passe doit comporter au moins 6 caractères.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setErrorNotice('Les deux nouveaux mots de passe ne correspondent pas.');
+      return;
+    }
+
+    try {
+      setPasswordLoading(true);
+      await changeCustomerPassword({ currentPassword, newPassword });
+      setNotice('Votre mot de passe a été modifié avec succès.');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setTimeout(() => setNotice(''), 4000);
+    } catch (err: any) {
+      setErrorNotice(err.message || 'Mot de passe actuel incorrect ou erreur serveur.');
+    } finally {
+      setPasswordLoading(false);
+    }
+  }
+
+  async function handleAddAddress(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setNotice('');
+    setErrorNotice('');
+    try {
+      setAddressSubmitting(true);
+      const created = await createCustomerAddress({
+        name: newAddrName,
+        street: newAddrStreet,
+        city: newAddrCity,
+        phone: newAddrPhone,
+        isDefault: newAddrDefault,
+      });
+      if (created.isDefault) {
+        setAddresses((prev) => [
+          created,
+          ...prev.map((a) => ({ ...a, isDefault: false })),
+        ]);
+      } else {
+        setAddresses((prev) => [...prev, created]);
+      }
+      setNewAddrName('');
+      setNewAddrStreet('');
+      setNewAddrPhone('');
+      setNewAddrDefault(false);
+      setNotice('Adresse ajoutée avec succès.');
+      setTimeout(() => setNotice(''), 4000);
+    } catch (err: any) {
+      setErrorNotice(err.message || "Erreur lors de l'enregistrement de l'adresse.");
+    } finally {
+      setAddressSubmitting(false);
+    }
+  }
+
+  async function handleDeleteAddress(id: string) {
+    try {
+      await deleteCustomerAddress(id);
+      setAddresses((prev) => prev.filter((a) => a.id !== id));
+      setNotice('Adresse supprimée.');
+      setTimeout(() => setNotice(''), 3000);
+    } catch (err: any) {
+      setErrorNotice(err.message || 'Impossible de supprimer cette adresse.');
+    }
+  }
+
+  async function handleSetDefaultAddress(id: string) {
+    try {
+      await setDefaultCustomerAddress(id);
+      setAddresses((prev) =>
+        prev.map((a) => ({ ...a, isDefault: a.id === id })),
+      );
+      setNotice('Adresse principale mise à jour.');
+      setTimeout(() => setNotice(''), 3000);
+    } catch (err: any) {
+      setErrorNotice(err.message || 'Erreur lors de la mise à jour.');
+    }
   }
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -86,69 +393,99 @@ export function AccountSection({ section }: { section: string }) {
           </div>
 
           {/* Top Grid: Hero Card + 4 Tier Cards */}
-          <div className="fidelity-top-grid">
-            {/* Left Big Card: Current Status */}
-            <div className="fidelity-hero-card">
-              <div className="fidelity-hero-body">
-                <div className="fidelity-hero-badge">
-                  <Crown size={34} className="gold-crown-icon" />
-                </div>
-                <div className="fidelity-hero-text">
-                  <span className="fidelity-hero-uptitle">Votre niveau actuel</span>
-                  <h2 className="fidelity-hero-level">Gold</h2>
-                  <div className="fidelity-hero-points">28 500 points</div>
-                  <p className="fidelity-hero-next">
-                    Encore <strong>21 500 points</strong> pour atteindre le niveau <em>Platinum</em>
-                  </p>
-                </div>
-              </div>
-              <div className="fidelity-progress-section">
-                <div className="fidelity-progress-track">
-                  <div className="fidelity-progress-fill" style={{ width: '57%' }} />
-                </div>
-                <div className="fidelity-progress-label">Prochain niveau : Platinum</div>
-              </div>
-            </div>
+          {(() => {
+            const currentPoints = profile?.loyaltyPoints ?? 0;
+            const currentTier = profile?.loyaltyTier || 'Bronze';
+            let nextTierName = 'Silver';
+            let pointsToNext = Math.max(0, 5000 - currentPoints);
+            let progressPercent = Math.min(100, Math.round((currentPoints / 5000) * 100));
 
-            {/* Right: 4 Tiers */}
-            <div className="fidelity-tiers-grid">
-              <div className="fidelity-tier-card">
-                <div className="tier-icon-wrap bronze">
-                  <Crown size={22} />
-                </div>
-                <h3 className="tier-name">Bronze</h3>
-                <span className="tier-points">0 - 10 000 pts</span>
-                <strong className="tier-discount">-5%</strong>
-              </div>
+            if (currentTier === 'Silver') {
+              nextTierName = 'Gold';
+              pointsToNext = Math.max(0, 15000 - currentPoints);
+              progressPercent = Math.min(100, Math.round(((currentPoints - 5000) / 10000) * 100));
+            } else if (currentTier === 'Gold') {
+              nextTierName = 'Platinum';
+              pointsToNext = Math.max(0, 50000 - currentPoints);
+              progressPercent = Math.min(100, Math.round(((currentPoints - 15000) / 35000) * 100));
+            } else if (currentTier === 'Platinum') {
+              nextTierName = 'Niveau maximum';
+              pointsToNext = 0;
+              progressPercent = 100;
+            }
 
-              <div className="fidelity-tier-card">
-                <div className="tier-icon-wrap silver">
-                  <Crown size={22} />
+            return (
+              <div className="fidelity-top-grid">
+                {/* Left Big Card: Current Status */}
+                <div className="fidelity-hero-card">
+                  <div className="fidelity-hero-body">
+                    <div className="fidelity-hero-badge">
+                      <Crown size={34} className="gold-crown-icon" />
+                    </div>
+                    <div className="fidelity-hero-text">
+                      <span className="fidelity-hero-uptitle">Votre niveau actuel</span>
+                      <h2 className="fidelity-hero-level">{currentTier}</h2>
+                      <div className="fidelity-hero-points">{currentPoints.toLocaleString('fr-FR')} points</div>
+                      {currentTier !== 'Platinum' ? (
+                        <p className="fidelity-hero-next">
+                          Encore <strong>{pointsToNext.toLocaleString('fr-FR')} points</strong> pour atteindre le niveau <em>{nextTierName}</em>
+                        </p>
+                      ) : (
+                        <p className="fidelity-hero-next">
+                          Félicitations, vous bénéficiez du statut privilège <em>Platinum</em> !
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="fidelity-progress-section">
+                    <div className="fidelity-progress-track">
+                      <div className="fidelity-progress-fill" style={{ width: `${progressPercent}%` }} />
+                    </div>
+                    <div className="fidelity-progress-label">Prochain niveau : {nextTierName} ({progressPercent}%)</div>
+                  </div>
                 </div>
-                <h3 className="tier-name">Silver</h3>
-                <span className="tier-points">10 000 - 25 000 pts</span>
-                <strong className="tier-discount">-10%</strong>
-              </div>
 
-              <div className="fidelity-tier-card active">
-                <div className="tier-icon-wrap gold">
-                  <Crown size={22} />
-                </div>
-                <h3 className="tier-name">Gold</h3>
-                <span className="tier-points">25 000 - 50 000 pts</span>
-                <strong className="tier-discount">-15%</strong>
-              </div>
+                {/* Right: 4 Tiers */}
+                <div className="fidelity-tiers-grid">
+                  <div className={`fidelity-tier-card ${currentTier === 'Bronze' ? 'active' : ''}`}>
+                    <div className="tier-icon-wrap bronze">
+                      <Crown size={22} />
+                    </div>
+                    <h3 className="tier-name">Bronze</h3>
+                    <span className="tier-points">&lt; 5 000 pts</span>
+                    <strong className="tier-discount">-5%</strong>
+                  </div>
 
-              <div className="fidelity-tier-card">
-                <div className="tier-icon-wrap platinum">
-                  <Gem size={22} />
+                  <div className={`fidelity-tier-card ${currentTier === 'Silver' ? 'active' : ''}`}>
+                    <div className="tier-icon-wrap silver">
+                      <Crown size={22} />
+                    </div>
+                    <h3 className="tier-name">Silver</h3>
+                    <span className="tier-points">5 000 - 15 000 pts</span>
+                    <strong className="tier-discount">-10%</strong>
+                  </div>
+
+                  <div className={`fidelity-tier-card ${currentTier === 'Gold' ? 'active' : ''}`}>
+                    <div className="tier-icon-wrap gold">
+                      <Crown size={22} />
+                    </div>
+                    <h3 className="tier-name">Gold</h3>
+                    <span className="tier-points">15 000 - 50 000 pts</span>
+                    <strong className="tier-discount">-15%</strong>
+                  </div>
+
+                  <div className={`fidelity-tier-card ${currentTier === 'Platinum' ? 'active' : ''}`}>
+                    <div className="tier-icon-wrap platinum">
+                      <Gem size={22} />
+                    </div>
+                    <h3 className="tier-name">Platinum</h3>
+                    <span className="tier-points">50 000+ pts</span>
+                    <strong className="tier-discount">-20%</strong>
+                  </div>
                 </div>
-                <h3 className="tier-name">Platinum</h3>
-                <span className="tier-points">50 000+ pts</span>
-                <strong className="tier-discount">-20%</strong>
               </div>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Middle: Vos avantages Gold */}
           <div className="fidelity-advantages-box">
@@ -366,76 +703,229 @@ export function AccountSection({ section }: { section: string }) {
               <p className="account-intro">{page.description}</p>
             </div>
           </div>
-          <div className="address-preview">
-            <b>
-              Adresse principale — Maison Saly <span>Par défaut</span>
-            </b>
-            Route de la Plage, Résidence les Palmiers
-            <br />
-            Saly Portudal, Mbour · Sénégal
-            <br />
-            <span style={{ color: 'var(--muted)', fontSize: '12px' }}>Tél : +221 77 123 45 67</span>
-          </div>
-          <form className="account-form" onSubmit={submit} style={{ marginTop: '20px' }}>
+
+          {notice && <p className="success-note" role="status" style={{ marginBottom: '15px' }}>{notice}</p>}
+          {errorNotice && <p className="error-note" role="status" style={{ color: 'var(--danger, #ef4444)', marginBottom: '15px' }}>{errorNotice}</p>}
+
+          {addressesLoading ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '20px 0' }}>
+              <Loader2 size={18} className="auth-spinner" />
+              <span>Chargement de vos adresses…</span>
+            </div>
+          ) : addresses.length === 0 ? (
+            <div style={{ padding: '20px', background: 'var(--surface-subtle, #f9fafb)', borderRadius: '8px', marginBottom: '20px' }}>
+              <p>Aucune adresse enregistrée pour le moment. Ajoutez votre première adresse ci-dessous.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gap: '15px', marginBottom: '25px' }}>
+              {addresses.map((addr) => (
+                <div key={addr.id} className="address-preview" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div>
+                    <b>
+                      {addr.name}{' '}
+                      {addr.isDefault && (
+                        <span style={{ background: 'var(--pink)', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', marginLeft: '6px' }}>
+                          Par défaut
+                        </span>
+                      )}
+                    </b>
+                    <br />
+                    {addr.street}
+                    <br />
+                    {addr.city} · Sénégal
+                    <br />
+                    <span style={{ color: 'var(--muted)', fontSize: '12px' }}>Tél : {addr.phone}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {!addr.isDefault && (
+                      <button
+                        type="button"
+                        onClick={() => handleSetDefaultAddress(addr.id)}
+                        className="button-pill-outline button-small"
+                        style={{ fontSize: '12px', padding: '4px 10px' }}
+                      >
+                        Par défaut
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteAddress(addr.id)}
+                      className="button-pill-outline button-small"
+                      style={{ fontSize: '12px', padding: '4px 10px', color: '#ef4444', borderColor: '#fca5a5' }}
+                      aria-label="Supprimer cette adresse"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <form className="account-form" onSubmit={handleAddAddress} style={{ marginTop: '20px' }}>
             <h2>Ajouter une nouvelle adresse</h2>
             <label>
               Nom de l’adresse (ex. Bureau, Villa Saly...)
-              <input required placeholder="Maison, Bureau, Villa..." />
+              <input
+                required
+                placeholder="Maison, Bureau, Villa..."
+                value={newAddrName}
+                onChange={(e) => setNewAddrName(e.target.value)}
+              />
             </label>
             <label>
               Adresse complète
-              <input required autoComplete="street-address" placeholder="Rue, numéro, repères..." />
+              <input
+                required
+                autoComplete="street-address"
+                placeholder="Rue, numéro, repères..."
+                value={newAddrStreet}
+                onChange={(e) => setNewAddrStreet(e.target.value)}
+              />
             </label>
             <div className="checkout-fields">
               <label>
                 Ville
-                <input required defaultValue="Saly Portudal" />
+                <input
+                  required
+                  placeholder="Saly Portudal, Dakar, Mbour..."
+                  value={newAddrCity}
+                  onChange={(e) => setNewAddrCity(e.target.value)}
+                />
               </label>
               <label>
                 Téléphone de livraison
-                <input required inputMode="tel" defaultValue="+221 77 123 45 67" />
+                <input
+                  required
+                  inputMode="tel"
+                  placeholder="+221 77 123 45 67"
+                  value={newAddrPhone}
+                  onChange={(e) => setNewAddrPhone(e.target.value)}
+                />
               </label>
             </div>
-            <button className="button button-primary" type="submit">
-              Enregistrer cette adresse
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', margin: '10px 0' }}>
+              <input
+                type="checkbox"
+                checked={newAddrDefault}
+                onChange={(e) => setNewAddrDefault(e.target.checked)}
+              />
+              <span style={{ fontSize: '14px' }}>Définir comme adresse de livraison par défaut</span>
+            </label>
+            <button className="button button-primary" type="submit" disabled={addressSubmitting}>
+              {addressSubmitting ? 'Enregistrement en cours…' : 'Enregistrer cette adresse'}
             </button>
-            {notice && <p className="success-note" role="status">{notice}</p>}
           </form>
         </section>
       )}
 
       {/* ── MES INFORMATIONS ── */}
       {section === 'informations' && (
-        <form className="account-panel account-form" onSubmit={submit}>
+        <div className="account-panel">
           <div className="account-title-row">
             <div>
               <h1 className="account-title">{page.title}</h1>
               <p className="account-intro">{page.description}</p>
             </div>
           </div>
-          <div className="checkout-fields">
-            <label>
-              Prénom
-              <input autoComplete="given-name" defaultValue="Fatou" required />
-            </label>
-            <label>
-              Nom
-              <input autoComplete="family-name" defaultValue="Ba" required />
-            </label>
-            <label>
-              Adresse e-mail
-              <input type="email" autoComplete="email" defaultValue="fatou.ba@email.com" required />
-            </label>
-            <label>
-              Téléphone mobile
-              <input inputMode="tel" autoComplete="tel" defaultValue="+221 77 123 45 67" required />
-            </label>
-          </div>
-          <button className="button button-primary" type="submit">
-            Enregistrer les modifications
-          </button>
-          {notice && <p className="success-note" role="status">{notice}</p>}
-        </form>
+
+          {notice && <p className="success-note" role="status" style={{ marginBottom: '15px' }}>{notice}</p>}
+          {errorNotice && <p className="error-note" role="status" style={{ color: 'var(--danger, #ef4444)', marginBottom: '15px' }}>{errorNotice}</p>}
+
+          <form className="account-form" onSubmit={handleSaveProfile}>
+            <h2>Coordonnées personnelles</h2>
+            <div className="checkout-fields">
+              <label>
+                Prénom
+                <input
+                  autoComplete="given-name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Nom
+                <input
+                  autoComplete="family-name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Adresse e-mail (liée au compte)
+                <input
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  disabled
+                  style={{ background: 'var(--surface-subtle, #f3f4f6)', cursor: 'not-allowed' }}
+                />
+              </label>
+              <label>
+                Téléphone mobile
+                <input
+                  inputMode="tel"
+                  autoComplete="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                />
+              </label>
+            </div>
+            <button className="button button-primary" type="submit" disabled={profileLoading}>
+              {profileLoading ? 'Enregistrement en cours…' : 'Enregistrer les modifications'}
+            </button>
+          </form>
+
+          <hr style={{ margin: '30px 0', borderColor: 'var(--border, #e5e7eb)' }} />
+
+          {/* Formulaire Changement de mot de passe */}
+          <form className="account-form" onSubmit={handleChangePassword}>
+            <h2>Modifier mon mot de passe</h2>
+            <div className="checkout-fields">
+              <label>
+                Mot de passe actuel
+                <input
+                  type="password"
+                  required
+                  autoComplete="current-password"
+                  placeholder="Mot de passe actuel"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                />
+              </label>
+              <label>
+                Nouveau mot de passe
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  autoComplete="new-password"
+                  placeholder="6 caractères minimum"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+              </label>
+              <label style={{ gridColumn: 'span 2' }}>
+                Confirmer le nouveau mot de passe
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  autoComplete="new-password"
+                  placeholder="Répétez le nouveau mot de passe"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </label>
+            </div>
+            <button className="button button-primary" type="submit" disabled={passwordLoading}>
+              {passwordLoading ? 'Modification en cours…' : 'Changer mon mot de passe'}
+            </button>
+          </form>
+        </div>
       )}
 
       {/* ── MES AVIS ── */}
@@ -618,6 +1108,233 @@ export function AccountSection({ section }: { section: string }) {
               </button>
             </div>
           </div>
+        </section>
+      )}
+
+      {/* ── DEVIS ── */}
+      {section === 'devis' && (
+        <section className="account-panel">
+          <div className="account-title-row">
+            <div>
+              <h1 className="account-title">{page.title}</h1>
+              <p className="account-intro">{page.description}</p>
+            </div>
+            <Link href="/devis" className="button button-primary text-sm flex items-center gap-1.5">
+              <Plus size={15} /> Nouveau devis
+            </Link>
+          </div>
+
+          {quotesLoading ? (
+            <div className="flex items-center justify-center p-8 text-neutral-500 gap-2">
+              <Loader2 size={20} className="animate-spin" />
+              <span>Chargement de vos devis...</span>
+            </div>
+          ) : quotes.length === 0 ? (
+            <div className="p-8 text-center bg-neutral-50 rounded-2xl border border-neutral-100 mt-4">
+              <div className="w-12 h-12 bg-pink-50 text-[#c8436e] rounded-full flex items-center justify-center mx-auto mb-3">
+                <Sparkles size={24} />
+              </div>
+              <h3 className="font-serif font-bold text-base text-neutral-800 mb-1">
+                Aucune demande de devis en cours
+              </h3>
+              <p className="text-sm text-neutral-500 max-w-md mx-auto mb-4">
+                Vous préparez un mariage, un anniversaire ou la décoration florale de votre villa à Saly ? Demandez une étude personnalisée gratuite.
+              </p>
+              <Link href="/devis" className="button button-primary">
+                Créer un devis sur mesure
+              </Link>
+            </div>
+          ) : (
+            <div className="grid gap-3 mt-4">
+              {quotes.map((q) => {
+                const statusLabels: Record<string, { label: string; color: string }> = {
+                  NEW: { label: 'Reçu · En attente', color: 'bg-amber-100 text-amber-800' },
+                  UNDER_REVIEW: { label: 'En cours d’étude', color: 'bg-blue-100 text-blue-800' },
+                  SENT: { label: 'Proposition prête', color: 'bg-emerald-100 text-emerald-800' },
+                  ACCEPTED: { label: 'Devis accepté', color: 'bg-emerald-100 text-emerald-900' },
+                  REFUSED: { label: 'Refusé', color: 'bg-neutral-100 text-neutral-600' },
+                  CONVERTED_TO_ORDER: { label: 'Converti en commande', color: 'bg-purple-100 text-purple-800' },
+                };
+                const statusInfo = statusLabels[q.status] || { label: q.status, color: 'bg-neutral-100 text-neutral-700' };
+
+                return (
+                  <div
+                    key={q.id}
+                    className="p-4 bg-white border border-neutral-200 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-neutral-900">{q.quoteNumber}</span>
+                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${statusInfo.color}`}>
+                          {statusInfo.label}
+                        </span>
+                      </div>
+                      <div className="text-sm text-neutral-600">
+                        <strong>{q.eventType}</strong> — {q.eventLocation}
+                      </div>
+                      <div className="text-xs text-neutral-400 mt-1">
+                        Créé le {new Date(q.createdAt).toLocaleDateString('fr-FR')} {q.eventDate ? `· Événement le ${new Date(q.eventDate).toLocaleDateString('fr-FR')}` : ''}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      {q.quotedAmount != null && (
+                        <div className="text-right">
+                          <span className="text-xs text-neutral-500 block">Montant proposé</span>
+                          <strong className="text-base text-[#173f22]">
+                            {q.quotedAmount.toLocaleString('fr-FR')} FCFA
+                          </strong>
+                        </div>
+                      )}
+                      <a
+                        href={`https://wa.me/221779417860?text=${encodeURIComponent(`Bonjour Décofleur Plus, je vous contacte concernant mon devis ${q.quoteNumber}`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="button button-outline text-xs flex items-center gap-1.5"
+                      >
+                        <WhatsAppIcon size={14} /> Contacter l’atelier
+                      </a>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
+
+      {section === 'abonnements' && (
+        <section className="account-panel">
+          <h1>{page.title}</h1>
+          <p className="account-panel-desc">{page.description}</p>
+
+          {notice && <p className="account-notice success">{notice}</p>}
+          {errorNotice && <p className="account-notice error">{errorNotice}</p>}
+
+          {subscriptionsLoading ? (
+            <div className="flex items-center justify-center p-12 text-neutral-400">
+              <Loader2 size={24} className="animate-spin mr-2" />
+              <span>Chargement de vos formules florales...</span>
+            </div>
+          ) : subscriptions.length === 0 ? (
+            <div className="p-8 text-center bg-white border border-neutral-200 rounded-xl mt-4">
+              <Calendar className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
+              <h3 className="text-base font-semibold text-neutral-900 mb-1">
+                Aucun abonnement floral actif
+              </h3>
+              <p className="text-sm text-neutral-500 max-w-md mx-auto mb-4">
+                Recevez chaque semaine ou toutes les deux semaines un bouquet frais de saison dans son vase garni, livré directement à votre domicile ou bureau à Saly et Petite Côte.
+              </p>
+              <Link href="/abonnement" className="button button-primary">
+                Découvrir nos formules florales
+              </Link>
+            </div>
+          ) : (
+            <div className="grid gap-4 mt-4">
+              {subscriptions.map((sub) => {
+                const statusStyles: Record<string, { label: string; color: string }> = {
+                  ACTIVE: { label: 'Actif', color: 'bg-emerald-100 text-emerald-800' },
+                  PAUSED: { label: 'En pause', color: 'bg-amber-100 text-amber-800' },
+                  CANCELLED: { label: 'Résilié', color: 'bg-neutral-100 text-neutral-600' },
+                  PENDING: { label: 'En attente', color: 'bg-blue-100 text-blue-800' },
+                };
+                const statusInfo = statusStyles[sub.status] || { label: sub.status, color: 'bg-neutral-100 text-neutral-700' };
+                const isLoadingThis = actionLoadingId === sub.id;
+
+                return (
+                  <div
+                    key={sub.id}
+                    className="p-5 bg-white border border-neutral-200 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-neutral-900 text-base">
+                          Formule {sub.plan}
+                        </span>
+                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${statusInfo.color}`}>
+                          {statusInfo.label}
+                        </span>
+                        <span className="text-xs text-neutral-400">
+                          #{sub.subscriptionNumber}
+                        </span>
+                      </div>
+                      <div className="text-sm text-neutral-700">
+                        Rythme : <strong>{sub.frequency === 'HEBDOMADAIRE' ? 'Hebdomadaire (4 passages / mois)' : 'Bimensuel (2 passages / mois)'}</strong>
+                        {' · '}Jour : <strong>{sub.deliveryDay}</strong>
+                      </div>
+                      <div className="text-xs text-neutral-500 mt-1">
+                        Adresse : {sub.address || sub.location} · Destinataire : {sub.recipientName} ({sub.phone})
+                      </div>
+                      {sub.nextDeliveryDate && (
+                        <div className="text-xs text-[#173f22] font-medium mt-1">
+                          Prochaine livraison prévue le {new Date(sub.nextDeliveryDate).toLocaleDateString('fr-FR')}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                      {sub.monthlyAmount != null && (
+                        <div className="text-right">
+                          <span className="text-xs text-neutral-400 block">Tarif mensuel</span>
+                          <strong className="text-base text-[#173f22]">
+                            {sub.monthlyAmount.toLocaleString('fr-FR')} FCFA
+                          </strong>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-2">
+                        {sub.status === 'ACTIVE' && (
+                          <button
+                            type="button"
+                            disabled={isLoadingThis}
+                            onClick={() => handlePauseSubscription(sub)}
+                            className="button button-outline text-xs flex items-center gap-1"
+                          >
+                            <Pause size={13} />
+                            <span>Pause</span>
+                          </button>
+                        )}
+
+                        {sub.status === 'PAUSED' && (
+                          <button
+                            type="button"
+                            disabled={isLoadingThis}
+                            onClick={() => handleResumeSubscription(sub)}
+                            className="button button-outline text-xs flex items-center gap-1 text-emerald-700 border-emerald-300"
+                          >
+                            <Play size={13} />
+                            <span>Reprendre</span>
+                          </button>
+                        )}
+
+                        {sub.status !== 'CANCELLED' && (
+                          <button
+                            type="button"
+                            disabled={isLoadingThis}
+                            onClick={() => handleCancelSubscription(sub)}
+                            className="button button-outline text-xs flex items-center gap-1 text-red-600 border-red-200 hover:bg-red-50"
+                          >
+                            <XCircle size={13} />
+                            <span>Résilier</span>
+                          </button>
+                        )}
+
+                        <a
+                          href={`https://wa.me/221779417860?text=${encodeURIComponent(`Bonjour Décofleur Plus, je vous contacte concernant mon abonnement ${sub.subscriptionNumber}`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="button button-outline text-xs flex items-center gap-1.5"
+                          title="Assistance WhatsApp"
+                        >
+                          <WhatsAppIcon size={14} />
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </section>
       )}
     </>

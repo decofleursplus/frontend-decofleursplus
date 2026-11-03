@@ -1,9 +1,15 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { adminCategories } from '@/lib/admin/mock-data/categories';
 import type { AdminCategory } from '@/lib/admin/mock-data/types';
+import {
+  getAdminCategories,
+  createAdminCategory,
+  updateAdminCategory,
+  deleteAdminCategory,
+} from '@/lib/api/admin/categories';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -37,13 +43,38 @@ import {
   AlertTriangle,
   X,
   PackageCheck,
+  RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<AdminCategory[]>(adminCategories);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'actif' | 'inactif'>('all');
+
+  // Load categories from API
+  async function loadCategories(isRefresh = false) {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+
+    try {
+      const data = await getAdminCategories();
+      setCategories(data);
+    } catch {
+      toast.error('Erreur lors du chargement des catégories');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
 
   // Create / Edit modal state
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
@@ -86,7 +117,7 @@ export default function AdminCategoriesPage() {
   };
 
   // Save (Create or Update)
-  const handleSaveCategory = (e: React.FormEvent) => {
+  const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formName.trim()) {
@@ -94,39 +125,37 @@ export default function AdminCategoriesPage() {
       return;
     }
 
-    if (editingCategory) {
-      // Update
-      setCategories((prev) =>
-        prev.map((cat) =>
-          cat.id === editingCategory.id
-            ? {
-                ...cat,
-                name: formName.trim(),
-                description: formDescription.trim(),
-                status: formStatus,
-              }
-            : cat
-        )
-      );
-      toast.success('Catégorie mise à jour avec succès');
-    } else {
-      // Create
-      const newCategory: AdminCategory = {
-        id: `cat-${Date.now()}`,
-        name: formName.trim(),
-        description: formDescription.trim(),
-        productCount: 0,
-        status: formStatus,
-      };
-      setCategories((prev) => [newCategory, ...prev]);
-      toast.success('Catégorie créée avec succès');
+    setSaving(true);
+    try {
+      if (editingCategory) {
+        // Update API
+        const updated = await updateAdminCategory(editingCategory.id, {
+          name: formName.trim(),
+          description: formDescription.trim(),
+        });
+        setCategories((prev) =>
+          prev.map((cat) => (cat.id === editingCategory.id ? { ...cat, ...updated, status: formStatus } : cat))
+        );
+        toast.success('Catégorie mise à jour avec succès');
+      } else {
+        // Create API
+        const created = await createAdminCategory({
+          name: formName.trim(),
+          description: formDescription.trim(),
+        });
+        setCategories((prev) => [{ ...created, status: formStatus }, ...prev]);
+        toast.success('Catégorie créée avec succès');
+      }
+      setIsFormDialogOpen(false);
+    } catch {
+      toast.error('Erreur lors de l’enregistrement de la catégorie');
+    } finally {
+      setSaving(false);
     }
-
-    setIsFormDialogOpen(false);
   };
 
   // Toggle status
-  const handleToggleStatus = (category: AdminCategory) => {
+  const handleToggleStatus = async (category: AdminCategory) => {
     const newStatus = category.status === 'actif' ? 'inactif' : 'actif';
     setCategories((prev) =>
       prev.map((cat) => (cat.id === category.id ? { ...cat, status: newStatus } : cat))
@@ -137,24 +166,19 @@ export default function AdminCategoriesPage() {
   };
 
   // Confirm delete
-  // Confirm delete
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!categoryToDelete) return;
 
-    const count = categoryToDelete.productCount;
-    setCategories((prev) => prev.filter((cat) => cat.id !== categoryToDelete.id));
-
-    if (count > 0) {
-      toast.success(`Catégorie « ${categoryToDelete.name} » supprimée`, {
-        description: `Les ${count} produit(s) associés ont été dissociés de cette catégorie.`,
-      });
-    } else {
-      toast.success(`La catégorie « ${categoryToDelete.name} » a été supprimée.`);
+    try {
+      await deleteAdminCategory(categoryToDelete.id);
+      setCategories((prev) => prev.filter((cat) => cat.id !== categoryToDelete.id));
+      toast.success(`La catégorie "${categoryToDelete.name}" a été supprimée.`);
+    } catch {
+      toast.error('Impossible de supprimer la catégorie.');
+    } finally {
+      setCategoryToDelete(null);
     }
-
-    setCategoryToDelete(null);
   };
-
 
   return (
     <div className="space-y-6">
@@ -166,14 +190,26 @@ export default function AdminCategoriesPage() {
             Gérez les catégories de votre catalogue pour organiser vos produits.
           </p>
         </div>
-        <Button
-          onClick={handleOpenCreateDialog}
-          variant="cta"
-          className="bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs font-medium w-full sm:w-auto h-10 shrink-0"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Ajouter une catégorie
-        </Button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => loadCategories(true)}
+            disabled={loading || refreshing}
+            className="h-10 text-xs text-gray-700 bg-white border-[#e7e4dd] hover:bg-gray-50"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? 'animate-spin text-[#c1647a]' : ''}`} />
+            Actualiser
+          </Button>
+          <Button
+            onClick={handleOpenCreateDialog}
+            variant="cta"
+            className="bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs font-medium w-full sm:w-auto h-10 shrink-0"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Ajouter une catégorie
+          </Button>
+        </div>
       </div>
 
       {/* Filter & Search Bar */}

@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useState, useEffect } from 'react';
 import {
   Check,
   LockKeyhole,
@@ -17,28 +17,47 @@ import {
   Mail,
   Phone,
   UserCheck,
+  Loader2,
+  AlertCircle,
+  Tag,
 } from 'lucide-react';
 import { useCart } from '@/components/cart-provider';
 import { useAuth } from '@/components/auth-provider';
 import { GoogleIcon } from '@/components/icons';
 import { formatPrice } from '@/lib/products';
 import { SiteFooter } from '@/components/site-footer';
+import { getDeliveryZones, DeliveryZone, placeOrder, PlaceOrderPayload } from '@/lib/api/orders';
+import { getCustomerAddresses, CustomerAddress } from '@/lib/api/customer';
+import { ValidatedCoupon } from '@/lib/api/marketing';
 
 type DeliveryMode = 'standard' | 'express';
-type PaymentMethod =
-  | 'wave'
-  | 'orange'
-  | 'free'
-  | 'card';
+type PaymentMethod = 'wave' | 'orange' | 'free' | 'card';
 
 export default function CheckoutPage() {
-  const { items, subtotal } = useCart();
+  const { items, subtotal, clear } = useCart();
   const { user, isAuthenticated, login, loginWithGoogle, register, logout } = useAuth();
   const router = useRouter();
 
   const [delivery, setDelivery] = useState<DeliveryMode>('standard');
   const [payment, setPayment] = useState<PaymentMethod>('wave');
   const [notice, setNotice] = useState('');
+  const [orderError, setOrderError] = useState('');
+  const [submittingOrder, setSubmittingOrder] = useState(false);
+
+  // Données dynamiques de livraison & adresses
+  const [zones, setZones] = useState<DeliveryZone[]>([]);
+  const [selectedZoneId, setSelectedZoneId] = useState<string>('');
+  const [addresses, setAddresses] = useState<CustomerAddress[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>('');
+  const [customAddress, setCustomAddress] = useState('Route de Saly, Résidence les Palmiers, Saly');
+  const [deliveryDate, setDeliveryDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
+  });
+  const [deliverySlot, setDeliverySlot] = useState<'9h-12h' | '10h-14h' | '14h-18h' | '18h-20h'>('10h-14h');
+  const [instructions, setInstructions] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<ValidatedCoupon | null>(null);
 
   // Step 1: Auth state
   const [isEditingAuth, setIsEditingAuth] = useState(() => {
@@ -62,7 +81,57 @@ export default function CheckoutPage() {
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
 
-  const shipping = delivery === 'standard' ? 2000 : 5000;
+  // Charger les zones et les adresses sur montage
+  useEffect(() => {
+    getDeliveryZones()
+      .then((data) => {
+        if (data && data.length > 0) {
+          setZones(data);
+          setSelectedZoneId(data[0].id);
+        }
+      })
+      .catch(() => {
+        // Ignorer
+      });
+
+    try {
+      const savedCoupon = sessionStorage.getItem('decofleur_applied_coupon');
+      if (savedCoupon) {
+        setAppliedCoupon(JSON.parse(savedCoupon));
+      }
+    } catch {
+      // Ignorer
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      getCustomerAddresses()
+        .then((addrs) => {
+          if (addrs && addrs.length > 0) {
+            setAddresses(addrs);
+            const def = addrs.find((a) => a.isDefault) || addrs[0];
+            setSelectedAddressId(def.id);
+            setCustomAddress(`${def.street}, ${def.city}`);
+          }
+        })
+        .catch(() => {
+          // Ignorer
+        });
+    }
+  }, [isAuthenticated]);
+
+  const selectedZone = zones.find((z) => z.id === selectedZoneId);
+  const baseShippingFee = selectedZone
+    ? delivery === 'express'
+      ? selectedZone.expressFee
+      : selectedZone.fee
+    : delivery === 'standard'
+    ? 2000
+    : 5000;
+
+  const isFreeShipping = appliedCoupon?.freeShipping || false;
+  const shipping = isFreeShipping ? 0 : baseShippingFee;
 
   // Use items in cart, or fallback to mockup default items if cart is empty so user can test and inspect
   const displayItems = items.length > 0 ? items : [
@@ -106,7 +175,8 @@ export default function CheckoutPage() {
     ? subtotal
     : displayItems.reduce((acc, curr) => acc + curr.product.price * curr.quantity, 0);
 
-  const calculatedTotal = calculatedSubtotal + shipping;
+  const discountAmount = appliedCoupon?.discountAmount || 0;
+  const calculatedTotal = Math.max(0, calculatedSubtotal - discountAmount) + shipping;
 
   async function handleGoogleLogin() {
     setAuthLoading(true);
@@ -145,8 +215,11 @@ export default function CheckoutPage() {
     setAuthLoading(false);
   }
 
-  function submitOrder(event: FormEvent<HTMLFormElement>) {
+  async function submitOrder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setNotice('');
+    setOrderError('');
+
     if (!isAuthenticated) {
       setIsEditingAuth(true);
       setNotice(
@@ -154,7 +227,76 @@ export default function CheckoutPage() {
       );
       return;
     }
-    router.push('/commande/confirmation');
+
+    setSubmittingOrder(true);
+
+    const paymentMap: Record<PaymentMethod, 'WAVE' | 'ORANGE_MONEY' | 'FREE_MONEY' | 'CARD'> = {
+      wave: 'WAVE',
+      orange: 'ORANGE_MONEY',
+      free: 'FREE_MONEY',
+      card: 'CARD',
+    };
+
+    // Mappage des items du panier vers le format attendu par le backend
+    // UUID v4 regex pour vérifier si l'identifiant est un UUID valide
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    const cartSource = items.length > 0 ? items : displayItems;
+    const mappedItems = cartSource.map((item) => {
+      let variantId = '00000000-0000-0000-0000-000000000001';
+      const p = item.product as any;
+      if (p.variants && p.variants.length > 0 && uuidRegex.test(p.variants[0].id)) {
+        variantId = p.variants[0].id;
+      } else if (uuidRegex.test(item.product.id)) {
+        variantId = item.product.id;
+      }
+
+      return {
+        variantId,
+        quantity: item.quantity,
+        giftWrap: Boolean((item.options as any)?.giftWrap),
+        cardMessage: (item.options as any)?.cardMessage || undefined,
+      };
+    });
+
+    const payload: PlaceOrderPayload = {
+      items: mappedItems,
+      deliveryMode: delivery === 'express' ? 'EXPRESS' : 'STANDARD',
+      deliveryZoneId: selectedZoneId || undefined,
+      paymentMethod: paymentMap[payment] || 'WAVE',
+      recipientName: user?.name || undefined,
+      phone: user?.phone || undefined,
+      deliveryAddress: customAddress,
+      deliveryDate: deliveryDate || undefined,
+      timeSlot: deliverySlot,
+      notes: instructions || undefined,
+      couponCode: appliedCoupon?.code || undefined,
+    };
+
+    const res = await placeOrder(payload);
+    setSubmittingOrder(false);
+
+    if (res.success && res.order) {
+      // Vider le panier et nettoyer la session de coupon
+      clear();
+      try {
+        sessionStorage.removeItem('decofleur_applied_coupon');
+      } catch {
+        // Ignorer
+      }
+
+      // Si NabooPay fournit une URL directe de paiement mobile money / carte
+      if (res.order.checkoutUrl) {
+        window.location.href = res.order.checkoutUrl;
+      } else {
+        router.push(`/commande/confirmation?orderNumber=${res.order.orderNumber}`);
+      }
+    } else {
+      setOrderError(
+        res.error ||
+          'Une erreur est survenue lors de la création de la commande. Veuillez vérifier vos coordonnées.'
+      );
+    }
   }
 
   return (
@@ -175,6 +317,16 @@ export default function CheckoutPage() {
           <h1>Finaliser ma commande</h1>
           <p>Renseignez vos informations pour compléter votre achat en toute sécurité.</p>
         </div>
+
+        {orderError && (
+          <div className="p-4 mb-6 bg-red-50 border border-red-200 text-red-700 text-sm rounded-2xl flex items-center gap-3">
+            <AlertCircle size={20} className="shrink-0" />
+            <div>
+              <strong>Impossible de finaliser la commande</strong>
+              <p className="mt-0.5">{orderError}</p>
+            </div>
+          </div>
+        )}
 
         <form className="checkout-layout-grid" onSubmit={submitOrder}>
           {/* LEFT COLUMN: Steps 1, 2, 3, 4, 5 */}
@@ -423,35 +575,90 @@ export default function CheckoutPage() {
             <section className="checkout-panel checkout-step-panel">
               <div className="step-panel-heading">
                 <h2>2. Adresse de livraison</h2>
-                <button type="button" className="link-button-pink">
-                  Modifier
-                </button>
+                {addresses.length > 0 && (
+                  <Link href="/compte/adresses" className="link-button-pink">
+                    Gérer mes adresses
+                  </Link>
+                )}
               </div>
 
-              <div className="checkout-saved-address-box">
-                <div className="address-box-icon">
-                  <MapPin size={20} />
+              {addresses.length > 0 ? (
+                <div className="grid gap-2 mb-3">
+                  {addresses.map((addr) => (
+                    <label
+                      key={addr.id}
+                      className={`checkout-saved-address-box cursor-pointer border rounded-xl p-3 flex items-start gap-3 transition-colors ${
+                        selectedAddressId === addr.id ? 'border-[#173f22] bg-[#173f22]/5' : 'border-neutral-200'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="savedAddress"
+                        checked={selectedAddressId === addr.id}
+                        onChange={() => {
+                          setSelectedAddressId(addr.id);
+                          setCustomAddress(`${addr.street}, ${addr.city}`);
+                        }}
+                        className="mt-1"
+                      />
+                      <div className="address-box-body flex-1">
+                        <div className="address-title-badge flex items-center justify-between">
+                          <strong>{addr.name}</strong>
+                          {addr.isDefault && <span className="badge-default">Par défaut</span>}
+                        </div>
+                        <p className="address-lines text-xs text-neutral-600 mt-0.5">
+                          {addr.street} · {addr.city}
+                          {addr.phone && ` · ${addr.phone}`}
+                        </p>
+                      </div>
+                    </label>
+                  ))}
                 </div>
-                <div className="address-box-body">
-                  <div className="address-title-badge">
-                    <strong>Maison - Saly</strong>
-                    <span className="badge-default">Par défaut</span>
+              ) : (
+                <div className="checkout-saved-address-box">
+                  <div className="address-box-icon">
+                    <MapPin size={20} />
                   </div>
-                  <p className="address-lines">
-                    Route de Saly, Résidence les Palmiers<br />
-                    Saly, Mbour - Sénégal
-                  </p>
+                  <div className="address-box-body">
+                    <div className="address-title-badge">
+                      <strong>Adresse de livraison</strong>
+                    </div>
+                    <input
+                      type="text"
+                      value={customAddress}
+                      onChange={(e) => setCustomAddress(e.target.value)}
+                      placeholder="Rue, quartier, résidence, villa..."
+                      className="form-input mt-2 text-sm w-full"
+                    />
+                  </div>
                 </div>
-              </div>
-
-              <button type="button" className="button-add-address-outline">
-                <Plus size={15} /> Ajouter une nouvelle adresse
-              </button>
+              )}
             </section>
 
-            {/* 3. Mode de livraison with Map Preview */}
+            {/* 3. Mode & Zone de livraison */}
             <section className="checkout-panel checkout-step-panel">
-              <h2>3. Mode de livraison</h2>
+              <h2>3. Mode et zone de livraison</h2>
+
+              {zones.length > 0 && (
+                <div className="mb-4">
+                  <label htmlFor="deliveryZone" className="block text-xs font-semibold text-neutral-700 mb-1">
+                    Sélectionnez votre zone géographique :
+                  </label>
+                  <select
+                    id="deliveryZone"
+                    value={selectedZoneId}
+                    onChange={(e) => setSelectedZoneId(e.target.value)}
+                    className="form-input form-select text-sm w-full"
+                  >
+                    {zones.map((z) => (
+                      <option key={z.id} value={z.id}>
+                        {z.name} — {formatPrice(delivery === 'express' ? z.expressFee : z.fee)}{' '}
+                        {z.coverage ? `(${z.coverage})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="checkout-delivery-options-grid">
                 <div className="delivery-radio-list">
@@ -468,12 +675,14 @@ export default function CheckoutPage() {
                     <div className="delivery-card-content">
                       <div className="delivery-card-title-row">
                         <strong>Livraison Standard</strong>
-                        <span className="delivery-price-tag">2 000 FCFA</span>
+                        <span className="delivery-price-tag">
+                          {isFreeShipping ? 'Offerte' : formatPrice(selectedZone?.fee ?? 2000)}
+                        </span>
                       </div>
                       <span className="delivery-card-desc">
-                        Livraison standard Saly &amp; Mbour
+                        Livraison en 24h-48h à {selectedZone?.name ?? 'Saly & Mbour'}
                       </span>
-                      <span className="delivery-area-badge">Saly &amp; Mbour</span>
+                      <span className="delivery-area-badge">{selectedZone?.name ?? 'Saly & Mbour'}</span>
                     </div>
                   </label>
 
@@ -490,12 +699,14 @@ export default function CheckoutPage() {
                     <div className="delivery-card-content">
                       <div className="delivery-card-title-row">
                         <strong>Livraison Express</strong>
-                        <span className="delivery-price-tag">5 000 FCFA</span>
+                        <span className="delivery-price-tag">
+                          {formatPrice(selectedZone?.expressFee ?? 5000)}
+                        </span>
                       </div>
                       <span className="delivery-card-desc">
-                        Livraison le jour même Saly &amp; Mbour
+                        Livraison prioritaire le jour même
                       </span>
-                      <span className="delivery-area-badge">Saly &amp; Mbour</span>
+                      <span className="delivery-area-badge">Express prioritaire</span>
                     </div>
                   </label>
                 </div>
@@ -507,8 +718,8 @@ export default function CheckoutPage() {
                     <input
                       type="text"
                       placeholder="Rechercher une adresse..."
-                      defaultValue="Saly Portudal"
-                      readOnly
+                      value={customAddress}
+                      onChange={(e) => setCustomAddress(e.target.value)}
                     />
                   </div>
                   <div className="map-embed-container">
@@ -520,7 +731,7 @@ export default function CheckoutPage() {
                     />
                     <div className="map-user-pin">
                       <MapPin size={13} />
-                      <span>Votre adresse</span>
+                      <span>{selectedZone?.name ?? 'Votre adresse'}</span>
                     </div>
                   </div>
                 </div>
@@ -538,7 +749,8 @@ export default function CheckoutPage() {
                   <input
                     type="date"
                     id="deliveryDate"
-                    defaultValue="2024-05-10"
+                    value={deliveryDate}
+                    onChange={(e) => setDeliveryDate(e.target.value)}
                     className="datetime-input"
                   />
                 </div>
@@ -546,7 +758,12 @@ export default function CheckoutPage() {
                   <label htmlFor="deliverySlot">
                     <Clock size={15} /> Créneau horaire
                   </label>
-                  <select id="deliverySlot" defaultValue="10h-14h" className="datetime-select">
+                  <select
+                    id="deliverySlot"
+                    value={deliverySlot}
+                    onChange={(e) => setDeliverySlot(e.target.value as any)}
+                    className="datetime-select"
+                  >
                     <option value="9h-12h">Matinée (09h00 - 12h00)</option>
                     <option value="10h-14h">Entre 10h et 14h (Recommandé)</option>
                     <option value="14h-18h">Après-midi (14h00 - 18h00)</option>
@@ -558,12 +775,13 @@ export default function CheckoutPage() {
 
             {/* 5. Instructions (optionnel) */}
             <section className="checkout-panel checkout-step-panel">
-              <h2>5. Instructions (optionnel)</h2>
+              <h2>5. Instructions de livraison (optionnel)</h2>
               <textarea
                 rows={3}
                 placeholder="Ex: Laisser à la réception, appeler avant l’arrivée, message pour le portail..."
                 className="checkout-instructions-textarea"
-                defaultValue="Ex: Laisser à la réception, appeler avant l'arrivée..."
+                value={instructions}
+                onChange={(e) => setInstructions(e.target.value)}
               />
             </section>
           </div>
@@ -573,10 +791,10 @@ export default function CheckoutPage() {
             {/* 6. Mode de paiement */}
             <section className="checkout-panel checkout-step-panel">
               <div className="step-panel-heading">
-                <h2>6. Mode de paiement</h2>
-                <button type="button" className="link-button-pink">
+                <h2>6. Mode de paiement sécurisé</h2>
+                <Link href="/panier" className="link-button-pink">
                   Modifier le panier
-                </button>
+                </Link>
               </div>
 
               <div className="checkout-payment-methods-list">
@@ -592,7 +810,7 @@ export default function CheckoutPage() {
                   <div className="payment-brand-badge wave">
                     <Image src="/payment/wave.png" alt="" width={22} height={32} />
                   </div>
-                  <strong>Wave</strong>
+                  <strong>Wave Sénégal</strong>
                 </label>
 
                 {/* Orange Money */}
@@ -686,12 +904,29 @@ export default function CheckoutPage() {
                   <span>Sous-total</span>
                   <span>{formatPrice(calculatedSubtotal)}</span>
                 </div>
+
+                {appliedCoupon && (
+                  <div className="cost-row text-emerald-700">
+                    <span className="flex items-center gap-1">
+                      <Tag size={13} /> Code promo ({appliedCoupon.code})
+                    </span>
+                    <span>
+                      {appliedCoupon.freeShipping
+                        ? 'Livraison offerte'
+                        : `-${formatPrice(appliedCoupon.discountAmount)}`}
+                    </span>
+                  </div>
+                )}
+
                 <div className="cost-row">
-                  <span>Livraison ({delivery === 'standard' ? 'Saly' : 'Express'})</span>
-                  <span>{formatPrice(shipping)}</span>
+                  <span>
+                    Livraison ({selectedZone?.name ?? 'Saly'} · {delivery === 'standard' ? 'Standard' : 'Express'})
+                  </span>
+                  <span>{isFreeShipping ? 'Offerte' : formatPrice(shipping)}</span>
                 </div>
+
                 <div className="cost-row total-row">
-                  <strong>Total</strong>
+                  <strong>Total à payer</strong>
                   <strong className="total-amount-highlight">
                     {formatPrice(calculatedTotal)}
                   </strong>
@@ -709,16 +944,30 @@ export default function CheckoutPage() {
               </label>
 
               {/* Payer Maintenant Button */}
-              <button type="submit" className="button-pill-pink button-pay-now">
-                <LockKeyhole size={17} /> Payer maintenant
+              <button
+                type="submit"
+                className="button-pill-pink button-pay-now flex items-center justify-center gap-2"
+                disabled={submittingOrder}
+              >
+                {submittingOrder ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    <span>Création de la commande...</span>
+                  </>
+                ) : (
+                  <>
+                    <LockKeyhole size={17} />
+                    <span>Payer {formatPrice(calculatedTotal)}</span>
+                  </>
+                )}
               </button>
 
               {/* Security Trust Note */}
               <div className="checkout-security-guarantee">
                 <ShieldCheck size={18} color="#15803D" />
                 <div>
-                  <strong>Paiement 100% sécurisé</strong>
-                  <p>Vos informations de paiement sont cryptées et sécurisées.</p>
+                  <strong>Passerelle NabooPay sécurisée</strong>
+                  <p>Paiement instantané par Wave, Orange Money et Cartes.</p>
                 </div>
               </div>
 
