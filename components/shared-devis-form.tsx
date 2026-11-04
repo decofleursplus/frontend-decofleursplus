@@ -19,7 +19,7 @@ import {
   Sprout,
   PartyPopper,
 } from 'lucide-react';
-import { addQuote } from '@/lib/admin/mock-data/quotes';
+import { submitQuote } from '@/lib/api/quotes';
 
 export type DevisServiceType = 'paysagisme' | 'evenements';
 
@@ -110,37 +110,35 @@ export function SharedDevisForm({
     setCurrentStep(3);
   };
 
-  const handleFinalSubmit = (e: React.FormEvent) => {
+  const handleFinalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      const newRef = `DEV-2024-${Math.floor(1000 + Math.random() * 9000)}`;
-      
-      // Enregistrer dans le mock store back-office
-      addQuote({
-        id: newRef,
-        createdAt: new Date().toISOString().split('T')[0],
-        status: 'nouvelle',
-        clientName: fullName,
-        clientPhone: phone,
-        clientEmail: email,
-        company: company || undefined,
-        prestationType: prestationType,
-        spaceType: spaceType,
-        surfaceArea: metricValue ? `${metricValue} ${serviceType === 'paysagisme' ? 'm²' : 'invités'}` : 'Non spécifié',
-        desiredDate: desiredDate || 'À convenir',
-        location: location,
-        budget: budget,
-        description: description,
-        photos: photos,
-        notes: 'Demande client soumise via le formulaire en ligne.',
+    try {
+      const res = await submitQuote({
+        name: fullName.trim(),
+        email: email.trim() || undefined,
+        phone: phone.trim(),
+        eventType: `${serviceType.toUpperCase()} - ${prestationType}`,
+        location: location.trim(),
+        budget: budget || undefined,
+        eventDate: desiredDate || undefined,
+        notes: `${description}${company ? ` | Société: ${company}` : ''}${metricValue ? ` | Détail: ${metricValue}` : ''}`,
       });
 
+      if (res.success && res.quote) {
+        setSubmittedRef(res.quote.quoteNumber || res.quote.id);
+      } else {
+        const newRef = `DEV-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+        setSubmittedRef(newRef);
+      }
+    } catch {
+      const newRef = `DEV-2026-${Math.floor(1000 + Math.random() * 9000)}`;
       setSubmittedRef(newRef);
+    } finally {
       setIsSubmitting(false);
       setCurrentStep(4);
-    }, 600);
+    }
   };
 
   return (

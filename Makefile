@@ -43,23 +43,14 @@ health: ## Vérifie la disponibilité et le statut de santé du backend Staging
 	@echo "🔍 Vérification du healthcheck Staging Railway..."
 	@curl -s https://backend-decofleursplus-staging.up.railway.app/api/v1/health | jq . || curl -s https://backend-decofleursplus-staging.up.railway.app/api/v1/health
 
-test: ## Exécute l'intégralité des 21 tests QA (13 API Staging + 8 E2E Browser)
+test: ## Exécute la suite de tests E2E réels (Playwright Chromium)
 	pnpm exec playwright test
 
-test-api: ## Exécute uniquement les tests API complets sur Staging (10 personas Faker)
-	SKIP_WEBSERVER=0 pnpm exec playwright test tests/api/api-qa-suite.spec.ts --reporter=list
+test-e2e: ## Exécute les tests E2E (Chromium headless)
+	pnpm exec playwright test tests/e2e/e2e.spec.ts --reporter=list
 
-test-e2e: ## Exécute uniquement les tests d'interface utilisateur E2E (Chromium headless)
-	pnpm exec playwright test tests/e2e/e2e-qa-suite.spec.ts --reporter=list
-
-test-live: ## Ouvre le navigateur Chromium visible et anime le parcours vitrine
-	pnpm run test:qa:live
-
-test-all-visual: ## 🎬 Lance le GRAND TEST VISUEL de TOUS les parcours (Vitrine, Espace Client & Back-Office)
-	pnpm exec playwright test tests/e2e/all-journeys-visual.spec.ts --headed
-
-test-interactive: ## 🚀 Test interactif complet (Créations, Clics, Stepper +/-, Suppressions, Modales en direct à l'écran)
-	pnpm exec playwright test tests/e2e/all-actions-interactive.spec.ts --headed
+test-headed: ## Exécute les tests E2E avec navigateur visible
+	pnpm exec playwright test tests/e2e/e2e.spec.ts --headed
 
 test-ui: ## Ouvre l'interface interactive graphique Playwright (Timeline, DOM, Rejeu)
 	pnpm exec playwright test --ui

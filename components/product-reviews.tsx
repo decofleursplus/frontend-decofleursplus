@@ -152,80 +152,80 @@ export function ProductReviews({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-5 bg-gradient-to-r from-stone-50/80 to-white hover:bg-stone-50 transition-colors text-left"
+        className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-stone-50/90 to-white hover:bg-stone-50 transition-colors text-left group"
         aria-expanded={isOpen}
       >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[#173f22]/10 text-[#173f22] flex items-center justify-center">
-            <MessageSquare size={19} />
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-9 h-9 rounded-full bg-[#173f22]/10 text-[#173f22] flex items-center justify-center shrink-0">
+            <MessageSquare size={17} />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h2 className="text-base sm:text-lg font-serif font-semibold text-neutral-900 m-0">
-                Avis Clients &amp; Notations
-              </h2>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+              <span className="text-sm sm:text-base font-bold text-neutral-900 m-0 whitespace-nowrap">
+                Avis clients
+              </span>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 whitespace-nowrap shrink-0">
                 {reviewsCount} avis
               </span>
             </div>
-            <div className="flex items-center gap-1.5 mt-0.5 text-xs text-neutral-500">
-              <div className="flex items-center">
+            <div className="flex items-center gap-1.5 mt-0.5 text-xs text-neutral-500 whitespace-nowrap">
+              <div className="flex items-center shrink-0">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <Star
                     key={i}
-                    size={13}
+                    size={12}
                     fill={i < Math.round(rating) ? '#F59E0B' : 'none'}
                     stroke={i < Math.round(rating) ? '#F59E0B' : '#CBD5E1'}
                   />
                 ))}
               </div>
               <strong className="text-neutral-800 font-bold">{rating.toFixed(1)}/5</strong>
-              <span>· Note moyenne vérifiée</span>
+              <span className="text-[11px] text-neutral-400">· Vérifiés</span>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-medium text-emerald-800">
-          <span className="hidden sm:inline">{isOpen ? 'Réduire' : 'Consulter et noter'}</span>
-          {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800 shrink-0 ml-2">
+          <span className="whitespace-nowrap">{isOpen ? 'Fermer' : 'Voir les avis'}</span>
+          {isOpen ? <ChevronUp size={16} className="shrink-0" /> : <ChevronDown size={16} className="shrink-0" />}
         </div>
       </button>
 
       {/* Accordion Collapsible Content */}
       {isOpen && (
-        <div className="p-5 sm:p-7 border-t border-neutral-100 space-y-8 animate-in fade-in-50 duration-200">
+        <div className="p-4 sm:p-6 border-t border-neutral-100 space-y-6 animate-in fade-in-50 duration-200">
           {/* Summary Banner */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 rounded-2xl bg-[#faf9f5] border border-amber-100/60 items-center">
-            <div className="text-center md:text-left md:border-r border-amber-200/50 md:pr-4">
-              <span className="text-4xl font-serif font-bold text-[#173f22] block">
-                {rating.toFixed(1)}
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#faf9f5] border border-amber-100/60 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+            <div className="text-left sm:border-r border-amber-200/50 sm:pr-5 shrink-0">
+              <span className="text-3xl font-serif font-bold text-[#173f22] block leading-none">
+                {rating.toFixed(1)}/5
               </span>
-              <div className="flex items-center justify-center md:justify-start gap-1 my-1">
+              <div className="flex items-center gap-1 my-1.5">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <Star
                     key={i}
-                    size={16}
+                    size={14}
                     fill={i < Math.round(rating) ? '#F59E0B' : 'none'}
                     stroke={i < Math.round(rating) ? '#F59E0B' : '#CBD5E1'}
                   />
                 ))}
               </div>
-              <span className="text-xs text-neutral-600 block">
-                Basé sur {reviewsCount} avis certifiés
+              <span className="text-[11px] text-neutral-600 block whitespace-nowrap">
+                {reviewsCount} avis certifiés
               </span>
             </div>
 
-            <div className="md:col-span-2 text-xs text-neutral-600 space-y-1.5">
+            <div className="text-xs text-neutral-600 space-y-1.5">
               <div className="flex items-center gap-2 text-neutral-900 font-medium">
-                <CheckCircle2 size={16} className="text-emerald-700 shrink-0" />
-                <span>100% fleurs fraîches coupées du jour et préparées avec amour</span>
+                <CheckCircle2 size={15} className="text-emerald-700 shrink-0" />
+                <span>Fleurs fraîches coupées du jour et préparées avec soin</span>
               </div>
               <div className="flex items-center gap-2 text-neutral-900 font-medium">
-                <CheckCircle2 size={16} className="text-emerald-700 shrink-0" />
-                <span>Navette climatisée Dakar &amp; livraison express 2h Petite-Côte</span>
+                <CheckCircle2 size={15} className="text-emerald-700 shrink-0" />
+                <span>Navette climatisée Dakar &amp; livraison express Petite-Côte</span>
               </div>
               <div className="flex items-center gap-2 text-neutral-900 font-medium">
-                <CheckCircle2 size={16} className="text-emerald-700 shrink-0" />
+                <CheckCircle2 size={15} className="text-emerald-700 shrink-0" />
                 <span>Service client joignable par téléphone et WhatsApp 7j/7</span>
               </div>
             </div>

@@ -1,9 +1,4 @@
 import { apiClient } from '../client';
-import {
-  adminBlogArticles,
-  adminBlogCategories,
-  adminBlogAuthors,
-} from '@/lib/admin/mock-data/blog';
 import type {
   BlogArticle,
   BlogCategory,
@@ -112,10 +107,10 @@ export async function getAdminBlogArticles(params?: GetAdminBlogArticlesParams):
     if (res && Array.isArray(res.articles)) return res.articles.map(transformBlogArticle);
     if (res && Array.isArray(res.data)) return res.data.map(transformBlogArticle);
   } catch (err) {
-    console.warn('[AdminBlogAPI] Falling back to mock articles:', err);
+    console.warn('[AdminBlogAPI] Erreur de récupération des articles:', err);
   }
 
-  return adminBlogArticles;
+  return [];
 }
 
 /**

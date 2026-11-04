@@ -1,5 +1,4 @@
 import { apiClient } from '../client';
-import { initialQuotes } from '@/lib/admin/mock-data/quotes';
 import type { LandscapeQuote, QuoteStatus } from '@/lib/admin/mock-data/types';
 
 export interface GetAdminQuotesParams {
@@ -158,27 +157,12 @@ export async function getAdminQuotes(params?: GetAdminQuotesParams): Promise<Adm
       }
     }
   } catch (err) {
-    console.warn('[AdminQuotesAPI] Falling back to mock quotes:', err);
-  }
-
-  // Fallback to local mock data
-  let filtered = [...initialQuotes];
-  if (params?.status && params.status !== 'all') {
-    filtered = filtered.filter((q) => q.status === params.status);
-  }
-  if (params?.search) {
-    const term = params.search.toLowerCase();
-    filtered = filtered.filter(
-      (q) =>
-        q.id.toLowerCase().includes(term) ||
-        q.clientName.toLowerCase().includes(term) ||
-        q.location.toLowerCase().includes(term)
-    );
+    console.warn('[AdminQuotesAPI] Erreur de récupération des devis:', err);
   }
 
   return {
-    quotes: filtered,
-    total: filtered.length,
+    quotes: [],
+    total: 0,
     page: 1,
     totalPages: 1,
   };
@@ -201,7 +185,7 @@ export async function getAdminQuoteById(id: string): Promise<LandscapeQuote | nu
     console.warn(`[AdminQuotesAPI] Failed to fetch quote ${id}:`, err);
   }
 
-  return initialQuotes.find((q) => q.id === id) || null;
+  return null;
 }
 
 /**

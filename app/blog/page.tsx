@@ -5,7 +5,6 @@ import { constructMetadata } from '@/lib/seo/metadata';
 import { Breadcrumbs } from '@/components/seo/breadcrumbs';
 import { JsonLd } from '@/components/seo/json-ld';
 import { SITE_URL, SITE_CONFIG } from '@/lib/seo/config';
-import { adminBlogArticles, adminBlogCategories } from '@/lib/admin/mock-data/blog';
 import { getBlogArticles, getBlogCategories } from '@/lib/api/blog';
 import { BlogExplorer } from '@/components/blog/blog-explorer';
 import type { BlogArticle, BlogCategory } from '@/lib/admin/mock-data/types';
@@ -45,8 +44,6 @@ export default async function BlogIndexPage() {
         coverImage: c.coverImage || undefined,
         articlesCount: c.articlesCount,
       }));
-    } else {
-      categories = adminBlogCategories;
     }
 
     if (artsRes?.items && artsRes.items.length > 0) {
@@ -76,12 +73,10 @@ export default async function BlogIndexPage() {
         tags: a.tags,
         relatedProductIds: a.relatedProductIds,
       }));
-    } else {
-      articles = adminBlogArticles.filter((a) => a.status === 'publie');
     }
   } catch {
-    categories = adminBlogCategories;
-    articles = adminBlogArticles.filter((a) => a.status === 'publie');
+    categories = [];
+    articles = [];
   }
 
   const breadcrumbs = [

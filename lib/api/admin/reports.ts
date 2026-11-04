@@ -1,6 +1,6 @@
 import { apiClient } from '../client';
 import type { ReportDataset, ReportPeriodPreset, FinancialTransaction } from '@/lib/admin/mock-data/types';
-import { reportsDatasets, financialTransactions } from '@/lib/admin/mock-data/reports';
+import { reportsDatasets } from '@/lib/admin/mock-data/reports';
 
 export interface FinancialTransactionsResult {
   items: FinancialTransaction[];
@@ -75,40 +75,15 @@ export async function getAdminFinancialTransactions(params?: {
     }
     throw new Error('Données de transactions non reçues');
   } catch (error) {
-    console.warn('[Admin Transactions] Utilisation du mock transactions:', error);
-
-    let list = [...financialTransactions];
-
-    if (params?.search) {
-      const q = params.search.toLowerCase();
-      list = list.filter(
-        (t) =>
-          t.ref.toLowerCase().includes(q) ||
-          t.orderRef.toLowerCase().includes(q) ||
-          t.customerName.toLowerCase().includes(q) ||
-          t.customerPhone.includes(q)
-      );
-    }
-
-    if (params?.paymentMethod && params.paymentMethod !== 'all') {
-      list = list.filter((t) => t.paymentMethod === params.paymentMethod);
-    }
-
-    if (params?.status && params.status !== 'all') {
-      list = list.filter((t) => t.status === params.status);
-    }
-
-    const totalGross = list.reduce((acc, t) => acc + t.grossAmount, 0);
-    const totalFees = list.reduce((acc, t) => acc + t.gatewayFee, 0);
-    const totalNet = list.reduce((acc, t) => acc + t.netAmount, 0);
+    console.warn('[Admin Transactions] Erreur de récupération des transactions:', error);
 
     return {
-      items: list,
-      total: list.length,
+      items: [],
+      total: 0,
       summary: {
-        totalGross,
-        totalFees,
-        totalNet,
+        totalGross: 0,
+        totalFees: 0,
+        totalNet: 0,
       },
     };
   }

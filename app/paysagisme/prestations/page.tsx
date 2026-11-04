@@ -27,59 +27,77 @@ export default function PrestationsPage() {
           </p>
         </div>
 
-        {/* ── Grille des 6 Prestations (Maquette Écran 2) ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-16 sm:mb-20">
-          {initialLandscapePrestations.map((prestation) => (
-            <div
-              key={prestation.id}
-              id={prestation.id}
-              className="bg-white rounded-2xl overflow-hidden border border-[#e8dfd5] shadow-xs hover:shadow-md transition-all flex flex-col group"
+        {/* ── Grille des Prestations (Maquette Écran 2) ── */}
+        {initialLandscapePrestations.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-16 sm:mb-20">
+            {initialLandscapePrestations.map((prestation) => (
+              <div
+                key={prestation.id}
+                id={prestation.id}
+                className="bg-white rounded-2xl overflow-hidden border border-[#e8dfd5] shadow-xs hover:shadow-md transition-all flex flex-col group"
+              >
+                <div className="relative aspect-[4/3] overflow-hidden bg-[#e5dfd7]">
+                  <Image
+                    src={prestation.image}
+                    alt={prestation.title}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  />
+                  <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-md text-[11px] font-semibold text-[#193e23]">
+                    {prestation.category}
+                  </div>
+                </div>
+
+                <div className="p-6 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h2 className="text-lg sm:text-xl font-serif font-bold text-[#173f22] leading-snug">
+                      {prestation.title}
+                    </h2>
+                    <p className="text-xs sm:text-sm font-medium text-[#c8436e] mt-1">
+                      {prestation.subtitle}
+                    </p>
+                    <p className="text-sm text-[#4b5e4f] mt-3 line-clamp-3 leading-relaxed">
+                      {prestation.description}
+                    </p>
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-[#f0eae1] flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPrestation(prestation)}
+                      className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#c8436e] hover:text-[#a0254c] group-hover:underline transition-colors"
+                    >
+                      En savoir plus <ArrowRight size={15} />
+                    </button>
+                    <Link
+                      href={`/devis?type=paysagisme&prestation=${encodeURIComponent(prestation.title)}`}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-full bg-[#f4ebe1] hover:bg-[#ebdccf] text-[#193e23] transition-colors"
+                    >
+                      Devis express
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-16 px-6 bg-[#fbfdfb] rounded-3xl border border-[#e8efe9] mb-16 max-w-2xl mx-auto">
+            <h2 className="text-xl font-serif font-bold text-[#173f22] mb-2">
+              Prestations paysagères sur mesure
+            </h2>
+            <p className="text-sm text-[#526655] mb-6">
+              Nos architectes et paysagistes conçoivent vos projets végétaux personnalisés à Saly, Dakar et sur la Petite Côte. Contactez-nous pour une étude personnalisée de votre espace.
+            </p>
+            <Link
+              href="/devis"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#173f22] text-white text-sm font-medium hover:bg-[#12311a] transition-colors"
             >
-              <div className="relative aspect-[4/3] overflow-hidden bg-[#e5dfd7]">
-                <Image
-                  src={prestation.image}
-                  alt={prestation.title}
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                />
-                <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-md text-[11px] font-semibold text-[#193e23]">
-                  {prestation.category}
-                </div>
-              </div>
-
-              <div className="p-6 flex-1 flex flex-col justify-between">
-                <div>
-                  <h2 className="text-lg sm:text-xl font-serif font-bold text-[#173f22] leading-snug">
-                    {prestation.title}
-                  </h2>
-                  <p className="text-xs sm:text-sm font-medium text-[#c8436e] mt-1">
-                    {prestation.subtitle}
-                  </p>
-                  <p className="text-sm text-[#4b5e4f] mt-3 line-clamp-3 leading-relaxed">
-                    {prestation.description}
-                  </p>
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-[#f0eae1] flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPrestation(prestation)}
-                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#c8436e] hover:text-[#a0254c] group-hover:underline transition-colors"
-                  >
-                    En savoir plus <ArrowRight size={15} />
-                  </button>
-                  <Link
-                    href={`/devis?type=paysagisme&prestation=${encodeURIComponent(prestation.title)}`}
-                    className="text-xs font-semibold px-3 py-1.5 rounded-full bg-[#f4ebe1] hover:bg-[#ebdccf] text-[#193e23] transition-colors"
-                  >
-                    Devis express
-                  </Link>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+              <span>Demander une étude & devis</span>
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+        )}
 
         {/* ── Bannière CTA Finale (Maquette Écran 2) ── */}
         <section className="relative rounded-3xl overflow-hidden p-8 sm:p-12 text-white bg-gradient-to-r from-[#173f22] to-[#254f30] shadow-lg border border-[#305f3d]">

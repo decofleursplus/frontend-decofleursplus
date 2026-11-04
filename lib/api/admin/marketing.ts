@@ -1,9 +1,5 @@
 import { apiClient } from '../client';
 import {
-  adminCoupons,
-  adminPromotions,
-  adminCampaigns,
-  adminAbandonedCarts,
   defaultCartRecoverySettings,
 } from '@/lib/admin/mock-data/marketing';
 import type {
@@ -63,10 +59,10 @@ export async function getAdminCoupons(params?: { status?: string; search?: strin
     if (res && Array.isArray(res.coupons)) return res.coupons.map(transformAdminCoupon);
     if (res && Array.isArray(res.data)) return res.data.map(transformAdminCoupon);
   } catch (err) {
-    console.warn('[AdminMarketingAPI] Falling back to mock coupons:', err);
+    console.warn('[AdminMarketingAPI] Erreur coupons:', err);
   }
 
-  return adminCoupons;
+  return [];
 }
 
 export async function createAdminCoupon(data: {
@@ -145,10 +141,10 @@ export async function getAdminPromotions(params?: { status?: string; search?: st
     if (res && Array.isArray(res.promotions)) return res.promotions.map(transformAdminPromotion);
     if (res && Array.isArray(res.data)) return res.data.map(transformAdminPromotion);
   } catch (err) {
-    console.warn('[AdminMarketingAPI] Falling back to mock promotions:', err);
+    console.warn('[AdminMarketingAPI] Erreur promotions:', err);
   }
 
-  return adminPromotions;
+  return [];
 }
 
 export async function createAdminPromotion(data: {
@@ -222,10 +218,10 @@ export async function getAdminCampaigns(params?: { channel?: string; search?: st
     if (res && Array.isArray(res.campaigns)) return res.campaigns.map(transformAdminCampaign);
     if (res && Array.isArray(res.data)) return res.data.map(transformAdminCampaign);
   } catch (err) {
-    console.warn('[AdminMarketingAPI] Falling back to mock campaigns:', err);
+    console.warn('[AdminMarketingAPI] Erreur campagnes:', err);
   }
 
-  return adminCampaigns;
+  return [];
 }
 
 export async function createAdminCampaign(data: {
@@ -271,10 +267,10 @@ export async function getAdminAbandonedCarts(): Promise<AdminAbandonedCart[]> {
     if (res && Array.isArray(res.carts)) return res.carts;
     if (res && Array.isArray(res.data)) return res.data;
   } catch (err) {
-    console.warn('[AdminMarketingAPI] Falling back to mock abandoned carts:', err);
+    console.warn('[AdminMarketingAPI] Erreur paniers abandonnés:', err);
   }
 
-  return adminAbandonedCarts;
+  return [];
 }
 
 export async function remindAdminAbandonedCart(id: string, channel: 'whatsapp' | 'email' | 'sms'): Promise<boolean> {

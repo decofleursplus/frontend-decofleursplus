@@ -5,7 +5,6 @@ import { notFound } from 'next/navigation';
 import { Calendar, Clock, ArrowLeft, Tag } from 'lucide-react';
 import { SiteFooter } from '@/components/site-footer';
 import { getBlogArticleBySlug } from '@/lib/api/blog';
-import { adminBlogArticles } from '@/lib/admin/mock-data/blog';
 import { constructMetadata } from '@/lib/seo/metadata';
 import { getArticleSchema } from '@/lib/seo/schema';
 import { JsonLd } from '@/components/seo/json-ld';
@@ -16,9 +15,7 @@ import type { BlogArticle } from '@/lib/admin/mock-data/types';
 export const dynamicParams = true;
 
 export function generateStaticParams() {
-  return adminBlogArticles
-    .filter((a) => a.status === 'publie')
-    .map((a) => ({ slug: a.slug }));
+  return [];
 }
 
 async function fetchArticleData(slug: string): Promise<{
@@ -79,20 +76,10 @@ async function fetchArticleData(slug: string): Promise<{
       };
     }
   } catch {
-    // Fallback to local data
+    // API failed or not found
   }
 
-  const local = adminBlogArticles.find((a) => a.slug === slug);
-  if (!local) return null;
-
-  const related = adminBlogArticles
-    .filter((a) => a.id !== local.id && a.categoryId === local.categoryId)
-    .slice(0, 3);
-
-  return {
-    article: local,
-    relatedArticles: related,
-  };
+  return null;
 }
 
 export async function generateMetadata({

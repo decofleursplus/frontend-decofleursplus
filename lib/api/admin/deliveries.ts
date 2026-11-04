@@ -1,5 +1,4 @@
 import { apiClient } from '../client';
-import { adminDeliveries, adminDrivers } from '@/lib/admin/mock-data/deliveries';
 import type {
   AdminDelivery,
   DeliveryDriver,
@@ -195,21 +194,12 @@ export async function getAdminDeliveries(params?: GetAdminDeliveriesParams): Pro
       }
     }
   } catch (err) {
-    console.warn('[AdminDeliveriesAPI] Falling back to mock deliveries:', err);
-  }
-
-  // Local mock fallback
-  let list = [...adminDeliveries];
-  if (params?.status && params.status !== 'all') {
-    list = list.filter((d) => d.status === params.status);
-  }
-  if (params?.driverId && params.driverId !== 'all') {
-    list = list.filter((d) => d.driverId === params.driverId);
+    console.warn('[AdminDeliveriesAPI] Erreur de récupération des livraisons:', err);
   }
 
   return {
-    deliveries: list,
-    total: list.length,
+    deliveries: [],
+    total: 0,
   };
 }
 
@@ -274,10 +264,10 @@ export async function getAdminDrivers(includeInactive = false): Promise<Delivery
       return res.data.map(transformDeliveryDriver);
     }
   } catch (err) {
-    console.warn('[AdminDriversAPI] Falling back to mock drivers:', err);
+    console.warn('[AdminDriversAPI] Erreur de récupération des livreurs:', err);
   }
 
-  return adminDrivers;
+  return [];
 }
 
 /**

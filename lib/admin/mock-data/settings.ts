@@ -43,52 +43,7 @@ export const adminRolesList: RoleDefinition[] = [
   },
 ];
 
-export const initialAdminUsers: AdminUser[] = [
-  {
-    id: 'USR-001',
-    name: 'Aïssatou Ba',
-    email: 'aissatou.ba@decofleurplus.sn',
-    phone: '+221 77 941 78 60',
-    role: 'admin',
-    status: 'actif',
-    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
-    lastLogin: '2026-10-13T05:15:00Z',
-    createdAt: '2023-01-15T09:00:00Z',
-  },
-  {
-    id: 'USR-002',
-    name: 'Mamadou Sarr',
-    email: 'm.sarr@decofleurplus.sn',
-    phone: '+221 78 234 56 78',
-    role: 'gestionnaire',
-    status: 'actif',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    lastLogin: '2026-10-12T18:40:00Z',
-    createdAt: '2023-04-10T11:00:00Z',
-  },
-  {
-    id: 'USR-003',
-    name: 'Fatou Sow',
-    email: 'fatou.sow@decofleurplus.sn',
-    phone: '+221 77 678 90 12',
-    role: 'fleuriste',
-    status: 'actif',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    lastLogin: '2026-10-13T04:50:00Z',
-    createdAt: '2023-06-01T08:30:00Z',
-  },
-  {
-    id: 'USR-004',
-    name: 'Khady Ndiaye',
-    email: 'khady.finance@decofleurplus.sn',
-    phone: '+221 70 456 78 90',
-    role: 'comptable',
-    status: 'actif',
-    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
-    lastLogin: '2026-10-12T16:22:00Z',
-    createdAt: '2024-01-08T10:00:00Z',
-  },
-];
+export const initialAdminUsers: AdminUser[] = [];
 
 export const adminPermissionsMatrix: AdminPermissionModule[] = [
   {
@@ -264,44 +219,7 @@ export const initialPaymentSettings: PaymentGatewaySettings = {
   },
 };
 
-export const initialDeliveryZones: DeliveryZoneSettings[] = [
-  {
-    id: 'ZONE-SALY',
-    name: 'Saly Portudal & Résidences',
-    coverage: 'Saly Centre, Niakh Niakhal, Saly Tapée, Palm Beach',
-    price: 2000,
-    delayHours: 'Livraison en 2h chrono',
-    freeAbove: 35000,
-    enabled: true,
-  },
-  {
-    id: 'ZONE-MBOUR',
-    name: 'Mbour & Petite Côte',
-    coverage: 'Mbour Ville, Grand Mbour, Saly Joseph, Somone',
-    price: 3000,
-    delayHours: 'Le jour même (avant 16h)',
-    freeAbove: 50000,
-    enabled: true,
-  },
-  {
-    id: 'ZONE-DAKAR',
-    name: 'Dakar & Environs',
-    coverage: 'Plateau, Almadies, Fann, Yoff, Ouakam, Mermoz',
-    price: 5000,
-    delayHours: '24h ouvrées / Navette frigorifique',
-    freeAbove: 75000,
-    enabled: true,
-  },
-  {
-    id: 'ZONE-NGAPAROU',
-    name: 'Ngaparou & Nianing',
-    coverage: 'Ngaparou, Nianing, Warang, Pointe Sarène',
-    price: 4000,
-    delayHours: 'Livraison dans la journée',
-    freeAbove: 60000,
-    enabled: true,
-  },
-];
+export const initialDeliveryZones: DeliveryZoneSettings[] = [];
 
 export const initialNotificationSettings: NotificationSettings = {
   whatsappEnabled: true,
