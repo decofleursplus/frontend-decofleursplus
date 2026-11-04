@@ -46,7 +46,6 @@ type AuthContextType = {
   isLoading: boolean;
   login: (identifier: string, password?: string) => Promise<User>;
   loginWithGoogle: () => Promise<User>;
-  loginWithFacebook: () => Promise<User>;
   register: (
     data: { name: string; email: string; phone: string; password?: string },
     autoLogin?: boolean,
@@ -180,11 +179,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     throw new Error('La connexion avec Google sera bientôt disponible.');
   }, []);
 
-  const loginWithFacebook = useCallback(async (): Promise<User> => {
-    // V1 : Non supporté côté serveur, message informatif
-    throw new Error('La connexion avec Facebook sera bientôt disponible.');
-  }, []);
-
   const loginUser = useCallback((userToLogin: User) => {
     setUser(userToLogin);
     try {
@@ -229,7 +223,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         login,
         loginWithGoogle,
-        loginWithFacebook,
         register,
         loginUser,
         updateUser,

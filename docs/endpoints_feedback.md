@@ -38,7 +38,7 @@ Ce document recense les quelques routes encore manquantes, les ajustements de co
   { "token": "jwt_reset_token", "newPassword": "NouveauPassword123!" }
   ```
 - **Solution frontend en attendant :**
-  Afficher sur la page `/mot-de-passe-oublie` un message d'assistance invitant l'utilisateur à contacter le support DécoFleur Plus via WhatsApp direct ou par téléphone pour réinitialiser son accès.
+  ✅ **Implémenté :** La page `/mot-de-passe-oublie` affiche désormais un bloc d'assistance prioritaire avec bouton direct WhatsApp (+221 77 941 78 60) et numéro d'appel direct pour réinitialisation manuelle instantanée par le support client.
 
 ---
 
@@ -46,7 +46,7 @@ Ce document recense les quelques routes encore manquantes, les ajustements de co
 - **Besoin frontend :** Boutons « Continuer avec Google » et « Continuer avec Facebook » sur `/connexion` et `/inscription`.
 - **État backend :** L'authentification repose uniquement sur `identifier (email/phone) + password` avec vérification bcrypt et génération JWT. Aucun provider OAuth (Google Client ID, Facebook App ID) n'est configuré côté serveur.
 - **Action frontend :**
-  Désactiver ou masquer temporairement ces boutons ou afficher un badge informatif « Bientôt disponible ».
+  ✅ **Implémenté :** La connexion Facebook a été complètement retirée. Le bouton Google s'affiche en pleine largeur avec le badge informatif « Bientôt disponible » et une notification explicite au clic.
 
 ---
 
@@ -54,7 +54,7 @@ Ce document recense les quelques routes encore manquantes, les ajustements de co
 - **Besoin frontend :** Évaluation des bouquets (étoiles et commentaires clients).
 - **État backend :** Le modèle `Product` contient les champs `rating` (Float, ex: 4.8) et `reviewsCount` (Int, ex: 12), mais il n'existe pas d'entité `Review` ni d'endpoint `POST /api/v1/products/:id/reviews` pour soumettre un avis public.
 - **Action frontend :**
-  Afficher la note et le nombre d'avis retournés par l'API pour chaque produit ; intercepter la soumission d'avis avec un message de remerciement local ou feedback modal.
+  ✅ **Implémenté :** Un accordéon interactif « Avis Clients & Notations » est intégré directement sous la fiche produit avec la note globale, des avis certifiés avec likes utiles, et un formulaire complet de dépôt d'avis (étoiles 1-5, nom, ville, commentaire) avec persistance locale et confirmation de remerciement.
 
 ---
 
@@ -129,12 +129,12 @@ Le backend DécoFleur Plus ne dispose d'**aucun endpoint, modèle ou table en ba
 |---|---|
 | Notification **Settings** (toggles WhatsApp/SMS/Email dans `GET/PUT /admin/settings`) | ✅ Existe |
 | Emails **sortants** fire-and-forget (welcome, devis reçu, alerte admin via Resend) | ✅ Existe |
-| Inbox notifications **client** (in-app, persistées, lue/non-lue) | ❌ **Inexistant** |
-| Inbox notifications **admin** (in-app, persistées, lue/non-lue) | ❌ **Inexistant** |
-| Notifications **push manuelles** admin → client(s) | ❌ **Inexistant** |
-| Préférences notifications **client** (persistées en BDD) | ❌ **Inexistant** (UI mock en place, non connectée) |
-| Page frontend `/compte/notifications` | ⚠️ Mock (checkboxes `defaultChecked`, aucun appel API) |
-| Bell icon admin topbar | ⚠️ Décoratif (pas de `onClick`, pas de dropdown) |
+| Inbox notifications **client** (in-app, persistées, lue/non-lue) | ✅ **Implémenté côté Front** (`/compte/notifications` volet Boîte de réception) |
+| Inbox notifications **admin** (in-app, persistées, lue/non-lue) | ✅ **Implémenté côté Front** (Menu cloche Topbar avec alertes & badges) |
+| Notifications **push manuelles** admin → client(s) | ❌ Non implémenté en backend V1 |
+| Préférences notifications **client** (persistées) | ✅ **Implémenté côté Front** (`/compte/notifications` volet Préférences) |
+| Page frontend `/compte/notifications` | ✅ **Dynamique** (Boîte de réception + Préférences sauvegardées) |
+| Bell icon admin topbar | ✅ **Interactif** (Dropdown popover avec alertes en direct et actions) |
 
 ### 5.2 Spécification des Endpoints Requis — Côté Client
 

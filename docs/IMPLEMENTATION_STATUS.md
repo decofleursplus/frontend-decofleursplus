@@ -242,6 +242,15 @@ Tâche 9 : Documentation Stratégique & Guides Opérationnels (GSC, GBP, GA4, GM
   - Rédaction complète de `docs/SEO_KEYWORDS.md` (Matrice de mots-clés détaillée par cluster, intention et priorité P1/P2/P3).
   - Rédaction complète de `docs/SEO_AUDIT.md` (Audit des routes indexables, redirections 301, inventaire JSON-LD et respect des Core Web Vitals).
 
+- [x] **Ajustements Auth & UI Endpoints Feedback (Novembre 2026)** :
+  - **Suppression Facebook** : Retrait complet de la connexion Facebook sur le frontend (`login-form.tsx` et `auth-provider.tsx`). Le bouton Google est pleine largeur avec mention informative « Bientôt disponible ».
+  - **Assistance Mot de passe oublié** : Intégration sur `/mot-de-passe-oublie` d'un encart d'assistance directe WhatsApp (+221 77 941 78 60) et téléphone pour le déblocage immédiat de compte par le support client.
+  - **Avis Clients & Notations sur Fiche Produit** : Accordéon dépliant `ProductReviews` intégré dans `product-detail.tsx` avec note moyenne, avis certifiés avec likes utiles, et formulaire de dépôt d'avis (1-5 étoiles, nom, ville, commentaire) avec sauvegarde locale et confirmation.
+  - **Centre de Notifications Admin** : Remplacement de l'icône cloche décorative par `AdminNotificationsDropdown` dans `admin-topbar.tsx` avec badge de non-lus, menu popover des alertes de l'atelier (commandes, stock bas, devis, paiements), action "Tout marquer comme lu" et liens contextuels.
+  - **Notifications Espace Client** : Refonte de `/compte/notifications` dans `account-section.tsx` avec deux volets : « Boîte de réception » (alertes in-app commandes, paiements, fidélité) et « Canaux & Préférences » (SMS, WhatsApp, Email avec persistance fonctionnelle et toast).
+  - Validation TypeScript intégrale (`tsc --noEmit`) : 0 erreur.
+  - Validation du build Next.js en production (`pnpm build`) : 107/107 pages compilées avec succès.
+
 ## Next Tasks
 - Toutes les phases (1 à 9) sont 100% complétées et validées.
 - Suivi et monitoring des performances lors du déploiement en production sur le nom de domaine `decofleurplus.com`.
