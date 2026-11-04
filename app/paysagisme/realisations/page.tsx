@@ -123,70 +123,88 @@ export default function RealisationsPage() {
         </div>
 
         {/* ── Galerie Mosaïque avec Flou Protecteur sur les Textes (Image copy 2) ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProjects.map((project, idx) => {
-            const isFirst = idx === 0 && filter === 'all';
-            return (
-              <div
-                key={project.id}
-                onClick={() => setActiveProject(project)}
-                className={`group relative rounded-2xl overflow-hidden cursor-pointer bg-white border border-[#e8dfd5] shadow-xs hover:shadow-xl transition-all duration-300 ${
-                  isFirst ? 'md:col-span-2 md:row-span-2' : ''
-                }`}
-              >
-                <div className={`relative w-full ${isFirst ? 'aspect-[16/10] md:h-[480px]' : 'aspect-[4/3]'} overflow-hidden`}>
-                  <Image
-                    src={project.image}
-                    alt={project.title}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                    sizes={isFirst ? '(max-width: 768px) 100vw, 66vw' : '(max-width: 768px) 100vw, 33vw'}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
+        {filteredProjects.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProjects.map((project, idx) => {
+              const isFirst = idx === 0 && filter === 'all';
+              return (
+                <div
+                  key={project.id}
+                  onClick={() => setActiveProject(project)}
+                  className={`group relative rounded-2xl overflow-hidden cursor-pointer bg-white border border-[#e8dfd5] shadow-xs hover:shadow-xl transition-all duration-300 ${
+                    isFirst ? 'md:col-span-2 md:row-span-2' : ''
+                  }`}
+                >
+                  <div className={`relative w-full ${isFirst ? 'aspect-[16/10] md:h-[480px]' : 'aspect-[4/3]'} overflow-hidden`}>
+                    <Image
+                      src={project.image}
+                      alt={project.title}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                      sizes={isFirst ? '(max-width: 768px) 100vw, 66vw' : '(max-width: 768px) 100vw, 33vw'}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
 
-                  {/* Boutons d'action rapides (Cœur & Zoom) en haut à droite */}
-                  <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
-                    <button
-                      type="button"
-                      onClick={(e) => toggleLike(project.id, e)}
-                      className={`p-2 rounded-full backdrop-blur-md transition-colors ${
-                        likedProjects[project.id]
-                          ? 'bg-[#c8436e] text-white'
-                          : 'bg-white/75 hover:bg-white text-gray-800'
-                      }`}
-                      aria-label="Ajouter aux favoris"
-                    >
-                      <Heart size={16} fill={likedProjects[project.id] ? 'currentColor' : 'none'} />
-                    </button>
-                    <div className="p-2 rounded-full bg-white/75 hover:bg-white text-gray-800 backdrop-blur-md transition-colors">
-                      <Eye size={16} />
+                    {/* Boutons d'action rapides (Cœur & Zoom) en haut à droite */}
+                    <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
+                      <button
+                        type="button"
+                        onClick={(e) => toggleLike(project.id, e)}
+                        className={`p-2 rounded-full backdrop-blur-md transition-colors ${
+                          likedProjects[project.id]
+                            ? 'bg-[#c8436e] text-white'
+                            : 'bg-white/75 hover:bg-white text-gray-800'
+                        }`}
+                        aria-label="Ajouter aux favoris"
+                      >
+                        <Heart size={16} fill={likedProjects[project.id] ? 'currentColor' : 'none'} />
+                      </button>
+                      <div className="p-2 rounded-full bg-white/75 hover:bg-white text-gray-800 backdrop-blur-md transition-colors">
+                        <Eye size={16} />
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Badge Catégorie en haut à gauche */}
-                  <div className="absolute top-4 left-4 z-10">
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/95 backdrop-blur-md text-[#193e23] shadow-xs">
-                      {project.categoryLabel}
-                    </span>
-                  </div>
-
-                  {/* Textes avec Conteneur Flou Backdrop-Blur Protecteur (Image copy 2) */}
-                  <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4 p-3.5 sm:p-4 rounded-xl bg-black/45 backdrop-blur-md border border-white/10 text-white transition-transform group-hover:-translate-y-0.5">
-                    <div className="flex items-center gap-1.5 text-xs text-[#f5c6cb] font-medium mb-1">
-                      <MapPin size={13} /> {project.location}
+                    {/* Badge Catégorie en haut à gauche */}
+                    <div className="absolute top-4 left-4 z-10">
+                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/95 backdrop-blur-md text-[#193e23] shadow-xs">
+                        {project.categoryLabel}
+                      </span>
                     </div>
-                    <h3 className={`${isFirst ? 'text-xl sm:text-2xl md:text-3xl' : 'text-base sm:text-lg'} font-serif font-bold text-white leading-tight`}>
-                      {project.title}
-                    </h3>
-                    <p className={`text-white/90 text-xs sm:text-sm mt-1 line-clamp-2 ${!isFirst ? 'hidden sm:block' : ''}`}>
-                      {project.description}
-                    </p>
+
+                    {/* Textes avec Conteneur Flou Backdrop-Blur Protecteur (Image copy 2) */}
+                    <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4 p-3.5 sm:p-4 rounded-xl bg-black/45 backdrop-blur-md border border-white/10 text-white transition-transform group-hover:-translate-y-0.5">
+                      <div className="flex items-center gap-1.5 text-xs text-[#f5c6cb] font-medium mb-1">
+                        <MapPin size={13} /> {project.location}
+                      </div>
+                      <h3 className={`${isFirst ? 'text-xl sm:text-2xl md:text-3xl' : 'text-base sm:text-lg'} font-serif font-bold text-white leading-tight`}>
+                        {project.title}
+                      </h3>
+                      <p className={`text-white/90 text-xs sm:text-sm mt-1 line-clamp-2 ${!isFirst ? 'hidden sm:block' : ''}`}>
+                        {project.description}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-16 px-6 bg-[#fbfdfb] rounded-3xl border border-[#e8efe9] mb-16 max-w-2xl mx-auto">
+            <h2 className="text-xl font-serif font-bold text-[#173f22] mb-2">
+              Portfolio en cours de mise à jour
+            </h2>
+            <p className="text-sm text-[#526655] mb-6">
+              Nos chantiers et créations paysagères récentes seront bientôt disponibles en photos haute définition. Vous pouvez nous confier votre projet directement.
+            </p>
+            <Link
+              href="/devis?type=paysagisme"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#173f22] text-white text-sm font-medium hover:bg-[#12311a] transition-colors"
+            >
+              <span>Demander une étude paysagère</span>
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+        )}
 
         {/* ── Side Drawer de Détail Réalisation (Remplace la Modale - Image copy 3) ── */}
         {activeProject && (

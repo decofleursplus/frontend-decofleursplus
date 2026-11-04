@@ -1,5 +1,4 @@
 import { apiClient } from '../client';
-import { adminCategories } from '@/lib/admin/mock-data';
 import type { AdminCategory } from '@/lib/admin/mock-data/types';
 
 export interface CreateCategoryPayload {
@@ -49,10 +48,10 @@ export async function getAdminCategories(): Promise<AdminCategory[]> {
         status: 'actif',
       }));
     }
-    return adminCategories;
+    return [];
   } catch (error) {
-    console.warn('[Admin Categories] Fallback sur les catégories locales:', error);
-    return adminCategories;
+    console.warn('[Admin Categories] Erreur de récupération des catégories:', error);
+    return [];
   }
 }
 

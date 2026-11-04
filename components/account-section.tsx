@@ -23,6 +23,10 @@ import {
   Pause,
   Play,
   XCircle,
+  Bell,
+  Inbox,
+  CheckCheck,
+  CheckCircle2,
 } from 'lucide-react';
 import { FacebookIcon, WhatsAppIcon } from '@/components/icons';
 import { useAuth } from '@/components/auth-provider';
@@ -53,7 +57,7 @@ const sectionMeta: Record<string, { title: string; description: string }> = {
   informations: { title: 'Mes informations', description: 'Mettez à jour vos coordonnées personnelles.' },
   fidelite: { title: 'Programme de fidélité', description: 'Cumulez des points et profitez d’avantages exclusifs !' },
   avis: { title: 'Mes avis', description: 'Retrouvez les avis laissés sur vos achats.' },
-  notifications: { title: 'Mes notifications', description: 'Choisissez comment recevoir les nouvelles de vos commandes.' },
+  notifications: { title: 'Mes notifications', description: 'Consultez l’historique de vos alertes, suivis de commande et messages.' },
   'cartes-cadeaux': { title: 'Mes cartes cadeaux', description: 'Consultez et gérez vos cartes cadeaux.' },
   coupons: { title: 'Mes coupons et offres', description: 'Retrouvez les offres et bons de réduction associés à votre compte.' },
   parrainage: { title: 'Parrainez vos proches', description: 'Partagez Décofleur Plus avec vos proches et gagnez des récompenses.' },
@@ -99,6 +103,46 @@ export function AccountSection({ section }: { section: string }) {
   const [subscriptions, setSubscriptions] = useState<CustomerSubscription[]>([]);
   const [subscriptionsLoading, setSubscriptionsLoading] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
+  // Notifications Client (Boîte de réception)
+  const [clientNotifications, setClientNotifications] = useState([
+    {
+      id: 'cl-1',
+      type: 'DELIVERY_UPDATE',
+      title: 'Votre commande CMD-2026-0042 est en cours de livraison',
+      message: 'Votre livreur Abdou est en route vers les Almadies. Livraison estimée vers 14h30.',
+      isRead: false,
+      createdAt: 'Il y a 25 min',
+      orderNumber: 'CMD-2026-0042',
+    },
+    {
+      id: 'cl-2',
+      type: 'PAYMENT',
+      title: 'Paiement Wave validé avec succès',
+      message: 'Votre règlement de 45 000 FCFA pour la commande CMD-2026-0042 a été confirmé.',
+      isRead: false,
+      createdAt: 'Il y a 2h',
+      orderNumber: 'CMD-2026-0042',
+    },
+    {
+      id: 'cl-3',
+      type: 'LOYALTY',
+      title: 'Félicitations ! 450 points fidélité crédités',
+      message: 'Votre statut Gold est actif. Vous bénéficiez de -10% avec votre code fidélité.',
+      isRead: true,
+      createdAt: 'Hier',
+      orderNumber: null,
+    },
+    {
+      id: 'cl-4',
+      type: 'SUBSCRIPTION',
+      title: 'Rappel pour votre prochain bouquet d’abonnement',
+      message: 'Votre livraison de roses fraîches à la villa de Saly est prévue ce vendredi matin.',
+      isRead: true,
+      createdAt: 'Il y a 3 jours',
+      orderNumber: null,
+    },
+  ]);
 
   // Chargement des données selon la section active
   useEffect(() => {
@@ -230,6 +274,17 @@ export function AccountSection({ section }: { section: string }) {
       setActionLoadingId(null);
     }
   }
+
+  const handleMarkAllClientNotifsAsRead = () => {
+    setClientNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    setNotice('Toutes vos notifications sont marquées comme lues.');
+  };
+
+  const handleToggleClientNotifRead = (id: string) => {
+    setClientNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, isRead: !n.isRead } : n))
+    );
+  };
 
   if (!page) {
     return (
@@ -956,34 +1011,102 @@ export function AccountSection({ section }: { section: string }) {
         </section>
       )}
 
-      {/* ── NOTIFICATIONS ── */}
+      {/* ── NOTIFICATIONS (BOÎTE DE RÉCEPTION UNIQUEMENT) ── */}
       {section === 'notifications' && (
-        <form className="account-panel notification-options" onSubmit={submit}>
-          <div className="account-title-row" style={{ width: '100%' }}>
+        <section className="account-panel">
+          <div className="account-title-row" style={{ width: '100%', marginBottom: '16px' }}>
             <div>
               <h1 className="account-title">{page.title}</h1>
-              <p className="account-intro">{page.description}</p>
+              <p className="account-intro">
+                Consultez l’historique de vos alertes, suivis de commande et messages.
+              </p>
             </div>
           </div>
-          <div style={{ display: 'grid', gap: '12px', width: '100%', marginBottom: '16px' }}>
-            <label>
-              <input type="checkbox" defaultChecked /> Notifications SMS (mises à jour de commande en temps réel)
-            </label>
-            <label>
-              <input type="checkbox" defaultChecked /> Mises à jour WhatsApp (contact livreur et lien de suivi en direct)
-            </label>
-            <label>
-              <input type="checkbox" defaultChecked /> E-mails de confirmation et factures PDF
-            </label>
-            <label>
-              <input type="checkbox" defaultChecked /> Offres exclusives membres Gold et ventes privées
-            </label>
+
+          <div className="w-full space-y-4">
+            <div className="flex items-center justify-between text-xs text-neutral-500 pb-2 border-b border-neutral-100">
+              <div className="flex items-center gap-2">
+                <span>
+                  {clientNotifications.length} notification{clientNotifications.length > 1 ? 's' : ''} au total
+                </span>
+                {clientNotifications.filter((n) => !n.isRead).length > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-700">
+                    {clientNotifications.filter((n) => !n.isRead).length} non-lue{clientNotifications.filter((n) => !n.isRead).length > 1 ? 's' : ''}
+                  </span>
+                )}
+              </div>
+
+              {clientNotifications.some((n) => !n.isRead) && (
+                <button
+                  type="button"
+                  onClick={handleMarkAllClientNotifsAsRead}
+                  className="inline-flex items-center gap-1.5 text-xs text-emerald-800 font-semibold hover:underline"
+                >
+                  <CheckCheck size={14} />
+                  <span>Tout marquer comme lu</span>
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              {clientNotifications.map((n) => (
+                <div
+                  key={n.id}
+                  onClick={() => handleToggleClientNotifRead(n.id)}
+                  className={`p-4 rounded-xl border transition-all cursor-pointer text-left ${
+                    !n.isRead
+                      ? 'border-emerald-200 bg-emerald-50/40 shadow-2xs'
+                      : 'border-neutral-200/80 bg-white hover:bg-neutral-50/80'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-xl bg-white border border-neutral-200 shadow-2xs shrink-0 mt-0.5">
+                      {n.type === 'DELIVERY_UPDATE' ? (
+                        <Truck size={16} className="text-emerald-700" />
+                      ) : n.type === 'PAYMENT' ? (
+                        <CheckCircle2 size={16} className="text-blue-700" />
+                      ) : n.type === 'LOYALTY' ? (
+                        <Crown size={16} className="text-amber-600" />
+                      ) : (
+                        <Sprout size={16} className="text-purple-700" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <strong className="text-xs sm:text-sm font-bold text-neutral-900">
+                          {n.title}
+                        </strong>
+                        <span className="text-[11px] text-neutral-400 shrink-0">{n.createdAt}</span>
+                      </div>
+                      <p className="text-xs text-neutral-600 mt-1 leading-relaxed">
+                        {n.message}
+                      </p>
+                      {n.orderNumber && (
+                        <div className="mt-2.5 pt-1.5 border-t border-neutral-100 flex items-center justify-between">
+                          <Link
+                            href="/compte/commandes"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-[11px] font-semibold text-emerald-800 hover:underline inline-flex items-center gap-1"
+                          >
+                            <span>Détails de la commande {n.orderNumber}</span>
+                            <span>→</span>
+                          </Link>
+                          {!n.isRead && (
+                            <span className="text-[10px] font-medium text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                              Nouveau
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <button className="button button-primary" type="submit">
-            Enregistrer mes préférences
-          </button>
-          {notice && <p className="success-note" role="status">{notice}</p>}
-        </form>
+
+          {notice && <p className="success-note mt-3" role="status">{notice}</p>}
+        </section>
       )}
 
       {/* ── CARTES CADEAUX ── */}

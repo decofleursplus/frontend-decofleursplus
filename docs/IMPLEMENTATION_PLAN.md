@@ -322,3 +322,55 @@
 - [x] Validation responsive Desktop et Mobile.
 - [x] Vérification HTTP (200 OK sur les 13 routes).
 - [x] Mise à jour finale de la documentation (`IMPLEMENTATION_PLAN.md` & `IMPLEMENTATION_STATUS.md`).
+
+## Phase 9 — SEO — Technical, Local & E-commerce Optimization
+
+### Tâche 1 : Fondations SEO & Utilitaires Globaux (`lib/seo/`)
+- [x] Créer `lib/seo/config.ts` (domaine officiel `https://decofleurplus.com`, coordonnées Saly, numéros Dakar/Saly, métadonnées globales).
+- [x] Créer `lib/seo/metadata.ts` (générateur de métadonnées OpenGraph, Twitter, canonical, robots).
+- [x] Créer `lib/seo/schema.ts` (générateurs JSON-LD Schema.org pour `Organization`, `Florist`, `BreadcrumbList`, `Product`, `Article`, `Service`).
+- [x] Mettre à jour `app/layout.tsx` avec `metadataBase`, title template, openGraph, twitter, alternates, et injection Schema.org globale (`Organization` & `Florist`).
+
+### Tâche 2 : Robots.txt & Sitemap Dynamique (`app/robots.ts` & `app/sitemap.ts`)
+- [x] Créer `app/robots.ts` avec autorisation des routes publiques et blocage strict des routes privées (`/admin/`, `/panier`, `/commande`, `/compte`, `/connexion`).
+- [x] Créer `app/sitemap.ts` avec génération dynamique de toutes les URLs indexables (Accueil, Boutique, 12 Catégories, Produits actifs, Articles de blog, Prestations & Réalisations Paysagisme, Location, Abonnements, Pages Locales Dakar/Saly/Somone/Mbour, Pages institutionnelles).
+
+### Tâche 3 : SEO E-commerce — Fiches Produits & Catégories
+- [x] Ajouter `generateMetadata` dynamique sur `app/produits/[slug]/page.tsx` avec title unique, meta description, image OG du produit, canonical et robots.
+- [x] Injecter les données structurées JSON-LD `Product` et `Offer` avec prix en FCFA (XOF), disponibilité, marque et `AggregateRating` dynamique.
+- [x] Intégrer les données structurées JSON-LD `BreadcrumbList` sur `app/produits/[slug]/page.tsx`.
+- [x] Standardiser `app/categories/[slug]/page.tsx` avec `generateMetadata`, JSON-LD `CollectionPage` + `BreadcrumbList`, et canonical vers `/categories/[slug]`.
+- [x] Mettre en place la redirection 301 des URLs courtes (`/bouquets`, `/roses`, etc.) vers `/categories/[slug]`.
+
+### Tâche 4 : SEO Éditorial — Refonte Server Components du Blog (`app/blog/`)
+- [x] Refactoriser `app/blog/page.tsx` en Server Component avec `generateMetadata`, JSON-LD `Blog`, et îlot interactif client pour la recherche et les filtres.
+- [x] Refactoriser `app/blog/[slug]/page.tsx` en Server Component avec `generateMetadata` dynamique, JSON-LD `BlogPosting` / `Article`, et îlots clients pour les interactions (Likes, Partage).
+- [x] Intégrer le balisage `BreadcrumbList` sur les articles de blog.
+
+### Tâche 5 : SEO Local — Pages d'Atterrissage Dédiées Dakar, Saly, Somone, Mbour
+- [x] Créer `app/fleuriste-dakar/page.tsx` (navette frigorifique, quartiers Almadies/Plateau/Yoff, livraisons événementielles, FAQ locale, schéma `LocalBusiness` zone Dakar).
+- [x] Créer `app/fleuriste-saly/page.tsx` (boutique physique Rue des Palmiers, livraison 2h chrono, hôtels et villas, FAQ locale, schéma `Florist` physique).
+- [x] Créer `app/fleuriste-somone/page.tsx` (lagune, villas côtières, mariages de plage, livraisons le jour même, FAQ locale).
+- [x] Créer `app/fleuriste-mbour/page.tsx` (Petite-Côte, événements, livraisons express, FAQ locale).
+- [x] Lier ces pages locales dans le footer et les breadcrumbs.
+
+### Tâche 6 : SEO Prestations, Réalisations, Location & Pages Statiques
+- [x] Ajouter `generateMetadata` et schéma `Service` sur `app/paysagisme/prestations/page.tsx` via son layout dédié.
+- [x] Ajouter `generateMetadata` et `BreadcrumbList` sur `app/paysagisme/realisations/page.tsx` et `app/paysagisme/page.tsx`.
+- [x] Refactoriser `app/location/page.tsx` avec `app/location/layout.tsx` pour inclure `generateMetadata` et schéma de catalogue de location.
+- [x] Ajouter `generateMetadata` sur `app/abonnements/page.tsx`, `app/devis/page.tsx`, `app/[slug]/page.tsx` (`a-propos`, `contact`, `livraison`).
+
+### Tâche 7 : Back-Office — Module Paramètres SEO (Retiré à la demande de l'utilisateur)
+- [x] Module initialement conçu dans `/admin/parametres` puis retiré selon la demande de l'utilisateur afin de conserver un back-office épuré. Les métadonnées SEO sont 100% gérées dynamiquement par les moteurs Next.js 16 et configurables via variables d'environnement (`.env.local`).
+
+### Tâche 8 : Audit Technique, Performance & Core Web Vitals
+- [x] Vérifier et corriger les textes alternatifs (alt) sur toutes les images clés.
+- [x] Vérifier les performances avec suppression des bloquants et respect des Core Web Vitals (LCP, CLS, INP).
+- [x] Valider le build complet (`pnpm build`) et la conformité TypeScript (`tsc --noEmit`).
+
+### Tâche 9 : Documentation Stratégique & Guides Opérationnels
+- [x] Rédiger `docs/SEO_STRATEGY.md` (Stratégie complète e-commerce, locale et éditoriale).
+- [x] Rédiger `docs/SEO_IMPLEMENTATION.md` (Documentation technique de l'infrastructure Next.js SEO).
+- [x] Rédiger `docs/SEO_GOOGLE_SETUP.md` (Guide pas-à-pas Search Console, Google Business Profile, GA4, Merchant Center).
+- [x] Rédiger `docs/SEO_KEYWORDS.md` (Matrice de mots-clés Dakar, Saly, Somone, Mbour).
+- [x] Rédiger `docs/SEO_AUDIT.md` (Audit des URLs, canonicals, données structurées et performances).

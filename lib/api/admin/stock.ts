@@ -1,5 +1,4 @@
 import { apiClient } from '../client';
-import { initialStockMovements } from '@/lib/admin/mock-data/stock';
 import type { StockMovement } from '@/lib/admin/mock-data/types';
 
 export interface RecordMovementPayload {
@@ -118,9 +117,9 @@ export async function getStockMovements(params?: {
       });
     }
 
-    return initialStockMovements;
+    return [];
   } catch (error) {
-    console.warn('[Admin Stock Movements] Fallback sur mock mouvements:', error);
-    return initialStockMovements;
+    console.warn('[Admin Stock Movements] Erreur de récupération des mouvements de stock:', error);
+    return [];
   }
 }

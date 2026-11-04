@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, Flower2, Sparkles, Heart } from 'lucide-react';
-import { products as allProducts, type Product } from '@/lib/products';
+import { type Product } from '@/lib/products';
 import { getFeaturedProducts } from '@/lib/api/catalog';
 import { ProductGrid } from '@/components/product-grid';
 import {
@@ -50,7 +50,7 @@ export function EventFeaturedRow() {
   const isSpecialEvent = event.id !== 'standard';
 
   // Filtrer les produits mis en avant pour cet événement
-  const pool = liveFeaturedProducts.length > 0 ? liveFeaturedProducts : allProducts;
+  const pool = liveFeaturedProducts;
   const eventProducts: Product[] = isSpecialEvent && event.featuredProductIds?.length > 0
     ? pool.filter(
         (p) =>
@@ -59,14 +59,7 @@ export function EventFeaturedRow() {
       )
     : pool.slice(0, 4);
 
-  // S'assurer d'avoir au moins 4 produits pour une grille équilibrée
-  const displayProducts =
-    eventProducts.length >= 4
-      ? eventProducts.slice(0, 4)
-      : [
-          ...eventProducts,
-          ...pool.filter((p) => !eventProducts.some((ep) => ep.id === p.id)),
-        ].slice(0, 4);
+  const displayProducts = eventProducts.slice(0, 4);
 
   return (
     <section className="featured-row-section content-width" aria-labelledby="featured-heading">
@@ -127,7 +120,25 @@ export function EventFeaturedRow() {
           </Link>
         </div>
 
-        <ProductGrid products={displayProducts} />
+        {displayProducts.length > 0 ? (
+          <ProductGrid products={displayProducts} />
+        ) : (
+          <div className="flex flex-col items-center justify-center p-8 text-center bg-[#fbfdfb] rounded-2xl border border-[#e8efe9] h-full min-h-[220px]">
+            <Flower2 size={24} className="text-[#24582d] mb-2 opacity-80" />
+            <h3 className="text-base font-serif font-semibold text-[#1c2e20] mb-1">
+              Nouvelle collection en cours d&apos;arrivage
+            </h3>
+            <p className="text-xs text-neutral-600 mb-4 max-w-sm">
+              Nos artisans préparent de nouvelles créations florales exclusives. Retrouvez-les très prochainement dans la boutique.
+            </p>
+            <Link
+              href="/boutique"
+              className="text-xs font-medium text-[#24582d] underline hover:text-[#1a4221]"
+            >
+              Explorer notre univers
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   );

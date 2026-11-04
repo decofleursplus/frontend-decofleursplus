@@ -1,10 +1,11 @@
 'use client';
 
-import { Bell, Menu } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
+import { AdminNotificationsDropdown } from '@/components/admin/admin-notifications-dropdown';
 
 export function AdminTopbar() {
   const { toggleMobileDrawer } = useAdminSidebar();
@@ -44,15 +45,7 @@ export function AdminTopbar() {
 
       {/* Right actions */}
       <div className="admin-topbar-actions">
-        <button
-          type="button"
-          className="admin-topbar-icon-btn"
-          title="Notifications"
-          aria-label="Notifications"
-        >
-          <Bell size={18} />
-          <span className="admin-notif-dot" />
-        </button>
+        <AdminNotificationsDropdown />
         <div className="admin-topbar-user flex items-center gap-2.5 py-1 px-1.5 sm:px-2 rounded-full bg-white/70 border border-[#e7e4dd] hover:bg-white transition-all shadow-2xs">
           <div className="relative">
             <Avatar className="h-8 w-8 ring-2 ring-emerald-600/20">

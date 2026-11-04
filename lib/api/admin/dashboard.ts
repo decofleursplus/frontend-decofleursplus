@@ -1,6 +1,4 @@
 import { apiClient } from '../client';
-import { dashboardKpis, salesChartData, orderDistribution } from '@/lib/admin/mock-data';
-import { adminOrders } from '@/lib/admin/mock-data/orders';
 
 export interface DashboardKpis {
   revenue: number;
@@ -68,52 +66,23 @@ export async function getAdminDashboard(): Promise<DashboardData> {
     }
     throw new Error('Données incomplètes');
   } catch (error) {
-    console.warn('[Admin Dashboard] Échec appel direct /admin/dashboard, utilisation des métriques synthétiques:', error);
+    console.warn('[Admin Dashboard] Erreur ou dashboard vide:', error);
     
-    // Fallback avec les mocks enrichis en cas de mode hors ligne / démonstration
     return {
-      kpis: dashboardKpis,
-      salesChart: salesChartData,
-      orderDistribution: orderDistribution.map((d) => ({
-        name: d.status,
-        value: d.percentage,
-        color: d.status === 'livree' ? '#24582d' : d.status === 'en_livraison' ? '#3b82f6' : d.status === 'en_preparation' ? '#f59e0b' : '#ef4444',
-        count: d.count,
-      })),
-      recentOrders: adminOrders.slice(0, 5).map((o) => ({
-        id: o.id,
-        ref: o.ref,
-        customerName: o.customerName,
-        total: o.total,
-        status: o.status,
-        date: o.date,
-      })),
-      topProducts: [
-        {
-          id: '1',
-          name: 'Bouquet Romance Pastel',
-          sales: 42,
-          revenue: 1470000,
-          stock: '15 en stock',
-          image: '/images/products/p1.webp',
-        },
-        {
-          id: '2',
-          name: 'Composition Royale Saly',
-          sales: 38,
-          revenue: 1710000,
-          stock: '8 en stock',
-          image: '/images/products/p2.webp',
-        },
-        {
-          id: '3',
-          name: 'Orchidée Phalaenopsis Blanche',
-          sales: 29,
-          revenue: 725000,
-          stock: '12 en stock',
-          image: '/images/products/p3.webp',
-        },
-      ],
+      kpis: {
+        revenue: 0,
+        revenueDelta: 0,
+        orders: 0,
+        ordersDelta: 0,
+        customers: 0,
+        customersDelta: 0,
+        products: 0,
+        productsDelta: 0,
+      },
+      salesChart: [],
+      orderDistribution: [],
+      recentOrders: [],
+      topProducts: [],
     };
   }
 }

@@ -313,13 +313,13 @@ export function SiteHeader() {
                 onMouseLeave={handleDropdownLeave}
               >
                 <Link href="/boutique" className="dropdown-item" onClick={closeDropdownInstantly}>Tous les produits</Link>
-                <Link href="/bouquets" className="dropdown-item" onClick={closeDropdownInstantly}>Bouquets élégants</Link>
-                <Link href="/roses" className="dropdown-item" onClick={closeDropdownInstantly}>Roses fraîches</Link>
-                <Link href="/plantes" className="dropdown-item" onClick={closeDropdownInstantly}>Plantes d’intérieur</Link>
-                <Link href="/paniers-de-fruits" className="dropdown-item" onClick={closeDropdownInstantly}>Paniers de fruits</Link>
-                <Link href="/cadeaux" className="dropdown-item" onClick={closeDropdownInstantly}>Coffrets cadeaux</Link>
-                <Link href="/bougies" className="dropdown-item" onClick={closeDropdownInstantly}>Bougies & senteurs</Link>
-                <Link href="/vases" className="dropdown-item" onClick={closeDropdownInstantly}>Vases & contenants</Link>
+                <Link href="/categories/bouquets" className="dropdown-item" onClick={closeDropdownInstantly}>Bouquets élégants</Link>
+                <Link href="/categories/roses" className="dropdown-item" onClick={closeDropdownInstantly}>Roses fraîches</Link>
+                <Link href="/categories/plantes" className="dropdown-item" onClick={closeDropdownInstantly}>Plantes d’intérieur</Link>
+                <Link href="/categories/paniers-de-fruits" className="dropdown-item" onClick={closeDropdownInstantly}>Paniers de fruits</Link>
+                <Link href="/categories/cadeaux" className="dropdown-item" onClick={closeDropdownInstantly}>Coffrets cadeaux</Link>
+                <Link href="/categories/bougies" className="dropdown-item" onClick={closeDropdownInstantly}>Bougies & senteurs</Link>
+                <Link href="/categories/vases" className="dropdown-item" onClick={closeDropdownInstantly}>Vases & contenants</Link>
               </div>
             )}
           </div>
@@ -479,13 +479,13 @@ export function SiteHeader() {
                 {expandedSections['produits'] && (
                   <div className="drawer-sublinks">
                     <Link href="/boutique" onClick={() => setMobileMenuOpen(false)}>Tous les produits</Link>
-                    <Link href="/bouquets" onClick={() => setMobileMenuOpen(false)}>Bouquets élégants</Link>
-                    <Link href="/roses" onClick={() => setMobileMenuOpen(false)}>Roses fraîches</Link>
-                    <Link href="/plantes" onClick={() => setMobileMenuOpen(false)}>Plantes d’intérieur</Link>
-                    <Link href="/paniers-de-fruits" onClick={() => setMobileMenuOpen(false)}>Paniers de fruits</Link>
-                    <Link href="/cadeaux" onClick={() => setMobileMenuOpen(false)}>Coffrets cadeaux</Link>
-                    <Link href="/bougies" onClick={() => setMobileMenuOpen(false)}>Bougies & senteurs</Link>
-                    <Link href="/vases" onClick={() => setMobileMenuOpen(false)}>Vases & contenants</Link>
+                    <Link href="/categories/bouquets" onClick={() => setMobileMenuOpen(false)}>Bouquets élégants</Link>
+                    <Link href="/categories/roses" onClick={() => setMobileMenuOpen(false)}>Roses fraîches</Link>
+                    <Link href="/categories/plantes" onClick={() => setMobileMenuOpen(false)}>Plantes d’intérieur</Link>
+                    <Link href="/categories/paniers-de-fruits" onClick={() => setMobileMenuOpen(false)}>Paniers de fruits</Link>
+                    <Link href="/categories/cadeaux" onClick={() => setMobileMenuOpen(false)}>Coffrets cadeaux</Link>
+                    <Link href="/categories/bougies" onClick={() => setMobileMenuOpen(false)}>Bougies & senteurs</Link>
+                    <Link href="/categories/vases" onClick={() => setMobileMenuOpen(false)}>Vases & contenants</Link>
                   </div>
                 )}
               </div>

@@ -1,5 +1,4 @@
 import { apiClient } from '../client';
-import { adminProducts } from '@/lib/admin/mock-data/products';
 import type { AdminProduct } from '@/lib/admin/mock-data/types';
 
 export interface ProductFilterParams {
@@ -108,35 +107,13 @@ export async function getAdminProducts(
     const items = res?.items || res?.products || (Array.isArray(res) ? res : []);
     const total = res?.total ?? items.length;
 
-    if (items.length > 0) {
-      return {
-        items: items.map(mapBackendToAdminProduct),
-        total,
-      };
-    }
-
-    return { items: adminProducts, total: adminProducts.length };
+    return {
+      items: items.map(mapBackendToAdminProduct),
+      total,
+    };
   } catch (error) {
-    console.warn('[Admin Products] Utilisation du catalogue mocké en fallback:', error);
-
-    let list = [...adminProducts];
-    if (params.search) {
-      const q = params.search.toLowerCase();
-      list = list.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.sku.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q)
-      );
-    }
-    if (params.category && params.category !== 'all') {
-      list = list.filter((p) => p.category.toLowerCase() === params.category?.toLowerCase());
-    }
-    if (params.status && params.status !== 'all') {
-      list = list.filter((p) => p.status === params.status);
-    }
-
-    return { items: list, total: list.length };
+    console.warn('[Admin Products] Erreur lors de la récupération des produits:', error);
+    return { items: [], total: 0 };
   }
 }
 
@@ -149,8 +126,7 @@ export async function getAdminProductById(id: string): Promise<AdminProduct | nu
     const res = await apiClient.get<any>(`/admin/products/${id}`, { isAdmin: true });
     return mapBackendToAdminProduct(res);
   } catch (error) {
-    const found = adminProducts.find((p) => p.id === id);
-    return found || null;
+    return null;
   }
 }
 

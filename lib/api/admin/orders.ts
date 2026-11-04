@@ -1,5 +1,4 @@
 import { apiClient } from '../client';
-import { adminOrders } from '@/lib/admin/mock-data/orders';
 import type { AdminOrder, OrderStatus } from '@/lib/admin/mock-data/types';
 
 export interface GetAdminOrdersParams {
@@ -161,27 +160,12 @@ export async function getAdminOrders(params?: GetAdminOrdersParams): Promise<Adm
       }
     }
   } catch (err) {
-    console.warn('[AdminOrdersAPI] Falling back to mock orders:', err);
-  }
-
-  // Fallback to local mock data
-  let filtered = [...adminOrders];
-  if (params?.status && params.status !== 'all') {
-    filtered = filtered.filter((o) => o.status === params.status);
-  }
-  if (params?.search) {
-    const term = params.search.toLowerCase();
-    filtered = filtered.filter(
-      (o) =>
-        o.ref.toLowerCase().includes(term) ||
-        o.customerName.toLowerCase().includes(term) ||
-        o.deliveryAddress.toLowerCase().includes(term)
-    );
+    console.warn('[AdminOrdersAPI] Erreur de récupération des commandes:', err);
   }
 
   return {
-    orders: filtered,
-    total: filtered.length,
+    orders: [],
+    total: 0,
     page: 1,
     totalPages: 1,
   };
@@ -201,10 +185,10 @@ export async function getAdminOrderById(id: string): Promise<AdminOrder | null> 
       return transformAdminOrder(res);
     }
   } catch (err) {
-    console.warn(`[AdminOrdersAPI] Fetching order ${id} failed, using fallback:`, err);
+    console.warn(`[AdminOrdersAPI] Fetching order ${id} failed:`, err);
   }
 
-  return adminOrders.find((o) => o.id === id || o.ref === id) || null;
+  return null;
 }
 
 /**

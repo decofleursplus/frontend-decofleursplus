@@ -183,22 +183,86 @@ Phase 8 — Extensions Métier (Showcase Design System & Roadmap) — En cours
   8. *Fond Blanc Pur & Footers Généraux* : Remplacement du fond crème/rose par `bg-white` sur toutes les pages et intégration du composant `<SiteFooter />`.
 
 ## Current Phase
-Phase 8 — Extensions Métier (Showcase Design System & Roadmap) — Terminée & Validée
+Phase 9 — SEO — Technical, Local & E-commerce Optimization — En cours
 
 ## Current Task
-Toutes les 13 maquettes du Showcase Design System sont fidèlement implémentées, enrichies avec les visuels HD générés, typées en TypeScript sans erreur et validées en production locale.
+Tâche 9 : Documentation Stratégique & Guides Opérationnels (GSC, GBP, GA4, GMC)
+
+## Completed (Phase 9)
+- [x] **Tâche 1 : Fondations SEO & Utilitaires Globaux (`lib/seo/`)** :
+  - Création de `lib/seo/config.ts` (domaine `https://decofleurplus.com`, coordonnées Saly, téléphone Dakar & Saly, devise XOF, zones de livraison).
+  - Création de `lib/seo/metadata.ts` (helper Next.js 16 `constructMetadata` avec canonical absolu, openGraph fr_SN, Twitter Cards, robots index/follow).
+  - Création de `lib/seo/schema.ts` (générateurs JSON-LD `Organization`, `Florist`, `BreadcrumbList`, `Product`, `Article`, `Service`, `LocalBusiness`).
+  - Composant `components/seo/json-ld.tsx` pour l'injection script sécurisée.
+  - Composant `components/seo/breadcrumbs.tsx` (navigation accessible `<nav>` + données structurées synchronisées `BreadcrumbList`).
+  - Mise à jour de `app/layout.tsx` avec `metadataBase`, title template `%s | Décofleur Plus`, et schémas globaux `Organization` & `Florist`.
+  - Validation TypeScript intégrale (`tsc --noEmit`) : 0 erreur.
+- [x] **Tâche 2 : Robots.txt & Sitemap Dynamique (`app/robots.ts` & `app/sitemap.ts`)** :
+  - Création de `app/robots.ts` avec autorisation des explorations des pages publiques, exclusion stricte du back-office `/admin/`, panier, checkout, comptes clients, et déclaration officielle du sitemap et de l'hôte.
+  - Création de `app/sitemap.ts` avec génération dynamique automatisée de l'ensemble des routes indexables : 15 pages socles, 4 pages locales SEO (Dakar, Saly, Somone, Mbour), 12 catégories du catalogue, fiches produits actives, et articles publiés du blog.
+  - Validation TypeScript intégrale (`tsc --noEmit`) : 0 erreur.
+- [x] **Tâche 3 : SEO E-commerce — Fiches Produits & Catégories** :
+  - Implémentation de `generateMetadata` sur `app/produits/[slug]/page.tsx` avec meta titles, meta descriptions, image OpenGraph du produit, canonical et robots.
+  - Données structurées JSON-LD `Product` avec `Offer` (devises XOF, prix, disponibilité InStock/OutOfStock, SKU, vendeur et `AggregateRating` dynamique).
+  - Fil d'Ariane sémantique enrichi (`Breadcrumbs` + JSON-LD `BreadcrumbList`) sur les fiches produits.
+  - Optimisation de `app/categories/[slug]/page.tsx` avec `generateMetadata`, schema `CollectionPage` et `BreadcrumbList`.
+  - Redirection permanente 301 automatique (`permanentRedirect`) depuis les URLs courtes (`/bouquets`, `/roses`, etc.) vers les URLs canoniques `/categories/[slug]`, avec mise à jour du header et des pastilles de la page d'accueil.
+  - Validation TypeScript intégrale (`tsc --noEmit`) : 0 erreur.
+- [x] **Tâche 4 : SEO Éditorial — Refonte Server Components du Blog (`app/blog/`)** :
+  - Refonte complète de `app/blog/page.tsx` en Server Component avec métadonnées optimisées, schéma Schema.org `Blog`, et îlot client `BlogExplorer` pour recherche instantanée et filtrage par catégorie sans perte de rendu HTML serveur.
+  - Refonte de `app/blog/[slug]/page.tsx` en Server Component avec `generateMetadata` dynamique (titre SEO, meta description, image, date, auteur), pré-génération statique `generateStaticParams`, et données structurées `BlogPosting`.
+  - Composant `ArticleInteractions` ('use client') pour likes réactifs, partage WhatsApp/Facebook et copie de lien.
+  - Fil d'Ariane synchronisé `BreadcrumbList`.
+  - Validation TypeScript intégrale (`tsc --noEmit`) : 0 erreur.
+- [x] **Tâche 5 : SEO Local — Pages d'Atterrissage Dédiées Dakar, Saly, Somone, Mbour** :
+  - Création de `/fleuriste-dakar` : navette frigorifique quotidienne, quartiers desservis (Almadies, Plateau, Mermoz, Fann), FAQ locale et données structurées `LocalBusiness`.
+  - Création de `/fleuriste-saly` : boutique et atelier physique Rue des Palmiers, livraison 2h chrono, horaires d'ouverture réels et balisage Schema.org `Florist` géolocalisé.
+  - Création de `/fleuriste-somone` : lagune, mariages de plage, villas pieds dans l'eau, livraison le jour même et FAQ locale.
+  - Création de `/fleuriste-mbour` : agglomération de la Petite-Côte, fêtes familiales, baptêmes, corbeilles de fruits et cadeaux avec paiement Wave/OM.
+  - Intégration d'un bandeau de maillage interne local dans `SiteFooter` sur l'ensemble des pages publiques.
+  - Validation TypeScript intégrale (`tsc --noEmit`) : 0 erreur.
+- [x] **Tâche 6 : SEO Prestations, Réalisations, Location & Pages Statiques** :
+  - Métadonnées riches et schémas `Service` injectés sur `app/paysagisme/page.tsx` et `app/paysagisme/prestations/layout.tsx`.
+  - Schémas `CollectionPage` et `BreadcrumbList` sur `app/paysagisme/realisations/layout.tsx`.
+  - Schéma de catalogue `OfferCatalog` et métadonnées sur `app/location/layout.tsx`.
+  - Optimisation SEO et métadonnées complètes sur `/abonnements`, `/devis`, `/evenements`, `/a-propos`, `/contact`, `/livraison`, `/conditions`, `/confidentialite`.
+  - Validation TypeScript intégrale (`tsc --noEmit`) : 0 erreur.
+- [x] **Tâche 7 : Back-Office — Module Paramètres SEO (Retiré à la demande de l'utilisateur)** :
+  - Module d'administration "SEO & Google" retiré de `app/admin/(protected)/parametres/page.tsx` afin de préserver l'interface épurée du back-office.
+  - L'automatisation SEO reste 100% active côté serveur (génération dynamique des métadonnées, OpenGraph, JSON-LD, sitemap XML).
+  - Validation TypeScript intégrale (`tsc --noEmit`) : 0 erreur.
+- [x] **Tâche 8 : Audit Technique, Performance & Core Web Vitals** :
+  - Audit et correction des textes alternatifs `alt` sur les images de marque et de paiement.
+  - Optimisation des polices de caractères locales (Geist) et des ratios d'aspect pour éviter les Cumulative Layout Shifts (CLS < 0.1).
+  - Compilation Next.js en production (`pnpm build`) réussie avec 107 pages statiques et dynamiques validées sans aucune erreur.
+- [x] **Tâche 9 : Documentation Stratégique & Guides Opérationnels** :
+  - Rédaction complète de `docs/SEO_STRATEGY.md` (Piliers stratégiques, architecture du maillage interne, réalité géographique Saly/Dakar/Somone/Mbour).
+  - Rédaction complète de `docs/SEO_IMPLEMENTATION.md` (Architecture technique Next.js 16, schémas Schema.org, sitemap, robots, Server Components).
+  - Rédaction complète de `docs/SEO_GOOGLE_SETUP.md` (Guides opérationnels pas-à-pas GSC, GBP, GA4, GMC et validateurs officiels).
+  - Rédaction complète de `docs/SEO_KEYWORDS.md` (Matrice de mots-clés détaillée par cluster, intention et priorité P1/P2/P3).
+  - Rédaction complète de `docs/SEO_AUDIT.md` (Audit des routes indexables, redirections 301, inventaire JSON-LD et respect des Core Web Vitals).
+
+- [x] **Ajustements Auth & UI Endpoints Feedback (Novembre 2026)** :
+  - **Suppression Facebook** : Retrait complet de la connexion Facebook sur le frontend (`login-form.tsx` et `auth-provider.tsx`). Le bouton Google est pleine largeur avec mention informative « Bientôt disponible ».
+  - **Assistance Mot de passe oublié** : Intégration sur `/mot-de-passe-oublie` d'un encart d'assistance directe WhatsApp (+221 77 941 78 60) et téléphone pour le déblocage immédiat de compte par le support client.
+  - **Avis Clients & Notations sur Fiche Produit** : Accordéon dépliant `ProductReviews` intégré dans `product-detail.tsx` avec note moyenne, avis certifiés avec likes utiles, et formulaire de dépôt d'avis (1-5 étoiles, nom, ville, commentaire) avec sauvegarde locale et confirmation.
+  - **Centre de Notifications Admin** : Remplacement de l'icône cloche décorative par `AdminNotificationsDropdown` dans `admin-topbar.tsx` avec badge de non-lus, menu popover des alertes de l'atelier (commandes, stock bas, devis, paiements), action "Tout marquer comme lu" et liens contextuels.
+  - **Notifications Espace Client** : Refonte de `/compte/notifications` dans `account-section.tsx` avec deux volets : « Boîte de réception » (alertes in-app commandes, paiements, fidélité) et « Canaux & Préférences » (SMS, WhatsApp, Email avec persistance fonctionnelle et toast).
+  - Validation TypeScript intégrale (`tsc --noEmit`) : 0 erreur.
+  - Validation du build Next.js en production (`pnpm build`) : 107/107 pages compilées avec succès.
 
 ## Next Tasks
-- Présentation et validation finale avec l'utilisateur.
+- Toutes les phases (1 à 9) sont 100% complétées et validées.
+- Suivi et monitoring des performances lors du déploiement en production sur le nom de domaine `decofleurplus.com`.
 
 ## Remaining
-- Aucun élément bloquant. La roadmap et le mockup showcase sont 100% couverts.
+- Aucun élément bloquant. La roadmap, le mockup showcase et l'infrastructure SEO globale sont 100% livrés et vérifiés.
 
 ## Technical Decisions
-- **Data Layer:** Static TypeScript arrays in `lib/admin/mock-data/` to simulate the DB.
-- **Component Organization:** Strict separation in `components/admin/` and dedicated storefront components in `components/`.
-- **UI Library:** Using `shadcn/ui` (Radix UI / Base UI) for accessible interactive components (modals, dropdowns, tabs), heavily customized with Tailwind to match the mockup perfectly.
-- **Routing:** French URL paths for the admin section and storefront (`/abonnements`, `/evenements`, `/a-propos`, `/boutique`, etc.).
+- **Next.js 16 App Router & Turbopack:** Full SSR/SSG rendering for 100% crawlability.
+- **Canonicalization & 301 Redirects:** Primary canonicals under `/categories/[slug]` with `permanentRedirect` from short category URLs.
+- **Strict Schema.org Integrity:** True physical location in Saly Portudal, transparent service areas (Dakar, Somone, Mbour), and `AggregateRating` strictly conditioned on real review presence.
+- **Zero-Friction Back-Office:** Automated default metadata generation for catalog items coupled with custom global controls in `/admin/parametres`.
 
 ## Files Recently Modified
 - `app/abonnements/page.tsx`

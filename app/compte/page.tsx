@@ -133,67 +133,76 @@ export default function AccountDashboard() {
         </div>
 
         <div className="dashboard-orders-list">
-          {demoOrders.map((order) => {
-            const isEnCours = order.status === 'En cours';
-            const item = order.items?.[0] ?? {
-              name: order.name,
-              price: order.price,
-              image: '/images/hero.jpg',
-            };
+          {demoOrders.length > 0 ? (
+            demoOrders.map((order) => {
+              const isEnCours = order.status === 'En cours';
+              const item = order.items?.[0] ?? {
+                name: order.name,
+                price: order.price,
+                image: '/images/hero.jpg',
+              };
 
-            return (
-              <div key={order.id} className="dashboard-order-row">
-                <div className="order-row-id-date">
-                  <span className="order-id">#{order.id}</span>
-                  <span className="order-date">{order.date}</span>
-                </div>
-
-                <div className="order-row-product">
-                  <div className="order-row-thumb">
-                    <Image
-                      src={item.image}
-                      alt={item.name}
-                      fill
-                      sizes="48px"
-                      className="order-thumb-img"
-                    />
+              return (
+                <div key={order.id} className="dashboard-order-row">
+                  <div className="order-row-id-date">
+                    <span className="order-id">#{order.id}</span>
+                    <span className="order-date">{order.date}</span>
                   </div>
-                  <strong className="order-prod-name">{item.name}</strong>
-                </div>
 
-                <div className="order-row-price">
-                  <strong>{formatPrice(order.price)}</strong>
-                </div>
+                  <div className="order-row-product">
+                    <div className="order-row-thumb">
+                      <Image
+                        src={item.image}
+                        alt={item.name}
+                        fill
+                        sizes="48px"
+                        className="order-thumb-img"
+                      />
+                    </div>
+                    <strong className="order-prod-name">{item.name}</strong>
+                  </div>
 
-                <div className="order-row-status">
-                  <span className={`order-status-badge ${isEnCours ? 'pending' : 'delivered'}`}>
-                    {isEnCours ? 'En cours' : 'Livrée'}
-                  </span>
-                </div>
+                  <div className="order-row-price">
+                    <strong>{formatPrice(order.price)}</strong>
+                  </div>
 
-                <div className="order-row-actions">
-                  {isEnCours ? (
-                    <Link
-                      href={`/compte/suivi/${order.id}`}
-                      className="button-pill-pink button-small"
-                    >
-                      Suivre
-                    </Link>
-                  ) : (
-                    <Link
-                      href={`/compte/commandes/${order.id}`}
-                      className="button-pill-outline button-small"
-                    >
-                      Voir les détails
-                    </Link>
-                  )}
-                  <button type="button" className="button-pill-outline button-small">
-                    <FileText size={14} color="var(--pink)" /> Facture PDF
-                  </button>
+                  <div className="order-row-status">
+                    <span className={`order-status-badge ${isEnCours ? 'pending' : 'delivered'}`}>
+                      {isEnCours ? 'En cours' : 'Livrée'}
+                    </span>
+                  </div>
+
+                  <div className="order-row-actions">
+                    {isEnCours ? (
+                      <Link
+                        href={`/compte/suivi/${order.id}`}
+                        className="button-pill-pink button-small"
+                      >
+                        Suivre
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/compte/commandes/${order.id}`}
+                        className="button-pill-outline button-small"
+                      >
+                        Voir les détails
+                      </Link>
+                    )}
+                    <button type="button" className="button-pill-outline button-small">
+                      <FileText size={14} color="var(--pink)" /> Facture PDF
+                    </button>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          ) : (
+            <div className="p-8 text-center text-neutral-500 text-sm">
+              <p>Vous n&apos;avez pas encore passé de commande.</p>
+              <Link href="/boutique" className="inline-block mt-3 text-xs font-semibold text-[#24582d] underline">
+                Découvrir nos créations florales
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 

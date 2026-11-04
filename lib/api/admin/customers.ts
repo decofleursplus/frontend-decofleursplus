@@ -1,5 +1,4 @@
 import { apiClient } from '../client';
-import { adminCustomers } from '@/lib/admin/mock-data/customers';
 import type { AdminCustomer, CustomerSegment } from '@/lib/admin/mock-data/types';
 
 export interface GetAdminCustomersParams {
@@ -95,27 +94,12 @@ export async function getAdminCustomers(params?: GetAdminCustomersParams): Promi
       }
     }
   } catch (err) {
-    console.warn('[AdminCustomersAPI] Falling back to mock customers:', err);
-  }
-
-  // Fallback to local mock
-  let filtered = [...adminCustomers];
-  if (params?.segment && params.segment !== 'all') {
-    filtered = filtered.filter((c) => c.segment === params.segment);
-  }
-  if (params?.search) {
-    const term = params.search.toLowerCase();
-    filtered = filtered.filter(
-      (c) =>
-        c.name.toLowerCase().includes(term) ||
-        c.email.toLowerCase().includes(term) ||
-        c.phone.toLowerCase().includes(term)
-    );
+    console.warn('[AdminCustomersAPI] Erreur de récupération des clients:', err);
   }
 
   return {
-    customers: filtered,
-    total: filtered.length,
+    customers: [],
+    total: 0,
   };
 }
 
@@ -136,7 +120,7 @@ export async function getAdminCustomerById(id: string): Promise<AdminCustomer | 
     console.warn(`[AdminCustomersAPI] Error fetching customer ${id}:`, err);
   }
 
-  return adminCustomers.find((c) => c.id === id) || null;
+  return null;
 }
 
 /**

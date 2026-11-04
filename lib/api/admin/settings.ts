@@ -1,5 +1,5 @@
 import { apiClient } from '../client';
-import { initialBoutiqueSettings, initialAdminUsers } from '@/lib/admin/mock-data/settings';
+import { initialBoutiqueSettings } from '@/lib/admin/mock-data/settings';
 import type { BoutiqueSettings, AdminUser, AdminRoleKey, AdminUserStatus } from '@/lib/admin/mock-data/types';
 
 // Map backend staff user to AdminUser
@@ -88,10 +88,10 @@ export async function getAdminStaffUsers(params?: { search?: string; role?: stri
     if (res && Array.isArray(res.users)) return res.users.map(transformAdminUser);
     if (res && Array.isArray(res.data)) return res.data.map(transformAdminUser);
   } catch (err) {
-    console.warn('[AdminSettingsAPI] Falling back to mock staff users:', err);
+    console.warn('[AdminSettingsAPI] Erreur staff users:', err);
   }
 
-  return initialAdminUsers;
+  return [];
 }
 
 /**

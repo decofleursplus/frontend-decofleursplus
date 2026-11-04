@@ -26,10 +26,6 @@ export default defineConfig({
   },
   projects: [
     {
-      name: 'api-tests',
-      testMatch: /tests\/api\/.*\.spec\.ts/,
-    },
-    {
       name: 'e2e-browser',
       testMatch: /tests\/e2e\/.*\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },

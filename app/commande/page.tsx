@@ -20,6 +20,7 @@ import {
   Loader2,
   AlertCircle,
   Tag,
+  ShoppingBag,
 } from 'lucide-react';
 import { useCart } from '@/components/cart-provider';
 import { useAuth } from '@/components/auth-provider';
@@ -133,47 +134,8 @@ export default function CheckoutPage() {
   const isFreeShipping = appliedCoupon?.freeShipping || false;
   const shipping = isFreeShipping ? 0 : baseShippingFee;
 
-  // Use items in cart, or fallback to mockup default items if cart is empty so user can test and inspect
-  const displayItems = items.length > 0 ? items : [
-    {
-      lineId: 'mock-1',
-      product: {
-        id: 'bouquet-elegance-rose',
-        name: 'Bouquet Élégance Rose',
-        price: 25000,
-        image: '/images/hero.jpg',
-        category: 'Bouquets',
-        slug: 'bouquet-elegance-rose',
-        description: '',
-        tags: [],
-        rating: 4.9,
-        reviewsCount: 124,
-      },
-      quantity: 1,
-      options: { size: 'Moyen' },
-    },
-    {
-      lineId: 'mock-2',
-      product: {
-        id: 'carte-cadeau',
-        name: 'Carte cadeau',
-        price: 2000,
-        image: '/images/cadeau.jpg',
-        category: 'Cadeaux',
-        slug: 'carte-cadeau',
-        description: '',
-        tags: [],
-        rating: 5,
-        reviewsCount: 45,
-      },
-      quantity: 1,
-      options: { cardMessage: 'Message personnalisé' },
-    },
-  ];
-
-  const calculatedSubtotal = items.length > 0
-    ? subtotal
-    : displayItems.reduce((acc, curr) => acc + curr.product.price * curr.quantity, 0);
+  const displayItems = items;
+  const calculatedSubtotal = subtotal;
 
   const discountAmount = appliedCoupon?.discountAmount || 0;
   const calculatedTotal = Math.max(0, calculatedSubtotal - discountAmount) + shipping;
@@ -297,6 +259,53 @@ export default function CheckoutPage() {
           'Une erreur est survenue lors de la création de la commande. Veuillez vérifier vos coordonnées.'
       );
     }
+  }
+
+  if (items.length === 0) {
+    return (
+      <>
+        <main className="content-width page-main checkout-page">
+          <nav className="breadcrumbs" aria-label="Fil d'Ariane">
+            <Link href="/">Accueil</Link>
+            <span>›</span>
+            <Link href="/boutique">Boutique</Link>
+            <span>›</span>
+            <span>Commande</span>
+          </nav>
+
+          <div className="checkout-heading">
+            <h1>Finaliser ma commande</h1>
+          </div>
+
+          <div className="empty-checkout-card text-center py-16 px-6 max-w-xl mx-auto bg-white rounded-3xl border border-[#e8efe9] shadow-sm my-8">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#f0f7f1] text-[#24582d] flex items-center justify-center">
+              <ShoppingBag size={32} />
+            </div>
+            <h2 className="text-2xl font-serif font-bold text-[#1c2e20] mb-2">
+              Votre panier est vide
+            </h2>
+            <p className="text-gray-600 mb-8 max-w-md mx-auto">
+              Vous n&apos;avez pas encore d&apos;articles dans votre panier. Découvrez nos compositions florales et créations artisanales pour passer commande.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/boutique"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-[#24582d] text-white font-medium hover:bg-[#1a4221] transition-colors"
+              >
+                Découvrir la boutique
+              </Link>
+              <Link
+                href="/devis"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+              >
+                Demander un devis sur-mesure
+              </Link>
+            </div>
+          </div>
+        </main>
+        <SiteFooter />
+      </>
+    );
   }
 
   return (
@@ -808,7 +817,7 @@ export default function CheckoutPage() {
                     onChange={() => setPayment('wave')}
                   />
                   <div className="payment-brand-badge wave">
-                    <Image src="/payment/wave.png" alt="" width={22} height={32} />
+                    <Image src="/payment/wave.png" alt="Paiement Wave Sénégal" width={22} height={32} />
                   </div>
                   <strong>Wave Sénégal</strong>
                 </label>
@@ -823,7 +832,7 @@ export default function CheckoutPage() {
                     onChange={() => setPayment('orange')}
                   />
                   <div className="payment-brand-badge orange">
-                    <Image src="/payment/orange-money.svg" alt="" width={28} height={28} />
+                    <Image src="/payment/orange-money.svg" alt="Paiement Orange Money Sénégal" width={28} height={28} />
                   </div>
                   <strong>Orange Money</strong>
                 </label>
@@ -838,7 +847,7 @@ export default function CheckoutPage() {
                     onChange={() => setPayment('free')}
                   />
                   <div className="payment-brand-badge free">
-                    <Image src="/payment/free-money.png" alt="" width={42} height={32} />
+                    <Image src="/payment/free-money.png" alt="Paiement Free Money Sénégal" width={42} height={32} />
                   </div>
                   <strong>Free Money</strong>
                 </label>

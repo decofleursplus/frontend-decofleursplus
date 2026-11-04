@@ -3,9 +3,7 @@
     "argv": [
       "/home/supermass/.nvm/versions/node/v23.1.0/bin/node",
       "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/node_modules/@playwright/test/cli.js",
-      "test",
-      "tests/e2e/all-actions-interactive.spec.ts",
-      "--headed"
+      "test"
     ],
     "configFile": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/playwright.config.ts",
     "rootDir": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests",
@@ -30,22 +28,6 @@
         "metadata": {
           "actualWorkers": 1
         },
-        "id": "api-tests",
-        "name": "api-tests",
-        "testDir": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests",
-        "testIgnore": [],
-        "testMatch": [
-          "/tests\\/api\\/.*\\.spec\\.ts/"
-        ],
-        "timeout": 60000
-      },
-      {
-        "outputDir": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/test-results",
-        "repeatEach": 1,
-        "retries": 0,
-        "metadata": {
-          "actualWorkers": 1
-        },
         "id": "e2e-browser",
         "name": "e2e-browser",
         "testDir": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests",
@@ -57,35 +39,6 @@
       }
     ],
     "filteredProjects": [
-      {
-        "grep": {},
-        "grepInvert": null,
-        "outputDir": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/test-results",
-        "repeatEach": 1,
-        "retries": 0,
-        "metadata": {
-          "actualWorkers": 1
-        },
-        "name": "api-tests",
-        "testDir": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests",
-        "snapshotDir": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests",
-        "testIgnore": [],
-        "testMatch": {},
-        "timeout": 60000,
-        "use": {
-          "baseURL": "http://localhost:3000",
-          "trace": "retain-on-failure",
-          "screenshot": "only-on-failure",
-          "video": "retain-on-failure",
-          "extraHTTPHeaders": {
-            "Accept": "application/json"
-          },
-          "headless": false
-        },
-        "dependencies": [],
-        "ignoreSnapshots": false,
-        "__projectId": "api-tests"
-      },
       {
         "grep": {},
         "grepInvert": null,
@@ -121,8 +74,7 @@
           "deviceScaleFactor": 1,
           "isMobile": false,
           "hasTouch": false,
-          "defaultBrowserType": "chromium",
-          "headless": false
+          "defaultBrowserType": "chromium"
         },
         "dependencies": [],
         "ignoreSnapshots": false,
@@ -168,20 +120,20 @@
   },
   "suites": [
     {
-      "title": "e2e/all-actions-interactive.spec.ts",
-      "file": "e2e/all-actions-interactive.spec.ts",
+      "title": "e2e/e2e.spec.ts",
+      "file": "e2e/e2e.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "🎬 GRAND TEST DES ACTIONS INTERACTIVES (Création, Clics, Modifications, Suppression)",
-          "file": "e2e/all-actions-interactive.spec.ts",
-          "line": 12,
+          "title": "🌸 DécoFleur Plus — Suite E2E Réelle (API Live & Sans Mocks)",
+          "file": "e2e/e2e.spec.ts",
+          "line": 3,
           "column": 15,
           "specs": [
             {
-              "title": "01. Création de Compte Réel : Saisie complète, CGU & Validation",
+              "title": "01. Inscription d un nouveau client réel avec persistance en base",
               "ok": true,
               "tags": [],
               "tests": [
@@ -191,8 +143,8 @@
                     {
                       "type": "serial",
                       "location": {
-                        "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-actions-interactive.spec.ts",
-                        "line": 12,
+                        "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/e2e.spec.ts",
+                        "line": 3,
                         "column": 15
                       }
                     }
@@ -205,37 +157,18 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 12066,
+                      "duration": 1893,
                       "errors": [],
-                      "stdout": [
-                        {
-                          "text": "\n👤 1. Inscription d un nouveau compte client...\n"
-                        },
-                        {
-                          "text": "   ✍️ Saisie du nom : Awa Diallo\n"
-                        },
-                        {
-                          "text": "   ✍️ Saisie de l email : qa-faker-standard-mw199vnc-4bmk@qa-decofleur.test\n"
-                        },
-                        {
-                          "text": "   ✍️ Saisie du téléphone sénégalais : +221781696423\n"
-                        },
-                        {
-                          "text": "   ✍️ Saisie du mot de passe sécurisé...\n"
-                        },
-                        {
-                          "text": "   🖱️ Clic sur \"Créer mon compte\"...\n"
-                        }
-                      ],
+                      "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-03T22:24:48.514Z",
+                      "startTime": "2026-11-04T19:49:11.100Z",
                       "annotations": [
                         {
                           "type": "serial",
                           "location": {
-                            "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-actions-interactive.spec.ts",
-                            "line": 12,
+                            "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/e2e.spec.ts",
+                            "line": 3,
                             "column": 15
                           }
                         }
@@ -246,13 +179,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "05c6c9557c90cc899894-9e0f6da60f8b401bc1c8",
-              "file": "e2e/all-actions-interactive.spec.ts",
-              "line": 19,
+              "id": "2273f457eefe02023f08-2be99ebae3f3ce475e75",
+              "file": "e2e/e2e.spec.ts",
+              "line": 16,
               "column": 7
             },
             {
-              "title": "02. Connexion Réelle & Accès à l Espace Personnel",
+              "title": "02. Connexion avec les identifiants créés et persistance de session",
               "ok": true,
               "tags": [],
               "tests": [
@@ -262,8 +195,8 @@
                     {
                       "type": "serial",
                       "location": {
-                        "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-actions-interactive.spec.ts",
-                        "line": 12,
+                        "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/e2e.spec.ts",
+                        "line": 3,
                         "column": 15
                       }
                     }
@@ -276,31 +209,18 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 9125,
+                      "duration": 2203,
                       "errors": [],
-                      "stdout": [
-                        {
-                          "text": "\n🔑 2. Connexion avec les identifiants client...\n"
-                        },
-                        {
-                          "text": "   ✍️ Saisie identifiant : qa-faker-standard-mw199vnc-4bmk@qa-decofleur.test\n"
-                        },
-                        {
-                          "text": "   ✍️ Saisie mot de passe...\n"
-                        },
-                        {
-                          "text": "   🖱️ Clic sur \"Connexion\"...\n"
-                        }
-                      ],
+                      "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-03T22:25:00.822Z",
+                      "startTime": "2026-11-04T19:49:13.075Z",
                       "annotations": [
                         {
                           "type": "serial",
                           "location": {
-                            "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-actions-interactive.spec.ts",
-                            "line": 12,
+                            "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/e2e.spec.ts",
+                            "line": 3,
                             "column": 15
                           }
                         }
@@ -311,13 +231,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "05c6c9557c90cc899894-1e9778ae47dbfdc757a4",
-              "file": "e2e/all-actions-interactive.spec.ts",
-              "line": 52,
+              "id": "2273f457eefe02023f08-1160ca4f832907913839",
+              "file": "e2e/e2e.spec.ts",
+              "line": 38,
               "column": 7
             },
             {
-              "title": "03. Carnet d Adresses : Création d adresse, Par Défaut & Suppression",
+              "title": "03. Gestion de compte et ajout d une nouvelle adresse de livraison",
               "ok": true,
               "tags": [],
               "tests": [
@@ -327,8 +247,8 @@
                     {
                       "type": "serial",
                       "location": {
-                        "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-actions-interactive.spec.ts",
-                        "line": 12,
+                        "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/e2e.spec.ts",
+                        "line": 3,
                         "column": 15
                       }
                     }
@@ -341,28 +261,18 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 11775,
+                      "duration": 3320,
                       "errors": [],
-                      "stdout": [
-                        {
-                          "text": "\n🏡 3. Gestion du Carnet d Adresses (/compte/adresses)...\n"
-                        },
-                        {
-                          "text": "   📝 Remplissage du formulaire d ajout d adresse...\n"
-                        },
-                        {
-                          "text": "   🖱️ Clic sur \"Enregistrer cette adresse\"...\n"
-                        }
-                      ],
+                      "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-03T22:25:09.968Z",
+                      "startTime": "2026-11-04T19:49:15.292Z",
                       "annotations": [
                         {
                           "type": "serial",
                           "location": {
-                            "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-actions-interactive.spec.ts",
-                            "line": 12,
+                            "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/e2e.spec.ts",
+                            "line": 3,
                             "column": 15
                           }
                         }
@@ -373,13 +283,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "05c6c9557c90cc899894-5344d22d605d20db0f00",
-              "file": "e2e/all-actions-interactive.spec.ts",
-              "line": 74,
+              "id": "2273f457eefe02023f08-ec2d719c049bda9d2044",
+              "file": "e2e/e2e.spec.ts",
+              "line": 58,
               "column": 7
             },
             {
-              "title": "04. Panier Réel : Ajout, Quantité (+), Quantité (-), Code Promo & Suppression",
+              "title": "04. Boutique : Affichage propre de l Empty State soigné quand le catalogue est vide",
               "ok": true,
               "tags": [],
               "tests": [
@@ -389,8 +299,8 @@
                     {
                       "type": "serial",
                       "location": {
-                        "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-actions-interactive.spec.ts",
-                        "line": 12,
+                        "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/e2e.spec.ts",
+                        "line": 3,
                         "column": 15
                       }
                     }
@@ -403,46 +313,18 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 24639,
+                      "duration": 1840,
                       "errors": [],
-                      "stdout": [
-                        {
-                          "text": "\n🛒 4. Parcours Panier Complet (Ajout, Stepper, Promo, Suppression)...\n"
-                        },
-                        {
-                          "text": "   🌹 Clic sur la composition florale...\n"
-                        },
-                        {
-                          "text": "   🖱️ Clic sur \"Ajouter au panier\"...\n"
-                        },
-                        {
-                          "text": "   🛍️ Ouverture de la page Panier (/panier)...\n"
-                        },
-                        {
-                          "text": "   ➕ Clic sur le bouton (+) pour augmenter la quantité à 2...\n"
-                        },
-                        {
-                          "text": "   ➖ Clic sur le bouton (-) pour réduire la quantité...\n"
-                        },
-                        {
-                          "text": "   🎟️ Saisie du code promo BIENVENUE10 et clic sur \"Appliquer\"...\n"
-                        },
-                        {
-                          "text": "   ❌ Clic sur la croix de suppression de l article...\n"
-                        },
-                        {
-                          "text": "   ✨ Article retiré, le panier est désormais vide !\n"
-                        }
-                      ],
+                      "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-03T22:25:21.772Z",
+                      "startTime": "2026-11-04T19:49:18.627Z",
                       "annotations": [
                         {
                           "type": "serial",
                           "location": {
-                            "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-actions-interactive.spec.ts",
-                            "line": 12,
+                            "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/e2e.spec.ts",
+                            "line": 3,
                             "column": 15
                           }
                         }
@@ -453,13 +335,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "05c6c9557c90cc899894-bd4a8c7ff46910b4ae4b",
-              "file": "e2e/all-actions-interactive.spec.ts",
-              "line": 119,
+              "id": "2273f457eefe02023f08-f7769007552d31a1898c",
+              "file": "e2e/e2e.spec.ts",
+              "line": 93,
               "column": 7
             },
             {
-              "title": "05. Devis Sur-Mesure : Remplissage interactif & Soumission",
+              "title": "05. Tunnel de commande : Écran dédié au panier vide avec formulaire de paiement bloqué",
               "ok": true,
               "tags": [],
               "tests": [
@@ -469,8 +351,8 @@
                     {
                       "type": "serial",
                       "location": {
-                        "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-actions-interactive.spec.ts",
-                        "line": 12,
+                        "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/e2e.spec.ts",
+                        "line": 3,
                         "column": 15
                       }
                     }
@@ -483,22 +365,18 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6259,
+                      "duration": 970,
                       "errors": [],
-                      "stdout": [
-                        {
-                          "text": "\n📑 5. Demande de devis événementiel sur-mesure (/devis)...\n"
-                        }
-                      ],
+                      "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-03T22:25:46.440Z",
+                      "startTime": "2026-11-04T19:49:20.480Z",
                       "annotations": [
                         {
                           "type": "serial",
                           "location": {
-                            "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-actions-interactive.spec.ts",
-                            "line": 12,
+                            "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/e2e.spec.ts",
+                            "line": 3,
                             "column": 15
                           }
                         }
@@ -509,13 +387,117 @@
                   "status": "expected"
                 }
               ],
-              "id": "05c6c9557c90cc899894-9068af5031f47468a147",
-              "file": "e2e/all-actions-interactive.spec.ts",
+              "id": "2273f457eefe02023f08-600ac8d9bc55e65461cf",
+              "file": "e2e/e2e.spec.ts",
+              "line": 115,
+              "column": 7
+            },
+            {
+              "title": "06. Demande de devis événementiel : Remplissage et envoi réel au backend",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/e2e.spec.ts",
+                        "line": 3,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e-browser",
+                  "projectName": "e2e-browser",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1564,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-04T19:49:21.462Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/e2e.spec.ts",
+                            "line": 3,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2273f457eefe02023f08-45ea24f318541310ea45",
+              "file": "e2e/e2e.spec.ts",
+              "line": 143,
+              "column": 7
+            },
+            {
+              "title": "07. Abonnements floraux : Chargement des formules et détails",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/e2e.spec.ts",
+                        "line": 3,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "e2e-browser",
+                  "projectName": "e2e-browser",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 779,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-04T19:49:23.040Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/e2e.spec.ts",
+                            "line": 3,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2273f457eefe02023f08-377c783d94df01416373",
+              "file": "e2e/e2e.spec.ts",
               "line": 186,
               "column": 7
             },
             {
-              "title": "06. Back-Office Admin : Commandes, Ajustement Stock & Marketing",
+              "title": "08. Sécurité Back-Office : Redirection et protection AdminGuard pour les profils non staff",
               "ok": true,
               "tags": [],
               "tests": [
@@ -525,8 +507,8 @@
                     {
                       "type": "serial",
                       "location": {
-                        "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-actions-interactive.spec.ts",
-                        "line": 12,
+                        "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/e2e.spec.ts",
+                        "line": 3,
                         "column": 15
                       }
                     }
@@ -539,46 +521,18 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 35702,
+                      "duration": 1179,
                       "errors": [],
-                      "stdout": [
-                        {
-                          "text": "\n🛡️ 6. Opérations d Administration Back-Office...\n"
-                        },
-                        {
-                          "text": "   📦 Accès à la gestion des commandes (/admin/commandes)...\n"
-                        },
-                        {
-                          "text": "   🖱️ Clic sur le filtre des commandes...\n"
-                        },
-                        {
-                          "text": "   📊 Accès à l inventaire de stock (/admin/stock)...\n"
-                        },
-                        {
-                          "text": "   🖱️ Clic sur le bouton \"Ajuster le stock\"...\n"
-                        },
-                        {
-                          "text": "   🎟️ Accès à l espace Marketing (/admin/marketing)...\n"
-                        },
-                        {
-                          "text": "   🗂️ Accès aux Catégories Florales (/admin/categories)...\n"
-                        },
-                        {
-                          "text": "\n🎉 TOUTES LES ACTIONS INTERACTIVES ONT ÉTÉ EXÉCUTÉES ET OBSERVÉES EN DIRECT !\n"
-                        },
-                        {
-                          "text": "⏳ La fenêtre du navigateur reste ouverte pour vous permettre d inspecter le résultat...\n"
-                        }
-                      ],
+                      "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-03T22:25:52.733Z",
+                      "startTime": "2026-11-04T19:49:23.833Z",
                       "annotations": [
                         {
                           "type": "serial",
                           "location": {
-                            "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/all-actions-interactive.spec.ts",
-                            "line": 12,
+                            "file": "/home/supermass/Music/freelance/decofleur/frontend-decofleursplus/tests/e2e/e2e.spec.ts",
+                            "line": 3,
                             "column": 15
                           }
                         }
@@ -589,9 +543,9 @@
                   "status": "expected"
                 }
               ],
-              "id": "05c6c9557c90cc899894-3db5d69eeda1efd69392",
-              "file": "e2e/all-actions-interactive.spec.ts",
-              "line": 215,
+              "id": "2273f457eefe02023f08-70e6971db07b55a41855",
+              "file": "e2e/e2e.spec.ts",
+              "line": 198,
               "column": 7
             }
           ]
@@ -601,9 +555,9 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-11-03T22:24:27.367Z",
-    "duration": 121267.66500000001,
-    "expected": 6,
+    "startTime": "2026-11-04T19:49:10.036Z",
+    "duration": 15034.463,
+    "expected": 8,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

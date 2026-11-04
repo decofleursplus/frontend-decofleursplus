@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -13,10 +14,41 @@ import { TestimonialCarousel } from '@/components/testimonial-carousel';
 import { EventHero } from '@/components/event-hero';
 import { EventFeaturedRow } from '@/components/event-featured-row';
 import { MockupCategories } from '@/components/mockup-categories';
+import { constructMetadata } from '@/lib/seo/metadata';
+import { JsonLd } from '@/components/seo/json-ld';
+import { SITE_URL, SITE_CONFIG } from '@/lib/seo/config';
+
+export const metadata: Metadata = constructMetadata({
+  title: 'Décofleur Plus — Nature en Élégance | Fleuriste à Saly, Dakar & Petite-Côte',
+  description:
+    'Fleuriste d’artisanat de prestige au Sénégal. Bouquets de roses fraîches, décoration de mariage, aménagement paysager, corbeilles de fruits et livraison express à Saly, Dakar, Somone et Mbour.',
+  canonical: '/',
+});
 
 export default function HomePage() {
+  const websiteSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': `${SITE_URL}/#website`,
+    url: SITE_URL,
+    name: SITE_CONFIG.name,
+    description: SITE_CONFIG.description,
+    publisher: {
+      '@id': `${SITE_URL}/#organization`,
+    },
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${SITE_URL}/boutique?q={search_term_string}`,
+      },
+      'query-input': 'required name=search_term_string',
+    },
+  };
+
   return (
     <>
+      <JsonLd data={websiteSchema} />
       <main className="homepage-main">
         {/* 1. Dynamic Hero Section Coordinated with Active Event (defaults to HeroMockup) */}
         <EventHero />
