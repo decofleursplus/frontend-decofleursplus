@@ -62,7 +62,7 @@ export function PwaRegistration() {
   return (
     <aside className="pwa-install-banner" aria-label="Installer Décofleur Plus">
       <span className="pwa-install-mark" aria-hidden="true">
-        <Image src="/logo_decofleur.jpeg" alt="" width={42} height={42} style={{ width: 'auto' }} />
+        <Image src="/logo_decofleur.jpeg" alt="Logo Décofleur Plus" width={42} height={42} style={{ width: 'auto' }} />
       </span>
       <span className="pwa-install-copy"><strong>Décofleur Plus</strong><small>{iosInstallHelp ? 'Dans Safari : Partager, puis « Sur l’écran d’accueil ».' : 'Ajoutez la boutique à votre écran d’accueil.'}</small></span>
       {installPrompt && <button className="pwa-install-action" onClick={() => void install()}><Download size={16} /> Installer</button>}

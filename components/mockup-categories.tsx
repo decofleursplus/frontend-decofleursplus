@@ -9,7 +9,7 @@ export const mockupCategoriesList = [
     title: 'Bouquets élégants',
     shortTitle: 'Bouquets',
     subtitle: 'Fleurs fraîches et raffinées',
-    href: '/bouquets',
+    href: '/categories/bouquets',
     iconSrc: '/images/categories/bouquets.png',
   },
   {
@@ -17,7 +17,7 @@ export const mockupCategoriesList = [
     title: 'Décoration sur mesure',
     shortTitle: 'Décoration',
     subtitle: 'Espaces, maisons, bureaux',
-    href: '/decoration',
+    href: '/categories/decoration',
     iconSrc: '/images/categories/decoration.png',
   },
   {
@@ -41,7 +41,7 @@ export const mockupCategoriesList = [
     title: 'Paniers de fruits',
     shortTitle: 'Fruits',
     subtitle: 'Frais et gourmands',
-    href: '/paniers-de-fruits',
+    href: '/categories/paniers-de-fruits',
     iconSrc: '/images/categories/fruits.png',
   },
   {
@@ -49,7 +49,7 @@ export const mockupCategoriesList = [
     title: 'Cadeaux',
     shortTitle: 'Cadeaux',
     subtitle: 'Pour toutes occasions',
-    href: '/cadeaux',
+    href: '/categories/cadeaux',
     iconSrc: '/images/categories/cadeaux.png',
   },
   {

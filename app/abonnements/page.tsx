@@ -3,14 +3,40 @@ import Link from 'next/link';
 import { HelpCircle } from 'lucide-react';
 import { SiteFooter } from '@/components/site-footer';
 import { SubscriptionForm } from '@/components/subscription-form';
+import { constructMetadata } from '@/lib/seo/metadata';
+import { Breadcrumbs } from '@/components/seo/breadcrumbs';
+import { JsonLd } from '@/components/seo/json-ld';
+import { getServiceSchema } from '@/lib/seo/schema';
 
-export const metadata: Metadata = {
-  title: 'Abonnements Floraux — DécoFleur Plus Saly',
+export const metadata: Metadata = constructMetadata({
+  title: 'Abonnements Floraux pour Villas & Entreprises | Saly, Dakar & Petite-Côte',
   description:
-    'Abonnements floraux pour particuliers, villas, hôtels et entreprises à Saly et Mbour. Livraison hebdomadaire ou bimensuelle de fleurs fraîches avec vase inclus.',
-};
+    'Formules d’abonnements floraux hebdomadaires et bimensuels au Sénégal : livraison de fleurs fraîches, vases design prêtés et renouvelés à Saly, Somone et Dakar.',
+  canonical: '/abonnements',
+  image: '/images/hero.jpg',
+  keywords: [
+    'abonnement floral dakar',
+    'abonnement fleurs saly',
+    'fleurs villa saly portudal',
+    'fleurissement entreprise senegal',
+    'livraison fleurs reguliere',
+  ],
+});
 
 export default function AbonnementsPage() {
+  const subscriptionServiceSchema = getServiceSchema({
+    name: 'Abonnements Floraux & Végétaux Récurrents',
+    description:
+      'Livraison régulière de compositions florales de prestige avec rotation de vases de collection pour particuliers, villas et entreprises à Saly, Dakar et Petite-Côte.',
+    url: '/abonnements',
+    image: '/images/hero.jpg',
+  });
+
+  const breadcrumbs = [
+    { label: 'Accueil', href: '/' },
+    { label: 'Abonnements Floraux' },
+  ];
+
   const faqs = [
     {
       q: 'Puis-je mettre en pause mon abonnement pendant un voyage ?',
@@ -32,13 +58,9 @@ export default function AbonnementsPage() {
 
   return (
     <>
+      <JsonLd data={subscriptionServiceSchema} />
       <main className="content-width page-main abonnements-page-main">
-        {/* Compact Breadcrumb */}
-        <div className="breadcrumbs">
-          <Link href="/">Accueil</Link>
-          <span>›</span>
-          <span>Abonnements Floraux</span>
-        </div>
+        <Breadcrumbs items={breadcrumbs} className="mb-4" />
 
         {/* Compact Header (Above the fold) */}
         <header className="abonnements-compact-header">

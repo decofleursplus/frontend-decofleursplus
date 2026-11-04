@@ -77,7 +77,7 @@ export default function AccountOrdersPage() {
                     className="demo-order-name"
                     href={isInProgress ? `/compte/suivi/${order.orderNumber}` : `/compte/commandes`}
                   >
-                    <Image src={itemImg} alt="" width={40} height={40} className="rounded-lg object-cover" />
+                    <Image src={itemImg} alt={itemName || 'Article commandé'} width={40} height={40} className="rounded-lg object-cover" />
                     <span>{itemName}</span>
                   </Link>
 

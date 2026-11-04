@@ -808,7 +808,7 @@ export default function CheckoutPage() {
                     onChange={() => setPayment('wave')}
                   />
                   <div className="payment-brand-badge wave">
-                    <Image src="/payment/wave.png" alt="" width={22} height={32} />
+                    <Image src="/payment/wave.png" alt="Paiement Wave Sénégal" width={22} height={32} />
                   </div>
                   <strong>Wave Sénégal</strong>
                 </label>
@@ -823,7 +823,7 @@ export default function CheckoutPage() {
                     onChange={() => setPayment('orange')}
                   />
                   <div className="payment-brand-badge orange">
-                    <Image src="/payment/orange-money.svg" alt="" width={28} height={28} />
+                    <Image src="/payment/orange-money.svg" alt="Paiement Orange Money Sénégal" width={28} height={28} />
                   </div>
                   <strong>Orange Money</strong>
                 </label>
@@ -838,7 +838,7 @@ export default function CheckoutPage() {
                     onChange={() => setPayment('free')}
                   />
                   <div className="payment-brand-badge free">
-                    <Image src="/payment/free-money.png" alt="" width={42} height={32} />
+                    <Image src="/payment/free-money.png" alt="Paiement Free Money Sénégal" width={42} height={32} />
                   </div>
                   <strong>Free Money</strong>
                 </label>
