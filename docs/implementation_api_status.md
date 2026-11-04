@@ -65,9 +65,9 @@
 
 ### Phase 4 : Tunnel de Commande, Livraisons & NabooPay
 - [x] **Tâche 4.1** : Zones de Livraison & Devis Panier (`GET /delivery-zones`, `POST /orders/quote`) ✅
-- [x] **Tâche 4.2** : Création de Commande & Passerelle NabooPay (`POST /orders`) ✅
-- [x] **Tâche 4.3** : Écrans de Confirmation & Reprise de Paiement (`/commande/confirmation`) ✅
-- [x] **Tâche 4.4** : Historique des Commandes Client (`/compte/commandes`) ✅
+- [x] **Tâche 4.2** : Création de Commande & Passerelle NabooPay (Wave, OM, Free, Card + Cash on delivery) (`POST /orders`) ✅
+- [x] **Tâche 4.3** : Écrans de Confirmation, Détection Webhook & Relance après Échec (`lib/api/payment.ts`, `/commande/confirmation`, `/commande/paiement-echoue`) ✅
+- [x] **Tâche 4.4** : Historique des Commandes & Reprise de Paiement dans l'Espace Client (`/compte/commandes/[id]`, `POST /pay`, `GET /payments`) ✅
 - [x] **Tâche 4.5** : Suivi de Livraison en Direct (`/compte/suivi/[id]`) ✅
 
 ### Phase 5 : Blog Floral & Abonnements Publics

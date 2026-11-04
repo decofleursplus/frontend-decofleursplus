@@ -196,34 +196,73 @@
 - **Critères d'acceptation :**
   - Les frais de livraison sont calculés dynamiquement selon la zone choisie.
   - Option retrait boutique (`PICKUP`) avec frais à 0 FCFA.
-- **Statut :** ⬜ À faire
+- **Statut :** ✅ Terminé
 
-### Tâche 4.2 : Création de Commande & Passerelle NabooPay
-- **Fichiers :** `app/commande/page.tsx`, `lib/api/orders.ts`
+### Tâche 4.2 : Création de Commande & Passerelle NabooPay (Multi-moyens)
+- **Fichiers :** `app/commande/page.tsx`, `lib/api/orders.ts`, `lib/api/payment.ts`
 - **Endpoints :** `POST /orders`
-- **Description :** Valider la commande avec authentification obligatoire. Envoi strict des données (`variantId`, quantité, options d'emballage cadeau, zone, adresse, méthode de paiement). Redirection immédiate vers `checkoutUrl` pour Wave, Orange Money, Free Money ou Carte.
+- **Description :** Valider la commande avec authentification obligatoire. Envoi strict des données (`items`, `deliveryMode`, `deliveryZoneId`, `paymentMethod`, `deliveryAddress`, etc.). Support complet de 5 modes de paiement :
+  - Mobile Money & Carte via passerelle NabooPay (`WAVE`, `ORANGE_MONEY`, `FREE_MONEY`, `CARD`)
+  - Espèces à la livraison (`CASH_ON_DELIVERY`)
+- **Étapes d'implémentation détaillées :**
+  1. Étendre `PlaceOrderPayload` dans `lib/api/orders.ts` pour accepter `'CASH_ON_DELIVERY'`.
+  2. Ajouter l'option visuelle "Paiement en espèces à la livraison" dans la liste des modes de paiement de `app/commande/page.tsx`.
+  3. Gérer l'aiguillage après soumission réussie :
+     - Si paiement digital NabooPay (`checkoutUrl` présent) : redirection immédiate vers `checkoutUrl`.
+     - Si paiement en espèces à la livraison : redirection directe vers `/commande/confirmation?orderNumber=${order.orderNumber}`.
+  4. Vider le panier (`clear()`) et réinitialiser les coupons en session lors de la commande validée.
 - **Critères d'acceptation :**
-  - Si paiement en ligne : redirection fluide vers la page de paiement sécurisée NabooPay.
-  - Si paiement à la livraison : redirection vers `/commande/confirmation`.
+  - L'utilisateur peut choisir entre Wave, Orange Money, Free Money, Carte bancaire ou Paiement en espèces.
+  - Si paiement digital : redirection fluide et sans erreur vers la page de paiement sécurisée NabooPay.
+  - Si paiement à la livraison : redirection immédiate vers la page de confirmation sans tentative NabooPay.
   - Le panier est vidé dès que la commande est enregistrée avec succès.
-- **Statut :** ⬜ À faire
+- **Statut :** ✅ Terminé
 
-### Tâche 4.3 : Écrans de Confirmation & Reprise de Paiement
-- **Fichiers :** `app/commande/confirmation/page.tsx`, `app/commande/paiement-echoue/page.tsx`, `lib/api/payment.ts`
-- **Endpoints :** `GET /orders/mine/:orderNumber`, `POST /orders/mine/:orderNumber/pay`
-- **Description :** Afficher le récapitulatif complet de la commande confirmée. En cas d'échec ou d'annulation sur la passerelle NabooPay, permettre de relancer un paiement via `POST /orders/mine/:orderNumber/pay`.
+### Tâche 4.3 : Écrans de Confirmation, Détection Webhook & Relance après Échec
+- **Fichiers :** `lib/api/payment.ts`, `app/commande/confirmation/page.tsx`, `app/commande/paiement-echoue/page.tsx`
+- **Endpoints :** `GET /orders/mine/:orderNumber`, `POST /orders/mine/:orderNumber/pay`, `GET /orders/mine/:orderNumber/payments`
+- **Description :** Créer le module client dédié `lib/api/payment.ts` et moderniser entièrement les écrans de confirmation et d'échec de transaction.
+- **Étapes d'implémentation détaillées :**
+  1. **Création du client API `lib/api/payment.ts` :**
+     - `payOrder(orderNumber: string)` : déclenche `POST /orders/mine/:orderNumber/pay` et retourne `{ checkoutUrl, transactionRef }`.
+     - `getOrderPayments(orderNumber: string)` : interroge `GET /orders/mine/:orderNumber/payments` et retourne la liste des transactions (`Payment[]`).
+  2. **Page de confirmation `/commande/confirmation` :**
+     - Vérification de l'authentification (redirection vers `/connexion?redirect=...` si la session a expiré au retour de passerelle).
+     - Chargement des données de commande en temps réel via `getMyOrder(orderNumber)`.
+     - **Sondage dynamique (Polling intelligent) :** Si `order.paymentStatus === 'PENDING'` et commande digitale, exécuter un sondage de 3 à 5 tentatives (espacées de 2s) pour capturer la validation asynchrone du webhook NabooPay (`PAID`).
+     - Affichage d'un badge d'état réactif : "Paiement en cours de confirmation...", "Payée avec succès" (NabooPay), ou "Commande confirmée — Règlement en espèces à la livraison" (`CASH_ON_DELIVERY`).
+     - Bouton de rafraîchissement manuel et bouton de repli pour payer si l'utilisateur avait annulé ou fermé NabooPay prématurément.
+  3. **Page d'échec de paiement `/commande/paiement-echoue` :**
+     - Prise en charge du paramètre d'URL `?orderNumber=...`.
+     - Redirection propre vers `/connexion?redirect=...` si la session a expiré.
+     - Chargement des détails de la commande échouée (`GET /orders/mine/:orderNumber`).
+     - Affichage pédagogique du motif d'échec ou d'interruption.
+     - Bouton d'action principal : « Réessayer le paiement maintenant » qui appelle `payOrder(orderNumber)` et redirige vers le nouveau `checkoutUrl` généré.
+     - Actions de secours : Assistance instantanée WhatsApp avec référence pré-remplie, annulation de commande (`cancelMyOrder`), ou retour à la boutique.
 - **Critères d'acceptation :**
-  - Récupération du statut en temps réel de la commande (`PAID`, `PENDING`).
-  - Le bouton « Réessayer le paiement » génère un nouveau lien NabooPay fonctionnel.
-- **Statut :** ⬜ À faire
+  - Redirection automatique vers `/connexion` avec retour d'URL si le token a expiré.
+  - La page de confirmation se met à jour automatiquement en vert ("Payée avec succès") dès réception du webhook NabooPay.
+  - La page d'échec affiche la commande réelle et permet de relancer le paiement en 1 clic sans devoir refaire son panier.
+- **Statut :** ✅ Terminé
 
-### Tâche 4.4 : Historique des Commandes Client
-- **Fichiers :** `app/compte/commandes/page.tsx`, `app/compte/commandes/[id]/page.tsx`
-- **Endpoints :** `GET /orders/mine`, `GET /orders/mine/:orderNumber`, `POST /orders/mine/:orderNumber/cancel`
-- **Description :** Liste paginée des commandes du client avec badge de statut, articles commandés, adresse et montant total. Possibilité d'annuler une commande tant qu'elle est en attente ou payée (`PENDING`/`PAID`).
+### Tâche 4.4 : Historique des Commandes & Reprise de Paiement dans l'Espace Client
+- **Fichiers :** `app/compte/commandes/page.tsx`, `app/compte/commandes/[id]/page.tsx`, `lib/api/payment.ts`, `lib/api/orders.ts`
+- **Endpoints :** `GET /orders/mine`, `GET /orders/mine/:orderNumber`, `POST /orders/mine/:orderNumber/pay`, `GET /orders/mine/:orderNumber/payments`, `POST /orders/mine/:orderNumber/cancel`
+- **Description :** Remplacer intégralement les mocks statiques de la fiche commande par les données dynamiques de l'API, avec visualisation des transactions NabooPay et possibilité de régler une commande en attente.
+- **Étapes d'implémentation détaillées :**
+  1. Dynamiser `app/compte/commandes/[id]/page.tsx` en composant client (suppression de `export const dynamicParams = false` et des données fictives `demoOrders`).
+  2. Récupérer la commande via `getMyOrder(orderNumber)` et l'historique des transactions via `getOrderPayments(orderNumber)`.
+  3. Pour toute commande ayant `paymentStatus === 'PENDING'` (et non annulée) :
+     - Afficher un bloc d'alerte contextuel "Paiement en attente".
+     - Bouton interactif « Payer ma commande avec NabooPay » appelant `payOrder` avec état de chargement et redirection automatique.
+     - Bouton d'annulation de commande « Annuler la commande » (`POST /cancel`).
+  4. Afficher le journal des transactions associées (référence transaction, prestataire NabooPay, méthode utilisée, montant, date et statut).
+  5. Mettre à jour les liens de `app/compte/commandes/page.tsx` pour permettre d'ouvrir la fiche détaillée de toute commande.
 - **Critères d'acceptation :**
-  - L'annulation met à jour le statut immédiatement et remet les articles en stock.
-- **Statut :** ⬜ À faire
+  - Toutes les commandes du client sont consultables avec leurs vraies données.
+  - Un client peut reprendre et finaliser le paiement d'une commande passée en attente directement depuis son compte.
+  - L'historique des tentatives de transaction NabooPay est clairement affiché.
+- **Statut :** ✅ Terminé
 
 ### Tâche 4.5 : Suivi de Livraison en Direct
 - **Fichiers :** `app/compte/suivi/[id]/page.tsx`, `lib/api/delivery.ts`
