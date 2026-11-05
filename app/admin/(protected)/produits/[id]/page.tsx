@@ -4,14 +4,16 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { adminProducts } from '@/lib/admin/mock-data/products';
 import { getAdminProductById, updateAdminProduct, deleteAdminProduct } from '@/lib/api/admin/products';
-import type { AdminProduct } from '@/lib/admin/mock-data/types';
+import { getAdminCategories } from '@/lib/api/admin/categories';
+import type { AdminProduct, AdminCategory } from '@/lib/admin/mock-data/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowLeft, Save, Image as ImageIcon, Trash2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { ImageUploader } from '@/components/admin/image-uploader';
 
 export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -21,17 +23,37 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [categories, setCategories] = useState<AdminCategory[]>([]);
+
+  // Images state
+  const [images, setImages] = useState<string[]>([]);
+  const [primaryImage, setPrimaryImage] = useState<string>('');
 
   useEffect(() => {
     let active = true;
     async function load() {
       try {
-        const p = await getAdminProductById(id);
-        if (active && p) {
-          setProduct(p);
+        const [p, cats] = await Promise.all([
+          getAdminProductById(id),
+          getAdminCategories(),
+        ]);
+        if (active) {
+          if (p) {
+            setProduct(p);
+            const initImages = Array.isArray(p.images) && p.images.length > 0
+              ? p.images
+              : p.image
+              ? [p.image]
+              : [];
+            setImages(initImages);
+            setPrimaryImage(p.image || initImages[0] || '');
+          }
+          if (cats) {
+            setCategories(cats);
+          }
         }
       } catch (err) {
-        console.error('Erreur chargement produit:', err);
+        console.error('Erreur chargement produit / catégories:', err);
       } finally {
         if (active) setLoading(false);
       }
@@ -67,10 +89,12 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
     setIsSubmitting(true);
     const formData = new FormData(e.currentTarget);
-    const name = formData.get('name') as string;
-    const description = (formData.get('description') as string) || '';
+    const name = (formData.get('name') as string)?.trim() || product.name;
+    const description = (formData.get('description') as string)?.trim() || '';
     const price = Number(formData.get('price')) || product.price;
     const promoPrice = formData.get('promo') ? Number(formData.get('promo')) : undefined;
+    const sku = (formData.get('sku') as string)?.trim() || product.sku;
+    const stock = Number(formData.get('stock')) ?? product.stock;
     const statusVal = (formData.get('status') as string) === 'actif' ? 'ACTIVE' : 'HIDDEN';
 
     try {
@@ -80,11 +104,21 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         basePrice: price,
         promoPrice,
         status: statusVal,
+        featuredImage: primaryImage || images[0] || null,
+        images,
+        variants: [
+          {
+            name: 'Standard',
+            sku,
+            price,
+            stockQuantity: stock,
+          },
+        ],
       });
       toast.success('Produit mis à jour avec succès');
       router.push('/admin/produits');
-    } catch {
-      toast.error('Erreur lors de la mise à jour');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Erreur lors de la mise à jour');
     } finally {
       setIsSubmitting(false);
     }
@@ -112,7 +146,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Button variant="outline" size="icon" render={<Link href="/admin/produits" />} className="h-9 w-9 shrink-0 rounded-xl border-[#e7e4dd]">
-              <ArrowLeft className="h-4 w-4 text-gray-500" />
+            <ArrowLeft className="h-4 w-4 text-gray-500" />
           </Button>
           <div className="min-w-0">
             <h1 className="text-xl font-semibold text-[#1e2a1f]">Modifier le produit</h1>
@@ -153,20 +187,23 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nom du produit</Label>
+                <Label htmlFor="name">Nom du produit <span className="text-[#c1647a]">*</span></Label>
                 <Input 
                   id="name" 
+                  name="name"
                   defaultValue={product.name} 
                   required 
                   className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20" 
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">Description <span className="text-[#c1647a]">*</span></Label>
                 <textarea 
                   id="description" 
+                  name="description"
                   rows={5}
                   defaultValue={product.description}
+                  required
                   className="flex w-full rounded-md border border-[#e7e4dd] bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#24582d]/20"
                 />
               </div>
@@ -181,12 +218,14 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="price">Prix (FCFA)</Label>
+                  <Label htmlFor="price">Prix (FCFA) <span className="text-[#c1647a]">*</span></Label>
                   <Input 
                     id="price" 
+                    name="price"
                     type="number" 
                     defaultValue={product.price} 
                     required 
+                    min="0"
                     className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20" 
                   />
                 </div>
@@ -194,7 +233,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                   <Label htmlFor="promo">Prix promotionnel</Label>
                   <Input 
                     id="promo" 
+                    name="promo"
                     type="number" 
+                    min="0"
                     defaultValue={product.promoPrice || ''}
                     className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20" 
                   />
@@ -205,6 +246,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                   <Label htmlFor="sku">Référence (SKU)</Label>
                   <Input 
                     id="sku" 
+                    name="sku"
                     defaultValue={product.sku}
                     className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20" 
                   />
@@ -213,7 +255,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                   <Label htmlFor="stock">Quantité en stock</Label>
                   <Input 
                     id="stock" 
+                    name="stock"
                     type="number" 
+                    min="0"
                     defaultValue={product.stock}
                     className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20" 
                   />
@@ -235,6 +279,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 <Label htmlFor="status">Statut</Label>
                 <select 
                   id="status" 
+                  name="status"
                   defaultValue={product.status}
                   className="flex h-9 w-full items-center justify-between rounded-md border border-[#e7e4dd] bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-[#24582d]/20"
                 >
@@ -247,14 +292,25 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 <Label htmlFor="category">Catégorie</Label>
                 <select 
                   id="category" 
-                  defaultValue={product.category.toLowerCase()}
+                  name="category"
+                  defaultValue={product.category}
                   className="flex h-9 w-full items-center justify-between rounded-md border border-[#e7e4dd] bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-[#24582d]/20"
                 >
-                  <option value="bouquets">Bouquets</option>
-                  <option value="plantes">Plantes</option>
-                  <option value="fruits">Fruits & Légumes</option>
-                  <option value="cadeaux">Cadeaux</option>
-                  <option value="mariages">Mariages & Événements</option>
+                  {categories.length > 0 ? (
+                    categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="bouquets">Bouquets</option>
+                      <option value="plantes">Plantes</option>
+                      <option value="fruits">Fruits & Légumes</option>
+                      <option value="cadeaux">Cadeaux</option>
+                      <option value="mariages">Mariages & Événements</option>
+                    </>
+                  )}
                 </select>
               </div>
             </CardContent>
@@ -263,18 +319,20 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           {/* Images */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-[#1e2a1f]">Images</CardTitle>
+              <CardTitle className="text-[#1e2a1f]">Galerie Photos</CardTitle>
+              <CardDescription>Format JPG, PNG, WebP. Max 5 Mo.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {product.image && (
-                <div className="relative aspect-square w-full rounded-md overflow-hidden border border-[#e7e4dd]">
-                  <img src={product.image} alt={product.name} className="object-cover w-full h-full" />
-                </div>
-              )}
-              <div className="border-2 border-dashed border-[#e7e4dd] rounded-xl p-4 text-center hover:bg-[#faf8f4] transition-colors cursor-pointer flex flex-col items-center gap-1">
-                <ImageIcon size={16} className="text-gray-400" />
-                <div className="text-xs font-medium text-gray-700">Ajouter une image</div>
-              </div>
+            <CardContent>
+              <ImageUploader
+                multiple
+                folder="products"
+                maxFiles={10}
+                value={images}
+                onChange={setImages}
+                primaryImage={primaryImage}
+                onPrimaryChange={setPrimaryImage}
+                description="Glissez vos photos ou cliquez pour parcourir. Vous pouvez définir la photo principale d'un clic."
+              />
             </CardContent>
           </Card>
         </div>

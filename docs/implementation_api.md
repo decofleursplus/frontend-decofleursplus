@@ -333,31 +333,38 @@
 
 ## Phase 7 : Catalogue Admin & Inventaire de Stock
 
-### Tâche 7.1 : Upload de Médias Produits & Catégories
-- **Fichiers :** `components/admin/image-uploader.tsx`, `lib/api/admin-upload.ts`
+### Tâche 7.1 : Upload de Médias Produits, Catégories, Blog, Marketing & Paramètres
+- **Fichiers :** `components/admin/image-uploader.tsx`, `lib/api/admin/uploads.ts`
 - **Endpoints :** `POST /admin/uploads?folder=products`, `POST /admin/uploads?folder=categories`
-- **Description :** Créer un composant d'upload drag-and-drop envoyant les fichiers en `multipart/form-data` vers Cloudflare R2 via l'API, avec prévisualisation et barre de progression.
+- **Description :** Création du composant d'upload réutilisable `ImageUploader` avec drag-and-drop, téléversement immédiat en `multipart/form-data`, indicateur de progression, gestion d'erreurs en mode strict, sélection de la photo principale et aperçus avec suppression. Intégration sur :
+  - Produits (`/admin/produits/nouveau` et `[id]`) : galerie multi-photos (jusqu'à 10 photos) + choix d'image principale (`featuredImage`).
+  - Catégories (`/admin/categories`) : photo d'illustration dans le dialogue d'ajout/édition et affichage dans la table/cartes.
+  - Blog (`components/admin/article-form.tsx`) : téléversement direct de la photo de couverture avec alternative aux visuels prédéfinis.
+  - Événements Marketing (`components/admin/edit-event-dialog.tsx`) : téléversement cloud de la photo d'ambiance avec bouton dédié et spinner.
+  - Paramètres Boutique (`/admin/parametres`) : téléversement et mise à jour dynamique du logo officiel de l'enseigne.
 - **Critères d'acceptation :**
-  - Support de 1 à 10 fichiers simultanés (JPEG, PNG, WebP, max 5 Mo).
-  - Renvoi direct des URLs publiques utilisables dans les formulaires.
-- **Statut :** ⬜ À faire
+  - Validation stricte des types de fichiers (JPEG, PNG, WebP, AVIF) et taille maximale (5 Mo).
+  - Mode strict : notification d'erreur immédiate et blocage en cas d'échec du serveur de stockage.
+  - Renvoi direct des URLs publiques sauvegardées dans les entités respectives.
+- **Statut :** ✅ Terminé
 
 ### Tâche 7.2 : Gestion des Catégories & Sous-Catégories
-- **Fichiers :** `app/admin/categories/page.tsx`, `lib/api/admin-catalog.ts`
+- **Fichiers :** `app/admin/categories/page.tsx`, `lib/api/admin/categories.ts`
 - **Endpoints :** `POST /admin/categories`, `PATCH /admin/categories/:id`, `DELETE /admin/categories/:id`, `POST /admin/subcategories`, `PATCH /admin/subcategories/:id`, `DELETE /admin/subcategories/:id`
-- **Description :** Interface complète de gestion de la hiérarchie des catégories, avec photo de couverture, slug auto, description et réorganisation.
+- **Description :** Interface complète de gestion de la hiérarchie des catégories, avec photo de couverture (`imageUrl`), slug auto, description et réorganisation.
 - **Critères d'acceptation :**
-  - Création, modification et suppression fonctionnelles avec confirmation modale.
-- **Statut :** ⬜ À faire
+  - Création, modification et suppression fonctionnelles avec confirmation modale et affichage de la vignette.
+- **Statut :** ✅ Terminé
 
 ### Tâche 7.3 : Gestion des Produits Catalogue
-- **Fichiers :** `app/admin/produits/page.tsx`, `app/admin/produits/nouveau/page.tsx`, `app/admin/produits/[id]/page.tsx`
+- **Fichiers :** `app/admin/produits/page.tsx`, `app/admin/produits/nouveau/page.tsx`, `app/admin/produits/[id]/page.tsx`, `lib/api/admin/products.ts`
 - **Endpoints :** `GET /admin/products`, `GET /admin/products/:id`, `POST /admin/products`, `PATCH /admin/products/:id`, `DELETE /admin/products/:id`
-- **Description :** Gestion complète du catalogue : création avec variantes de tailles, prix de base et prix barré promo (`compareAtPrice`), statut (`ACTIVE`, `HIDDEN`, `ON_QUOTE`, `PROMO`), photo principale et galerie.
+- **Description :** Gestion complète du catalogue : création avec galerie multi-photos, sélection d'image principale, catégories dynamiques chargées depuis l'API, variantes de tailles, prix de base et prix barré promo (`compareAtPrice`), statut (`ACTIVE`, `HIDDEN`, `ON_QUOTE`, `PROMO`).
 - **Critères d'acceptation :**
+  - L'upload d'images est interactif et lié aux endpoints API.
   - La suppression logique passe le produit en `HIDDEN`.
   - La recherche et le filtre par statut fonctionnent côté admin.
-- **Statut :** ⬜ À faire
+- **Statut :** ✅ Terminé
 
 ### Tâche 7.4 : Gestion des Stocks & Mouvements d'Inventaire
 - **Fichiers :** `app/admin/stock/page.tsx`, `lib/api/admin-catalog.ts`

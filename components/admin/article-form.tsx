@@ -19,6 +19,7 @@ import {
   SheetDescription,
   SheetFooter,
 } from '@/components/ui/sheet';
+import { ImageUploader } from '@/components/admin/image-uploader';
 import {
   ArrowLeft,
   Save,
@@ -481,11 +482,11 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
 
           {/* Quick preset thumbnail picker strip */}
           {(showPresetsBar || !coverImage) && (
-            <div className="p-4 rounded-2xl bg-white border border-[#ece8e1] shadow-xs space-y-2.5 animate-in fade-in-50 duration-200">
+            <div className="p-4 rounded-2xl bg-white border border-[#ece8e1] shadow-xs space-y-4 animate-in fade-in-50 duration-200">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-semibold text-[#1e2a1f] flex items-center gap-1.5">
                   <Sparkles size={13} className="text-[#24582d]" />
-                  Galerie florale Décofleur Plus (cliquez pour sélectionner) :
+                  Photo de couverture de l&apos;article :
                 </span>
                 <button
                   type="button"
@@ -495,27 +496,49 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
                   <X size={14} />
                 </button>
               </div>
-              <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-                {PRESET_IMAGES.map((preset, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => {
-                      setCoverImage(preset.url);
-                      setCoverImageCaption(preset.label);
-                      setShowPresetsBar(false);
-                      toast.success(`Couverture mise à jour : ${preset.label}`);
-                    }}
-                    className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all ${
-                      coverImage === preset.url
-                        ? 'border-[#24582d] ring-2 ring-[#24582d]/20 scale-95'
-                        : 'border-[#ece8e1] hover:border-[#24582d]/60 opacity-80 hover:opacity-100'
-                    }`}
-                    title={preset.label}
-                  >
-                    <img src={preset.url} alt={preset.label} className="w-full h-full object-cover" />
-                  </button>
-                ))}
+
+              {/* Uploader direct */}
+              <ImageUploader
+                folder="products"
+                multiple={false}
+                value={coverImage ? [coverImage] : []}
+                onChange={(urls) => {
+                  if (urls[0]) {
+                    setCoverImage(urls[0]);
+                    setShowPresetsBar(false);
+                  }
+                }}
+                label="Téléverser votre propre photo"
+                description="Glissez votre image ou cliquez pour parcourir. Format JPG, PNG, WebP. Max 5 Mo."
+              />
+
+              {/* Presets rapides */}
+              <div className="pt-2 border-t border-[#ece8e1]">
+                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block mb-2">
+                  Ou choisir parmi la galerie florale Décofleur :
+                </span>
+                <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+                  {PRESET_IMAGES.map((preset, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        setCoverImage(preset.url);
+                        setCoverImageCaption(preset.label);
+                        setShowPresetsBar(false);
+                        toast.success(`Couverture mise à jour : ${preset.label}`);
+                      }}
+                      className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all ${
+                        coverImage === preset.url
+                          ? 'border-[#24582d] ring-2 ring-[#24582d]/20 scale-95'
+                          : 'border-[#ece8e1] hover:border-[#24582d]/60 opacity-80 hover:opacity-100'
+                      }`}
+                      title={preset.label}
+                    >
+                      <img src={preset.url} alt={preset.label} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}

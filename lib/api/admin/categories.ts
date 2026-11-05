@@ -46,6 +46,7 @@ export async function getAdminCategories(): Promise<AdminCategory[]> {
         description: c.description || '',
         productCount: c._count?.products ?? 0,
         status: 'actif',
+        imageUrl: c.imageUrl || undefined,
       }));
     }
     return [];
@@ -72,6 +73,7 @@ export async function createAdminCategory(payload: CreateCategoryPayload): Promi
     description: data.description || '',
     productCount: 0,
     status: 'actif',
+    imageUrl: data.imageUrl || payload.imageUrl || undefined,
   };
 }
 
@@ -93,6 +95,7 @@ export async function updateAdminCategory(
     description: data.description || '',
     productCount: data._count?.products ?? 0,
     status: 'actif',
+    imageUrl: data.imageUrl || payload.imageUrl || undefined,
   };
 }
 

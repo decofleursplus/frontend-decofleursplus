@@ -31,6 +31,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { ImageUploader } from '@/components/admin/image-uploader';
 import {
   Search,
   Plus,
@@ -82,6 +83,7 @@ export default function AdminCategoriesPage() {
   const [formName, setFormName] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formStatus, setFormStatus] = useState<'actif' | 'inactif'>('actif');
+  const [formImage, setFormImage] = useState<string>('');
 
   // Delete modal state
   const [categoryToDelete, setCategoryToDelete] = useState<AdminCategory | null>(null);
@@ -104,6 +106,7 @@ export default function AdminCategoriesPage() {
     setFormName('');
     setFormDescription('');
     setFormStatus('actif');
+    setFormImage('');
     setIsFormDialogOpen(true);
   };
 
@@ -113,6 +116,7 @@ export default function AdminCategoriesPage() {
     setFormName(category.name);
     setFormDescription(category.description);
     setFormStatus(category.status);
+    setFormImage(category.imageUrl || '');
     setIsFormDialogOpen(true);
   };
 
@@ -132,6 +136,7 @@ export default function AdminCategoriesPage() {
         const updated = await updateAdminCategory(editingCategory.id, {
           name: formName.trim(),
           description: formDescription.trim(),
+          imageUrl: formImage.trim() || undefined,
         });
         setCategories((prev) =>
           prev.map((cat) => (cat.id === editingCategory.id ? { ...cat, ...updated, status: formStatus } : cat))
@@ -142,6 +147,7 @@ export default function AdminCategoriesPage() {
         const created = await createAdminCategory({
           name: formName.trim(),
           description: formDescription.trim(),
+          imageUrl: formImage.trim() || undefined,
         });
         setCategories((prev) => [{ ...created, status: formStatus }, ...prev]);
         toast.success('Catégorie créée avec succès');
@@ -300,9 +306,23 @@ export default function AdminCategoriesPage() {
               <TableRow key={category.id} className="hover:bg-[#faf8f4]/60 transition-colors">
                 <TableCell>
                   <div className="flex items-center gap-2.5">
-                    <div className="h-8 w-8 rounded-lg bg-[#edf8ef] text-[#24582d] flex items-center justify-center shrink-0">
-                      <FolderTree className="h-4 w-4" />
-                    </div>
+                    {category.imageUrl ? (
+                      <div className="h-8 w-8 rounded-lg overflow-hidden border border-[#e7e4dd] shrink-0">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={category.imageUrl}
+                          alt={category.name}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/images/bouquet-detail.jpg';
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="h-8 w-8 rounded-lg bg-[#edf8ef] text-[#24582d] flex items-center justify-center shrink-0">
+                        <FolderTree className="h-4 w-4" />
+                      </div>
+                    )}
                     <span className="font-semibold text-[#1e2a1f]">{category.name}</span>
                   </div>
                 </TableCell>
@@ -429,9 +449,23 @@ export default function AdminCategoriesPage() {
             {/* Header: Icon, Name & Status Badge */}
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="h-9 w-9 rounded-lg bg-[#edf8ef] text-[#24582d] flex items-center justify-center shrink-0">
-                  <FolderTree className="h-4 w-4" />
-                </div>
+                {category.imageUrl ? (
+                  <div className="h-9 w-9 rounded-lg overflow-hidden border border-[#e7e4dd] shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={category.imageUrl}
+                      alt={category.name}
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/images/bouquet-detail.jpg';
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="h-9 w-9 rounded-lg bg-[#edf8ef] text-[#24582d] flex items-center justify-center shrink-0">
+                    <FolderTree className="h-4 w-4" />
+                  </div>
+                )}
                 <div className="min-w-0">
                   <h3 className="font-bold text-sm text-[#1e2a1f] truncate">{category.name}</h3>
                   <p className="text-xs text-gray-400 mt-0.5">
@@ -568,6 +602,18 @@ export default function AdminCategoriesPage() {
                 onChange={(e) => setFormDescription(e.target.value)}
                 rows={3}
                 className="w-full rounded-lg border border-[#e7e4dd] p-3 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#24582d] focus:border-[#24582d]"
+              />
+            </div>
+
+            {/* Photo d'illustration */}
+            <div className="space-y-1.5">
+              <ImageUploader
+                folder="categories"
+                multiple={false}
+                value={formImage ? [formImage] : []}
+                onChange={(urls) => setFormImage(urls[0] || '')}
+                label="Photo d'illustration"
+                description="Format JPG, PNG, WebP. Max 5 Mo."
               />
             </div>
 

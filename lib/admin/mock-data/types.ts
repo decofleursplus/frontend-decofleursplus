@@ -93,6 +93,7 @@ export type AdminCategory = {
   description: string;
   productCount: number;
   status: 'actif' | 'inactif';
+  imageUrl?: string;
 };
 
 export type KpiData = {

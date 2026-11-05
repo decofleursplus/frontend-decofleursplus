@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -30,7 +30,9 @@ import {
   Upload,
   RefreshCw,
   Info,
+  Loader2,
 } from 'lucide-react';
+import { uploadAdminMedia } from '@/lib/api/admin/uploads';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -89,6 +91,32 @@ export default function AdminParametresPage() {
 
   // ── Boutique State ────────────────────────────────────────────────
   const [boutique, setBoutique] = useState<BoutiqueSettings>(initialBoutiqueSettings);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Le fichier ne doit pas dépasser 5 Mo.');
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    try {
+      const urls = await uploadAdminMedia([file], 'products');
+      if (urls[0]) {
+        setBoutique((prev) => ({ ...prev, logoUrl: urls[0] }));
+        toast.success('Logo téléversé avec succès sur le serveur.');
+      }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Échec du téléversement du logo.');
+    } finally {
+      setIsUploadingLogo(false);
+      if (logoInputRef.current) logoInputRef.current.value = '';
+    }
+  };
 
   // ── Users State ───────────────────────────────────────────────────
   const [users, setUsers] = useState<AdminUser[]>(initialAdminUsers);
@@ -400,31 +428,46 @@ export default function AdminParametresPage() {
                 <CardContent className="space-y-5 pt-5 text-xs">
                   {/* Logo de la boutique */}
                   <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-xl bg-gray-50/60 border border-gray-100">
-                    <div className="relative h-20 w-20 rounded-xl border border-gray-200 bg-white p-2 shadow-2xs flex items-center justify-center shrink-0">
-                      <Image
-                        src="/icons/icon-192.png"
+                    <div className="relative h-20 w-20 rounded-xl border border-gray-200 bg-white p-2 shadow-2xs flex items-center justify-center shrink-0 overflow-hidden">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={boutique.logoUrl || '/icons/icon-192.png'}
                         alt="Logo Décofleur Plus"
-                        width={64}
-                        height={64}
-                        className="object-contain"
+                        className="object-contain w-full h-full max-h-16"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/icons/icon-192.png';
+                        }}
                       />
                     </div>
                     <div className="space-y-1.5">
                       <h4 className="font-semibold text-gray-900 text-sm">
-                        Logo officiel de l'enseigne
+                        Logo officiel de l&apos;enseigne
                       </h4>
                       <p className="text-gray-500 text-[11px]">
-                        Affiché sur la facture PDF, les notifications et l'en-tête de votre vitrine. Format recommandé : PNG transparent ou SVG (min. 256x256 px).
+                        Affiché sur la facture PDF, les notifications et l&apos;en-tête de votre vitrine. Format recommandé : PNG transparent ou SVG (min. 256x256 px). Max 5 Mo.
                       </p>
+                      <input
+                        ref={logoInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        disabled={isUploadingLogo}
+                        className="hidden"
+                      />
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => toast.info('Sélecteur d’image ouvert. Format PNG/SVG supporté.')}
+                        disabled={isUploadingLogo}
+                        onClick={() => logoInputRef.current?.click()}
                         className="gap-1.5 text-xs h-8 text-[#c1647a] border-[#c1647a]/30 hover:bg-pink-50"
                       >
-                        <Upload className="h-3.5 w-3.5" />
-                        Changer le logo
+                        {isUploadingLogo ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Upload className="h-3.5 w-3.5" />
+                        )}
+                        <span>{isUploadingLogo ? 'Téléversement...' : 'Changer le logo'}</span>
                       </Button>
                     </div>
                   </div>

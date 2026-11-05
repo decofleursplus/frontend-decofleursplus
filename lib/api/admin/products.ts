@@ -22,15 +22,19 @@ export interface CreateProductPayload {
   subCategoryId?: string;
   basePrice: number;
   promoPrice?: number;
+  compareAtPrice?: number | null;
   status?: 'ACTIVE' | 'HIDDEN' | 'ON_QUOTE' | 'PROMO';
   isFeatured?: boolean;
   minStock?: number;
-  images?: Array<{ url: string; isPrimary?: boolean; order?: number }>;
+  featuredImage?: string | null;
+  images?: string[] | Array<{ url: string; isPrimary?: boolean; order?: number }>;
   variants?: Array<{
     name: string;
     sku: string;
     price: number;
-    stock: number;
+    stock?: number;
+    stockQuantity?: number;
+    minStockAlert?: number;
   }>;
 }
 
@@ -135,7 +139,44 @@ export async function getAdminProductById(id: string): Promise<AdminProduct | nu
  * Endpoint: POST /api/v1/admin/products
  */
 export async function createAdminProduct(payload: CreateProductPayload): Promise<AdminProduct> {
-  const res = await apiClient.post<any>('/admin/products', payload, { isAdmin: true });
+  const normalizedImages: string[] = Array.isArray(payload.images)
+    ? payload.images.map((img: any) => (typeof img === 'string' ? img : img.url)).filter(Boolean)
+    : [];
+
+  const featured = payload.featuredImage || normalizedImages[0] || undefined;
+  const slug = payload.slug || payload.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+  const backendPayload: any = {
+    name: payload.name,
+    slug,
+    description: payload.description,
+    categoryId: payload.categoryId,
+    basePrice: payload.basePrice,
+    status: payload.status || 'ACTIVE',
+    isFeatured: Boolean(payload.isFeatured),
+    featuredImage: featured,
+    images: normalizedImages,
+  };
+
+  if (payload.subCategoryId) {
+    backendPayload.subCategoryId = payload.subCategoryId;
+  }
+
+  if (payload.compareAtPrice && payload.compareAtPrice > payload.basePrice) {
+    backendPayload.compareAtPrice = payload.compareAtPrice;
+  }
+
+  if (payload.variants && payload.variants.length > 0) {
+    backendPayload.variants = payload.variants.map((v) => ({
+      name: v.name,
+      sku: v.sku,
+      price: v.price,
+      stockQuantity: v.stockQuantity ?? v.stock ?? 0,
+      minStockAlert: v.minStockAlert,
+    }));
+  }
+
+  const res = await apiClient.post<any>('/admin/products', backendPayload, { isAdmin: true });
   return mapBackendToAdminProduct(res);
 }
 
@@ -147,7 +188,28 @@ export async function updateAdminProduct(
   id: string,
   payload: Partial<CreateProductPayload>
 ): Promise<AdminProduct> {
-  const res = await apiClient.patch<any>(`/admin/products/${id}`, payload, { isAdmin: true });
+  const backendPayload: any = { ...payload };
+
+  if (payload.images) {
+    backendPayload.images = Array.isArray(payload.images)
+      ? payload.images.map((img: any) => (typeof img === 'string' ? img : img.url)).filter(Boolean)
+      : [];
+    if (!payload.featuredImage && backendPayload.images.length > 0) {
+      backendPayload.featuredImage = backendPayload.images[0];
+    }
+  }
+
+  if (payload.variants) {
+    backendPayload.variants = payload.variants.map((v) => ({
+      name: v.name,
+      sku: v.sku,
+      price: v.price,
+      stockQuantity: v.stockQuantity ?? v.stock ?? 0,
+      minStockAlert: v.minStockAlert,
+    }));
+  }
+
+  const res = await apiClient.patch<any>(`/admin/products/${id}`, backendPayload, { isAdmin: true });
   return mapBackendToAdminProduct(res);
 }
 

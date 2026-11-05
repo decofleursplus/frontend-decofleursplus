@@ -83,7 +83,7 @@
 - [x] **Tâche 6.3** : Rapports Financiers & Transactions (`/admin/rapports`, ventes par période & canal, bouton Actualiser) ✅
 
 ### Phase 7 : Catalogue Admin & Inventaire de Stock
-- [x] **Tâche 7.1** : Upload de Médias Produits & Catégories (`POST /admin/uploads`, multipart/form-data) ✅
+- [x] **Tâche 7.1** : Composant Reutilisable Upload de Médias Produits, Catégories, Blog, Marketing & Paramètres (`components/admin/image-uploader.tsx`, `POST /admin/uploads`, multipart/form-data) ✅
 - [x] **Tâche 7.2** : Gestion des Catégories & Sous-Catégories (`/admin/categories`, CRUD complet & réorganisation) ✅
 - [x] **Tâche 7.3** : Gestion des Produits Catalogue (`/admin/produits`, `/nouveau`, `/[id]`, formulaire complet) ✅
 - [x] **Tâche 7.4** : Gestion des Stocks & Mouvements d'Inventaire (`/admin/stock`, alertes réappro, ajustements) ✅
