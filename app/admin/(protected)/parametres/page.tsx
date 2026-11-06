@@ -60,7 +60,6 @@ import type {
 } from '@/lib/admin/mock-data/types';
 import {
   adminRolesList,
-  initialAdminUsers,
   adminPermissionsMatrix,
   initialBoutiqueSettings,
   initialDeliveryZones,
@@ -119,7 +118,7 @@ export default function AdminParametresPage() {
   };
 
   // ── Users State ───────────────────────────────────────────────────
-  const [users, setUsers] = useState<AdminUser[]>(initialAdminUsers);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [userSearch, setUserSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');

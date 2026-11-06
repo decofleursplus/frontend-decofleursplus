@@ -1,6 +1,5 @@
 import { apiClient } from '../client';
 import type { ReportDataset, ReportPeriodPreset, FinancialTransaction } from '@/lib/admin/mock-data/types';
-import { reportsDatasets } from '@/lib/admin/mock-data/reports';
 
 export interface FinancialTransactionsResult {
   items: FinancialTransaction[];
@@ -12,6 +11,45 @@ export interface FinancialTransactionsResult {
   };
 }
 
+export const emptyReportDataset: ReportDataset = {
+  periodLabel: 'Période en cours',
+  comparisonLabel: 'vs période précédente',
+  current: {
+    grossRevenue: 0,
+    ordersCount: 0,
+    averageOrderValue: 0,
+    newCustomersCount: 0,
+    returningCustomersCount: 0,
+    collectedAmount: 0,
+    pendingAmount: 0,
+    gatewayFees: 0,
+    netRevenue: 0,
+  },
+  previous: {
+    grossRevenue: 0,
+    ordersCount: 0,
+    averageOrderValue: 0,
+    newCustomersCount: 0,
+    returningCustomersCount: 0,
+    collectedAmount: 0,
+    pendingAmount: 0,
+    gatewayFees: 0,
+    netRevenue: 0,
+  },
+  deltas: {
+    revenueDelta: 0,
+    ordersDelta: 0,
+    aovDelta: 0,
+    customersDelta: 0,
+    netDelta: 0,
+  },
+  chartPoints: [],
+  topProducts: [],
+  categoriesBreakdown: [],
+  zonesBreakdown: [],
+  paymentBreakdown: [],
+};
+
 /**
  * Récupère le rapport d'activité et d'analyse des ventes
  * Endpoint: GET /api/v1/admin/reports
@@ -21,25 +59,38 @@ export async function getAdminReports(params?: {
   startDate?: string;
   endDate?: string;
 }): Promise<ReportDataset> {
-  const preset = params?.preset || '30days';
-
   try {
-    const data = await apiClient.get<ReportDataset>('/admin/reports', {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const res = await apiClient.get<any>('/admin/reports', {
       params: {
         preset: params?.preset,
         startDate: params?.startDate,
         endDate: params?.endDate,
       },
-      isAdmin: true,
+      useAdminToken: true,
+      cache: 'no-store',
     });
 
-    if (data && data.current) {
-      return data;
+    const dataObj = res?.data ?? res;
+
+    if (dataObj && dataObj.current) {
+      return {
+        periodLabel: dataObj.periodLabel || 'Ce mois-ci',
+        comparisonLabel: dataObj.comparisonLabel || 'vs mois dernier',
+        current: dataObj.current,
+        previous: dataObj.previous || emptyReportDataset.previous,
+        deltas: dataObj.deltas || emptyReportDataset.deltas,
+        chartPoints: Array.isArray(dataObj.chartPoints) ? dataObj.chartPoints : [],
+        topProducts: Array.isArray(dataObj.topProducts) ? dataObj.topProducts : [],
+        categoriesBreakdown: Array.isArray(dataObj.categoriesBreakdown) ? dataObj.categoriesBreakdown : [],
+        zonesBreakdown: Array.isArray(dataObj.zonesBreakdown) ? dataObj.zonesBreakdown : [],
+        paymentBreakdown: Array.isArray(dataObj.paymentBreakdown) ? dataObj.paymentBreakdown : [],
+      };
     }
     throw new Error('Données incomplètes');
   } catch (error) {
-    console.warn(`[Admin Reports] Utilisation du dataset mock pour le preset "${preset}":`, error);
-    return reportsDatasets[preset] || reportsDatasets['30days'];
+    console.warn('[Admin Reports] Erreur de récupération des rapports:', error);
+    return emptyReportDataset;
   }
 }
 
@@ -55,11 +106,8 @@ export async function getAdminFinancialTransactions(params?: {
   limit?: number;
 }): Promise<FinancialTransactionsResult> {
   try {
-    const res = await apiClient.get<{
-      items: FinancialTransaction[];
-      total: number;
-      summary?: { totalGross: number; totalFees: number; totalNet: number };
-    }>('/admin/reports/transactions', {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const res = await apiClient.get<any>('/admin/reports/transactions', {
       params: {
         search: params?.search,
         paymentMethod: params?.paymentMethod,
@@ -67,12 +115,27 @@ export async function getAdminFinancialTransactions(params?: {
         page: params?.page,
         limit: params?.limit,
       },
-      isAdmin: true,
+      useAdminToken: true,
+      cache: 'no-store',
     });
 
-    if (res && Array.isArray(res.items)) {
-      return res;
+    const dataObj = res?.data ?? res;
+
+    if (dataObj && Array.isArray(dataObj.items)) {
+      return {
+        items: dataObj.items,
+        total: dataObj.total ?? dataObj.items.length,
+        summary: dataObj.summary,
+      };
     }
+
+    if (Array.isArray(dataObj)) {
+      return {
+        items: dataObj,
+        total: dataObj.length,
+      };
+    }
+
     throw new Error('Données de transactions non reçues');
   } catch (error) {
     console.warn('[Admin Transactions] Erreur de récupération des transactions:', error);

@@ -2,7 +2,6 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { adminCategories } from '@/lib/admin/mock-data/categories';
 import type { AdminCategory } from '@/lib/admin/mock-data/types';
 import {
   getAdminCategories,
@@ -10,6 +9,7 @@ import {
   updateAdminCategory,
   deleteAdminCategory,
 } from '@/lib/api/admin/categories';
+import { ApiClientError } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -50,7 +50,7 @@ import {
 import { toast } from 'sonner';
 
 export default function AdminCategoriesPage() {
-  const [categories, setCategories] = useState<AdminCategory[]>(adminCategories);
+  const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -65,8 +65,8 @@ export default function AdminCategoriesPage() {
     try {
       const data = await getAdminCategories();
       setCategories(data);
-    } catch {
-      toast.error('Erreur lors du chargement des catégories');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Erreur lors du chargement des catégories');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -153,8 +153,17 @@ export default function AdminCategoriesPage() {
         toast.success('Catégorie créée avec succès');
       }
       setIsFormDialogOpen(false);
-    } catch {
-      toast.error('Erreur lors de l’enregistrement de la catégorie');
+    } catch (err: unknown) {
+      if (err instanceof ApiClientError && err.details && err.details.length > 0) {
+        const detailsStr = err.details
+          .map((d) => (d.path ? `${d.path}: ${d.message}` : d.message))
+          .join(', ');
+        toast.error(`Erreur de validation : ${detailsStr}`);
+      } else if (err instanceof Error) {
+        toast.error(err.message);
+      } else {
+        toast.error('Erreur lors de l’enregistrement de la catégorie');
+      }
     } finally {
       setSaving(false);
     }
@@ -179,8 +188,8 @@ export default function AdminCategoriesPage() {
       await deleteAdminCategory(categoryToDelete.id);
       setCategories((prev) => prev.filter((cat) => cat.id !== categoryToDelete.id));
       toast.success(`La catégorie "${categoryToDelete.name}" a été supprimée.`);
-    } catch {
-      toast.error('Impossible de supprimer la catégorie.');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Impossible de supprimer la catégorie.');
     } finally {
       setCategoryToDelete(null);
     }
@@ -409,16 +418,31 @@ export default function AdminCategoriesPage() {
               </TableRow>
             ))}
 
-            {filteredCategories.length === 0 && (
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="h-44 text-center text-gray-500">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <Loader2 className="h-8 w-8 text-[#c1647a] animate-spin" />
+                    <p className="font-medium text-gray-700">Chargement des catégories...</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : filteredCategories.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-44 text-center text-gray-500">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <FolderTree className="h-8 w-8 text-gray-300" />
-                    <p className="font-medium text-gray-700">Aucune catégorie trouvée.</p>
-                    <p className="text-xs text-gray-400">
-                      Modifiez votre recherche ou réinitialisez les filtres.
+                    <p className="font-medium text-gray-700">
+                      {searchQuery || statusFilter !== 'all'
+                        ? 'Aucune catégorie ne correspond aux critères.'
+                        : 'Aucune catégorie enregistrée pour le moment.'}
                     </p>
-                    {(searchQuery || statusFilter !== 'all') && (
+                    <p className="text-xs text-gray-400">
+                      {searchQuery || statusFilter !== 'all'
+                        ? 'Modifiez votre recherche ou réinitialisez les filtres.'
+                        : 'Créez votre première catégorie pour organiser vos produits.'}
+                    </p>
+                    {searchQuery || statusFilter !== 'all' ? (
                       <Button
                         variant="outline"
                         size="sm"
@@ -430,11 +454,21 @@ export default function AdminCategoriesPage() {
                       >
                         Réinitialiser la recherche
                       </Button>
+                    ) : (
+                      <Button
+                        variant="cta"
+                        size="sm"
+                        onClick={handleOpenCreateDialog}
+                        className="mt-2 text-xs bg-[#c1647a] hover:bg-[#a9576a] !text-white"
+                      >
+                        <Plus className="mr-1.5 h-3.5 w-3.5" />
+                        Créer une catégorie
+                      </Button>
                     )}
                   </div>
                 </TableCell>
               </TableRow>
-            )}
+            ) : null}
           </TableBody>
         </Table>
       </div>
@@ -535,14 +569,25 @@ export default function AdminCategoriesPage() {
           </div>
         ))}
 
-        {filteredCategories.length === 0 && (
+        {loading ? (
+          <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center space-y-2">
+            <Loader2 className="h-8 w-8 text-[#c1647a] animate-spin mx-auto" />
+            <p className="font-semibold text-sm text-gray-700">Chargement des catégories...</p>
+          </div>
+        ) : filteredCategories.length === 0 ? (
           <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center space-y-2">
             <FolderTree className="h-8 w-8 text-gray-300 mx-auto" />
-            <p className="font-semibold text-sm text-gray-700">Aucune catégorie trouvée</p>
-            <p className="text-xs text-gray-400">
-              Modifiez votre recherche ou réinitialisez les filtres.
+            <p className="font-semibold text-sm text-gray-700">
+              {searchQuery || statusFilter !== 'all'
+                ? 'Aucune catégorie trouvée'
+                : 'Aucune catégorie enregistrée'}
             </p>
-            {(searchQuery || statusFilter !== 'all') && (
+            <p className="text-xs text-gray-400">
+              {searchQuery || statusFilter !== 'all'
+                ? 'Modifiez votre recherche ou réinitialisez les filtres.'
+                : 'Créez votre première catégorie pour organiser vos produits.'}
+            </p>
+            {searchQuery || statusFilter !== 'all' ? (
               <Button
                 variant="outline"
                 size="sm"
@@ -554,9 +599,19 @@ export default function AdminCategoriesPage() {
               >
                 Réinitialiser
               </Button>
+            ) : (
+              <Button
+                variant="cta"
+                size="sm"
+                onClick={handleOpenCreateDialog}
+                className="mt-2 text-xs bg-[#c1647a] hover:bg-[#a9576a] !text-white"
+              >
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                Créer une catégorie
+              </Button>
             )}
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Modal Dialog: Add / Edit Category */}

@@ -173,6 +173,14 @@ export async function getAdminDeliveries(params?: GetAdminDeliveriesParams): Pro
     });
 
     if (res && typeof res === 'object') {
+      const dataObj = res.data ?? res;
+      if (Array.isArray(dataObj.items)) {
+        return {
+          deliveries: dataObj.items.map(transformAdminDelivery),
+          total: dataObj.total ?? dataObj.items.length,
+          counts: dataObj.counts ?? res.counts,
+        };
+      }
       if (Array.isArray(res.deliveries)) {
         return {
           deliveries: res.deliveries.map(transformAdminDelivery),

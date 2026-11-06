@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { adminOrders } from '@/lib/admin/mock-data/orders';
 import type { OrderStatus, AdminOrder } from '@/lib/admin/mock-data/types';
 import { getAdminOrders, updateAdminOrderStatus } from '@/lib/api/admin/orders';
+import { ApiClientError } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -41,13 +41,14 @@ import {
   ArrowUpDown,
   ShoppingBag,
   RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
 export default function AdminOrdersPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [orders, setOrders] = useState<AdminOrder[]>(adminOrders);
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -115,8 +116,9 @@ export default function AdminOrdersPage() {
       if (res?.orders) {
         setOrders(res.orders);
       }
-    } catch {
-      toast.error('Erreur lors du chargement des commandes');
+    } catch (err) {
+      const msg = err instanceof ApiClientError ? err.message : 'Erreur lors du chargement des commandes';
+      toast.error(msg);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -488,11 +490,35 @@ export default function AdminOrdersPage() {
 
       {/* Mobile Orders Card View (visible on < lg) */}
       <div className="space-y-3 lg:hidden">
-        {filteredOrders.map((order) => (
-          <div
-            key={order.id}
-            className="bg-white rounded-xl border border-[#e7e4dd] p-3.5 shadow-2xs space-y-2.5"
-          >
+        {loading ? (
+          <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-gray-500 flex flex-col items-center justify-center gap-2">
+            <Loader2 className="h-6 w-6 animate-spin text-[#24582d]" />
+            <p className="text-xs text-gray-500">Chargement des commandes...</p>
+          </div>
+        ) : filteredOrders.length === 0 ? (
+          <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-gray-500 space-y-2">
+            <ShoppingBag className="h-8 w-8 text-gray-300 mx-auto" />
+            <p className="font-medium text-gray-700 text-sm">Aucune commande trouvée</p>
+            <p className="text-xs text-gray-400">
+              {orders.length === 0 ? "Aucune commande n'a encore été passée sur la boutique." : "Essayez de modifier votre recherche ou vos filtres."}
+            </p>
+            {activeFiltersCount > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleResetFilters}
+                className="mt-2 text-xs border-[#e7e4dd]"
+              >
+                Effacer les filtres
+              </Button>
+            )}
+          </div>
+        ) : (
+          filteredOrders.map((order) => (
+            <div
+              key={order.id}
+              className="bg-white rounded-xl border border-[#e7e4dd] p-3.5 shadow-2xs space-y-2.5"
+            >
             <div className="flex items-center justify-between">
               <Link
                 href={`/admin/commandes/${order.id}`}
@@ -589,22 +615,7 @@ export default function AdminOrdersPage() {
               </Link>
             </div>
           </div>
-        ))}
-
-        {filteredOrders.length === 0 && (
-          <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-gray-500 space-y-2">
-            <ShoppingBag className="h-8 w-8 text-gray-300 mx-auto" />
-            <p className="font-medium text-gray-700 text-sm">Aucune commande trouvée</p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleResetFilters}
-              className="mt-2 text-xs border-[#e7e4dd]"
-            >
-              Effacer les filtres
-            </Button>
-          </div>
-        )}
+        )))}
       </div>
 
       {/* Orders Desktop Table (visible on lg+) */}
@@ -623,111 +634,124 @@ export default function AdminOrdersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredOrders.map((order) => (
-              <TableRow key={order.id} className="hover:bg-[#faf8f4]/60 transition-colors">
-                <TableCell className="font-mono font-medium text-[#1e2a1f]">
-                  <Link href={`/admin/commandes/${order.id}`} className="hover:underline hover:text-[#24582d]">
-                    {order.ref}
-                  </Link>
-                </TableCell>
-                <TableCell className="text-gray-600 text-sm">
-                  {formatDate(order.date)}
-                </TableCell>
-                <TableCell>
-                  <div className="font-medium text-[#1e2a1f]">{order.customerName}</div>
-                  <div className="text-xs text-gray-500 font-mono">ID: {order.customerId}</div>
-                </TableCell>
-                <TableCell className="text-gray-600 text-sm">
-                  {order.items.length} article{order.items.length > 1 ? 's' : ''}
-                </TableCell>
-                <TableCell className="text-right font-semibold text-[#24582d]">
-                  {formatCurrency(order.total)}
-                </TableCell>
-                <TableCell>{getStatusBadge(order.status)}</TableCell>
-                <TableCell>
-                  <span className="text-xs text-gray-600 bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200">
-                    {order.deliveryMode}
-                  </span>
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-gray-500 hover:text-[#24582d] hover:bg-[#edf8ef] hover:border-[#b0c8a8] transition-colors focus:outline-none">
-                      <span className="sr-only">Ouvrir le menu</span>
-                      <MoreHorizontal className="h-4 w-4" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" sideOffset={4} className="w-56 p-1.5 rounded-xl border border-[#e7e4dd] bg-white shadow-xl">
-                      <DropdownMenuGroup>
-                        <DropdownMenuLabel className="px-2.5 py-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                          Actions
-                        </DropdownMenuLabel>
-                        <DropdownMenuItem
-                          className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef] transition-colors whitespace-nowrap"
-                          render={<Link href={`/admin/commandes/${order.id}`} />}
-                        >
-                          <Eye className="mr-2.5 h-4 w-4 text-[#24582d]" />
-                          Détails de la commande
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef] transition-colors whitespace-nowrap"
-                          onClick={() => toast.info('Impression facture lancée')}
-                        >
-                          <Printer className="mr-2.5 h-4 w-4 text-gray-500" />
-                          Imprimer facture
-                        </DropdownMenuItem>
-                      </DropdownMenuGroup>
-
-                      <DropdownMenuSeparator className="my-1 border-t border-[#f0eee8]" />
-
-                      <DropdownMenuGroup>
-                        <DropdownMenuLabel className="px-2.5 py-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                          Mettre à jour
-                        </DropdownMenuLabel>
-                        <DropdownMenuItem
-                          className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-[#3d5a99] transition-colors whitespace-nowrap"
-                          onClick={() => handleUpdateStatus(order.id, 'en_livraison')}
-                        >
-                          <Truck className="mr-2.5 h-4 w-4 text-[#3d5a99]" />
-                          En livraison
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:bg-emerald-50 hover:text-[#166534] transition-colors whitespace-nowrap"
-                          onClick={() => handleUpdateStatus(order.id, 'livree')}
-                        >
-                          <CheckCircle className="mr-2.5 h-4 w-4 text-[#166534]" />
-                          Marquer livrée
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors whitespace-nowrap focus:text-red-700 focus:bg-red-50"
-                          onClick={() => handleUpdateStatus(order.id, 'annulee')}
-                        >
-                          <XCircle className="mr-2.5 h-4 w-4 text-red-600" />
-                          Annuler commande
-                        </DropdownMenuItem>
-                      </DropdownMenuGroup>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={8} className="h-40 text-center text-gray-500">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <Loader2 className="h-6 w-6 animate-spin text-[#24582d]" />
+                    <p className="text-xs text-gray-500">Chargement des commandes...</p>
+                  </div>
                 </TableCell>
               </TableRow>
-            ))}
-
-            {filteredOrders.length === 0 && (
+            ) : filteredOrders.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="h-40 text-center text-gray-500">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <ShoppingBag className="h-8 w-8 text-gray-300" />
                     <p className="font-medium text-gray-700">Aucune commande ne correspond aux critères.</p>
-                    <p className="text-xs text-gray-400">Essayez de modifier votre recherche ou de réinitialiser vos filtres.</p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleResetFilters}
-                      className="mt-2 text-xs border-[#e7e4dd]"
-                    >
-                      Effacer les filtres
-                    </Button>
+                    <p className="text-xs text-gray-400">
+                      {orders.length === 0 ? "Aucune commande n'a encore été enregistrée." : "Essayez de modifier votre recherche ou de réinitialiser vos filtres."}
+                    </p>
+                    {activeFiltersCount > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleResetFilters}
+                        className="mt-2 text-xs border-[#e7e4dd]"
+                      >
+                        Effacer les filtres
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
+            ) : (
+              filteredOrders.map((order) => (
+                <TableRow key={order.id} className="hover:bg-[#faf8f4]/60 transition-colors">
+                  <TableCell className="font-mono font-medium text-[#1e2a1f]">
+                    <Link href={`/admin/commandes/${order.id}`} className="hover:underline hover:text-[#24582d]">
+                      {order.ref}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-gray-600 text-sm">
+                    {formatDate(order.date)}
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-medium text-[#1e2a1f]">{order.customerName}</div>
+                    <div className="text-xs text-gray-500 font-mono">ID: {order.customerId}</div>
+                  </TableCell>
+                  <TableCell className="text-gray-600 text-sm">
+                    {order.items.length} article{order.items.length > 1 ? 's' : ''}
+                  </TableCell>
+                  <TableCell className="text-right font-semibold text-[#24582d]">
+                    {formatCurrency(order.total)}
+                  </TableCell>
+                  <TableCell>{getStatusBadge(order.status)}</TableCell>
+                  <TableCell>
+                    <span className="text-xs text-gray-600 bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200">
+                      {order.deliveryMode}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-gray-500 hover:text-[#24582d] hover:bg-[#edf8ef] hover:border-[#b0c8a8] transition-colors focus:outline-none">
+                        <span className="sr-only">Ouvrir le menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" sideOffset={4} className="w-56 p-1.5 rounded-xl border border-[#e7e4dd] bg-white shadow-xl">
+                        <DropdownMenuGroup>
+                          <DropdownMenuLabel className="px-2.5 py-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                            Actions
+                          </DropdownMenuLabel>
+                          <DropdownMenuItem
+                            className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef] transition-colors whitespace-nowrap"
+                            render={<Link href={`/admin/commandes/${order.id}`} />}
+                          >
+                            <Eye className="mr-2.5 h-4 w-4 text-[#24582d]" />
+                            Détails de la commande
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef] transition-colors whitespace-nowrap"
+                            onClick={() => toast.info('Impression facture lancée')}
+                          >
+                            <Printer className="mr-2.5 h-4 w-4 text-gray-500" />
+                            Imprimer facture
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
+
+                        <DropdownMenuSeparator className="my-1 border-t border-[#f0eee8]" />
+
+                        <DropdownMenuGroup>
+                          <DropdownMenuLabel className="px-2.5 py-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                            Mettre à jour
+                          </DropdownMenuLabel>
+                          <DropdownMenuItem
+                            className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-[#3d5a99] transition-colors whitespace-nowrap"
+                            onClick={() => handleUpdateStatus(order.id, 'en_livraison')}
+                          >
+                            <Truck className="mr-2.5 h-4 w-4 text-[#3d5a99]" />
+                            En livraison
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:bg-emerald-50 hover:text-[#166534] transition-colors whitespace-nowrap"
+                            onClick={() => handleUpdateStatus(order.id, 'livree')}
+                          >
+                            <CheckCircle className="mr-2.5 h-4 w-4 text-[#166534]" />
+                            Marquer livrée
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors whitespace-nowrap focus:text-red-700 focus:bg-red-50"
+                            onClick={() => handleUpdateStatus(order.id, 'annulee')}
+                          >
+                            <XCircle className="mr-2.5 h-4 w-4 text-red-600" />
+                            Annuler commande
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
             )}
           </TableBody>
         </Table>

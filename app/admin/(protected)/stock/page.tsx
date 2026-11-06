@@ -3,11 +3,10 @@
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { adminProducts } from '@/lib/admin/mock-data/products';
-import { initialStockMovements } from '@/lib/admin/mock-data/stock';
 import type { AdminProduct, StockMovement, StockMovementType } from '@/lib/admin/mock-data/types';
 import { getAdminProducts } from '@/lib/api/admin/products';
 import { getStockMovements, recordStockMovement } from '@/lib/api/admin/stock';
+import { ApiClientError } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -48,10 +47,11 @@ import {
 import { toast } from 'sonner';
 
 export default function AdminStockPage() {
-  const [products, setProducts] = useState<AdminProduct[]>(adminProducts);
-  const [movements, setMovements] = useState<StockMovement[]>(initialStockMovements);
+  const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [movements, setMovements] = useState<StockMovement[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [isSubmittingAdjust, setIsSubmittingAdjust] = useState(false);
 
   async function loadStockData(isRefresh = false) {
     if (isRefresh) setRefreshing(true);
@@ -62,8 +62,8 @@ export default function AdminStockPage() {
         getAdminProducts({ limit: 100 }),
         getStockMovements({ limit: 50 }),
       ]);
-      if (prodsRes?.items && prodsRes.items.length > 0) setProducts(prodsRes.items);
-      if (mvtsRes && Array.isArray(mvtsRes) && mvtsRes.length > 0) setMovements(mvtsRes);
+      setProducts(prodsRes?.items || []);
+      setMovements(mvtsRes || []);
     } catch {
       toast.error('Erreur lors du chargement des données de stock');
     } finally {
@@ -217,71 +217,51 @@ export default function AdminStockPage() {
   }, [selectedProduct, adjustType, adjustQuantity]);
 
   // Save stock adjustment
-  const handleSaveAdjustment = (e: React.FormEvent) => {
+  const handleSaveAdjustment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProduct) return;
 
     const previousStock = selectedProduct.stock;
     const finalStock = calculatedNewStock;
     const finalReason = customNote.trim() ? `${adjustReason} (${customNote.trim()})` : adjustReason;
+    const targetVariantId = selectedProduct.variantId || selectedProduct.id;
 
-    // Determine new status for the product
-    const finalMinStock = Math.max(0, newMinStock);
-    let finalStatus: AdminProduct['status'] = 'actif';
-    if (finalStock === 0) {
-      finalStatus = 'rupture';
-    }
-
-    // 1. Update product
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === selectedProduct.id
-          ? {
-              ...p,
-              stock: finalStock,
-              minStock: finalMinStock,
-              status: finalStatus,
-            }
-          : p
-      )
-    );
-
-    // 2. Add movement record
-    const newMovement: StockMovement = {
-      id: `mvt-${Date.now()}`,
-      productId: selectedProduct.id,
-      productName: selectedProduct.name,
-      productSku: selectedProduct.sku,
-      type: adjustType,
-      quantity: adjustType === 'ajustement' ? Math.abs(finalStock - previousStock) : adjustQuantity,
-      previousStock,
-      newStock: finalStock,
-      reason: finalReason,
-      date: new Date().toISOString(),
-      author: 'Admin Décofleur',
-    };
-
-    setMovements((prev) => [newMovement, ...prev]);
-
-    // 3. Sync with backend API
-    const typeMapping: Record<StockMovementType, 'IN' | 'OUT' | 'ADJUSTMENT'> = {
-      entree: 'IN',
-      sortie: 'OUT',
+    const typeMapping: Record<StockMovementType, 'ENTRY' | 'EXIT' | 'ADJUSTMENT'> = {
+      entree: 'ENTRY',
+      sortie: 'EXIT',
       ajustement: 'ADJUSTMENT',
     };
-    recordStockMovement(selectedProduct.id, {
-      type: typeMapping[adjustType] || 'ADJUSTMENT',
-      quantity: adjustType === 'ajustement' ? Math.abs(finalStock - previousStock) : adjustQuantity,
-      reason: finalReason,
-    }).catch((err) => {
-      console.warn('[Stock Adjustment API]', err);
-    });
 
-    toast.success(`Stock mis à jour pour « ${selectedProduct.name} »`, {
-      description: `Stock passé de ${previousStock} à ${finalStock} unités.`,
-    });
+    const adjustmentQuantity =
+      adjustType === 'ajustement'
+        ? finalStock
+        : Math.max(1, adjustQuantity);
 
-    setIsAdjustModalOpen(false);
+    setIsSubmittingAdjust(true);
+    try {
+      await recordStockMovement(targetVariantId, {
+        type: typeMapping[adjustType] || 'ADJUSTMENT',
+        quantity: adjustmentQuantity,
+        reason: finalReason,
+      });
+
+      toast.success(`Stock mis à jour pour « ${selectedProduct.name} »`, {
+        description: `Nouveau stock effectif : ${finalStock} unités.`,
+      });
+
+      await loadStockData(true);
+      setIsAdjustModalOpen(false);
+    } catch (err: unknown) {
+      if (err instanceof ApiClientError && err.details && err.details.length > 0) {
+        toast.error(`Erreur de validation : ${err.details.map((d) => d.message).join(', ')}`);
+      } else if (err instanceof Error) {
+        toast.error(err.message);
+      } else {
+        toast.error('Impossible d’enregistrer le mouvement de stock sur le serveur.');
+      }
+    } finally {
+      setIsSubmittingAdjust(false);
+    }
   };
 
   // Status badge helper
@@ -663,7 +643,16 @@ export default function AdminStockPage() {
                   );
                 })}
 
-                {filteredProducts.length === 0 && (
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-44 text-center text-gray-500">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <Loader2 className="h-7 w-7 text-[#c1647a] animate-spin" />
+                        <p className="font-medium text-gray-600 text-sm">Chargement des données de stock...</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : filteredProducts.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="h-44 text-center text-gray-500">
                       <div className="flex flex-col items-center justify-center gap-2">
@@ -689,14 +678,19 @@ export default function AdminStockPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                )}
+                ) : null}
               </TableBody>
             </Table>
           </div>
 
           {/* Stock Mobile Card View */}
           <div className="lg:hidden space-y-3">
-            {filteredProducts.length === 0 ? (
+            {loading ? (
+              <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-gray-500 space-y-2">
+                <Loader2 className="h-7 w-7 text-[#c1647a] animate-spin mx-auto" />
+                <p className="text-xs font-medium">Chargement des données de stock...</p>
+              </div>
+            ) : filteredProducts.length === 0 ? (
               <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-gray-500 space-y-2">
                 <Package className="h-8 w-8 text-gray-300 mx-auto" />
                 <p className="text-xs font-medium">Aucun produit ne correspond à ces critères.</p>
@@ -868,47 +862,16 @@ export default function AdminStockPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredMovements.map((m) => (
-                  <TableRow key={m.id} className="hover:bg-[#faf8f4]/60 transition-colors">
-                    <TableCell className="text-xs text-gray-600 whitespace-nowrap">
-                      {formatDate(m.date)}
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-semibold text-[#1e2a1f] block text-sm">
-                        {m.productName}
-                      </span>
-                      <span className="text-[11px] font-mono text-gray-400">{m.productSku}</span>
-                    </TableCell>
-                    <TableCell>{getMovementTypeBadge(m.type)}</TableCell>
-                    <TableCell className="text-center font-mono font-bold text-sm">
-                      {m.type === 'entree' ? (
-                        <span className="text-[#166534]">+{m.quantity}</span>
-                      ) : m.type === 'sortie' ? (
-                        <span className="text-[#cc0000]">-{m.quantity}</span>
-                      ) : (
-                        <span className="text-[#3d5a99]">{m.quantity}</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="max-w-[200px]">
-                      <div className="flex items-center justify-between gap-1.5">
-                        <span className="text-xs text-gray-700 truncate block" title={m.reason}>
-                          {m.reason}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedMovementForReason(m)}
-                          className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-gray-400 hover:text-[#24582d] hover:bg-[#edf8ef] transition-colors"
-                          title="Afficher le motif complet"
-                        >
-                          <Maximize2 className="h-3 w-3" />
-                        </button>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-40 text-center text-gray-500">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <Loader2 className="h-6 w-6 animate-spin text-[#24582d]" />
+                        <p className="text-xs text-gray-500">Chargement de l'historique des mouvements...</p>
                       </div>
                     </TableCell>
-                    <TableCell className="text-right text-xs text-gray-500">{m.author}</TableCell>
                   </TableRow>
-                ))}
-
-                {filteredMovements.length === 0 && (
+                ) : filteredMovements.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="h-40 text-center text-gray-500">
                       <div className="flex flex-col items-center justify-center gap-2">
@@ -920,6 +883,46 @@ export default function AdminStockPage() {
                       </div>
                     </TableCell>
                   </TableRow>
+                ) : (
+                  filteredMovements.map((m) => (
+                    <TableRow key={m.id} className="hover:bg-[#faf8f4]/60 transition-colors">
+                      <TableCell className="text-xs text-gray-600 whitespace-nowrap">
+                        {formatDate(m.date)}
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-semibold text-[#1e2a1f] block text-sm">
+                          {m.productName}
+                        </span>
+                        <span className="text-[11px] font-mono text-gray-400">{m.productSku}</span>
+                      </TableCell>
+                      <TableCell>{getMovementTypeBadge(m.type)}</TableCell>
+                      <TableCell className="text-center font-mono font-bold text-sm">
+                        {m.type === 'entree' ? (
+                          <span className="text-[#166534]">+{m.quantity}</span>
+                        ) : m.type === 'sortie' ? (
+                          <span className="text-[#cc0000]">-{m.quantity}</span>
+                        ) : (
+                          <span className="text-[#3d5a99]">{m.quantity}</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="max-w-[200px]">
+                        <div className="flex items-center justify-between gap-1.5">
+                          <span className="text-xs text-gray-700 truncate block" title={m.reason}>
+                            {m.reason}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedMovementForReason(m)}
+                            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-gray-400 hover:text-[#24582d] hover:bg-[#edf8ef] transition-colors"
+                            title="Afficher le motif complet"
+                          >
+                            <Maximize2 className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right text-xs text-gray-500">{m.author}</TableCell>
+                    </TableRow>
+                  ))
                 )}
               </TableBody>
             </Table>
@@ -927,7 +930,12 @@ export default function AdminStockPage() {
 
           {/* Movement Mobile Cards */}
           <div className="lg:hidden space-y-3">
-            {filteredMovements.length === 0 ? (
+            {loading ? (
+              <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-gray-500 flex flex-col items-center justify-center gap-2">
+                <Loader2 className="h-6 w-6 animate-spin text-[#24582d]" />
+                <p className="text-xs text-gray-500">Chargement de l'historique...</p>
+              </div>
+            ) : filteredMovements.length === 0 ? (
               <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-gray-500 space-y-2">
                 <History className="h-8 w-8 text-gray-300 mx-auto" />
                 <p className="font-medium text-gray-700 text-xs">Aucun mouvement enregistré.</p>

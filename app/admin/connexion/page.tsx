@@ -16,7 +16,7 @@ export default function AdminLoginPage() {
       <div className="text-center mb-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Espace d&apos;administration</h1>
         <p className="text-sm text-gray-500">
-          Veuillez vous connecter pour accéder au back-office.
+          Veuillez renseigner vos identifiants pour accéder au back-office.
         </p>
       </div>
 
@@ -35,10 +35,10 @@ export default function AdminLoginPage() {
             id="email"
             name="email"
             type="email"
-            placeholder="admin@decofleur.com"
+            placeholder="votre-adresse@decofleurplus.sn"
             required
+            autoComplete="username"
             className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20 h-12"
-            defaultValue="admin@decofleur.com"
           />
         </div>
 
@@ -53,8 +53,9 @@ export default function AdminLoginPage() {
             name="password"
             type="password"
             required
+            autoComplete="current-password"
+            placeholder="••••••••••••"
             className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20 h-12"
-            defaultValue="admin123"
           />
         </div>
 

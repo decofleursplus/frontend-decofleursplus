@@ -25,9 +25,27 @@ export default function AdminFournisseurDetailPage({ params }: { params: Promise
   const resolvedParams = use(params);
   const [activeTab, setActiveTab] = useState<'infos' | 'produits' | 'commandes' | 'factures' | 'historique'>('infos');
 
-  const supplier = initialSuppliers.find((s) => s.id === resolvedParams.id) || initialSuppliers[0];
-  const orders = initialSupplierOrders.filter((o) => o.supplierId === supplier.id);
-  const invoices = initialSupplierInvoices.filter((i) => i.supplierId === supplier.id);
+  const supplier = initialSuppliers.find((s) => s.id === resolvedParams.id);
+  const orders = supplier ? initialSupplierOrders.filter((o) => o.supplierId === supplier.id) : [];
+  const invoices = supplier ? initialSupplierInvoices.filter((i) => i.supplierId === supplier.id) : [];
+
+  if (!supplier) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8 space-y-4">
+        <Building2 className="w-12 h-12 text-gray-400" />
+        <h2 className="text-xl font-serif font-bold text-gray-800">Fournisseur introuvable</h2>
+        <p className="text-xs text-gray-500 max-w-md">
+          Ce fournisseur n&apos;existe pas ou le module d&apos;approvisionnement est en attente d&apos;implémentation backend (spécifications complètes dans docs/endpoints_feedback.md).
+        </p>
+        <Link
+          href="/admin/fournisseurs"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#193e23] text-white text-xs font-semibold"
+        >
+          <ArrowLeft size={14} /> Retour aux fournisseurs
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

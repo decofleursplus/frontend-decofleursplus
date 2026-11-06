@@ -2,12 +2,10 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
-  adminDeliveries,
-  adminDrivers,
   type AdminDelivery,
   type DeliveryDriver,
   type DeliveryStatus,
-} from '@/lib/admin/mock-data';
+} from '@/lib/admin/mock-data/types';
 import {
   getAdminDeliveries,
   getAdminDrivers,
@@ -17,6 +15,7 @@ import {
   createAdminDriver,
   updateAdminDriver,
 } from '@/lib/api/admin/deliveries';
+import { ApiClientError } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -47,6 +46,7 @@ import {
   Power,
   ChevronRight,
   RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AssignDriverDialog } from '@/components/admin/assign-driver-dialog';
@@ -59,8 +59,8 @@ export default function AdminDeliveriesPage() {
   const [mainTab, setMainTab] = useState<'courses' | 'livreurs'>('courses');
 
   // Deliveries and Drivers State
-  const [deliveries, setDeliveries] = useState<AdminDelivery[]>(adminDeliveries);
-  const [drivers, setDrivers] = useState<DeliveryDriver[]>(adminDrivers);
+  const [deliveries, setDeliveries] = useState<AdminDelivery[]>([]);
+  const [drivers, setDrivers] = useState<DeliveryDriver[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -75,8 +75,9 @@ export default function AdminDeliveriesPage() {
       ]);
       if (delRes?.deliveries) setDeliveries(delRes.deliveries);
       if (drvRes && Array.isArray(drvRes)) setDrivers(drvRes);
-    } catch {
-      toast.error('Erreur lors du chargement des livraisons et livreurs');
+    } catch (err) {
+      const msg = err instanceof ApiClientError ? err.message : 'Erreur lors du chargement des livraisons et livreurs';
+      toast.error(msg);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -861,26 +862,39 @@ export default function AdminDeliveriesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredDeliveries.length === 0 ? (
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-36 text-center">
+                      <div className="flex flex-col items-center justify-center text-gray-500 gap-2">
+                        <Loader2 className="h-6 w-6 animate-spin text-[#c1647a]" />
+                        <p className="text-xs text-gray-500">Chargement des livraisons...</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : filteredDeliveries.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="h-36 text-center">
                       <div className="flex flex-col items-center justify-center text-gray-500 space-y-2">
                         <Truck className="h-8 w-8 text-gray-300" />
-                        <p className="text-xs font-medium">Aucune livraison trouvée pour ces critères.</p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setStatusFilter('all');
-                            setZoneFilter('all');
-                            setDriverFilter('all');
-                            setModeFilter('all');
-                            setSearchQuery('');
-                          }}
-                          className="text-xs border-[#e7e4dd] mt-1"
-                        >
-                          Réinitialiser la recherche
-                        </Button>
+                        <p className="text-xs font-medium">
+                          {deliveries.length === 0 ? "Aucune livraison n'a encore été planifiée." : "Aucune livraison trouvée pour ces critères."}
+                        </p>
+                        {deliveries.length > 0 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setStatusFilter('all');
+                              setZoneFilter('all');
+                              setDriverFilter('all');
+                              setModeFilter('all');
+                              setSearchQuery('');
+                            }}
+                            className="text-xs border-[#e7e4dd] mt-1"
+                          >
+                            Réinitialiser la recherche
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -1056,24 +1070,33 @@ export default function AdminDeliveriesPage() {
 
           {/* Deliveries Mobile Card View */}
           <div className="lg:hidden space-y-3">
-            {filteredDeliveries.length === 0 ? (
+            {loading ? (
+              <div className="bg-white border border-[#e7e4dd] rounded-xl p-8 text-center text-gray-500 flex flex-col items-center justify-center gap-2">
+                <Loader2 className="h-6 w-6 animate-spin text-[#c1647a]" />
+                <p className="text-xs text-gray-500">Chargement des livraisons...</p>
+              </div>
+            ) : filteredDeliveries.length === 0 ? (
               <div className="bg-white border border-[#e7e4dd] rounded-xl p-8 text-center text-gray-500 space-y-2">
                 <Truck className="h-8 w-8 text-gray-300 mx-auto" />
-                <p className="text-xs font-medium">Aucune livraison trouvée pour ces critères.</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setStatusFilter('all');
-                    setZoneFilter('all');
-                    setDriverFilter('all');
-                    setModeFilter('all');
-                    setSearchQuery('');
-                  }}
-                  className="text-xs border-[#e7e4dd] mt-1"
-                >
-                  Réinitialiser la recherche
-                </Button>
+                <p className="text-xs font-medium">
+                  {deliveries.length === 0 ? "Aucune livraison n'a encore été planifiée." : "Aucune livraison trouvée pour ces critères."}
+                </p>
+                {deliveries.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setStatusFilter('all');
+                      setZoneFilter('all');
+                      setDriverFilter('all');
+                      setModeFilter('all');
+                      setSearchQuery('');
+                    }}
+                    className="text-xs border-[#e7e4dd] mt-1"
+                  >
+                    Réinitialiser la recherche
+                  </Button>
+                )}
               </div>
             ) : (
               filteredDeliveries.map((delivery) => (
@@ -1279,72 +1302,94 @@ export default function AdminDeliveriesPage() {
           </div>
 
           {/* Driver Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {drivers.map((drv) => (
-              <div
-                key={drv.id}
-                className="bg-white border border-[#e7e4dd] rounded-xl p-4 space-y-3 shadow-xs hover:border-gray-300 transition-all"
+          {loading ? (
+            <div className="bg-white border border-[#e7e4dd] rounded-xl p-12 text-center text-gray-500 flex flex-col items-center justify-center gap-2">
+              <Loader2 className="h-6 w-6 animate-spin text-[#c1647a]" />
+              <p className="text-xs text-gray-500">Chargement de la flotte de livreurs...</p>
+            </div>
+          ) : drivers.length === 0 ? (
+            <div className="bg-white border border-[#e7e4dd] rounded-xl p-12 text-center text-gray-500 space-y-3">
+              <Users className="h-10 w-10 text-gray-300 mx-auto" />
+              <div>
+                <p className="font-semibold text-gray-700 text-sm">Aucun livreur enregistré</p>
+                <p className="text-xs text-gray-400 mt-1">Ajoutez votre premier coursier pour lui affecter des livraisons.</p>
+              </div>
+              <Button
+                onClick={() => setIsAddDriverOpen(true)}
+                className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold gap-1.5 h-8 mt-2"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-[#f0ede6] text-gray-800 font-bold text-sm flex items-center justify-center">
-                      {drv.avatar || drv.name.slice(0, 2).toUpperCase()}
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-gray-900 text-sm">{drv.name}</h3>
-                      <div className="flex items-center gap-1.5 text-gray-500 text-xs mt-0.5">
-                        <Bike className="h-3 w-3 text-gray-400" />
-                        <span>
-                          {drv.vehicle} {drv.vehiclePlate ? `(${drv.vehiclePlate})` : ''}
-                        </span>
+                <UserPlus className="h-3.5 w-3.5" />
+                Ajouter un livreur
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {drivers.map((drv) => (
+                <div
+                  key={drv.id}
+                  className="bg-white border border-[#e7e4dd] rounded-xl p-4 space-y-3 shadow-xs hover:border-gray-300 transition-all"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-[#f0ede6] text-gray-800 font-bold text-sm flex items-center justify-center">
+                        {drv.avatar || drv.name.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-gray-900 text-sm">{drv.name}</h3>
+                        <div className="flex items-center gap-1.5 text-gray-500 text-xs mt-0.5">
+                          <Bike className="h-3 w-3 text-gray-400" />
+                          <span>
+                            {drv.vehicle} {drv.vehiclePlate ? `(${drv.vehiclePlate})` : ''}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-[#f0ede6] text-xs">
-                  <div className="flex items-center gap-1.5 text-gray-600">
-                    <Phone className="h-3.5 w-3.5 text-gray-400" />
-                    <a href={`tel:${drv.phone}`} className="hover:text-[#c1647a] font-medium font-mono">
-                      {drv.phone}
-                    </a>
+                  <div className="flex items-center justify-between pt-2 border-t border-[#f0ede6] text-xs">
+                    <div className="flex items-center gap-1.5 text-gray-600">
+                      <Phone className="h-3.5 w-3.5 text-gray-400" />
+                      <a href={`tel:${drv.phone}`} className="hover:text-[#c1647a] font-medium font-mono">
+                        {drv.phone}
+                      </a>
+                    </div>
+                    <div>
+                      {drv.status === 'disponible' ? (
+                        <Badge className="bg-[#dcfce7] text-[#166534] border-none text-[11px] font-medium">
+                          Disponible
+                        </Badge>
+                      ) : drv.status === 'en_course' ? (
+                        <Badge className="bg-[#fff8cc] text-[#9a7b00] border-none text-[11px] font-medium">
+                          {drv.activeDeliveriesCount} en cours
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-gray-100 text-gray-600 border-none text-[11px] font-medium">
+                          Indisponible
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    {drv.status === 'disponible' ? (
-                      <Badge className="bg-[#dcfce7] text-[#166534] border-none text-[11px] font-medium">
-                        Disponible
-                      </Badge>
-                    ) : drv.status === 'en_course' ? (
-                      <Badge className="bg-[#fff8cc] text-[#9a7b00] border-none text-[11px] font-medium">
-                        {drv.activeDeliveriesCount} en cours
-                      </Badge>
-                    ) : (
-                      <Badge className="bg-gray-100 text-gray-600 border-none text-[11px] font-medium">
-                        Indisponible
-                      </Badge>
-                    )}
-                  </div>
-                </div>
 
-                <div className="pt-2 border-t border-[#f0ede6] flex items-center justify-between">
-                  <span className="text-[11px] text-gray-500">
-                    {drv.activeDeliveriesCount > 0
-                      ? `${drv.activeDeliveriesCount} course(s) en cours`
-                      : 'Aucune course en cours'}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleToggleDriverStatus(drv.id)}
-                    className="text-[11px] text-gray-600 hover:text-gray-900 h-7 px-2 gap-1"
-                  >
-                    <Power className="h-3 w-3" />
-                    {drv.status === 'disponible' ? 'Mettre en pause' : 'Rendre disponible'}
-                  </Button>
+                  <div className="pt-2 border-t border-[#f0ede6] flex items-center justify-between">
+                    <span className="text-[11px] text-gray-500">
+                      {drv.activeDeliveriesCount > 0
+                        ? `${drv.activeDeliveriesCount} course(s) en cours`
+                        : 'Aucune course en cours'}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleToggleDriverStatus(drv.id)}
+                      className="text-[11px] text-gray-600 hover:text-gray-900 h-7 px-2 gap-1"
+                    >
+                      <Power className="h-3 w-3" />
+                      {drv.status === 'disponible' ? 'Mettre en pause' : 'Rendre disponible'}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

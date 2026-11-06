@@ -2,9 +2,9 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { adminProducts } from '@/lib/admin/mock-data/products';
 import { getAdminProductById, updateAdminProduct, deleteAdminProduct } from '@/lib/api/admin/products';
 import { getAdminCategories } from '@/lib/api/admin/categories';
+import { ApiClientError } from '@/lib/api/client';
 import type { AdminProduct, AdminCategory } from '@/lib/admin/mock-data/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +19,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const router = useRouter();
   const { id } = use(params);
   
-  const [product, setProduct] = useState<AdminProduct | null>(() => adminProducts.find(p => p.id === id) || null);
+  const [product, setProduct] = useState<AdminProduct | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -92,15 +92,18 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     const name = (formData.get('name') as string)?.trim() || product.name;
     const description = (formData.get('description') as string)?.trim() || '';
     const price = Number(formData.get('price')) || product.price;
-    const promoPrice = formData.get('promo') ? Number(formData.get('promo')) : undefined;
+    const promoRaw = formData.get('promo');
+    const promoPrice = promoRaw !== null && promoRaw !== '' ? Number(promoRaw) : undefined;
     const sku = (formData.get('sku') as string)?.trim() || product.sku;
     const stock = Number(formData.get('stock')) ?? product.stock;
     const statusVal = (formData.get('status') as string) === 'actif' ? 'ACTIVE' : 'HIDDEN';
+    const categoryId = (formData.get('category') as string)?.trim() || product.categoryId;
 
     try {
       await updateAdminProduct(product.id, {
         name,
         description,
+        categoryId: categoryId || undefined,
         basePrice: price,
         promoPrice,
         status: statusVal,
@@ -118,7 +121,16 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       toast.success('Produit mis à jour avec succès');
       router.push('/admin/produits');
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Erreur lors de la mise à jour');
+      if (err instanceof ApiClientError && err.details && err.details.length > 0) {
+        const detailsStr = err.details
+          .map((d) => (d.path ? `${d.path}: ${d.message}` : d.message))
+          .join(', ');
+        toast.error(`Erreur de validation : ${detailsStr}`);
+      } else if (err instanceof Error) {
+        toast.error(err.message);
+      } else {
+        toast.error('Erreur lors de la mise à jour');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -248,8 +260,10 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                     id="sku" 
                     name="sku"
                     defaultValue={product.sku}
-                    className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20" 
+                    readOnly
+                    className="border-[#e7e4dd] bg-gray-50 text-gray-600 font-mono text-xs cursor-not-allowed" 
                   />
+                  <p className="text-[11px] text-gray-500">Référence produit générée par le système.</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="stock">Quantité en stock</Label>
@@ -293,7 +307,12 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 <select 
                   id="category" 
                   name="category"
-                  defaultValue={product.category}
+                  defaultValue={
+                    product.categoryId ||
+                    categories.find(c => c.name.toLowerCase() === product.category.toLowerCase())?.id ||
+                    categories[0]?.id ||
+                    ''
+                  }
                   className="flex h-9 w-full items-center justify-between rounded-md border border-[#e7e4dd] bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-[#24582d]/20"
                 >
                   {categories.length > 0 ? (
@@ -303,13 +322,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                       </option>
                     ))
                   ) : (
-                    <>
-                      <option value="bouquets">Bouquets</option>
-                      <option value="plantes">Plantes</option>
-                      <option value="fruits">Fruits & Légumes</option>
-                      <option value="cadeaux">Cadeaux</option>
-                      <option value="mariages">Mariages & Événements</option>
-                    </>
+                    <option value="" disabled>Aucune catégorie disponible</option>
                   )}
                 </select>
               </div>

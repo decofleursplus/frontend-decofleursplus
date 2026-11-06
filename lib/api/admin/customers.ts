@@ -1,5 +1,6 @@
 import { apiClient } from '../client';
 import type { AdminCustomer, CustomerSegment } from '@/lib/admin/mock-data/types';
+import { transformAdminOrder } from './orders';
 
 export interface GetAdminCustomersParams {
   search?: string;
@@ -49,6 +50,10 @@ export function transformAdminCustomer(raw: any): AdminCustomer {
     avatar: raw.avatar || '',
     address: addressStr || undefined,
     lastOrderDate: raw.lastOrderDate ? raw.lastOrderDate.split('T')[0] : undefined,
+    loyaltyTier: raw.loyaltyTier,
+    loyaltyPoints: raw.loyaltyPoints ? Number(raw.loyaltyPoints) : 0,
+    notes: raw.notes || '',
+    recentOrders: Array.isArray(raw.recentOrders) ? raw.recentOrders.map(transformAdminOrder) : [],
   };
 }
 
@@ -74,6 +79,13 @@ export async function getAdminCustomers(params?: GetAdminCustomersParams): Promi
     });
 
     if (res && typeof res === 'object') {
+      const dataObj = res.data ?? res;
+      if (Array.isArray(dataObj.items)) {
+        return {
+          customers: dataObj.items.map(transformAdminCustomer),
+          total: dataObj.total ?? dataObj.items.length,
+        };
+      }
       if (Array.isArray(res.customers)) {
         return {
           customers: res.customers.map(transformAdminCustomer),
@@ -114,7 +126,7 @@ export async function getAdminCustomerById(id: string): Promise<AdminCustomer | 
       cache: 'no-store',
     });
     if (res) {
-      return transformAdminCustomer(res);
+      return transformAdminCustomer(res?.data || res);
     }
   } catch (err) {
     console.warn(`[AdminCustomersAPI] Error fetching customer ${id}:`, err);

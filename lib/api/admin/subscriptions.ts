@@ -38,6 +38,13 @@ export async function getAdminSubscriptions(
     });
 
     if (res && typeof res === 'object') {
+      const dataObj = res.data ?? res;
+      if (Array.isArray(dataObj.items)) {
+        return {
+          subscriptions: dataObj.items,
+          total: dataObj.total ?? dataObj.items.length,
+        };
+      }
       if (Array.isArray(res.subscriptions)) {
         return {
           subscriptions: res.subscriptions,

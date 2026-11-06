@@ -2,15 +2,12 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  adminBlogArticles,
-  adminBlogCategories,
-  adminBlogAuthors,
-  type BlogArticle,
-  type BlogCategory,
-  type BlogAuthor,
-  type BlogArticleStatus,
-} from '@/lib/admin/mock-data';
+import type {
+  BlogArticle,
+  BlogCategory,
+  BlogAuthor,
+  BlogArticleStatus,
+} from '@/lib/admin/mock-data/types';
 import {
   getAdminBlogArticles,
   deleteAdminBlogArticle,
@@ -58,6 +55,7 @@ import {
   Share2,
   ShoppingBag,
   RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { CreateBlogCategoryDialog } from '@/components/admin/create-blog-category-dialog';
@@ -69,9 +67,9 @@ export default function AdminBlogPage() {
   const [activeTab, setActiveTab] = useState<'articles' | 'categories' | 'authors'>('articles');
 
   // Datasets state
-  const [articles, setArticles] = useState<BlogArticle[]>(adminBlogArticles);
-  const [categories, setCategories] = useState<BlogCategory[]>(adminBlogCategories);
-  const [authors, setAuthors] = useState<BlogAuthor[]>(adminBlogAuthors);
+  const [articles, setArticles] = useState<BlogArticle[]>([]);
+  const [categories, setCategories] = useState<BlogCategory[]>([]);
+  const [authors, setAuthors] = useState<BlogAuthor[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -844,25 +842,43 @@ export default function AdminBlogPage() {
 
 
           {/* Articles Cards Grid */}
-          {filteredArticles.length === 0 ? (
+          {loading ? (
+            <div className="flex flex-col items-center justify-center p-16 bg-white/60 rounded-2xl border border-dashed border-[#d8d3c9]">
+              <Loader2 className="w-8 h-8 animate-spin text-[#24582d] mb-3" />
+              <p className="text-xs text-gray-500 font-medium">Chargement des articles de blog...</p>
+            </div>
+          ) : filteredArticles.length === 0 ? (
             <div className="p-12 text-center rounded-2xl border border-dashed border-[#d8d3c9] bg-white/60 space-y-3">
               <div className="w-12 h-12 rounded-full bg-[#f0eee8] text-[#777] flex items-center justify-center mx-auto">
                 <FileText size={22} />
               </div>
               <h3 className="font-serif font-bold text-base text-[#1e2a1f]">
-                Aucun article trouvé
+                {articles.length === 0 ? 'Aucun article rédigé pour le moment' : 'Aucun article trouvé'}
               </h3>
               <p className="text-xs text-[#777] max-w-sm mx-auto">
-                Aucun article ne correspond à votre recherche ou aux filtres sélectionnés.
+                {articles.length === 0
+                  ? 'Commencez à animer votre journal en créant votre premier article ou guide floral.'
+                  : 'Aucun article ne correspond à votre recherche ou aux filtres sélectionnés.'}
               </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleResetFilters}
-                className="text-xs border-[#e7e4dd]"
-              >
-                Réinitialiser les filtres
-              </Button>
+              {articles.length === 0 ? (
+                <Button
+                  onClick={() => router.push('/admin/blog/nouveau')}
+                  size="sm"
+                  className="bg-[#24582d] hover:bg-[#1a4021] text-white text-xs font-semibold px-4"
+                >
+                  <Plus size={14} className="mr-1.5" />
+                  Rédiger un article
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResetFilters}
+                  className="text-xs border-[#e7e4dd]"
+                >
+                  Réinitialiser les filtres
+                </Button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -1079,8 +1095,29 @@ export default function AdminBlogPage() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {categories.map((cat) => {
+          {categories.length === 0 ? (
+            <div className="p-12 text-center rounded-2xl border border-dashed border-[#d8d3c9] bg-white/60 space-y-3">
+              <div className="w-12 h-12 rounded-full bg-[#f0eee8] text-[#777] flex items-center justify-center mx-auto">
+                <FolderTree size={22} />
+              </div>
+              <h3 className="font-serif font-bold text-base text-[#1e2a1f]">
+                Aucune catégorie éditoriale
+              </h3>
+              <p className="text-xs text-[#777] max-w-sm mx-auto">
+                Créez des catégories thématiques pour organiser vos articles et guides floraux.
+              </p>
+              <Button
+                onClick={handleOpenCreateCategory}
+                size="sm"
+                className="bg-[#24582d] hover:bg-[#1a4021] text-white text-xs font-semibold px-4"
+              >
+                <Plus size={14} className="mr-1.5" />
+                Nouvelle catégorie
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {categories.map((cat) => {
               const count = articles.filter((a) => a.categoryId === cat.id).length;
               return (
                 <div
@@ -1130,6 +1167,7 @@ export default function AdminBlogPage() {
               );
             })}
           </div>
+          )}
         </div>
       )}
 
@@ -1157,8 +1195,29 @@ export default function AdminBlogPage() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {authors.map((auth) => {
+          {authors.length === 0 ? (
+            <div className="p-12 text-center rounded-2xl border border-dashed border-[#d8d3c9] bg-white/60 space-y-3">
+              <div className="w-12 h-12 rounded-full bg-[#f0eee8] text-[#777] flex items-center justify-center mx-auto">
+                <Users size={22} />
+              </div>
+              <h3 className="font-serif font-bold text-base text-[#1e2a1f]">
+                Aucun auteur enregistré
+              </h3>
+              <p className="text-xs text-[#777] max-w-sm mx-auto">
+                Ajoutez des profils de rédacteurs pour signer les articles et valoriser vos fleuristes.
+              </p>
+              <Button
+                onClick={handleOpenCreateAuthor}
+                size="sm"
+                className="bg-[#24582d] hover:bg-[#1a4021] text-white text-xs font-semibold px-4"
+              >
+                <Plus size={14} className="mr-1.5" />
+                Ajouter un rédacteur
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {authors.map((auth) => {
               const authorArticles = articles.filter((a) => a.authorId === auth.id);
               const authorViews = authorArticles.reduce((sum, a) => sum + (a.viewsCount || 0), 0);
 
@@ -1204,6 +1263,7 @@ export default function AdminBlogPage() {
               );
             })}
           </div>
+          )}
         </div>
       )}
 

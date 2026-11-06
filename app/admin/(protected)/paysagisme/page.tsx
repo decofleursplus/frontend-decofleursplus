@@ -18,16 +18,16 @@ import {
   Save,
   FileText,
   Calendar,
+  AlertCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
-import { initialLandscapePrestations, initialLandscapeProjects } from '@/lib/admin/mock-data/landscaping';
 import { LandscapePrestation, LandscapeProject, LandscapeProjectCategory } from '@/lib/admin/mock-data/types';
 
 export default function AdminPaysagismePage() {
   const [activeTab, setActiveTab] = useState<'prestations' | 'realisations'>('prestations');
-  const [prestations, setPrestations] = useState<LandscapePrestation[]>(initialLandscapePrestations);
-  const [projects, setProjects] = useState<LandscapeProject[]>(initialLandscapeProjects);
+  const [prestations, setPrestations] = useState<LandscapePrestation[]>([]);
+  const [projects, setProjects] = useState<LandscapeProject[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Prestation Drawer state
@@ -234,6 +234,17 @@ export default function AdminPaysagismePage() {
         </button>
       </div>
 
+      {/* ── Bannière Information Backend ── */}
+      <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 flex items-start gap-3.5 text-amber-900 text-xs">
+        <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+        <div className="space-y-1">
+          <p className="font-semibold text-sm text-amber-950">Module Paysagisme en attente d&apos;implémentation backend</p>
+          <p className="text-amber-800 leading-relaxed">
+            Les contrats et spécifications REST complètes pour ce module ont été formalisés dans <code className="px-1.5 py-0.5 bg-amber-100/90 rounded text-[11px] font-mono font-medium">docs/endpoints_feedback.md</code>. Aucune prestation ou réalisation factice n&apos;est affichée par défaut.
+          </p>
+        </div>
+      </div>
+
       {/* ── Onglets de Navigation ── */}
       <div className="flex items-center gap-2 border-b border-border pb-3 overflow-x-auto scrollbar-none">
         <button
@@ -278,8 +289,17 @@ export default function AdminPaysagismePage() {
 
       {/* ── Vue 1 : Prestations ── */}
       {activeTab === 'prestations' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredPrestations.map((prestation) => (
+        filteredPrestations.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-border p-12 text-center text-muted-foreground text-xs space-y-3">
+            <Trees className="w-10 h-10 text-gray-300 mx-auto" />
+            <p className="font-semibold text-sm text-gray-800">Aucune prestation paysagère configurée</p>
+            <p className="text-gray-500 max-w-sm mx-auto">
+              Configurez vos offres de création de jardins, arrosage automatique et entretien dès la mise en ligne des routes API.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredPrestations.map((prestation) => (
             <div
               key={prestation.id}
               className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between"
@@ -339,12 +359,22 @@ export default function AdminPaysagismePage() {
             </div>
           ))}
         </div>
+        )
       )}
 
       {/* ── Vue 2 : Réalisations ── */}
       {activeTab === 'realisations' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProjects.map((project) => (
+        filteredProjects.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-border p-12 text-center text-muted-foreground text-xs space-y-3">
+            <Trees className="w-10 h-10 text-gray-300 mx-auto" />
+            <p className="font-semibold text-sm text-gray-800">Aucune réalisation dans le portfolio</p>
+            <p className="text-gray-500 max-w-sm mx-auto">
+              Ajoutez vos chantiers et projets paysagers terminés pour enrichir votre galerie publique.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProjects.map((project) => (
             <div
               key={project.id}
               className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between"
@@ -417,6 +447,7 @@ export default function AdminPaysagismePage() {
             </div>
           ))}
         </div>
+        )
       )}
 
       {/* ── Side Drawer : Ajout / Modification Prestation ── */}

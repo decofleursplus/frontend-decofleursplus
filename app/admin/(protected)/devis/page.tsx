@@ -25,17 +25,20 @@ import {
 import { toast } from 'sonner';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
 import { Button } from '@/components/ui/button';
-import { initialQuotes } from '@/lib/admin/mock-data/quotes';
 import { LandscapeQuote, QuoteStatus } from '@/lib/admin/mock-data/types';
-import { getAdminQuotes, updateAdminQuoteStatus } from '@/lib/api/admin/quotes';
+import { getAdminQuotes, updateAdminQuote, updateAdminQuoteStatus } from '@/lib/api/admin/quotes';
+import { ApiClientError } from '@/lib/api/client';
+import { Loader2 } from 'lucide-react';
 
 export default function AdminDevisPage() {
-  const [quotes, setQuotes] = useState<LandscapeQuote[]>(initialQuotes);
+  const [quotes, setQuotes] = useState<LandscapeQuote[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | QuoteStatus>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedQuote, setSelectedQuote] = useState<LandscapeQuote | null>(null);
+  const [adminNotes, setAdminNotes] = useState('');
 
   // Quote editing/creation within modal
   const [quoteItems, setQuoteItems] = useState<{ description: string; qty: number; unitPrice: number; total: number }[]>([]);
@@ -49,8 +52,9 @@ export default function AdminDevisPage() {
       if (res?.quotes) {
         setQuotes(res.quotes);
       }
-    } catch {
-      toast.error('Erreur lors du chargement des devis');
+    } catch (err) {
+      const msg = err instanceof ApiClientError ? err.message : 'Erreur lors du chargement des devis';
+      toast.error(msg);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -63,6 +67,7 @@ export default function AdminDevisPage() {
 
   const openQuoteDetail = (quote: LandscapeQuote) => {
     setSelectedQuote(quote);
+    setAdminNotes(quote.notes || '');
     setQuoteItems(quote.quoteItems || []);
   };
 
@@ -75,18 +80,19 @@ export default function AdminDevisPage() {
 
     try {
       await updateAdminQuoteStatus(selectedQuote.id, { status: newStatus });
-      toast.success(`Statut du devis ${selectedQuote.id} mis à jour : ${newStatus}`);
-    } catch {
+      toast.success(`Statut du devis ${selectedQuote.quoteNumber || selectedQuote.id} mis à jour : ${newStatus}`);
+    } catch (err) {
       setQuotes((prev) => prev.map((q) => (q.id === selectedQuote.id ? previous : q)));
       setSelectedQuote(previous);
-      toast.error('Erreur lors de la mise à jour du statut');
+      const msg = err instanceof ApiClientError ? err.message : 'Erreur lors de la mise à jour du statut';
+      toast.error(msg);
     }
   };
 
   const addQuoteItem = () => {
     setQuoteItems((prev) => [
       ...prev,
-      { description: 'Nouvelle prestation paysagère', qty: 1, unitPrice: 50000, total: 50000 },
+      { description: 'Nouvelle prestation florale ou paysagère', qty: 1, unitPrice: 50000, total: 50000 },
     ]);
   };
 
@@ -98,25 +104,33 @@ export default function AdminDevisPage() {
 
   const saveCommercialProposal = async () => {
     if (!selectedQuote) return;
+    setIsSubmitting(true);
     const updated: LandscapeQuote = {
       ...selectedQuote,
       quoteAmount: totalQuoteAmount,
       quoteItems: quoteItems,
+      notes: adminNotes,
       status: 'devis_envoye',
     };
-    setQuotes((prev) => prev.map((q) => (q.id === selectedQuote.id ? updated : q)));
-    setSelectedQuote(updated);
 
     try {
       await updateAdminQuoteStatus(selectedQuote.id, {
         status: 'devis_envoye',
         quotedAmount: totalQuoteAmount,
       });
+      if (adminNotes !== selectedQuote.notes) {
+        await updateAdminQuote(selectedQuote.id, { adminNotes });
+      }
+      setQuotes((prev) => prev.map((q) => (q.id === selectedQuote.id ? updated : q)));
+      setSelectedQuote(updated);
       toast.success(
         `Proposition commerciale chiffrée (${totalQuoteAmount.toLocaleString('fr-FR')} FCFA) enregistrée et statut passé à "Devis envoyé" !`
       );
-    } catch {
-      toast.warning('Proposition enregistrée localement (erreur de synchronisation API)');
+    } catch (err) {
+      const msg = err instanceof ApiClientError ? err.message : 'Erreur lors de l\'enregistrement de la proposition';
+      toast.error(msg);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -246,9 +260,18 @@ export default function AdminDevisPage() {
 
       {/* ── Liste Mobile des Devis (lg:hidden) ── */}
       <div className="lg:hidden space-y-3">
-        {filteredQuotes.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-border p-8 text-center text-muted-foreground text-sm">
-            Aucune demande de devis ne correspond aux critères sélectionnés.
+        {loading ? (
+          <div className="bg-white rounded-2xl border border-border p-8 text-center text-muted-foreground text-sm flex flex-col items-center justify-center gap-2">
+            <Loader2 className="h-6 w-6 animate-spin text-[#193e23]" />
+            <p>Chargement des demandes de devis...</p>
+          </div>
+        ) : filteredQuotes.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-border p-8 text-center text-muted-foreground text-sm space-y-2">
+            <FileSpreadsheet className="h-8 w-8 text-gray-300 mx-auto" />
+            <p className="font-medium text-gray-700">Aucune demande de devis trouvée.</p>
+            <p className="text-xs text-gray-400">
+              Les demandes soumises par les clients apparaîtront ici.
+            </p>
           </div>
         ) : (
           filteredQuotes.map((quote) => (
@@ -256,7 +279,7 @@ export default function AdminDevisPage() {
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <span className="font-mono font-bold text-sm text-[#173f22] block">
-                    {quote.id}
+                    {quote.quoteNumber || quote.id}
                   </span>
                   <span className="font-semibold text-foreground text-sm">
                     {quote.clientName}
@@ -317,39 +340,62 @@ export default function AdminDevisPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border text-xs sm:text-sm">
-              {filteredQuotes.map((quote) => (
-                <tr key={quote.id} className="hover:bg-muted/40 transition-colors">
-                  <td className="py-3.5 px-4 font-mono font-bold text-[#173f22]">
-                    {quote.id}
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <div className="font-semibold text-foreground">{quote.clientName}</div>
-                    <div className="text-xs text-muted-foreground">{quote.clientPhone}</div>
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <div className="font-medium text-foreground">{quote.prestationType}</div>
-                    <div className="text-xs text-muted-foreground">{quote.spaceType} ({quote.surfaceArea} m²)</div>
-                  </td>
-                  <td className="py-3.5 px-4 text-muted-foreground">
-                    {quote.location}
-                  </td>
-                  <td className="py-3.5 px-4 text-muted-foreground">
-                    {quote.createdAt}
-                  </td>
-                  <td className="py-3.5 px-4">
-                    {getStatusBadge(quote.status)}
-                  </td>
-                  <td className="py-3.5 px-4 text-right">
-                    <button
-                      type="button"
-                      onClick={() => openQuoteDetail(quote)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#edf8ef] hover:bg-[#d8eedb] text-[#193e23] font-semibold text-xs transition-colors"
-                    >
-                      <Eye size={14} /> Traiter
-                    </button>
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-muted-foreground">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <Loader2 className="h-6 w-6 animate-spin text-[#193e23]" />
+                      <p className="text-xs">Chargement des demandes de devis...</p>
+                    </div>
                   </td>
                 </tr>
-              ))}
+              ) : filteredQuotes.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-muted-foreground">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <FileSpreadsheet className="h-8 w-8 text-gray-300" />
+                      <p className="font-medium text-gray-700">Aucune demande de devis enregistrée.</p>
+                      <p className="text-xs text-gray-400">
+                        Les demandes transmises apparaîtront automatiquement dans ce tableau.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredQuotes.map((quote) => (
+                  <tr key={quote.id} className="hover:bg-muted/40 transition-colors">
+                    <td className="py-3.5 px-4 font-mono font-bold text-[#173f22]">
+                      {quote.quoteNumber || quote.id}
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <div className="font-semibold text-foreground">{quote.clientName}</div>
+                      <div className="text-xs text-muted-foreground">{quote.clientPhone}</div>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <div className="font-medium text-foreground">{quote.prestationType}</div>
+                      <div className="text-xs text-muted-foreground">{quote.spaceType} ({quote.surfaceArea} m²)</div>
+                    </td>
+                    <td className="py-3.5 px-4 text-muted-foreground">
+                      {quote.location}
+                    </td>
+                    <td className="py-3.5 px-4 text-muted-foreground">
+                      {quote.createdAt}
+                    </td>
+                    <td className="py-3.5 px-4">
+                      {getStatusBadge(quote.status)}
+                    </td>
+                    <td className="py-3.5 px-4 text-right">
+                      <button
+                        type="button"
+                        onClick={() => openQuoteDetail(quote)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#edf8ef] hover:bg-[#d8eedb] text-[#193e23] font-semibold text-xs transition-colors"
+                      >
+                        <Eye size={14} /> Traiter
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -363,7 +409,9 @@ export default function AdminDevisPage() {
         title={
           selectedQuote ? (
             <div className="flex items-center gap-2">
-              <span className="font-mono font-bold text-lg text-[#173f22]">{selectedQuote.id}</span>
+              <span className="font-mono font-bold text-lg text-[#173f22]">
+                {selectedQuote.quoteNumber || selectedQuote.id}
+              </span>
               {getStatusBadge(selectedQuote.status)}
             </div>
           ) : ''
@@ -403,10 +451,16 @@ export default function AdminDevisPage() {
                 </button>
                 <button
                   type="button"
+                  disabled={isSubmitting}
                   onClick={saveCommercialProposal}
-                  className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-xs font-semibold shadow-sm transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-xs font-semibold shadow-sm transition-colors cursor-pointer disabled:opacity-50"
                 >
-                  <Send size={14} /> Enregistrer la proposition
+                  {isSubmitting ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Send size={14} />
+                  )}
+                  Enregistrer la proposition
                 </button>
               </div>
             </div>
@@ -434,14 +488,27 @@ export default function AdminDevisPage() {
               </div>
             </div>
 
-            {/* Description & Photos */}
+            {/* Description & Notes */}
             <div>
               <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
                 Description du projet transmise par le client :
               </h4>
               <p className="text-sm text-foreground bg-[#faf8f5] p-4 rounded-xl border border-border leading-relaxed">
-                {selectedQuote.description}
+                {selectedQuote.description || 'Aucune description spécifique renseignée.'}
               </p>
+            </div>
+
+            <div>
+              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                Notes internes / Suivi administrateur :
+              </h4>
+              <textarea
+                value={adminNotes}
+                onChange={(e) => setAdminNotes(e.target.value)}
+                placeholder="Ajouter des notes internes sur les échanges, relances ou contraintes spécifiques..."
+                rows={3}
+                className="w-full p-3 text-xs rounded-xl border border-border bg-white outline-none focus:ring-1 focus:ring-[#193e23] resize-none"
+              />
             </div>
 
             {/* Photos soumises */}

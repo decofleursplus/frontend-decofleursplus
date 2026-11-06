@@ -54,76 +54,11 @@ import {
 } from '@/lib/api/admin/subscriptions';
 import type { CustomerSubscription, SubscriptionStatus } from '@/lib/api/subscriptions';
 
-// Données de secours réalistes pour le Sénégal (Saly, Dakar)
-const initialMockSubscriptions: CustomerSubscription[] = [
-  {
-    id: 'sub-001',
-    subscriptionNumber: 'ABN-2026-001',
-    plan: 'PRESTIGE',
-    frequency: 'HEBDOMADAIRE',
-    deliveryDay: 'MARDI',
-    status: 'ACTIVE',
-    recipientName: 'Aïssatou Diop',
-    phone: '+221 77 123 45 67',
-    email: 'aissatou.diop@example.sn',
-    location: 'Dakar (Almadies)',
-    address: 'Route des Almadies, Villa 42',
-    notes: 'Déposer à l’accueil auprès du gardien',
-    paymentMethod: 'WAVE',
-    perDeliveryPrice: 35000,
-    monthlyAmount: 140000,
-    deliveriesPerMonth: 4,
-    startDate: '2026-01-10T10:00:00Z',
-    nextDeliveryDate: '2026-11-04T09:00:00Z',
-    createdAt: '2026-01-08T15:20:00Z',
-  },
-  {
-    id: 'sub-002',
-    subscriptionNumber: 'ABN-2026-002',
-    plan: 'ENTREPRISE',
-    frequency: 'HEBDOMADAIRE',
-    deliveryDay: 'VENDREDI',
-    status: 'ACTIVE',
-    recipientName: 'Hôtel Le Lamantin Beach',
-    phone: '+221 78 987 65 43',
-    email: 'direction@lelamantin.sn',
-    location: 'Saly Portudal',
-    address: 'Zone Hôtelière, Saly',
-    notes: 'Composition florale pour le comptoir d’accueil du lobby',
-    paymentMethod: 'ORANGE_MONEY',
-    perDeliveryPrice: 50000,
-    monthlyAmount: 200000,
-    deliveriesPerMonth: 4,
-    startDate: '2025-11-01T08:00:00Z',
-    nextDeliveryDate: '2026-11-07T10:30:00Z',
-    createdAt: '2025-10-25T11:45:00Z',
-  },
-  {
-    id: 'sub-003',
-    subscriptionNumber: 'ABN-2026-003',
-    plan: 'PARTICULIER',
-    frequency: 'BIMENSUELLE',
-    deliveryDay: 'SAMEDI',
-    status: 'PAUSED',
-    recipientName: 'Fatou Ndiaye',
-    phone: '+221 76 543 21 09',
-    email: 'fatou.ndiaye@gmail.com',
-    location: 'Mbour',
-    address: 'Quartier Grand Mbour, Rue 12',
-    notes: 'En voyage jusqu’à la fin du mois',
-    paymentMethod: 'WAVE',
-    perDeliveryPrice: 20000,
-    monthlyAmount: 40000,
-    deliveriesPerMonth: 2,
-    startDate: '2026-03-05T09:00:00Z',
-    nextDeliveryDate: null,
-    pausedAt: '2026-10-15T14:00:00Z',
-    createdAt: '2026-03-01T16:10:00Z',
-  },
-];
+import { ApiClientError } from '@/lib/api/client';
+import { Loader2 } from 'lucide-react';
 
 export default function AdminAbonnementsPage() {
-  const [subscriptions, setSubscriptions] = useState<CustomerSubscription[]>(initialMockSubscriptions);
+  const [subscriptions, setSubscriptions] = useState<CustomerSubscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedSub, setSelectedSub] = useState<CustomerSubscription | null>(null);
@@ -146,11 +81,12 @@ export default function AdminAbonnementsPage() {
         frequency: frequencyFilter !== 'ALL' ? frequencyFilter : undefined,
       });
 
-      if (res && res.subscriptions && res.subscriptions.length > 0) {
+      if (res && res.subscriptions) {
         setSubscriptions(res.subscriptions);
       }
-    } catch {
-      toast.warning('Chargement des abonnements locaux (mode hors-ligne)');
+    } catch (err) {
+      const msg = err instanceof ApiClientError ? err.message : 'Erreur lors du chargement des abonnements';
+      toast.error(msg);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -403,10 +339,25 @@ export default function AdminAbonnementsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredSubscriptions.length === 0 ? (
+            {loading ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-8 text-stone-500 text-xs">
-                  Aucun abonnement correspondant trouvé.
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <Loader2 className="h-6 w-6 animate-spin text-[#193e23]" />
+                    <p>Chargement des abonnements...</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : filteredSubscriptions.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center py-8 text-stone-500 text-xs">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <Repeat className="h-8 w-8 text-stone-300" />
+                    <p className="font-semibold text-stone-700">Aucun abonnement correspondant trouvé.</p>
+                    <p className="text-stone-400">
+                      {subscriptions.length === 0 ? "Aucun abonnement floral récurrent n'est actif pour le moment." : "Modifiez vos filtres de recherche."}
+                    </p>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (

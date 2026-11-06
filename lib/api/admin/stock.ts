@@ -2,7 +2,7 @@ import { apiClient } from '../client';
 import type { StockMovement } from '@/lib/admin/mock-data/types';
 
 export interface RecordMovementPayload {
-  type: 'IN' | 'OUT' | 'ADJUSTMENT' | 'LOSS';
+  type: 'ENTRY' | 'EXIT' | 'ADJUSTMENT';
   quantity: number;
   reason: string;
 }
@@ -21,37 +21,102 @@ export interface InventoryItem {
   image?: string;
 }
 
+interface BackendInventoryEntry {
+  variant?: {
+    id: string;
+    productId: string;
+    name: string;
+    sku: string;
+    price: number;
+    stockQuantity: number;
+    minStockAlert?: number;
+  };
+  product?: {
+    id: string;
+    name: string;
+    slug: string;
+    featuredImage?: string | null;
+    category?: { id?: string; name?: string; slug?: string };
+  };
+  isOutOfStock?: boolean;
+  isLowStock?: boolean;
+  // Legacy / fallback flat keys
+  id?: string;
+  variantId?: string;
+  productId?: string;
+  productName?: string;
+  sku?: string;
+  category?: string;
+  stock?: number;
+  quantity?: number;
+  minStock?: number;
+  updatedAt?: string;
+  image?: string;
+}
+
+interface BackendStockMovement {
+  id: string;
+  variantId: string;
+  type: 'ENTRY' | 'EXIT' | 'ADJUSTMENT' | string;
+  quantity: number;
+  previousStock?: number;
+  newStock?: number;
+  reason?: string;
+  authorId?: string | null;
+  createdAt?: string;
+  variant?: {
+    name?: string;
+    sku?: string;
+    product?: {
+      name?: string;
+    };
+  };
+  productName?: string;
+  sku?: string;
+  authorName?: string;
+  user?: { name?: string };
+}
+
 /**
  * Récupérer l'état du stock et de l'inventaire
  * Endpoint: GET /api/v1/admin/inventory
  */
 export async function getAdminInventory(lowStock?: boolean): Promise<InventoryItem[]> {
   try {
-    const data = await apiClient.get<any[]>('/admin/inventory', {
+    const data = await apiClient.get<BackendInventoryEntry[]>('/admin/inventory', {
       params: { lowStock: lowStock ? 'true' : undefined },
       isAdmin: true,
     });
 
     if (Array.isArray(data) && data.length > 0) {
       return data.map((item) => {
-        const stock = item.stock ?? item.quantity ?? 0;
-        const min = item.minStock ?? 5;
+        const variant = item.variant;
+        const product = item.product;
+
+        const stock = variant?.stockQuantity ?? item.stock ?? item.quantity ?? 0;
+        const min = variant?.minStockAlert ?? item.minStock ?? 5;
+
         let status: 'normal' | 'faible' | 'rupture' = 'normal';
-        if (stock <= 0) status = 'rupture';
-        else if (stock <= min) status = 'faible';
+        if (stock <= 0 || item.isOutOfStock) status = 'rupture';
+        else if (stock <= min || item.isLowStock) status = 'faible';
+
+        const image =
+          product?.featuredImage ||
+          item.image ||
+          '/images/bouquet-passion.jpg';
 
         return {
-          id: item.id || item.variantId,
-          variantId: item.variantId || item.id,
-          productId: item.productId || item.product?.id || item.id,
-          productName: item.productName || item.product?.name || item.name || 'Produit',
-          productSku: item.sku || item.product?.sku || 'SKU-000',
-          category: item.category || item.product?.category?.name || 'Général',
+          id: variant?.id || item.id || item.variantId || 'inv-unknown',
+          variantId: variant?.id || item.variantId || item.id || '',
+          productId: product?.id || item.productId || '',
+          productName: product?.name || item.productName || 'Produit',
+          productSku: variant?.sku || item.sku || 'SKU-000',
+          category: product?.category?.name || item.category || 'Bouquets',
           currentStock: stock,
           minStock: min,
           status,
-          lastMovementDate: item.updatedAt || item.lastMovementDate,
-          image: item.product?.images?.[0]?.url || item.image || '/images/bouquet-passion.jpg',
+          lastMovementDate: item.updatedAt,
+          image,
         };
       });
     }
@@ -69,7 +134,7 @@ export async function getAdminInventory(lowStock?: boolean): Promise<InventoryIt
 export async function recordStockMovement(
   variantId: string,
   payload: RecordMovementPayload
-): Promise<any> {
+): Promise<unknown> {
   return apiClient.post(`/admin/inventory/${variantId}/movements`, payload, {
     isAdmin: true,
   });
@@ -84,7 +149,7 @@ export async function getStockMovements(params?: {
   limit?: number;
 }): Promise<StockMovement[]> {
   try {
-    const data = await apiClient.get<any[]>('/admin/stock-movements', {
+    const data = await apiClient.get<BackendStockMovement[]>('/admin/stock-movements', {
       params: {
         variantId: params?.variantId,
         limit: params?.limit,
@@ -95,24 +160,31 @@ export async function getStockMovements(params?: {
     if (Array.isArray(data) && data.length > 0) {
       return data.map((m) => {
         const typeMap: Record<string, 'entree' | 'sortie' | 'ajustement'> = {
-          IN: 'entree',
-          OUT: 'sortie',
+          ENTRY: 'entree',
+          EXIT: 'sortie',
           ADJUSTMENT: 'ajustement',
-          LOSS: 'sortie',
         };
+
+        const prodName =
+          m.variant?.product?.name ||
+          m.productName ||
+          m.variant?.name ||
+          'Produit';
+
+        const sku = m.variant?.sku || m.sku || 'SKU';
 
         return {
           id: m.id,
-          productId: m.variantId || m.productId,
-          productName: m.productName || m.variant?.name || 'Produit',
-          productSku: m.sku || m.variant?.sku || 'SKU',
+          productId: m.variantId,
+          productName: prodName,
+          productSku: sku,
           type: typeMap[m.type] || 'ajustement',
           quantity: m.quantity,
           previousStock: m.previousStock ?? 0,
           newStock: m.newStock ?? 0,
           reason: m.reason || '',
           date: m.createdAt || new Date().toISOString(),
-          author: m.authorName || m.user?.name || 'Admin',
+          author: m.authorName || m.user?.name || 'Administrateur',
         };
       });
     }

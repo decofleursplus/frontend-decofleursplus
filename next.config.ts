@@ -9,6 +9,26 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'images.unsplash.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'pub-69eb0dcdef4244f49946a2556c863719.r2.dev',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.r2.dev',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.decofleursplus.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.decofleurplus.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.decofleurplus.sn',
+      },
     ],
   },
   async rewrites() {
