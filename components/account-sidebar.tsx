@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, PackageCheck, FileText, Calendar, MapPin, UserRound, Heart, Star, Bell, Gift, TicketPercent, UsersRound, LogOut } from 'lucide-react';
 
 import { useAuth } from '@/components/auth-provider';
@@ -24,7 +24,13 @@ const entries = [
 
 export function AccountSidebar() {
   const path = usePathname();
+  const router = useRouter();
   const { logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    router.push('/');
+  };
 
   return (
     <aside className="account-sidebar">
@@ -43,12 +49,12 @@ export function AccountSidebar() {
       <button
         type="button"
         className="account-signout"
-        onClick={() => {
-          logout();
-          window.location.href = '/connexion';
-        }}
+        onClick={handleLogout}
+        aria-label="Se déconnecter"
+        title="Se déconnecter"
       >
-        <LogOut size={15} /> Déconnexion
+        <LogOut size={15} />
+        <span>Déconnexion</span>
       </button>
     </aside>
   );
