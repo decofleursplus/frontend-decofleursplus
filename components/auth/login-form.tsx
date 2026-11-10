@@ -36,8 +36,9 @@ export function LoginForm() {
       setTimeout(() => {
         router.push(redirectTarget);
       }, 500);
-    } catch (err: any) {
-      setFeedback(err?.message || 'Identifiant ou mot de passe incorrect.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Identifiant ou mot de passe incorrect.';
+      setFeedback(message);
       setIsSubmitting(false);
     }
   }
@@ -51,8 +52,9 @@ export function LoginForm() {
       setTimeout(() => {
         router.push(redirectTarget);
       }, 600);
-    } catch (err: any) {
-      setFeedback(err?.message || 'La connexion avec Google sera bientôt disponible.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'La connexion avec Google sera bientôt disponible.';
+      setFeedback(message);
       setSocialLoading(false);
     }
   }

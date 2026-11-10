@@ -30,7 +30,7 @@ export interface CreateProductPayload {
   images?: string[] | Array<{ url: string; isPrimary?: boolean; order?: number }>;
   variants?: Array<{
     name: string;
-    sku: string;
+    sku?: string;
     price: number;
     stock?: number;
     stockQuantity?: number;
@@ -297,9 +297,11 @@ export async function createAdminProduct(payload: CreateProductPayload): Promise
     backendPayload.variants = payload.variants.map((v, index) => {
       const variantItem: Record<string, unknown> = {
         name: v.name.trim(),
-        sku: v.sku.trim(),
         price: !hasPromo && index === 0 ? payload.basePrice : effectiveBasePrice,
       };
+      if (v.sku && v.sku.trim().length > 0) {
+        variantItem.sku = v.sku.trim();
+      }
       if (typeof v.stockQuantity === 'number') {
         variantItem.stockQuantity = v.stockQuantity;
       } else if (typeof v.stock === 'number') {
@@ -376,9 +378,11 @@ export async function updateAdminProduct(
     backendPayload.variants = payload.variants.map((v) => {
       const variantItem: Record<string, unknown> = {
         name: v.name.trim(),
-        sku: v.sku.trim(),
         price: typeof v.price === 'number' ? v.price : ((backendPayload.basePrice as number) ?? 0),
       };
+      if (v.sku && v.sku.trim().length > 0) {
+        variantItem.sku = v.sku.trim();
+      }
       if (typeof v.stockQuantity === 'number') {
         variantItem.stockQuantity = v.stockQuantity;
       } else if (typeof v.stock === 'number') {

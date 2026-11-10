@@ -101,12 +101,8 @@ export default function NewProductPage() {
       promoPrice = parsedPromo;
     }
 
-    // Référence produit automatique normée
-    const selectedCatObj = categories.find((c) => c.id === categoryId);
-    const catCode = selectedCatObj
-      ? selectedCatObj.name.slice(0, 3).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      : 'PRD';
-    const finalSku = userSku || `DFP-${catCode}-${Date.now().toString().slice(-6)}`;
+    // Référence produit : si non renseignée, le backend la génère automatiquement
+    const finalSku = userSku ? userSku.trim() : undefined;
 
     setIsSubmitting(true);
 

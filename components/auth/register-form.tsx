@@ -52,8 +52,9 @@ export function RegisterForm() {
 
       setCreatedUser(user);
       setIsSuccess(true);
-    } catch (err: any) {
-      setFeedback(err?.message || 'Une erreur est survenue lors de la création du compte.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Une erreur est survenue lors de la création du compte.';
+      setFeedback(message);
       setIsSubmitting(false);
     }
   }
