@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import type { AdminProduct } from '@/lib/admin/mock-data/types';
+import type { AdminProduct, AdminCategory } from '@/lib/admin/mock-data/types';
 import { getAdminProducts, deleteAdminProduct } from '@/lib/api/admin/products';
+import { getAdminCategories } from '@/lib/api/admin/categories';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -56,6 +57,7 @@ import { toast } from 'sonner';
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [apiCategories, setApiCategories] = useState<AdminCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -65,6 +67,18 @@ export default function AdminProductsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedStock, setSelectedStock] = useState<string>('all');
   const [selectedSort, setSelectedSort] = useState<string>('default');
+
+  useEffect(() => {
+    let active = true;
+    getAdminCategories()
+      .then((cats) => {
+        if (active && cats) setApiCategories(cats);
+      })
+      .catch((err) => console.warn('Erreur chargement catégories filter:', err));
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -181,6 +195,14 @@ export default function AdminProductsPage() {
     }
   };
 
+  const categories = useMemo(() => {
+    const list = apiCategories.map((c) => ({
+      label: c.name,
+      value: c.slug || c.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-'),
+    }));
+    return [{ label: 'Tous', value: 'all' }, ...list];
+  }, [apiCategories]);
+
   const filteredProducts = useMemo(() => {
     return products
       .filter((product) => {
@@ -191,9 +213,12 @@ export default function AdminProductsPage() {
           product.sku.toLowerCase().includes(searchQuery.toLowerCase());
 
         // Category
+        const selectedCatObj = categories.find((c) => c.value === selectedCategory);
         const matchesCategory =
           selectedCategory === 'all' ||
-          product.category.toLowerCase() === selectedCategory.toLowerCase();
+          product.category.toLowerCase() === selectedCategory.toLowerCase() ||
+          (selectedCatObj && product.category.toLowerCase() === selectedCatObj.label.toLowerCase()) ||
+          product.categoryId === selectedCategory;
 
         // Status
         const matchesStatus =
@@ -219,7 +244,7 @@ export default function AdminProductsPage() {
         if (selectedSort === 'name_asc') return a.name.localeCompare(b.name);
         return 0;
       });
-  }, [products, searchQuery, selectedCategory, selectedStatus, selectedStock, selectedSort]);
+  }, [products, searchQuery, selectedCategory, selectedStatus, selectedStock, selectedSort, categories]);
 
   const confirmDeleteProduct = async () => {
     if (!productToDelete) return;
@@ -233,15 +258,6 @@ export default function AdminProductsPage() {
       setProductToDelete(null);
     }
   };
-
-  const categories = [
-    { label: 'Tous', value: 'all' },
-    { label: 'Bouquets', value: 'bouquets' },
-    { label: 'Plantes', value: 'plantes' },
-    { label: 'Fruits', value: 'fruits' },
-    { label: 'Cadeaux', value: 'cadeaux' },
-    { label: 'Mariages', value: 'mariages' },
-  ];
 
   const statuses = [
     { label: 'Tous les statuts', value: 'all' },

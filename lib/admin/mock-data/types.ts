@@ -98,6 +98,7 @@ export type AdminCustomer = {
 export type AdminCategory = {
   id: string;
   name: string;
+  slug?: string;
   description: string;
   productCount: number;
   status: 'actif' | 'inactif';

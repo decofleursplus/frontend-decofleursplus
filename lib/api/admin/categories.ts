@@ -43,6 +43,7 @@ export async function getAdminCategories(): Promise<AdminCategory[]> {
       return data.map((c) => ({
         id: c.id,
         name: c.name,
+        slug: c.slug,
         description: c.description || '',
         productCount: c._count?.products ?? 0,
         status: 'actif',
