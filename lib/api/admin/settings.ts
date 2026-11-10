@@ -1,5 +1,5 @@
 import { apiClient } from '../client';
-import { initialBoutiqueSettings, initialAdminUsers } from '@/lib/admin/mock-data/settings';
+import { initialBoutiqueSettings } from '@/lib/admin/mock-data/settings';
 import type { BoutiqueSettings, AdminUser, AdminRoleKey, AdminUserStatus } from '@/lib/admin/mock-data/types';
 
 // Map backend staff user to AdminUser
@@ -39,15 +39,20 @@ export async function getAdminSettings(): Promise<BoutiqueSettings> {
       cache: 'no-store',
     });
     if (res && typeof res === 'object') {
+      const dataObj = res.data?.boutique || res.boutique || res.data || res;
       return {
         ...initialBoutiqueSettings,
-        shopName: res.shopName || res.name || initialBoutiqueSettings.shopName,
-        contactEmail: res.contactEmail || res.email || initialBoutiqueSettings.contactEmail,
-        phoneDakar: res.phoneDakar || initialBoutiqueSettings.phoneDakar,
-        phoneSaly: res.phoneSaly || initialBoutiqueSettings.phoneSaly,
-        address: res.address || initialBoutiqueSettings.address,
-        tagline: res.tagline || initialBoutiqueSettings.tagline,
-        openingHours: res.openingHours || initialBoutiqueSettings.openingHours,
+        shopName: dataObj.shopName || dataObj.name || initialBoutiqueSettings.shopName,
+        contactEmail: dataObj.contactEmail || dataObj.email || initialBoutiqueSettings.contactEmail,
+        phoneDakar: dataObj.phoneDakar || initialBoutiqueSettings.phoneDakar,
+        phoneSaly: dataObj.phoneSaly || initialBoutiqueSettings.phoneSaly,
+        address: dataObj.address || initialBoutiqueSettings.address,
+        tagline: dataObj.tagline || initialBoutiqueSettings.tagline,
+        openingHours: dataObj.openingHours || initialBoutiqueSettings.openingHours,
+        currency: dataObj.currency || initialBoutiqueSettings.currency,
+        timezone: dataObj.timezone || initialBoutiqueSettings.timezone,
+        logoUrl: dataObj.logoUrl || initialBoutiqueSettings.logoUrl,
+        orderPrefix: dataObj.orderPrefix || initialBoutiqueSettings.orderPrefix,
       };
     }
   } catch (err) {
@@ -61,7 +66,7 @@ export async function getAdminSettings(): Promise<BoutiqueSettings> {
  * Update boutique general settings
  */
 export async function updateAdminSettings(settings: Partial<BoutiqueSettings>): Promise<boolean> {
-  await apiClient.put('/admin/settings', settings, {
+  await apiClient.put('/admin/settings', { boutique: settings }, {
     useAdminToken: true,
   });
   return true;
@@ -84,14 +89,15 @@ export async function getAdminStaffUsers(params?: { search?: string; role?: stri
       cache: 'no-store',
     });
 
-    if (Array.isArray(res)) return res.map(transformAdminUser);
-    if (res && Array.isArray(res.users)) return res.users.map(transformAdminUser);
-    if (res && Array.isArray(res.data)) return res.data.map(transformAdminUser);
+    const dataObj = res?.data ?? res;
+    if (Array.isArray(dataObj)) return dataObj.map(transformAdminUser);
+    if (Array.isArray(dataObj?.users)) return dataObj.users.map(transformAdminUser);
+    if (Array.isArray(dataObj?.items)) return dataObj.items.map(transformAdminUser);
   } catch (err) {
-    console.warn('[AdminSettingsAPI] Falling back to mock staff users:', err);
+    console.warn('[AdminSettingsAPI] Erreur staff users:', err);
   }
 
-  return initialAdminUsers;
+  return [];
 }
 
 /**

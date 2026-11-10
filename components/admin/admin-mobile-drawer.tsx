@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -25,11 +25,14 @@ import {
   Armchair,
   Trees,
   Repeat,
+  Camera,
 } from 'lucide-react';
 import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
 import { logoutAdmin } from '@/app/admin/connexion/actions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { getAdminUser, AdminSessionUser } from '@/lib/api/auth-token';
+import { AdminProfileDialog } from '@/components/admin/admin-profile-dialog';
 
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -39,13 +42,13 @@ type InstallPromptEvent = Event & {
 // Seuls les modules n'apparaissant pas dans le bottom navbar (Dashboard, Commandes, Produits, Livraisons)
 const drawerMenuItems = [
   { label: 'Abonnements', href: '/admin/abonnements', icon: Repeat },
-  { label: 'Fournisseurs', href: '/admin/fournisseurs', icon: Building2 },
-  { label: 'Approvisionnements', href: '/admin/approvisionnements', icon: Boxes },
+  { label: 'Fournisseurs', href: '/admin/fournisseurs', icon: Building2, badge: 'À venir' },
+  { label: 'Approvisionnements', href: '/admin/approvisionnements', icon: Boxes, badge: 'À venir' },
   { label: 'Gestion du Stock', href: '/admin/stock', icon: Package },
   { label: 'Clients & CRM', href: '/admin/clients', icon: Users },
   { label: 'Demandes de Devis', href: '/admin/devis', icon: FileSpreadsheet },
   { label: 'Location de Matériel', href: '/admin/location', icon: Armchair },
-  { label: 'Paysagisme & Projets', href: '/admin/paysagisme', icon: Trees },
+  { label: 'Paysagisme & Projets', href: '/admin/paysagisme', icon: Trees, badge: 'À venir' },
   { label: 'Catégories', href: '/admin/categories', icon: FolderTree },
   { label: 'Marketing & Promos', href: '/admin/marketing', icon: Megaphone },
   { label: 'Blog & Articles', href: '/admin/blog', icon: FileText },
@@ -60,10 +63,23 @@ export function AdminMobileDrawer() {
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
   const [isStandalone, setIsStandalone] = useState(false);
   const [isIosSafari, setIsIosSafari] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
+  const [currentUser, setCurrentUser] = useState<AdminSessionUser | null>(() => getAdminUser());
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
 
+  // Écouter les mises à jour en direct du profil administrateur
   useEffect(() => {
-    setMounted(true);
+    const handleUserUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<AdminSessionUser | null>;
+      if (customEvent.detail !== undefined) {
+        setCurrentUser(customEvent.detail);
+      } else {
+        setCurrentUser(getAdminUser());
+      }
+    };
+
+    window.addEventListener('admin-user-updated', handleUserUpdate);
+    return () => window.removeEventListener('admin-user-updated', handleUserUpdate);
   }, []);
 
   // Fermer le drawer avec la touche Echap
@@ -194,30 +210,54 @@ export function AdminMobileDrawer() {
           </button>
         </div>
 
-        {/* Profil utilisateur connecté */}
+        {/* Profil utilisateur connecté & Déconnexion Rapide */}
         <div className="px-4 py-2.5 bg-white/5 border-b border-white/10 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="relative">
-              <Avatar className="h-8 w-8 ring-2 ring-emerald-500/30">
+          <button
+            type="button"
+            onClick={() => setIsProfileDialogOpen(true)}
+            className="flex items-center gap-2.5 min-w-0 text-left hover:opacity-90 transition-opacity cursor-pointer group"
+            title="Modifier ma photo de profil"
+          >
+            <div className="relative shrink-0">
+              <Avatar className="h-8 w-8 ring-2 ring-emerald-500/30 group-hover:ring-emerald-400 transition-all">
                 <AvatarImage
-                  src="/images/admin-avatar.jpg"
-                  alt="Admin"
+                  src={currentUser?.avatar || undefined}
+                  alt={currentUser?.name || 'Admin'}
                   className="object-cover"
                 />
                 <AvatarFallback className="bg-[#193e23] text-white text-xs font-bold">
-                  A
+                  {currentUser?.name ? currentUser.name.slice(0, 2).toUpperCase() : 'AD'}
                 </AvatarFallback>
               </Avatar>
               <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-1 ring-white" />
             </div>
-            <div className="flex flex-col">
-              <span className="text-xs font-semibold text-white leading-tight">Admin</span>
-              <span className="text-[10.5px] text-white/60 leading-none">admin@decofleur.com</span>
+            <div className="flex flex-col min-w-0">
+              <div className="flex items-center gap-1">
+                <span className="text-xs font-semibold text-white leading-tight truncate">
+                  {currentUser?.name || 'Administrateur'}
+                </span>
+                <Camera size={11} className="text-white/50 group-hover:text-emerald-300 transition-colors shrink-0" />
+              </div>
+              <span className="text-[10.5px] text-white/60 leading-none truncate max-w-[130px]">
+                {currentUser?.email || 'Session active'}
+              </span>
             </div>
+          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              {currentUser?.role || 'Staff'}
+            </span>
+            <form action={logoutAdmin}>
+              <button
+                type="submit"
+                className="flex items-center justify-center h-8 w-8 rounded-lg bg-rose-950/60 border border-rose-800/50 text-rose-300 hover:bg-rose-900/80 hover:text-white transition-colors cursor-pointer"
+                title="Se déconnecter"
+                aria-label="Se déconnecter"
+              >
+                <LogOut size={14} />
+              </button>
+            </form>
           </div>
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-            Super Admin
-          </span>
         </div>
 
         {/* Section PWA : Installation ou état de l'app (subtile et discrète) */}
@@ -234,8 +274,8 @@ export function AdminMobileDrawer() {
                   <Smartphone size={13} />
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <span className="text-[11.5px] font-semibold text-white leading-tight truncate">Installer l'application</span>
-                  <span className="text-[9.5px] text-white/60 leading-tight truncate">Accès direct écran d'accueil</span>
+                  <span className="text-[11.5px] font-semibold text-white leading-tight truncate">Installer l&apos;application</span>
+                  <span className="text-[9.5px] text-white/60 leading-tight truncate">Accès direct écran d&apos;accueil</span>
                 </div>
               </div>
               <button
@@ -249,7 +289,7 @@ export function AdminMobileDrawer() {
             </div>
           ) : isIosSafari ? (
             <div className="p-2 rounded-lg bg-amber-500/15 border border-amber-400/30 text-amber-200 text-[10px] leading-tight">
-              <strong>Astuce iOS :</strong> Touchez <span className="underline font-semibold">Partager</span> puis <span className="font-semibold">« Sur l'écran d'accueil »</span>.
+              <strong>Astuce iOS :</strong> Touchez <span className="underline font-semibold">Partager</span> puis <span className="font-semibold">« Sur l&apos;écran d&apos;accueil »</span>.
             </div>
           ) : null}
         </div>
@@ -281,6 +321,11 @@ export function AdminMobileDrawer() {
                       strokeWidth={isActive ? 2.2 : 1.8}
                     />
                     <span className="flex-1 truncate">{item.label}</span>
+                    {item.badge && (
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        {item.badge}
+                      </span>
+                    )}
                     {isActive && (
                       <span className="h-1.5 w-1.5 rounded-full bg-[#ff5c8a]" />
                     )}
@@ -310,6 +355,8 @@ export function AdminMobileDrawer() {
             <button
               type="submit"
               className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-rose-800/40 bg-rose-950/40 text-xs font-semibold text-rose-200 hover:bg-rose-900/60 transition-colors cursor-pointer"
+              title="Se déconnecter"
+              aria-label="Se déconnecter"
             >
               <LogOut size={14} className="text-rose-300" />
               <span>Se déconnecter</span>
@@ -317,6 +364,14 @@ export function AdminMobileDrawer() {
           </form>
         </div>
       </aside>
+
+      {/* Profile Dialog */}
+      <AdminProfileDialog
+        isOpen={isProfileDialogOpen}
+        onOpenChange={setIsProfileDialogOpen}
+        currentUser={currentUser}
+        onUserUpdated={setCurrentUser}
+      />
     </div>,
     document.body
   );

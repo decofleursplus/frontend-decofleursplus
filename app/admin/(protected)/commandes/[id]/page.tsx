@@ -1,9 +1,9 @@
 'use client';
 
 import { use, useState, useEffect } from 'react';
-import { adminOrders } from '@/lib/admin/mock-data/orders';
 import type { AdminOrder } from '@/lib/admin/mock-data/types';
 import { getAdminOrderById, updateAdminOrderStatus } from '@/lib/api/admin/orders';
+import { ApiClientError } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,8 +23,12 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       try {
         const found = await getAdminOrderById(id);
         if (active) setOrder(found);
-      } catch {
-        if (active) setOrder(adminOrders.find((o) => o.id === id || o.ref === id) || null);
+      } catch (err) {
+        if (active) {
+          setOrder(null);
+          const msg = err instanceof ApiClientError ? err.message : 'Erreur lors du chargement de la commande';
+          toast.error(msg);
+        }
       } finally {
         if (active) setLoading(false);
       }

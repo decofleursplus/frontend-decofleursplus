@@ -1,6 +1,8 @@
+import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { notFound, redirect } from 'next/navigation';
+import { notFound, redirect, permanentRedirect } from 'next/navigation';
+import { constructMetadata } from '@/lib/seo/metadata';
 import {
   ArrowRight,
   Clock,
@@ -64,9 +66,90 @@ export function generateStaticParams() {
   return contentSlugs.map((slug) => ({ slug }));
 }
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+
+  if (categories[slug]) {
+    const title = categories[slug];
+    return constructMetadata({
+      title: `${title} — Fleuriste Saly & Dakar`,
+      canonical: `/categories/${slug}`,
+    });
+  }
+
+  switch (slug) {
+    case 'evenements':
+      return constructMetadata({
+        title: 'Événements & Décoration Florale | Mariages, Banquets & Cérémonies à Saly & Dakar',
+        description: 'Scénographie florale haut de gamme, arches de mariage, centres de table et décors monumentaux pour vos événements de prestige au Sénégal.',
+        canonical: '/evenements',
+        image: '/images/mariage.jpg',
+        keywords: ['decoration mariage dakar', 'arche florale saly', 'fleuriste evenementiel senegal', 'centre de table banquet'],
+      });
+    case 'livraison':
+      return constructMetadata({
+        title: 'Livraison de Fleurs à Saly, Dakar, Somone & Petite-Côte | Décofleur Plus',
+        description: 'Modalités de livraison de fleurs fraîches : express 2h à Saly Portudal, le jour même à Somone et Mbour, et 24h par navette réfrigérée vers Dakar.',
+        canonical: '/livraison',
+        image: '/images/hero.jpg',
+        keywords: ['livraison fleurs dakar', 'livraison fleurs saly', 'livraison bouquet senegal', 'livraison somone'],
+      });
+    case 'a-propos':
+      return constructMetadata({
+        title: 'À Propos de Décofleur Plus — Savoir-Faire Floral & Héritage Artisanal',
+        description: 'Découvrez l’histoire de Décofleur Plus : artisanat floral de prestige, sélection rigoureuse des fleurs fraîches et passion botanique à Saly Portudal.',
+        canonical: '/a-propos',
+        image: '/images/boutique-equipe.jpg',
+      });
+    case 'contact':
+      return constructMetadata({
+        title: 'Contact & Atelier Floral à Saly Portudal | Décofleur Plus',
+        description: 'Contactez notre atelier floral : téléphone Saly, WhatsApp Dakar, adresse Rue des Palmiers à Saly Portudal, devis gratuit et horaires d’ouverture.',
+        canonical: '/contact',
+      });
+    case 'conditions':
+      return constructMetadata({
+        title: 'Conditions Générales de Vente | Décofleur Plus',
+        description: 'Conditions générales de vente, engagements fraîcheur, modalités de commande et de paiement Wave & Orange Money sur Décofleur Plus.',
+        canonical: '/conditions',
+      });
+    case 'confidentialite':
+      return constructMetadata({
+        title: 'Politique de Confidentialité | Décofleur Plus',
+        description: 'Politique de protection des données personnelles et de confidentialité de Décofleur Plus.',
+        canonical: '/confidentialite',
+      });
+    case 'recherche':
+      return constructMetadata({
+        title: 'Recherche Catalogue Floral',
+        description: 'Recherchez une composition florale, un bouquet ou une plante.',
+        noIndex: true,
+      });
+    default:
+      return constructMetadata({
+        title: 'Décofleur Plus',
+      });
+  }
+}
+
 export default async function ContentPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const title = categories[slug];
+
+  // Redirection 301 automatique des anciennes URLs courtes vers /categories/[slug]
+  if (title) {
+    permanentRedirect(`/categories/${slug}`);
+  }
+  if (slug === 'blog') {
+    permanentRedirect('/blog');
+  }
+  if (slug === 'faq') {
+    redirect('/#faq');
+  }
 
   if (title) return <CategoryPage title={title} slug={slug} />;
   if (slug === 'recherche') {

@@ -1,21 +1,52 @@
+import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, Trees, Building2, SunMedium, Scissors } from 'lucide-react';
 import { BotanicalCorners } from '@/components/botanical-corners';
 import { SiteFooter } from '@/components/site-footer';
+import { constructMetadata } from '@/lib/seo/metadata';
+import { Breadcrumbs } from '@/components/seo/breadcrumbs';
+import { JsonLd } from '@/components/seo/json-ld';
+import { getServiceSchema } from '@/lib/seo/schema';
 
-export const metadata = {
-  title: 'Paysagisme & Aménagement Vert | Décofleur Plus',
+export const metadata: Metadata = constructMetadata({
+  title: 'Paysagisme & Aménagement Vert au Sénégal | Villas & Hôtels Saly & Dakar',
   description:
-    'Conception, aménagement et entretien d’espaces verts pour villas, terrasses, hôtels et entreprises au Sénégal.',
-};
+    'Conception paysagère, aménagement de jardins, terrasses de villas, végétalisation d’hôtels et entretien d’espaces verts à Saly Portudal, Somone et Dakar par Décofleur Plus.',
+  canonical: '/paysagisme',
+  image: '/images/paysagisme/paysagisme-hero.jpg',
+  keywords: [
+    'paysagiste dakar',
+    'paysagiste saly',
+    'amenagement jardin senegal',
+    'creation jardin villa saly',
+    'vegetalisation terrasse dakar',
+    'entretien espaces verts petite cote',
+  ],
+});
 
 export default function PaysagismePage() {
+  const landscapingServiceSchema = getServiceSchema({
+    name: 'Paysagisme & Aménagement d’Espaces Verts',
+    description:
+      'Conception paysagère, création de jardins de villas, terrasses végétalisées et entretien d’espaces verts au Sénégal par Décofleur Plus.',
+    url: '/paysagisme',
+    image: '/images/paysagisme/paysagisme-hero.jpg',
+    areaServed: ['Saly Portudal', 'Dakar', 'Somone', 'Mbour', 'Ngaparou', 'Petite-Côte'],
+  });
+
+  const breadcrumbs = [
+    { label: 'Accueil', href: '/' },
+    { label: 'Paysagisme & Aménagement Vert' },
+  ];
+
   return (
     <div className="relative min-h-screen bg-white text-[#1c2e20] overflow-x-hidden">
+      <JsonLd data={landscapingServiceSchema} />
       <BotanicalCorners />
 
       <main className="content-width px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+        <Breadcrumbs items={breadcrumbs} className="mb-4" />
         {/* ── 1. Hero Banner Panoramique Compact (Hauteur Réduite) ── */}
         <section className="relative w-full rounded-xl overflow-hidden min-h-[280px] sm:min-h-[310px] lg:min-h-[340px] flex items-center p-6 sm:p-8 lg:p-10 mb-6 sm:mb-8 shadow-md border border-[#e6ded5]">
           <Image
@@ -30,6 +61,10 @@ export default function PaysagismePage() {
           <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/25 pointer-events-none" />
 
           <div className="relative z-10 max-w-xl text-white">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 text-amber-200 border border-amber-400/40 text-xs font-semibold mb-3 backdrop-blur-md">
+              <span className="w-2 h-2 rounded-full bg-amber-400" />
+              Service en ligne &amp; catalogue complet à venir
+            </div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-white tracking-tight leading-tight mb-3 drop-shadow-sm">
               Paysagisme &amp; Aménagement Vert
             </h1>
@@ -38,17 +73,17 @@ export default function PaysagismePage() {
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <Link
-                href="/devis?type=paysagisme"
+                href="/devis?type=evenements"
                 className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-[#c8436e] hover:bg-[#b0355d] text-white font-medium text-xs sm:text-sm shadow-md transition-all active:scale-95"
               >
-                Demander un devis
+                Demander un devis (Événements)
                 <ArrowRight size={15} />
               </Link>
               <Link
                 href="/paysagisme/prestations"
                 className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-md text-white border border-white/30 font-medium text-xs sm:text-sm transition-all"
               >
-                Découvrir nos prestations
+                Découvrir nos prestations (À venir)
               </Link>
             </div>
           </div>

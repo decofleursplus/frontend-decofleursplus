@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import {
   CalendarClock,
@@ -29,16 +29,19 @@ import {
   BarChart3,
   ArrowRightLeft,
   Sparkles,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
-import {
-  initialRentalEquipment,
-  initialRentalReservations,
-  initialGanttBookings,
-  GanttBooking,
-} from '@/lib/admin/mock-data/rentals';
+import type { GanttBooking } from '@/lib/admin/mock-data/rentals';
 import { RentalEquipment, RentalReservation, RentalReservationStatus } from '@/lib/admin/mock-data/types';
+import {
+  getAdminRentalEquipment,
+  createAdminRentalEquipment,
+  updateAdminRentalEquipment,
+  deleteAdminRentalEquipment,
+} from '@/lib/api/admin/rentals';
+import { ApiClientError } from '@/lib/api/client';
 
 const MONTH_NAMES = [
   'Janvier',
@@ -59,11 +62,33 @@ const WEEKDAY_NAMES = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 
 export default function AdminLocationPage() {
   const [activeTab, setActiveTab] = useState<'reservations' | 'calendrier' | 'equipements'>('calendrier');
-  const [reservations, setReservations] = useState<RentalReservation[]>(initialRentalReservations);
-  const [equipmentList, setEquipmentList] = useState<RentalEquipment[]>(initialRentalEquipment);
-  const [ganttBookings, setGanttBookings] = useState<GanttBooking[]>(initialGanttBookings);
+  const [reservations, setReservations] = useState<RentalReservation[]>([]);
+  const [equipmentList, setEquipmentList] = useState<RentalEquipment[]>([]);
+  const [ganttBookings, setGanttBookings] = useState<GanttBooking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | RentalReservationStatus>('all');
   const [searchTerm, setSearchTerm] = useState('');
+
+  const loadRentalData = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+
+    try {
+      const items = await getAdminRentalEquipment();
+      setEquipmentList(items);
+    } catch (err) {
+      const msg = err instanceof ApiClientError ? err.message : 'Erreur lors du chargement des équipements de location';
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadRentalData();
+  }, [loadRentalData]);
 
   // Dynamic Gantt Controls
   const [currentYear, setCurrentYear] = useState(2026);
@@ -85,13 +110,13 @@ export default function AdminLocationPage() {
   const [editingEquipmentId, setEditingEquipmentId] = useState<string | null>(null);
   const [eqName, setEqName] = useState('');
   const [eqCategory, setEqCategory] = useState<'mobilier' | 'vaisselle' | 'decoration' | 'accessoires'>('mobilier');
-  const [eqPricePerDay, setEqPricePerDay] = useState(25000);
-  const [eqDeposit, setEqDeposit] = useState(50000);
-  const [eqTotalStock, setEqTotalStock] = useState(20);
-  const [eqAvailableStock, setEqAvailableStock] = useState(20);
+  const [eqPricePerDay, setEqPricePerDay] = useState(0);
+  const [eqDeposit, setEqDeposit] = useState(0);
+  const [eqTotalStock, setEqTotalStock] = useState(1);
+  const [eqAvailableStock, setEqAvailableStock] = useState(1);
   const [eqDimensions, setEqDimensions] = useState('');
   const [eqDescription, setEqDescription] = useState('');
-  const [eqImage, setEqImage] = useState('/images/location/table-ronde.jpg');
+  const [eqImage, setEqImage] = useState('');
 
   const openReservationDetails = (idOrRef: string) => {
     const existing = reservations.find(
@@ -209,72 +234,70 @@ export default function AdminLocationPage() {
       setEditingEquipmentId(null);
       setEqName('');
       setEqCategory('mobilier');
-      setEqPricePerDay(15000);
-      setEqDeposit(30000);
-      setEqTotalStock(10);
-      setEqAvailableStock(10);
-      setEqDimensions('Dimensions standard · Finition soignée');
-      setEqDescription('Équipement haut de gamme pour cérémonies et réceptions.');
-      setEqImage('/images/location/table-ronde.jpg');
+      setEqPricePerDay(0);
+      setEqDeposit(0);
+      setEqTotalStock(1);
+      setEqAvailableStock(1);
+      setEqDimensions('');
+      setEqDescription('');
+      setEqImage('');
     }
     setIsEquipmentDrawerOpen(true);
   };
 
-  const handleSaveEquipment = (e: React.FormEvent) => {
+  const handleSaveEquipment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!eqName.trim()) {
       toast.error('Veuillez saisir le nom de l’équipement.');
       return;
     }
 
-    const catLabels: Record<string, string> = {
-      mobilier: 'Mobilier événementiel',
-      vaisselle: 'Vaisselle & arts de la table',
-      decoration: 'Décoration florale',
-      accessoires: 'Accessoires & lumières',
-    };
-
-    if (editingEquipmentId) {
-      setEquipmentList((prev) =>
-        prev.map((eq) =>
-          eq.id === editingEquipmentId
-            ? {
-                ...eq,
-                name: eqName,
-                category: eqCategory,
-                categoryLabel: catLabels[eqCategory] || 'Location',
-                pricePerDay: Number(eqPricePerDay),
-                deposit: Number(eqDeposit),
-                totalStock: Number(eqTotalStock),
-                availableStock: Number(eqAvailableStock),
-                dimensions: eqDimensions,
-                description: eqDescription,
-                image: eqImage,
-              }
-            : eq
-        )
-      );
-      toast.success(`Équipement « ${eqName} » modifié avec succès !`);
-    } else {
-      const newEq: RentalEquipment = {
-        id: `eq-${Date.now()}`,
-        name: eqName,
-        category: eqCategory,
-        categoryLabel: catLabels[eqCategory] || 'Location',
-        pricePerDay: Number(eqPricePerDay),
-        deposit: Number(eqDeposit),
-        totalStock: Number(eqTotalStock),
-        availableStock: Number(eqAvailableStock),
-        dimensions: eqDimensions,
-        description: eqDescription,
-        image: eqImage,
-        status: 'disponible',
-      };
-      setEquipmentList([newEq, ...equipmentList]);
-      toast.success(`Équipement « ${eqName} » ajouté au catalogue !`);
+    try {
+      if (editingEquipmentId) {
+        const updated = await updateAdminRentalEquipment(editingEquipmentId, {
+          name: eqName,
+          category: eqCategory,
+          pricePerDay: Number(eqPricePerDay),
+          depositAmount: Number(eqDeposit),
+          totalQuantity: Number(eqTotalStock),
+          dimensions: eqDimensions,
+          description: eqDescription,
+          imageUrl: eqImage,
+        });
+        setEquipmentList((prev) =>
+          prev.map((eq) => (eq.id === editingEquipmentId ? updated : eq))
+        );
+        toast.success(`Équipement « ${eqName} » modifié avec succès !`);
+      } else {
+        const created = await createAdminRentalEquipment({
+          name: eqName,
+          category: eqCategory,
+          pricePerDay: Number(eqPricePerDay),
+          depositAmount: Number(eqDeposit),
+          totalQuantity: Number(eqTotalStock),
+          description: eqDescription || 'Matériel de réception professionnel',
+          dimensions: eqDimensions,
+          imageUrl: eqImage,
+        });
+        setEquipmentList((prev) => [created, ...prev]);
+        toast.success(`Équipement « ${eqName} » ajouté au catalogue de location !`);
+      }
+      setIsEquipmentDrawerOpen(false);
+    } catch (err) {
+      const msg = err instanceof ApiClientError ? err.message : "Erreur lors de l'enregistrement";
+      toast.error(msg);
     }
+  };
 
-    setIsEquipmentDrawerOpen(false);
+  const handleDeleteEquipment = async (id: string, name: string) => {
+    try {
+      await deleteAdminRentalEquipment(id);
+      setEquipmentList((prev) => prev.filter((e) => e.id !== id));
+      toast.success(`Équipement « ${name} » retiré du catalogue.`);
+    } catch (err) {
+      const msg = err instanceof ApiClientError ? err.message : 'Erreur lors de la suppression';
+      toast.error(msg);
+    }
   };
 
   // Computed dynamic dates for Gantt Planning in 2026
@@ -1135,62 +1158,81 @@ export default function AdminLocationPage() {
       {/* ── VUE 3 : Catalogue des Équipements ── */}
       {activeTab === 'equipements' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {equipmentList.map((eq) => (
-            <div
-              key={eq.id}
-              className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs flex flex-col justify-between"
-            >
-              <div>
-                <div className="relative aspect-[16/10] w-full">
-                  <Image src={eq.image} alt={eq.name} fill className="object-cover" />
-                  <div className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-white/90 text-xs font-semibold text-[#193e23]">
-                    Dispo : {eq.availableStock} / {eq.totalStock}
-                  </div>
-                </div>
-
-                <div className="p-5">
-                  <span className="text-[11px] font-semibold text-[#c8436e] uppercase tracking-wider">{eq.categoryLabel}</span>
-                  <h3 className="font-serif font-bold text-lg text-[#173f22] mt-0.5">{eq.name}</h3>
-                  <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-base font-extrabold text-[#c8436e]">
-                      {eq.pricePerDay.toLocaleString('fr-FR')} FCFA
-                    </span>
-                    <span className="text-xs text-muted-foreground">/ jour</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Caution : <strong>{eq.deposit.toLocaleString('fr-FR')} FCFA</strong>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-5 pt-0 border-t border-border mt-3 flex items-center justify-between text-xs">
-                <span className="text-emerald-600 font-semibold flex items-center gap-1">
-                  <CheckCircle2 size={14} /> En catalogue
-                </span>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => handleOpenEquipmentDrawer(eq)}
-                    className="p-1.5 rounded-lg border border-border hover:bg-muted text-gray-700 transition-colors cursor-pointer"
-                    title="Modifier l'équipement"
-                  >
-                    <Pencil size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEquipmentList((prev) => prev.filter((e) => e.id !== eq.id));
-                      toast.info(`Équipement « ${eq.name} » retiré du catalogue.`);
-                    }}
-                    className="p-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                    title="Supprimer du catalogue"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </div>
+          {loading ? (
+            <div className="col-span-full bg-white rounded-2xl border border-border p-12 text-center text-muted-foreground flex flex-col items-center justify-center gap-2">
+              <Loader2 className="h-6 w-6 animate-spin text-[#173f22]" />
+              <p className="text-xs">Chargement du catalogue de location...</p>
             </div>
-          ))}
+          ) : equipmentList.length === 0 ? (
+            <div className="col-span-full bg-white rounded-2xl border border-border p-12 text-center text-muted-foreground space-y-3">
+              <Armchair className="h-10 w-10 text-gray-300 mx-auto" />
+              <div>
+                <p className="font-semibold text-gray-700 text-sm">Aucun équipement de location enregistré</p>
+                <p className="text-xs text-gray-400 mt-1">Créez vos fiches matériel (chaises, tables, arches, vaisselle) pour les louer en ligne.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleOpenEquipmentDrawer()}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white font-semibold text-xs shadow-xs transition-colors cursor-pointer"
+              >
+                <Plus size={15} /> Ajouter un équipement
+              </button>
+            </div>
+          ) : (
+            equipmentList.map((eq) => (
+              <div
+                key={eq.id}
+                className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs flex flex-col justify-between"
+              >
+                <div>
+                  <div className="relative aspect-[16/10] w-full">
+                    <Image src={eq.image} alt={eq.name} fill className="object-cover" />
+                    <div className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-white/90 text-xs font-semibold text-[#193e23]">
+                      Dispo : {eq.availableStock} / {eq.totalStock}
+                    </div>
+                  </div>
+
+                  <div className="p-5">
+                    <span className="text-[11px] font-semibold text-[#c8436e] uppercase tracking-wider">{eq.categoryLabel}</span>
+                    <h3 className="font-serif font-bold text-lg text-[#173f22] mt-0.5">{eq.name}</h3>
+                    <div className="flex items-baseline gap-2 mt-2">
+                      <span className="text-base font-extrabold text-[#c8436e]">
+                        {eq.pricePerDay.toLocaleString('fr-FR')} FCFA
+                      </span>
+                      <span className="text-xs text-muted-foreground">/ jour</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Caution : <strong>{eq.deposit.toLocaleString('fr-FR')} FCFA</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-5 pt-0 border-t border-border mt-3 flex items-center justify-between text-xs">
+                  <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                    <CheckCircle2 size={14} /> En catalogue
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEquipmentDrawer(eq)}
+                      className="p-1.5 rounded-lg border border-border hover:bg-muted text-gray-700 transition-colors cursor-pointer"
+                      title="Modifier l'équipement"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteEquipment(eq.id, eq.name)}
+                      className="p-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                      title="Supprimer du catalogue"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       )}
 

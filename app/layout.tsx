@@ -3,19 +3,62 @@ import './globals.css';
 import { RootShell } from '@/components/root-shell';
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
+import { SITE_CONFIG, SITE_URL } from '@/lib/seo/config';
+import { getFloristSchema, getOrganizationSchema } from '@/lib/seo/schema';
+import { JsonLd } from '@/components/seo/json-ld';
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
-  title: 'Décofleur Plus — Nature en élégance',
-  description: 'Fleuriste à Saly — Bouquets, plantes, décoration événementielle, paniers de fruits et cadeaux.',
-  applicationName: 'Décofleur Plus',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${SITE_CONFIG.name} — ${SITE_CONFIG.tagline} | Fleuriste à Saly, Dakar & Petite-Côte`,
+    template: `%s | ${SITE_CONFIG.name}`,
+  },
+  description: SITE_CONFIG.description,
+  applicationName: SITE_CONFIG.name,
   manifest: '/manifest.webmanifest',
-  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'Décofleur Plus' },
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: SITE_CONFIG.name },
   formatDetection: { telephone: false },
   icons: {
     icon: [{ url: '/icons/icon.svg', type: 'image/svg+xml' }],
     apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
+  alternates: {
+    canonical: SITE_URL,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'fr_SN',
+    url: SITE_URL,
+    siteName: SITE_CONFIG.name,
+    title: `${SITE_CONFIG.name} — ${SITE_CONFIG.tagline} | Fleuriste à Saly, Dakar & Petite-Côte`,
+    description: SITE_CONFIG.description,
+    images: [
+      {
+        url: `${SITE_URL}/images/og-decofleur.jpg`,
+        width: 1200,
+        height: 630,
+        alt: `${SITE_CONFIG.name} — Fleuriste d'artisanat au Sénégal`,
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `${SITE_CONFIG.name} — ${SITE_CONFIG.tagline}`,
+    description: SITE_CONFIG.description,
+    images: [`${SITE_URL}/images/og-decofleur.jpg`],
   },
 };
 
@@ -29,10 +72,13 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="fr" className={cn("font-sans", geist.variable)} data-scroll-behavior="smooth">
+      <head>
+        <JsonLd data={getOrganizationSchema()} />
+        <JsonLd data={getFloristSchema()} />
+      </head>
       <body className="min-h-screen">
         <RootShell>{children}</RootShell>
       </body>
     </html>
   );
 }
-

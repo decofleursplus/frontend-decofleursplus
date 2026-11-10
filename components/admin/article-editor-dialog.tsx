@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { BlogArticle, BlogCategory, BlogAuthor, BlogArticleStatus } from '@/lib/admin/mock-data/types';
-import { adminProducts } from '@/lib/admin/mock-data/products';
+import type { BlogArticle, BlogCategory, BlogAuthor, BlogArticleStatus, AdminProduct } from '@/lib/admin/mock-data/types';
+import { getAdminProducts } from '@/lib/api/admin/products';
 import {
   Dialog,
   DialogContent,
@@ -88,6 +88,17 @@ export function ArticleEditorDialog({
 
   const [seoTitle, setSeoTitle] = useState('');
   const [seoDescription, setSeoDescription] = useState('');
+  const [availableProducts, setAvailableProducts] = useState<AdminProduct[]>([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      getAdminProducts()
+        .then((res) => {
+          if (res && Array.isArray(res.items)) setAvailableProducts(res.items);
+        })
+        .catch(() => {});
+    }
+  }, [isOpen]);
 
   // Auto-slug helper
   const generateSlug = (text: string) => {
@@ -716,7 +727,7 @@ export function ArticleEditorDialog({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-52 overflow-y-auto pr-1">
-                  {adminProducts.map((prod) => {
+                  {availableProducts.map((prod) => {
                     const isSelected = selectedProductIds.includes(prod.id);
                     return (
                       <div

@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   ArrowRight,
   Minus,
@@ -15,28 +15,26 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { useCart } from '@/components/cart-provider';
+import { useAuth } from '@/components/auth-provider';
 import { formatPrice } from '@/lib/products';
 import { SiteFooter } from '@/components/site-footer';
 import { validateCoupon, ValidatedCoupon } from '@/lib/api/marketing';
 
 export default function CartPage() {
   const { items, subtotal, change, remove } = useCart();
+  const { isAuthenticated } = useAuth();
   const [promo, setPromo] = useState('');
   const [loadingCoupon, setLoadingCoupon] = useState(false);
-  const [appliedCoupon, setAppliedCoupon] = useState<ValidatedCoupon | null>(null);
-  const [couponMessage, setCouponMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  // Restaurer le coupon précédemment validé en session si existant
-  useEffect(() => {
+  const [appliedCoupon, setAppliedCoupon] = useState<ValidatedCoupon | null>(() => {
+    if (typeof window === 'undefined') return null;
     try {
       const saved = sessionStorage.getItem('decofleur_applied_coupon');
-      if (saved) {
-        setAppliedCoupon(JSON.parse(saved));
-      }
+      return saved ? JSON.parse(saved) : null;
     } catch {
-      // Ignorer
+      return null;
     }
-  }, []);
+  });
+  const [couponMessage, setCouponMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const baseDelivery = items.length ? 3000 : 0;
   const isFreeShipping = appliedCoupon?.freeShipping;
@@ -277,7 +275,10 @@ export default function CartPage() {
                 <strong>{formatPrice(finalTotal)}</strong>
               </div>
 
-              <Link className="button button-primary checkout-button" href="/commande">
+              <Link
+                className="button button-primary checkout-button"
+                href={isAuthenticated ? '/commande' : '/connexion?redirect=/commande'}
+              >
                 Passer la commande <ArrowRight size={16} />
               </Link>
 

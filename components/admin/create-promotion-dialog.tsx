@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { AdminPromotion, PromotionTargetType } from '@/lib/admin/mock-data/types';
+import { getAdminCategories } from '@/lib/api/admin/categories';
+import { getAdminProducts } from '@/lib/api/admin/products';
 import {
   Dialog,
   DialogContent,
@@ -13,7 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { BadgePercent, FolderTree, Package, Check } from 'lucide-react';
+import { BadgePercent, FolderTree, Package, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CreatePromotionDialogProps {
@@ -22,26 +24,6 @@ interface CreatePromotionDialogProps {
   onCreate: (promotion: AdminPromotion) => void;
 }
 
-const availableCategories = [
-  'Bouquets de roses',
-  'Fleurs fraîches',
-  "Plantes d'intérieur",
-  'Fleurs séchées & Pampas',
-  'Compositions deuil',
-  'Vases & Céramiques',
-  'Accessoires & Soins',
-];
-
-const availableProducts = [
-  'Bouquet Romance Rose Passion',
-  'Bouquet Pastel Printanier',
-  'Orchidée Blanche Prestige 2 Tiges',
-  'Composition Florale Zen Saly',
-  'Coffret Écrin Floral & Chocolats',
-  'Bouquet Sauvage Fleurs Séchées',
-  'Duo Bougie Artisanale & Roses',
-];
-
 export function CreatePromotionDialog({
   isOpen,
   onOpenChange,
@@ -49,17 +31,48 @@ export function CreatePromotionDialog({
 }: CreatePromotionDialogProps) {
   const [name, setName] = useState('');
   const [targetType, setTargetType] = useState<PromotionTargetType>('categories');
-  const [selectedTargets, setSelectedTargets] = useState<string[]>([
-    'Bouquets de roses',
-  ]);
-  const [discount, setDiscount] = useState('15');
-  const [badgeText, setBadgeText] = useState('Offre Spéciale -15%');
+  const [selectedTargets, setSelectedTargets] = useState<string[]>([]);
+  const [categoriesList, setCategoriesList] = useState<string[]>([]);
+  const [productsList, setProductsList] = useState<string[]>([]);
+  const [isLoadingTargets, setIsLoadingTargets] = useState(false);
+  const [discount, setDiscount] = useState('');
+  const [badgeText, setBadgeText] = useState('');
   const [startDate, setStartDate] = useState(
     new Date().toISOString().split('T')[0]
   );
   const [endDate, setEndDate] = useState(
     new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   );
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let isMounted = true;
+    async function fetchTargets() {
+      setIsLoadingTargets(true);
+      try {
+        const [cats, prods] = await Promise.all([
+          getAdminCategories(),
+          getAdminProducts({ limit: 50 }),
+        ]);
+        if (isMounted) {
+          if (cats && cats.length > 0) {
+            setCategoriesList(cats.map((c) => c.name));
+          }
+          if (prods && prods.items && prods.items.length > 0) {
+            setProductsList(prods.items.map((p) => p.name));
+          }
+        }
+      } catch (err) {
+        console.warn('Erreur chargement cibles promotion:', err);
+      } finally {
+        if (isMounted) setIsLoadingTargets(false);
+      }
+    }
+    fetchTargets();
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen]);
 
   const toggleTarget = (item: string) => {
     setSelectedTargets((prev) =>
@@ -71,6 +84,8 @@ export function CreatePromotionDialog({
     setDiscount(val);
     if (val) {
       setBadgeText(`Offre Spéciale -${val}%`);
+    } else {
+      setBadgeText('');
     }
   };
 
@@ -149,7 +164,7 @@ export function CreatePromotionDialog({
                   type="button"
                   onClick={() => {
                     setTargetType('categories');
-                    setSelectedTargets(['Bouquets de roses']);
+                    setSelectedTargets([]);
                   }}
                   className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center gap-2 ${
                     targetType === 'categories'
@@ -164,7 +179,7 @@ export function CreatePromotionDialog({
                   type="button"
                   onClick={() => {
                     setTargetType('products');
-                    setSelectedTargets(['Bouquet Romance Rose Passion']);
+                    setSelectedTargets([]);
                   }}
                   className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center gap-2 ${
                     targetType === 'products'
@@ -180,12 +195,28 @@ export function CreatePromotionDialog({
 
             {/* Sélection des cibles */}
             <div className="space-y-1.5">
-              <Label className="font-semibold text-gray-700 text-xs whitespace-nowrap block">
-                Sélectionnez les {targetType === 'categories' ? 'catégories' : 'produits'} concernés *
-              </Label>
-              <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-3 bg-[#fcfaf7] border border-[#e7e4dd] rounded-xl custom-modal-scroll">
-                {(targetType === 'categories' ? availableCategories : availableProducts).map(
-                  (item) => {
+              <div className="flex items-center justify-between">
+                <Label className="font-semibold text-gray-700 text-xs whitespace-nowrap block">
+                  Sélectionnez les {targetType === 'categories' ? 'catégories' : 'produits'} concernés *
+                </Label>
+                {selectedTargets.length > 0 && (
+                  <span className="text-[11px] text-[#c1647a] font-medium">
+                    {selectedTargets.length} sélectionné(s)
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-3 bg-[#fcfaf7] border border-[#e7e4dd] rounded-xl custom-modal-scroll min-h-[50px] items-center">
+                {isLoadingTargets ? (
+                  <div className="flex items-center justify-center w-full py-2 gap-2 text-xs text-gray-500">
+                    <Loader2 className="h-4 w-4 animate-spin text-[#c1647a]" />
+                    <span>Chargement des options...</span>
+                  </div>
+                ) : (targetType === 'categories' ? categoriesList : productsList).length === 0 ? (
+                  <p className="text-xs text-gray-400 py-1 italic w-full text-center">
+                    Aucun(e) {targetType === 'categories' ? 'catégorie' : 'produit'} disponible.
+                  </p>
+                ) : (
+                  (targetType === 'categories' ? categoriesList : productsList).map((item) => {
                     const isSelected = selectedTargets.includes(item);
                     return (
                       <button
@@ -202,7 +233,7 @@ export function CreatePromotionDialog({
                         <span className="whitespace-nowrap">{item}</span>
                       </button>
                     );
-                  }
+                  })
                 )}
               </div>
             </div>

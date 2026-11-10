@@ -3,8 +3,6 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { BlogArticle } from '@/lib/admin/mock-data/types';
-import { adminProducts } from '@/lib/admin/mock-data/products';
-import { adminBlogAuthors } from '@/lib/admin/mock-data/blog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -35,10 +33,13 @@ export function ArticlePreviewView({ article }: ArticlePreviewViewProps) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
 
-  const author = adminBlogAuthors.find((a) => a.id === article.authorId);
-  const relatedProducts = (article.relatedProductIds || [])
-    .map((id) => adminProducts.find((p) => p.id === id))
-    .filter(Boolean);
+  const author = {
+    name: article.authorName || 'Artisan Fleuriste',
+    avatar: article.authorAvatar || 'FD',
+    role: article.authorRole || 'Artisan Fleuriste',
+    bio: (article as any).authorBio || "Expert en compositions végétales et sélection florale d'exception chez Décofleur Plus Saly.",
+  };
+  const relatedProducts: any[] = [];
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(`https://decofleurplus.com/blog/${article.slug}`);

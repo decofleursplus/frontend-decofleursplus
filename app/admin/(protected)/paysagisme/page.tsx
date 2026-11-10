@@ -18,16 +18,16 @@ import {
   Save,
   FileText,
   Calendar,
+  AlertCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
-import { initialLandscapePrestations, initialLandscapeProjects } from '@/lib/admin/mock-data/landscaping';
 import { LandscapePrestation, LandscapeProject, LandscapeProjectCategory } from '@/lib/admin/mock-data/types';
 
 export default function AdminPaysagismePage() {
   const [activeTab, setActiveTab] = useState<'prestations' | 'realisations'>('prestations');
-  const [prestations, setPrestations] = useState<LandscapePrestation[]>(initialLandscapePrestations);
-  const [projects, setProjects] = useState<LandscapeProject[]>(initialLandscapeProjects);
+  const [prestations, setPrestations] = useState<LandscapePrestation[]>([]);
+  const [projects, setProjects] = useState<LandscapeProject[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Prestation Drawer state
@@ -45,13 +45,13 @@ export default function AdminPaysagismePage() {
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [projTitle, setProjTitle] = useState('');
   const [projCategory, setProjCategory] = useState<LandscapeProjectCategory>('villas');
-  const [projLocation, setProjLocation] = useState('Saly Portudal');
+  const [projLocation, setProjLocation] = useState('');
   const [projDescription, setProjDescription] = useState('');
-  const [projYear, setProjYear] = useState('2024');
-  const [projSurface, setProjSurface] = useState('650 m²');
-  const [projTags, setProjTags] = useState('Piscine, Palmiers, Gazon');
+  const [projYear, setProjYear] = useState(() => new Date().getFullYear().toString());
+  const [projSurface, setProjSurface] = useState('');
+  const [projTags, setProjTags] = useState('');
   const [projFeatured, setProjFeatured] = useState(false);
-  const [projImage, setProjImage] = useState('/images/paysagisme/paysagisme-villas.jpg');
+  const [projImage, setProjImage] = useState('');
 
   const handleOpenPrestationDrawer = (p?: LandscapePrestation) => {
     if (p) {
@@ -65,11 +65,11 @@ export default function AdminPaysagismePage() {
     } else {
       setEditingPrestationId(null);
       setPresTitle('');
-      setPresSubtitle('Étude et aménagement sur mesure');
+      setPresSubtitle('');
       setPresCategory('Conception');
-      setPresDescription('Service sur mesure par nos architectes paysagistes qualifiés.');
-      setPresHighlights('Étude personnalisée de votre sol\nModélisation 3D du projet\nSélection d’essences tropicales adaptées');
-      setPresImage('/images/paysagisme/prestation-conception.jpg');
+      setPresDescription('');
+      setPresHighlights('');
+      setPresImage('');
     }
     setIsPrestationDrawerOpen(true);
   };
@@ -131,11 +131,11 @@ export default function AdminPaysagismePage() {
       setEditingProjectId(null);
       setProjTitle('');
       setProjCategory('villas');
-      setProjLocation('Saly Portudal');
-      setProjDescription('Création d’un écrin végétal contemporain avec essences locales.');
-      setProjTags('Jardin tropical, Gazon synthétique, Éclairage');
+      setProjLocation('');
+      setProjDescription('');
+      setProjTags('');
       setProjFeatured(false);
-      setProjImage('/images/paysagisme/paysagisme-villas.jpg');
+      setProjImage('');
     }
     setIsProjectDrawerOpen(true);
   };
@@ -210,9 +210,14 @@ export default function AdminPaysagismePage() {
       {/* ── En-tête de page ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#173f22]">
-            Paysagisme &amp; Aménagement Vert
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#173f22]">
+              Paysagisme &amp; Aménagement Vert
+            </h1>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+              À venir
+            </span>
+          </div>
           <p className="text-sm text-muted-foreground mt-1">
             Gérez votre catalogue de prestations paysagères et votre galerie de réalisations publiques.
           </p>
@@ -220,18 +225,25 @@ export default function AdminPaysagismePage() {
 
         <button
           type="button"
-          onClick={() => {
-            if (activeTab === 'prestations') {
-              handleOpenPrestationDrawer();
-            } else {
-              handleOpenProjectDrawer();
-            }
-          }}
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-sm font-semibold shadow-sm transition-colors w-full sm:w-auto"
+          disabled
+          aria-disabled="true"
+          title="Module en attente d'implémentation backend"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] text-white text-sm font-semibold shadow-sm transition-colors w-full sm:w-auto opacity-50 cursor-not-allowed"
         >
           <Plus size={18} />
-          {activeTab === 'prestations' ? 'Ajouter une prestation' : 'Ajouter une réalisation'}
+          {activeTab === 'prestations' ? 'Ajouter une prestation (À venir)' : 'Ajouter une réalisation (À venir)'}
         </button>
+      </div>
+
+      {/* ── Bannière Information Backend ── */}
+      <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 flex items-start gap-3.5 text-amber-900 text-xs">
+        <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+        <div className="space-y-1">
+          <p className="font-semibold text-sm text-amber-950">Module Paysagisme en attente d&apos;implémentation backend</p>
+          <p className="text-amber-800 leading-relaxed">
+            Les contrats et spécifications REST complètes pour ce module ont été formalisés dans <code className="px-1.5 py-0.5 bg-amber-100/90 rounded text-[11px] font-mono font-medium">docs/endpoints_feedback.md</code>. Aucune prestation ou réalisation factice n&apos;est affichée par défaut.
+          </p>
+        </div>
       </div>
 
       {/* ── Onglets de Navigation ── */}
@@ -278,8 +290,17 @@ export default function AdminPaysagismePage() {
 
       {/* ── Vue 1 : Prestations ── */}
       {activeTab === 'prestations' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredPrestations.map((prestation) => (
+        filteredPrestations.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-border p-12 text-center text-muted-foreground text-xs space-y-3">
+            <Trees className="w-10 h-10 text-gray-300 mx-auto" />
+            <p className="font-semibold text-sm text-gray-800">Aucune prestation paysagère configurée</p>
+            <p className="text-gray-500 max-w-sm mx-auto">
+              Configurez vos offres de création de jardins, arrosage automatique et entretien dès la mise en ligne des routes API.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredPrestations.map((prestation) => (
             <div
               key={prestation.id}
               className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between"
@@ -339,12 +360,22 @@ export default function AdminPaysagismePage() {
             </div>
           ))}
         </div>
+        )
       )}
 
       {/* ── Vue 2 : Réalisations ── */}
       {activeTab === 'realisations' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProjects.map((project) => (
+        filteredProjects.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-border p-12 text-center text-muted-foreground text-xs space-y-3">
+            <Trees className="w-10 h-10 text-gray-300 mx-auto" />
+            <p className="font-semibold text-sm text-gray-800">Aucune réalisation dans le portfolio</p>
+            <p className="text-gray-500 max-w-sm mx-auto">
+              Ajoutez vos chantiers et projets paysagers terminés pour enrichir votre galerie publique.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProjects.map((project) => (
             <div
               key={project.id}
               className="bg-white rounded-2xl border border-border overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between"
@@ -417,6 +448,7 @@ export default function AdminPaysagismePage() {
             </div>
           ))}
         </div>
+        )
       )}
 
       {/* ── Side Drawer : Ajout / Modification Prestation ── */}
@@ -438,10 +470,12 @@ export default function AdminPaysagismePage() {
             <button
               type="submit"
               form="prestation-form"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#173f22] hover:bg-[#102d18] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              disabled
+              aria-disabled="true"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#173f22] text-white text-xs font-semibold shadow-xs transition-colors opacity-50 cursor-not-allowed"
             >
               <Save size={16} />
-              {editingPrestationId ? 'Enregistrer les modifications' : 'Créer la prestation'}
+              {editingPrestationId ? 'Enregistrer les modifications (À venir)' : 'Créer la prestation (À venir)'}
             </button>
           </div>
         }
@@ -506,7 +540,7 @@ export default function AdminPaysagismePage() {
                 <option value="/images/paysagisme/prestation-terrasses.jpg">Terrasse & Rooftop</option>
                 <option value="/images/paysagisme/prestation-exterieurs.jpg">Espaces Extérieurs</option>
                 <option value="/images/paysagisme/prestation-interieur.jpg">Végétalisation Intérieure</option>
-                <option value="/images/paysagisme/prestation-entretien.jpg">Contrat d'entretien</option>
+                <option value="/images/paysagisme/prestation-entretien.jpg">Contrat d&apos;entretien</option>
               </select>
             </div>
           </div>
@@ -559,10 +593,12 @@ export default function AdminPaysagismePage() {
             <button
               type="submit"
               form="project-form"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#173f22] hover:bg-[#102d18] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              disabled
+              aria-disabled="true"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#173f22] text-white text-xs font-semibold shadow-xs transition-colors opacity-50 cursor-not-allowed"
             >
               <Save size={16} />
-              {editingProjectId ? 'Enregistrer les modifications' : 'Ajouter au portfolio'}
+              {editingProjectId ? 'Enregistrer les modifications (À venir)' : 'Ajouter au portfolio (À venir)'}
             </button>
           </div>
         }
@@ -695,7 +731,7 @@ export default function AdminPaysagismePage() {
               className="w-4 h-4 rounded text-forest-green focus:ring-forest-green"
             />
             <label htmlFor="projFeatured" className="text-xs font-semibold text-foreground cursor-pointer">
-              Mettre en avant sur la page d'accueil (Projet vedette ⭐)
+              Mettre en avant sur la page d&apos;accueil (Projet vedette ⭐)
             </label>
           </div>
         </form>

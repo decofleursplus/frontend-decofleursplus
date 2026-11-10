@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { AdminCampaign, CampaignChannel } from '@/lib/admin/mock-data/types';
+import { getAdminCustomers } from '@/lib/api/admin/customers';
 import {
   Dialog,
   DialogContent,
@@ -31,12 +32,12 @@ interface CreateCampaignDialogProps {
   onCreate: (campaign: AdminCampaign) => void;
 }
 
-const audiences = [
-  { label: 'Tous les clients', count: 1240 },
-  { label: 'Clients VIP Décofleur Gold', count: 180 },
-  { label: 'Clients fidèles réguliers', count: 520 },
-  { label: 'Clients inactifs depuis > 30 jours', count: 340 },
-  { label: 'Zone Saly & Mbour uniquement', count: 680 },
+const baseAudiences = [
+  'Tous les clients',
+  'Clients VIP',
+  'Clients réguliers',
+  'Clients inactifs (> 30 jours)',
+  'Zone Saly & Mbour uniquement',
 ];
 
 export function CreateCampaignDialog({
@@ -46,21 +47,41 @@ export function CreateCampaignDialog({
 }: CreateCampaignDialogProps) {
   const [name, setName] = useState('');
   const [channel, setChannel] = useState<CampaignChannel>('whatsapp');
-  const [selectedAudience, setSelectedAudience] = useState(audiences[0].label);
+  const [selectedAudience, setSelectedAudience] = useState(baseAudiences[0]);
   const [scheduleMode, setScheduleMode] = useState<'immediate' | 'scheduled'>('immediate');
   const [scheduledDateTime, setScheduledDateTime] = useState('');
-  const [message, setMessage] = useState(
-    'Bonjour {prenom} 🌸 Décofleur Plus vous gâte : profitez de -15% sur toutes nos créations avec le code {code_promo} ! Découvrez notre boutique : {lien_boutique}'
-  );
+  const [message, setMessage] = useState('');
+  const [totalCustomerCount, setTotalCustomerCount] = useState<number>(0);
 
-  const currentAudienceCount =
-    audiences.find((a) => a.label === selectedAudience)?.count || 1240;
+  useEffect(() => {
+    if (!isOpen) return;
+    let isMounted = true;
+    async function fetchCount() {
+      try {
+        const res = await getAdminCustomers({ limit: 1 });
+        if (isMounted) {
+          setTotalCustomerCount(res.total ?? 0);
+        }
+      } catch (err) {
+        console.warn('Erreur chargement clients:', err);
+      }
+    }
+    fetchCount();
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen]);
+
+  const currentAudienceCount = totalCustomerCount;
 
   const insertVariable = (variable: string) => {
     setMessage((prev) => `${prev} ${variable}`);
   };
 
   const getPreviewText = () => {
+    if (!message.trim()) {
+      return 'Votre message apparaîtra ici avec les variables dynamiques remplacées...';
+    }
     return message
       .replace(/{prenom}/g, 'Awa')
       .replace(/{code_promo}/g, 'PRINTEMPS15')
@@ -114,6 +135,7 @@ export function CreateCampaignDialog({
 
     // Reset
     setName('');
+    setMessage('');
   };
 
   return (
@@ -201,9 +223,9 @@ export function CreateCampaignDialog({
                 onChange={(e) => setSelectedAudience(e.target.value)}
                 className="w-full h-10 rounded-lg border border-[#e7e4dd] bg-white px-3 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#c1647a]"
               >
-                {audiences.map((aud) => (
-                  <option key={aud.label} value={aud.label}>
-                    {aud.label} ({aud.count} contacts)
+                {baseAudiences.map((aud) => (
+                  <option key={aud} value={aud}>
+                    {aud}
                   </option>
                 ))}
               </select>

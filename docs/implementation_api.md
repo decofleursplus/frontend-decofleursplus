@@ -196,34 +196,73 @@
 - **Critères d'acceptation :**
   - Les frais de livraison sont calculés dynamiquement selon la zone choisie.
   - Option retrait boutique (`PICKUP`) avec frais à 0 FCFA.
-- **Statut :** ⬜ À faire
+- **Statut :** ✅ Terminé
 
-### Tâche 4.2 : Création de Commande & Passerelle NabooPay
-- **Fichiers :** `app/commande/page.tsx`, `lib/api/orders.ts`
+### Tâche 4.2 : Création de Commande & Passerelle NabooPay (Multi-moyens)
+- **Fichiers :** `app/commande/page.tsx`, `lib/api/orders.ts`, `lib/api/payment.ts`
 - **Endpoints :** `POST /orders`
-- **Description :** Valider la commande avec authentification obligatoire. Envoi strict des données (`variantId`, quantité, options d'emballage cadeau, zone, adresse, méthode de paiement). Redirection immédiate vers `checkoutUrl` pour Wave, Orange Money, Free Money ou Carte.
+- **Description :** Valider la commande avec authentification obligatoire. Envoi strict des données (`items`, `deliveryMode`, `deliveryZoneId`, `paymentMethod`, `deliveryAddress`, etc.). Support complet de 5 modes de paiement :
+  - Mobile Money & Carte via passerelle NabooPay (`WAVE`, `ORANGE_MONEY`, `FREE_MONEY`, `CARD`)
+  - Espèces à la livraison (`CASH_ON_DELIVERY`)
+- **Étapes d'implémentation détaillées :**
+  1. Étendre `PlaceOrderPayload` dans `lib/api/orders.ts` pour accepter `'CASH_ON_DELIVERY'`.
+  2. Ajouter l'option visuelle "Paiement en espèces à la livraison" dans la liste des modes de paiement de `app/commande/page.tsx`.
+  3. Gérer l'aiguillage après soumission réussie :
+     - Si paiement digital NabooPay (`checkoutUrl` présent) : redirection immédiate vers `checkoutUrl`.
+     - Si paiement en espèces à la livraison : redirection directe vers `/commande/confirmation?orderNumber=${order.orderNumber}`.
+  4. Vider le panier (`clear()`) et réinitialiser les coupons en session lors de la commande validée.
 - **Critères d'acceptation :**
-  - Si paiement en ligne : redirection fluide vers la page de paiement sécurisée NabooPay.
-  - Si paiement à la livraison : redirection vers `/commande/confirmation`.
+  - L'utilisateur peut choisir entre Wave, Orange Money, Free Money, Carte bancaire ou Paiement en espèces.
+  - Si paiement digital : redirection fluide et sans erreur vers la page de paiement sécurisée NabooPay.
+  - Si paiement à la livraison : redirection immédiate vers la page de confirmation sans tentative NabooPay.
   - Le panier est vidé dès que la commande est enregistrée avec succès.
-- **Statut :** ⬜ À faire
+- **Statut :** ✅ Terminé
 
-### Tâche 4.3 : Écrans de Confirmation & Reprise de Paiement
-- **Fichiers :** `app/commande/confirmation/page.tsx`, `app/commande/paiement-echoue/page.tsx`, `lib/api/payment.ts`
-- **Endpoints :** `GET /orders/mine/:orderNumber`, `POST /orders/mine/:orderNumber/pay`
-- **Description :** Afficher le récapitulatif complet de la commande confirmée. En cas d'échec ou d'annulation sur la passerelle NabooPay, permettre de relancer un paiement via `POST /orders/mine/:orderNumber/pay`.
+### Tâche 4.3 : Écrans de Confirmation, Détection Webhook & Relance après Échec
+- **Fichiers :** `lib/api/payment.ts`, `app/commande/confirmation/page.tsx`, `app/commande/paiement-echoue/page.tsx`
+- **Endpoints :** `GET /orders/mine/:orderNumber`, `POST /orders/mine/:orderNumber/pay`, `GET /orders/mine/:orderNumber/payments`
+- **Description :** Créer le module client dédié `lib/api/payment.ts` et moderniser entièrement les écrans de confirmation et d'échec de transaction.
+- **Étapes d'implémentation détaillées :**
+  1. **Création du client API `lib/api/payment.ts` :**
+     - `payOrder(orderNumber: string)` : déclenche `POST /orders/mine/:orderNumber/pay` et retourne `{ checkoutUrl, transactionRef }`.
+     - `getOrderPayments(orderNumber: string)` : interroge `GET /orders/mine/:orderNumber/payments` et retourne la liste des transactions (`Payment[]`).
+  2. **Page de confirmation `/commande/confirmation` :**
+     - Vérification de l'authentification (redirection vers `/connexion?redirect=...` si la session a expiré au retour de passerelle).
+     - Chargement des données de commande en temps réel via `getMyOrder(orderNumber)`.
+     - **Sondage dynamique (Polling intelligent) :** Si `order.paymentStatus === 'PENDING'` et commande digitale, exécuter un sondage de 3 à 5 tentatives (espacées de 2s) pour capturer la validation asynchrone du webhook NabooPay (`PAID`).
+     - Affichage d'un badge d'état réactif : "Paiement en cours de confirmation...", "Payée avec succès" (NabooPay), ou "Commande confirmée — Règlement en espèces à la livraison" (`CASH_ON_DELIVERY`).
+     - Bouton de rafraîchissement manuel et bouton de repli pour payer si l'utilisateur avait annulé ou fermé NabooPay prématurément.
+  3. **Page d'échec de paiement `/commande/paiement-echoue` :**
+     - Prise en charge du paramètre d'URL `?orderNumber=...`.
+     - Redirection propre vers `/connexion?redirect=...` si la session a expiré.
+     - Chargement des détails de la commande échouée (`GET /orders/mine/:orderNumber`).
+     - Affichage pédagogique du motif d'échec ou d'interruption.
+     - Bouton d'action principal : « Réessayer le paiement maintenant » qui appelle `payOrder(orderNumber)` et redirige vers le nouveau `checkoutUrl` généré.
+     - Actions de secours : Assistance instantanée WhatsApp avec référence pré-remplie, annulation de commande (`cancelMyOrder`), ou retour à la boutique.
 - **Critères d'acceptation :**
-  - Récupération du statut en temps réel de la commande (`PAID`, `PENDING`).
-  - Le bouton « Réessayer le paiement » génère un nouveau lien NabooPay fonctionnel.
-- **Statut :** ⬜ À faire
+  - Redirection automatique vers `/connexion` avec retour d'URL si le token a expiré.
+  - La page de confirmation se met à jour automatiquement en vert ("Payée avec succès") dès réception du webhook NabooPay.
+  - La page d'échec affiche la commande réelle et permet de relancer le paiement en 1 clic sans devoir refaire son panier.
+- **Statut :** ✅ Terminé
 
-### Tâche 4.4 : Historique des Commandes Client
-- **Fichiers :** `app/compte/commandes/page.tsx`, `app/compte/commandes/[id]/page.tsx`
-- **Endpoints :** `GET /orders/mine`, `GET /orders/mine/:orderNumber`, `POST /orders/mine/:orderNumber/cancel`
-- **Description :** Liste paginée des commandes du client avec badge de statut, articles commandés, adresse et montant total. Possibilité d'annuler une commande tant qu'elle est en attente ou payée (`PENDING`/`PAID`).
+### Tâche 4.4 : Historique des Commandes & Reprise de Paiement dans l'Espace Client
+- **Fichiers :** `app/compte/commandes/page.tsx`, `app/compte/commandes/[id]/page.tsx`, `lib/api/payment.ts`, `lib/api/orders.ts`
+- **Endpoints :** `GET /orders/mine`, `GET /orders/mine/:orderNumber`, `POST /orders/mine/:orderNumber/pay`, `GET /orders/mine/:orderNumber/payments`, `POST /orders/mine/:orderNumber/cancel`
+- **Description :** Remplacer intégralement les mocks statiques de la fiche commande par les données dynamiques de l'API, avec visualisation des transactions NabooPay et possibilité de régler une commande en attente.
+- **Étapes d'implémentation détaillées :**
+  1. Dynamiser `app/compte/commandes/[id]/page.tsx` en composant client (suppression de `export const dynamicParams = false` et des données fictives `demoOrders`).
+  2. Récupérer la commande via `getMyOrder(orderNumber)` et l'historique des transactions via `getOrderPayments(orderNumber)`.
+  3. Pour toute commande ayant `paymentStatus === 'PENDING'` (et non annulée) :
+     - Afficher un bloc d'alerte contextuel "Paiement en attente".
+     - Bouton interactif « Payer ma commande avec NabooPay » appelant `payOrder` avec état de chargement et redirection automatique.
+     - Bouton d'annulation de commande « Annuler la commande » (`POST /cancel`).
+  4. Afficher le journal des transactions associées (référence transaction, prestataire NabooPay, méthode utilisée, montant, date et statut).
+  5. Mettre à jour les liens de `app/compte/commandes/page.tsx` pour permettre d'ouvrir la fiche détaillée de toute commande.
 - **Critères d'acceptation :**
-  - L'annulation met à jour le statut immédiatement et remet les articles en stock.
-- **Statut :** ⬜ À faire
+  - Toutes les commandes du client sont consultables avec leurs vraies données.
+  - Un client peut reprendre et finaliser le paiement d'une commande passée en attente directement depuis son compte.
+  - L'historique des tentatives de transaction NabooPay est clairement affiché.
+- **Statut :** ✅ Terminé
 
 ### Tâche 4.5 : Suivi de Livraison en Direct
 - **Fichiers :** `app/compte/suivi/[id]/page.tsx`, `lib/api/delivery.ts`
@@ -265,14 +304,20 @@
 
 ## Phase 6 : Authentification Admin & Tableau de Bord
 
-### Tâche 6.1 : Connexion Staff & Sécurisation Back-Office
-- **Fichiers :** `app/admin/connexion/page.tsx`, `components/admin/admin-guard.tsx`, `lib/api/admin-auth.ts`
+### Tâche 6.1 : Connexion Staff & Sécurisation Back-Office (Suppression des Mocks)
+- **Fichiers :** `app/admin/connexion/page.tsx`, `app/admin/connexion/actions.ts`, `app/admin/(protected)/layout.tsx`, `lib/api/auth-token.ts`, `components/admin/admin-topbar.tsx`, `components/admin/admin-mobile-drawer.tsx`
 - **Endpoints :** `POST /auth/login`, `GET /auth/me`
-- **Description :** Remplacer le faux cookie `admin_auth=true` par une vraie authentification JWT. Vérifier que le compte possède un rôle staff autorisé (`ADMIN`, `MANAGER`, `FLORIST`, `DELIVERY`, `SALES`, `ACCOUNTANT`).
+- **Description :** Suppression complète du compte mocké en dur (`admin@decofleur.com` / `admin123`) et de tous les fallbacks de contournement en cas d'erreur API. Intégration stricte de l'authentification backend :
+  - Formulaire de connexion épuré sans identifiants pré-remplis avec placeholders professionnels.
+  - Appel direct à l'API `POST /api/v1/auth/login` et validation des rôles staff (`ADMIN`, `MANAGER`, `FLORIST`, `DELIVERY`, `SALES`, `ACCOUNTANT`).
+  - Stockage du jeton JWT dans le cookie sécurisé `decofleur_admin_jwt` (`path=/`, `SameSite=Lax`, 7 jours) et synchronisation avec `getAdminAuthToken()`.
+  - Protection stricte de `ProtectedAdminLayout` : vérification obligatoire de la présence du jeton JWT (redirection immédiate vers `/admin/connexion` si absent).
+  - Affichage dynamique du nom, email et rôle de l'utilisateur connecté dans la barre supérieure (`AdminTopbar`) et le tiroir mobile (`AdminMobileDrawer`).
 - **Critères d'acceptation :**
-  - Un compte `CLIENT` standard tentant de se connecter à l'admin est rejeté avec un message d'accès refusé.
-  - Redirection automatique vers `/admin/connexion` si non authentifié.
-- **Statut :** ⬜ À faire
+  - Aucun compte mocké ni mot de passe par défaut.
+  - Rejet explicite avec notification en cas d'identifiants invalides ou de rôle non staff (`CLIENT`).
+  - Blocage strict de l'accès aux pages protégées en l'absence de JWT valide.
+- **Statut :** ✅ Terminé (Novembre 2026)
 
 ### Tâche 6.2 : Tableau de Bord d'Administration
 - **Fichiers :** `app/admin/page.tsx`, `components/admin/dashboard-stats.tsx`, `lib/api/admin-dashboard.ts`
@@ -294,31 +339,41 @@
 
 ## Phase 7 : Catalogue Admin & Inventaire de Stock
 
-### Tâche 7.1 : Upload de Médias Produits & Catégories
-- **Fichiers :** `components/admin/image-uploader.tsx`, `lib/api/admin-upload.ts`
+### Tâche 7.1 : Upload de Médias Produits, Catégories, Blog, Marketing & Paramètres
+- **Fichiers :** `components/admin/image-uploader.tsx`, `lib/api/admin/uploads.ts`, `next.config.ts`
 - **Endpoints :** `POST /admin/uploads?folder=products`, `POST /admin/uploads?folder=categories`
-- **Description :** Créer un composant d'upload drag-and-drop envoyant les fichiers en `multipart/form-data` vers Cloudflare R2 via l'API, avec prévisualisation et barre de progression.
+- **Description :** Création du composant d'upload réutilisable `ImageUploader` avec drag-and-drop, téléversement immédiat en `multipart/form-data`, indicateur de progression, gestion d'erreurs en mode strict, sélection de la photo principale et aperçus avec suppression. Intégration sur :
+  - Produits (`/admin/produits/nouveau` et `[id]`) : galerie multi-photos (jusqu'à 10 photos) + choix d'image principale (`featuredImage`).
+  - Catégories (`/admin/categories`) : photo d'illustration dans le dialogue d'ajout/édition et affichage dans la table/cartes.
+  - Blog (`components/admin/article-form.tsx`) : téléversement direct de la photo de couverture avec alternative aux visuels prédéfinis.
+  - Événements Marketing (`components/admin/edit-event-dialog.tsx`) : téléversement cloud de la photo d'ambiance avec bouton dédié et spinner.
+  - Paramètres Boutique (`/admin/parametres`) : téléversement et mise à jour dynamique du logo officiel de l'enseigne.
 - **Critères d'acceptation :**
-  - Support de 1 à 10 fichiers simultanés (JPEG, PNG, WebP, max 5 Mo).
-  - Renvoi direct des URLs publiques utilisables dans les formulaires.
-- **Statut :** ⬜ À faire
+  - Validation stricte des types de fichiers (JPEG, PNG, WebP, AVIF) et taille maximale (5 Mo).
+  - Mode strict : notification d'erreur immédiate et blocage en cas d'échec du serveur de stockage.
+  - Renvoi direct des URLs publiques sauvegardées dans les entités respectives.
+  - Configuration des hostnames Cloudflare R2 (`pub-*.r2.dev`, `*.r2.dev`, `pub-69eb0dcdef4244f49946a2556c863719.r2.dev`) dans `next.config.ts` (`images.remotePatterns`) pour autoriser le rendu Next.js Image sans erreur de sécurité.
+- **Statut :** ✅ Terminé
 
 ### Tâche 7.2 : Gestion des Catégories & Sous-Catégories
-- **Fichiers :** `app/admin/categories/page.tsx`, `lib/api/admin-catalog.ts`
+- **Fichiers :** `app/admin/categories/page.tsx`, `lib/api/admin/categories.ts`
 - **Endpoints :** `POST /admin/categories`, `PATCH /admin/categories/:id`, `DELETE /admin/categories/:id`, `POST /admin/subcategories`, `PATCH /admin/subcategories/:id`, `DELETE /admin/subcategories/:id`
-- **Description :** Interface complète de gestion de la hiérarchie des catégories, avec photo de couverture, slug auto, description et réorganisation.
+- **Description :** Interface complète de gestion de la hiérarchie des catégories, avec photo de couverture (`imageUrl`), slug auto, description et réorganisation.
 - **Critères d'acceptation :**
-  - Création, modification et suppression fonctionnelles avec confirmation modale.
-- **Statut :** ⬜ À faire
+  - Création, modification et suppression fonctionnelles avec confirmation modale et affichage de la vignette.
+- **Statut :** ✅ Terminé
 
 ### Tâche 7.3 : Gestion des Produits Catalogue
-- **Fichiers :** `app/admin/produits/page.tsx`, `app/admin/produits/nouveau/page.tsx`, `app/admin/produits/[id]/page.tsx`
+- **Fichiers :** `app/admin/produits/page.tsx`, `app/admin/produits/nouveau/page.tsx`, `app/admin/produits/[id]/page.tsx`, `lib/api/admin/products.ts`, `lib/admin/mock-data/types.ts`
 - **Endpoints :** `GET /admin/products`, `GET /admin/products/:id`, `POST /admin/products`, `PATCH /admin/products/:id`, `DELETE /admin/products/:id`
-- **Description :** Gestion complète du catalogue : création avec variantes de tailles, prix de base et prix barré promo (`compareAtPrice`), statut (`ACTIVE`, `HIDDEN`, `ON_QUOTE`, `PROMO`), photo principale et galerie.
+- **Description :** Gestion complète du catalogue : création avec galerie multi-photos, sélection d'image principale, catégories dynamiques chargées depuis l'API, variantes de tailles, prix de base et prix barré promo (`compareAtPrice`), statut (`ACTIVE`, `HIDDEN`, `ON_QUOTE`, `PROMO`).
 - **Critères d'acceptation :**
+  - L'upload d'images est interactif et lié aux endpoints API (`POST /admin/uploads?folder=products`).
+  - La création de produit transmet des données strictement conformes au schéma backend (`createProductSchema.strict()`) avec gestion automatique des prix promotionnels (`compareAtPrice > basePrice`).
+  - Les catégories sont chargées dynamiquement avec leurs identifiants UUID et validation immédiate.
   - La suppression logique passe le produit en `HIDDEN`.
-  - La recherche et le filtre par statut fonctionnent côté admin.
-- **Statut :** ⬜ À faire
+  - La recherche et le filtre par statut fonctionnent côté admin sans données mockées résiduelles.
+- **Statut :** ✅ Terminé
 
 ### Tâche 7.4 : Gestion des Stocks & Mouvements d'Inventaire
 - **Fichiers :** `app/admin/stock/page.tsx`, `lib/api/admin-catalog.ts`
@@ -446,4 +501,99 @@
 - **Description :** Supprimer les données codées en dur superflues, vérifier les logs de build Next.js, s'assurer que toutes les pages dynamiques se compilent sans warning TypeScript.
 - **Critères d'acceptation :**
   - `npm run build` s'exécute avec succès sans aucune erreur de compilation.
-- **Statut :** ⬜ À faire
+- **Statut :** ✅ Terminé
+
+---
+
+## 🛡️ Audit Exhaustif et Validation du Back-Office Admin (Sans Données Mockées)
+
+**Date d'audit :** 2026-11-06  
+**Backend Staging :** `https://backend-decofleursplus-staging.up.railway.app/api/v1`  
+**Compte d'accès Admin :** `admin@decofleursplus.com` / `admin123`  
+**Résultat TypeScript :** `tsc --noEmit` : **0 erreur**
+
+### Synthèse Module par Module
+
+1. **Module 1 : Catégories (`/admin/categories`)**
+   - Données mockées supprimées à 100%.
+   - Connecté à `GET /api/v1/categories`, `POST/PATCH/DELETE /api/v1/admin/categories`.
+   - État vérifié sur staging : 5 catégories en ligne (Bouquets, Plantes, Mariage & Événements, Compositions Deuil, Coffrets Cadeaux).
+
+2. **Module 2 : Produits Catalogue (`/admin/produits`, `/nouveau`, `/[id]`)**
+   - Données mockées supprimées à 100%.
+   - Référence produit (SKU) générée automatiquement au format `DFP-{CAT}-{TIMESTAMP}` si non renseignée.
+   - Upload d'image Cloudflare R2 validé (`next.config.ts` mis à jour avec `*.r2.dev`).
+   - Gestion stricte du format des variantes et attributs sans crash.
+   - État vérifié sur staging : 3 produits réels en ligne.
+
+3. **Module 3 : Stocks & Mouvements (`/admin/stock`)**
+   - Connecté aux endpoints `/admin/stock/adjust` et `/admin/stock/movements`.
+   - Enums backend strictement respectés (`ENTRY | EXIT | ADJUSTMENT`).
+   - Vue desktop et cartes mobiles munies d'états de chargement et d'états vides explicites.
+
+4. **Module 4 : Devis Événementiels (`/admin/devis`)**
+   - Données mockées supprimées à 100%.
+   - Connecté à `GET /api/v1/admin/quotes`, `PATCH /api/v1/admin/quotes/:id`, `PATCH /api/v1/admin/quotes/:id/status`.
+   - Statuts backend supportés (`NEW`, `UNDER_REVIEW`, `SENT`, `ACCEPTED`, `REFUSED`, `CONVERTED_TO_ORDER`).
+   - Chiffrage commercial et notes internes opérationnels.
+   - État vérifié sur staging : 5 devis réels en base.
+
+5. **Module 5 : Commandes (`/admin/commandes`, `/[id]`)**
+   - Données mockées supprimées à 100%.
+   - Connecté à `GET /api/v1/admin/orders` et `GET/PATCH /api/v1/admin/orders/:id`.
+   - Unpacking réactif `res.data.items` pour les réponses paginées.
+   - Gestion des statuts (`PENDING`, `PAID`, `PREPARATION`, `IN_DELIVERY`, `DELIVERED`, `CANCELLED`).
+
+6. **Module 6 : Clients & CRM (`/admin/clients`, `/[id]`)**
+   - Données mockées supprimées à 100%.
+   - Connecté à `GET /api/v1/admin/customers` et `GET /api/v1/admin/customers/:id`.
+   - État vérifié sur staging : 37 clients réels synchronisés.
+   - Fiche client avec statistiques réelles et commandes récentes.
+
+7. **Module 7 : Livraisons & Flotte (`/admin/livraisons`)**
+   - Données mockées supprimées à 100%.
+   - Connecté à `GET /api/v1/admin/deliveries` et `GET /api/v1/admin/drivers`.
+   - Vues courses et livreurs munies d'états vides et de chargement fluides.
+
+8. **Module 8 : Marketing & Fidélisation (`/admin/marketing`)**
+   - Données mockées supprimées à 100%.
+   - 4 onglets connectés aux endpoints staging (`/admin/marketing/coupons`, `/promotions`, `/campaigns`, `/abandoned-carts`).
+   - États vides informatifs avec boutons de création rapide.
+
+9. **Module 9 : Abonnements & Location de Matériel (`/admin/abonnements`, `/admin/location`)**
+   - **Abonnements :** Connecté à `GET /api/v1/admin/subscriptions` (4 abonnements réels détectés sur staging).
+   - **Location :** API dédiée `lib/api/admin/rentals.ts` créée, connectée au CRUD `/api/v1/admin/rentals` avec gestion des équipements et réservations.
+
+10. **Module 10 : Blog Floral & Paramètres Boutique (`/admin/blog`, `/admin/parametres`)**
+    - **Blog :** Connecté à `GET/POST/PATCH/DELETE /api/v1/admin/blog/articles[/:id]`. Catégories et auteurs reliés dynamiquement, 0 données mockées.
+    - **Paramètres :** Connecté à `GET /api/v1/admin/settings`, `PUT /api/v1/admin/settings`, `GET /api/v1/admin/users`. Paramètres boutique réels chargés (Décofleur Plus, Saly Portudal, devises, fuseau horaire Dakar).
+
+11. **Module 11 : Tableau de Bord & Rapports Financiers (`/admin/tableau-de-bord`, `/admin/rapports`)**
+    - Connecté à `GET /api/v1/admin/dashboard` et `GET /api/v1/admin/reports`.
+    - KPIs réels (CA, commandes, 37 clients, produits, graphiques temporels).
+    - Zéro mock fallback : si aucune vente n'est encore enregistrée sur la période, affichage propre des zéros et états vides.
+
+12. **Module 12 : Blocage des Fonctionnalités à Venir & Gating UI (Fournisseurs, Approvisionnements, Paysagisme)**
+    - **Statut :** ⚠️ Bloqué / Fonctionnalités à venir (En attente d'implémentation backend REST).
+    - **Spécifications techniques de référence :** Les 23 endpoints REST requis pour ces modules sont formellement spécifiés dans `docs/endpoints_feedback.md` (Fournisseurs : 5 routes, Approvisionnements & Factures : 7 routes, Paysagisme : 8 routes).
+    - **Mesures d'assainissement et UI Gating appliquées :**
+      - **Navigation Admin (`components/admin/admin-sidebar.tsx`, `components/admin/admin-mobile-drawer.tsx`) :**
+        - Badge explicite « À venir » affiché sur les liens de menu `Fournisseurs`, `Approvisionnements` et `Paysagisme` (en vue développée et dans les tooltips en vue rétractée).
+      - **Navigation Client & Vitrine (`components/site-header.tsx`, `components/site-footer.tsx`) :**
+        - Badge explicite « À venir » sur le déclencheur et les sous-éléments du menu `Paysagisme` (desktop et tiroir mobile).
+        - Badge « À venir » dans le pied de page (footer) sur le lien `Paysagisme`.
+      - **Module Fournisseurs (`app/admin/(protected)/fournisseurs/page.tsx`, `app/admin/(protected)/fournisseurs/[id]/page.tsx`) :**
+        - Badge « À venir » dans l'en-tête de la page principale et sur la fiche détail.
+        - Boutons d'ajout et de création désactivés (`disabled`, `opacity-50`, `cursor-not-allowed`) avec mention explicite `(À venir)`.
+      - **Module Approvisionnements (`app/admin/(protected)/approvisionnements/page.tsx`, `.../factures/page.tsx`, `.../reception/[id]/page.tsx`) :**
+        - Badge « À venir » dans l'en-tête et sur l'accès aux factures fournisseurs.
+        - Boutons « Nouvelle commande », « Ajouter une facture », « Marquer comme payée », « Enregistrer les modifications » et « Enregistrer la réception » désactivés (`disabled`, `opacity-50`, `cursor-not-allowed`) avec libellé `(À venir)`.
+      - **Module Paysagisme Admin (`app/admin/(protected)/paysagisme/page.tsx`) :**
+        - Badge « À venir » dans l'en-tête.
+        - Boutons de création et de sauvegarde de prestation ou de réalisation désactivés (`disabled`, `opacity-50`, `cursor-not-allowed`) avec libellé `(À venir)`.
+      - **Pages Paysagisme Publiques (`app/paysagisme/page.tsx`, `.../prestations/page.tsx`, `.../realisations/page.tsx`) :**
+        - Bannières et bandeaux d'information proéminents signalant que le service et le catalogue en ligne sont à venir.
+      - **Formulaire de Devis (`app/devis/page.tsx`, `components/shared-devis-form.tsx`) :**
+        - Bascule du type de service par défaut vers `evenements` (qui dispose d'un endpoint backend fonctionnel `POST /quotes`) au lieu de `paysagisme`.
+        - Badge « À venir » positionné sur le sélecteur de métier pour l'option « Paysagisme & Espaces Verts ».
+

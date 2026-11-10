@@ -20,10 +20,33 @@ import { SupplierOrderItem } from '@/lib/admin/mock-data/types';
 
 export default function AdminReceptionPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
-  const order = initialSupplierOrders.find((o) => o.id === resolvedParams.id) || initialSupplierOrders[0];
+  const order = initialSupplierOrders.find((o) => o.id === resolvedParams.id);
 
-  const [items, setItems] = useState<SupplierOrderItem[]>(order.items);
+  const [items, setItems] = useState<SupplierOrderItem[]>(order?.items || []);
   const [savedSuccess, setSavedSuccess] = useState(false);
+
+  if (!order) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8 space-y-4">
+        <Boxes className="w-12 h-12 text-gray-400" />
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-serif font-bold text-gray-800">Commande introuvable</h2>
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+            À venir
+          </span>
+        </div>
+        <p className="text-xs text-gray-500 max-w-md">
+          Cette commande d&apos;approvisionnement n&apos;existe pas ou le module est en attente d&apos;implémentation backend (spécifications documentées dans docs/endpoints_feedback.md).
+        </p>
+        <Link
+          href="/admin/approvisionnements"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#193e23] text-white text-xs font-semibold"
+        >
+          <ArrowLeft size={14} /> Retour aux approvisionnements
+        </Link>
+      </div>
+    );
+  }
 
   const handleQtyChange = (itemId: string, newReceivedQty: number) => {
     setItems((prev) =>
@@ -70,6 +93,9 @@ export default function AdminReceptionPage({ params }: { params: Promise<{ id: s
             <h1 className="text-2xl font-serif font-bold text-[#173f22]">
               Réception #{order.id}
             </h1>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+              À venir
+            </span>
             {isAllComplete ? (
               <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
                 Complète
@@ -248,10 +274,12 @@ export default function AdminReceptionPage({ params }: { params: Promise<{ id: s
         </Link>
         <button
           type="button"
-          onClick={handleSaveReception}
-          className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-xs font-bold shadow-sm transition-colors active:scale-95"
+          disabled
+          aria-disabled="true"
+          title="Fonctionnalité d'approvisionnement en attente d'implémentation backend"
+          className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-[#c8436e] text-white text-xs font-bold shadow-sm transition-colors opacity-50 cursor-not-allowed"
         >
-          <Save size={16} /> Enregistrer la réception
+          <Save size={16} /> Enregistrer la réception (À venir)
         </button>
       </div>
     </div>

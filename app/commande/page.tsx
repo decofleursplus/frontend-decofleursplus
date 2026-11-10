@@ -10,20 +10,17 @@ import {
   MapPin,
   Calendar,
   Clock,
-  Plus,
   ShieldCheck,
   Search,
-  UserRound,
-  Mail,
-  Phone,
   UserCheck,
   Loader2,
   AlertCircle,
   Tag,
+  ShoppingBag,
+  Banknote,
 } from 'lucide-react';
 import { useCart } from '@/components/cart-provider';
 import { useAuth } from '@/components/auth-provider';
-import { GoogleIcon } from '@/components/icons';
 import { formatPrice } from '@/lib/products';
 import { SiteFooter } from '@/components/site-footer';
 import { getDeliveryZones, DeliveryZone, placeOrder, PlaceOrderPayload } from '@/lib/api/orders';
@@ -31,11 +28,11 @@ import { getCustomerAddresses, CustomerAddress } from '@/lib/api/customer';
 import { ValidatedCoupon } from '@/lib/api/marketing';
 
 type DeliveryMode = 'standard' | 'express';
-type PaymentMethod = 'wave' | 'orange' | 'free' | 'card';
+type PaymentMethod = 'wave' | 'orange' | 'free' | 'card' | 'cash';
 
 export default function CheckoutPage() {
   const { items, subtotal, clear } = useCart();
-  const { user, isAuthenticated, login, loginWithGoogle, register, logout } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
   const router = useRouter();
 
   const [delivery, setDelivery] = useState<DeliveryMode>('standard');
@@ -57,29 +54,22 @@ export default function CheckoutPage() {
   });
   const [deliverySlot, setDeliverySlot] = useState<'9h-12h' | '10h-14h' | '14h-18h' | '18h-20h'>('10h-14h');
   const [instructions, setInstructions] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState<ValidatedCoupon | null>(null);
+  const [appliedCoupon] = useState<ValidatedCoupon | null>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const savedCoupon = sessionStorage.getItem('decofleur_applied_coupon');
+      return savedCoupon ? JSON.parse(savedCoupon) : null;
+    } catch {
+      return null;
+    }
+  });
 
-  // Step 1: Auth state
-  const [isEditingAuth, setIsEditingAuth] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      return params.has('auth');
+  // Redirection d'authentification si le panier contient des articles et l'utilisateur n'est pas connecté
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated && items.length > 0) {
+      router.push('/connexion?redirect=/commande');
     }
-    return false;
-  });
-  const [authTab, setAuthTab] = useState<'login' | 'register'>(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('auth') === 'register') return 'register';
-    }
-    return 'login';
-  });
-  const [authEmail, setAuthEmail] = useState('');
-  const [authPassword, setAuthPassword] = useState('');
-  const [authName, setAuthName] = useState('');
-  const [authPhone, setAuthPhone] = useState('+221 77 123 45 67');
-  const [authError, setAuthError] = useState('');
-  const [authLoading, setAuthLoading] = useState(false);
+  }, [authLoading, isAuthenticated, items.length, router]);
 
   // Charger les zones et les adresses sur montage
   useEffect(() => {
@@ -93,15 +83,6 @@ export default function CheckoutPage() {
       .catch(() => {
         // Ignorer
       });
-
-    try {
-      const savedCoupon = sessionStorage.getItem('decofleur_applied_coupon');
-      if (savedCoupon) {
-        setAppliedCoupon(JSON.parse(savedCoupon));
-      }
-    } catch {
-      // Ignorer
-    }
   }, []);
 
   useEffect(() => {
@@ -133,87 +114,11 @@ export default function CheckoutPage() {
   const isFreeShipping = appliedCoupon?.freeShipping || false;
   const shipping = isFreeShipping ? 0 : baseShippingFee;
 
-  // Use items in cart, or fallback to mockup default items if cart is empty so user can test and inspect
-  const displayItems = items.length > 0 ? items : [
-    {
-      lineId: 'mock-1',
-      product: {
-        id: 'bouquet-elegance-rose',
-        name: 'Bouquet Élégance Rose',
-        price: 25000,
-        image: '/images/hero.jpg',
-        category: 'Bouquets',
-        slug: 'bouquet-elegance-rose',
-        description: '',
-        tags: [],
-        rating: 4.9,
-        reviewsCount: 124,
-      },
-      quantity: 1,
-      options: { size: 'Moyen' },
-    },
-    {
-      lineId: 'mock-2',
-      product: {
-        id: 'carte-cadeau',
-        name: 'Carte cadeau',
-        price: 2000,
-        image: '/images/cadeau.jpg',
-        category: 'Cadeaux',
-        slug: 'carte-cadeau',
-        description: '',
-        tags: [],
-        rating: 5,
-        reviewsCount: 45,
-      },
-      quantity: 1,
-      options: { cardMessage: 'Message personnalisé' },
-    },
-  ];
-
-  const calculatedSubtotal = items.length > 0
-    ? subtotal
-    : displayItems.reduce((acc, curr) => acc + curr.product.price * curr.quantity, 0);
+  const displayItems = items;
+  const calculatedSubtotal = subtotal;
 
   const discountAmount = appliedCoupon?.discountAmount || 0;
   const calculatedTotal = Math.max(0, calculatedSubtotal - discountAmount) + shipping;
-
-  async function handleGoogleLogin() {
-    setAuthLoading(true);
-    setAuthError('');
-    await loginWithGoogle();
-    setIsEditingAuth(false);
-    setAuthLoading(false);
-  }
-
-  async function handleEmailLogin() {
-    if (!authEmail.trim()) {
-      setAuthError('Veuillez renseigner votre adresse e-mail.');
-      return;
-    }
-    setAuthLoading(true);
-    setAuthError('');
-    await login(authEmail, authPassword);
-    setIsEditingAuth(false);
-    setAuthLoading(false);
-  }
-
-  async function handleRegister() {
-    if (!authName.trim() || !authEmail.trim() || !authPhone.trim()) {
-      setAuthError('Veuillez renseigner votre nom, e-mail et numéro de téléphone.');
-      return;
-    }
-    setAuthLoading(true);
-    setAuthError('');
-    await register({
-      name: authName,
-      email: authEmail,
-      phone: authPhone,
-      password: authPassword,
-    });
-    setIsEditingAuth(false);
-    setAuthLoading(false);
-  }
 
   async function submitOrder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -221,20 +126,18 @@ export default function CheckoutPage() {
     setOrderError('');
 
     if (!isAuthenticated) {
-      setIsEditingAuth(true);
-      setNotice(
-        'Veuillez vous identifier ou créer votre compte à l’étape 1 avant de finaliser la commande.'
-      );
+      router.push('/connexion?redirect=/commande');
       return;
     }
 
     setSubmittingOrder(true);
 
-    const paymentMap: Record<PaymentMethod, 'WAVE' | 'ORANGE_MONEY' | 'FREE_MONEY' | 'CARD'> = {
+    const paymentMap: Record<PaymentMethod, 'WAVE' | 'ORANGE_MONEY' | 'FREE_MONEY' | 'CARD' | 'CASH_ON_DELIVERY'> = {
       wave: 'WAVE',
       orange: 'ORANGE_MONEY',
       free: 'FREE_MONEY',
       card: 'CARD',
+      cash: 'CASH_ON_DELIVERY',
     };
 
     // Mappage des items du panier vers le format attendu par le backend
@@ -244,18 +147,19 @@ export default function CheckoutPage() {
     const cartSource = items.length > 0 ? items : displayItems;
     const mappedItems = cartSource.map((item) => {
       let variantId = '00000000-0000-0000-0000-000000000001';
-      const p = item.product as any;
+      const p = item.product as { id: string; variants?: { id: string }[] };
       if (p.variants && p.variants.length > 0 && uuidRegex.test(p.variants[0].id)) {
         variantId = p.variants[0].id;
       } else if (uuidRegex.test(item.product.id)) {
         variantId = item.product.id;
       }
 
+      const itemOptions = item.options as { giftWrap?: boolean; cardMessage?: string } | undefined;
       return {
         variantId,
         quantity: item.quantity,
-        giftWrap: Boolean((item.options as any)?.giftWrap),
-        cardMessage: (item.options as any)?.cardMessage || undefined,
+        giftWrap: Boolean(itemOptions?.giftWrap),
+        cardMessage: itemOptions?.cardMessage || undefined,
       };
     });
 
@@ -299,6 +203,65 @@ export default function CheckoutPage() {
     }
   }
 
+  if (items.length === 0) {
+    return (
+      <>
+        <main className="content-width page-main checkout-page">
+          <nav className="breadcrumbs" aria-label="Fil d'Ariane">
+            <Link href="/">Accueil</Link>
+            <span>›</span>
+            <Link href="/boutique">Boutique</Link>
+            <span>›</span>
+            <span>Commande</span>
+          </nav>
+
+          <div className="checkout-heading">
+            <h1>Finaliser ma commande</h1>
+          </div>
+
+          <div className="empty-checkout-card text-center py-16 px-6 max-w-xl mx-auto bg-white rounded-3xl border border-[#e8efe9] shadow-sm my-8">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#f0f7f1] text-[#24582d] flex items-center justify-center">
+              <ShoppingBag size={32} />
+            </div>
+            <h2 className="text-2xl font-serif font-bold text-[#1c2e20] mb-2">
+              Votre panier est vide
+            </h2>
+            <p className="text-gray-600 mb-8 max-w-md mx-auto">
+              Vous n&apos;avez pas encore d&apos;articles dans votre panier. Découvrez nos compositions florales et créations artisanales pour passer commande.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/boutique"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-[#24582d] text-white font-medium hover:bg-[#1a4221] transition-colors"
+              >
+                Découvrir la boutique
+              </Link>
+              <Link
+                href="/devis"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+              >
+                Demander un devis sur-mesure
+              </Link>
+            </div>
+          </div>
+        </main>
+        <SiteFooter />
+      </>
+    );
+  }
+
+  if (!isAuthenticated && items.length > 0) {
+    return (
+      <>
+        <main className="content-width page-main checkout-page py-20 text-center">
+          <Loader2 className="animate-spin mx-auto text-[#24582d] mb-4" size={32} />
+          <p className="text-gray-600">Redirection vers la page de connexion...</p>
+        </main>
+        <SiteFooter />
+      </>
+    );
+  }
+
   return (
     <>
       <main className="content-width page-main checkout-page">
@@ -332,7 +295,7 @@ export default function CheckoutPage() {
           {/* LEFT COLUMN: Steps 1, 2, 3, 4, 5 */}
           <div className="checkout-steps-column">
             {/* 1. Identification & Compte Client */}
-            {isAuthenticated && !isEditingAuth ? (
+            {isAuthenticated ? (
               <section className="checkout-panel checkout-step-panel checkout-step-verified">
                 <div className="step-panel-heading">
                   <div className="step-heading-left">
@@ -345,7 +308,10 @@ export default function CheckoutPage() {
                     <button
                       type="button"
                       className="link-button-pink"
-                      onClick={() => setIsEditingAuth(true)}
+                      onClick={() => {
+                        logout();
+                        router.push('/connexion?redirect=/commande');
+                      }}
                     >
                       Changer de compte
                     </button>
@@ -355,7 +321,7 @@ export default function CheckoutPage() {
                       className="link-button-muted"
                       onClick={() => {
                         logout();
-                        setIsEditingAuth(true);
+                        router.push('/');
                       }}
                     >
                       Déconnexion
@@ -365,7 +331,7 @@ export default function CheckoutPage() {
 
                 <div className="checkout-auth-verified-card">
                   <div className="auth-avatar-circle">
-                    {user?.name ? user.name.slice(0, 2).toUpperCase() : 'FB'}
+                    {user?.name ? user.name.slice(0, 2).toUpperCase() : 'DF'}
                   </div>
                   <div className="auth-verified-info">
                     <div className="auth-verified-name-row">
@@ -386,190 +352,7 @@ export default function CheckoutPage() {
                   </div>
                 </div>
               </section>
-            ) : (
-              <section className="checkout-panel checkout-step-panel checkout-step-active">
-                <div className="step-panel-heading">
-                  <div className="step-heading-left">
-                    <span className="step-num-badge">1</span>
-                    <h2>1. Identification &amp; Compte client</h2>
-                  </div>
-                  {isAuthenticated && (
-                    <button
-                      type="button"
-                      className="link-button-pink"
-                      onClick={() => setIsEditingAuth(false)}
-                    >
-                      Conserver {user?.name?.split(' ')[0]}
-                    </button>
-                  )}
-                </div>
-
-                <p className="step-panel-intro">
-                  Connectez-vous ou créez votre compte client pour cumuler vos points fidélité et suivre votre livraison en temps réel.
-                </p>
-
-                {/* Segmented Switcher */}
-                <div className="checkout-auth-tabs">
-                  <button
-                    type="button"
-                    className={`checkout-auth-tab ${authTab === 'login' ? 'active' : ''}`}
-                    onClick={() => {
-                      setAuthTab('login');
-                      setAuthError('');
-                    }}
-                  >
-                    <UserRound size={15} /> J’ai déjà un compte (Connexion)
-                  </button>
-                  <button
-                    type="button"
-                    className={`checkout-auth-tab ${authTab === 'register' ? 'active' : ''}`}
-                    onClick={() => {
-                      setAuthTab('register');
-                      setAuthError('');
-                    }}
-                  >
-                    <Plus size={15} /> Nouveau client (Créer un compte)
-                  </button>
-                </div>
-
-                {/* Prominent Google Quick Login */}
-                <div className="checkout-google-row">
-                  <button
-                    type="button"
-                    className="btn-google-auth"
-                    onClick={handleGoogleLogin}
-                    disabled={authLoading}
-                  >
-                    <GoogleIcon size={20} />
-                    <span>
-                      {authTab === 'login'
-                        ? 'Se connecter avec Google'
-                        : "S'inscrire rapidement avec Google"}
-                    </span>
-                  </button>
-                </div>
-
-                <div className="auth-separator">
-                  <span>ou avec votre adresse e-mail</span>
-                </div>
-
-                {authTab === 'login' ? (
-                  <div className="checkout-auth-fields">
-                    <div className="form-group">
-                      <label htmlFor="chk-email">
-                        <Mail size={13} /> Adresse e-mail
-                      </label>
-                      <input
-                        id="chk-email"
-                        type="email"
-                        placeholder="ex. fatou.ba@email.com"
-                        value={authEmail}
-                        onChange={(e) => setAuthEmail(e.target.value)}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="chk-pwd">
-                        <LockKeyhole size={13} /> Mot de passe
-                      </label>
-                      <input
-                        id="chk-pwd"
-                        type="password"
-                        placeholder="••••••••"
-                        value={authPassword}
-                        onChange={(e) => setAuthPassword(e.target.value)}
-                      />
-                    </div>
-
-                    <div className="checkout-auth-actions">
-                      <button
-                        type="button"
-                        className="button-pill-pink button-small"
-                        onClick={handleEmailLogin}
-                        disabled={authLoading}
-                      >
-                        Se connecter et continuer
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="checkout-auth-fields">
-                    <div className="checkout-auth-row-2">
-                      <div className="form-group">
-                        <label htmlFor="chk-reg-name">
-                          <UserRound size={13} /> Nom complet
-                        </label>
-                        <input
-                          id="chk-reg-name"
-                          type="text"
-                          placeholder="ex. Fatou Ba"
-                          value={authName}
-                          onChange={(e) => setAuthName(e.target.value)}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label htmlFor="chk-reg-phone">
-                          <Phone size={13} /> Téléphone (Sénégal)
-                        </label>
-                        <input
-                          id="chk-reg-phone"
-                          type="tel"
-                          placeholder="+221 77 123 45 67"
-                          value={authPhone}
-                          onChange={(e) => setAuthPhone(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="checkout-auth-row-2">
-                      <div className="form-group">
-                        <label htmlFor="chk-reg-email">
-                          <Mail size={13} /> Adresse e-mail
-                        </label>
-                        <input
-                          id="chk-reg-email"
-                          type="email"
-                          placeholder="ex. fatou.ba@email.com"
-                          value={authEmail}
-                          onChange={(e) => setAuthEmail(e.target.value)}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label htmlFor="chk-reg-pwd">
-                          <LockKeyhole size={13} /> Mot de passe (min. 8 car.)
-                        </label>
-                        <input
-                          id="chk-reg-pwd"
-                          type="password"
-                          placeholder="••••••••"
-                          value={authPassword}
-                          onChange={(e) => setAuthPassword(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <label className="auth-terms-small">
-                      <input type="checkbox" defaultChecked />
-                      <span>
-                        J’accepte la création de mon compte client Décofleur Plus et la politique de confidentialité.
-                      </span>
-                    </label>
-
-                    <div className="checkout-auth-actions">
-                      <button
-                        type="button"
-                        className="button-pill-pink button-small"
-                        onClick={handleRegister}
-                        disabled={authLoading}
-                      >
-                        Créer mon compte et continuer
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {authError && <p className="auth-error-badge">{authError}</p>}
-              </section>
-            )}
+            ) : null}
 
             {/* 2. Adresse de livraison */}
             <section className="checkout-panel checkout-step-panel">
@@ -761,7 +544,7 @@ export default function CheckoutPage() {
                   <select
                     id="deliverySlot"
                     value={deliverySlot}
-                    onChange={(e) => setDeliverySlot(e.target.value as any)}
+                    onChange={(e) => setDeliverySlot(e.target.value as '9h-12h' | '10h-14h' | '14h-18h' | '18h-20h')}
                     className="datetime-select"
                   >
                     <option value="9h-12h">Matinée (09h00 - 12h00)</option>
@@ -808,7 +591,7 @@ export default function CheckoutPage() {
                     onChange={() => setPayment('wave')}
                   />
                   <div className="payment-brand-badge wave">
-                    <Image src="/payment/wave.png" alt="" width={22} height={32} />
+                    <Image src="/payment/wave.png" alt="Paiement Wave Sénégal" width={22} height={32} />
                   </div>
                   <strong>Wave Sénégal</strong>
                 </label>
@@ -823,7 +606,7 @@ export default function CheckoutPage() {
                     onChange={() => setPayment('orange')}
                   />
                   <div className="payment-brand-badge orange">
-                    <Image src="/payment/orange-money.svg" alt="" width={28} height={28} />
+                    <Image src="/payment/orange-money.svg" alt="Paiement Orange Money Sénégal" width={28} height={28} />
                   </div>
                   <strong>Orange Money</strong>
                 </label>
@@ -838,7 +621,7 @@ export default function CheckoutPage() {
                     onChange={() => setPayment('free')}
                   />
                   <div className="payment-brand-badge free">
-                    <Image src="/payment/free-money.png" alt="" width={42} height={32} />
+                    <Image src="/payment/free-money.png" alt="Paiement Free Money Sénégal" width={42} height={32} />
                   </div>
                   <strong>Free Money</strong>
                 </label>
@@ -859,6 +642,24 @@ export default function CheckoutPage() {
                   <div className="payment-method-text">
                     <strong>Carte bancaire</strong>
                     <span className="payment-subtext">Visa, Mastercard</span>
+                  </div>
+                </label>
+
+                {/* Espèces à la livraison */}
+                <label className={`payment-method-row ${payment === 'cash' ? 'selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="cash"
+                    checked={payment === 'cash'}
+                    onChange={() => setPayment('cash')}
+                  />
+                  <div className="payment-brand-badge cash bg-emerald-50 text-emerald-800 flex items-center justify-center rounded-lg p-1.5">
+                    <Banknote size={22} />
+                  </div>
+                  <div className="payment-method-text">
+                    <strong>Espèces à la livraison</strong>
+                    <span className="payment-subtext">Règlement au livreur à la réception</span>
                   </div>
                 </label>
               </div>
@@ -957,7 +758,11 @@ export default function CheckoutPage() {
                 ) : (
                   <>
                     <LockKeyhole size={17} />
-                    <span>Payer {formatPrice(calculatedTotal)}</span>
+                    <span>
+                      {payment === 'cash'
+                        ? `Confirmer la commande (${formatPrice(calculatedTotal)})`
+                        : `Payer ${formatPrice(calculatedTotal)}`}
+                    </span>
                   </>
                 )}
               </button>
@@ -966,8 +771,16 @@ export default function CheckoutPage() {
               <div className="checkout-security-guarantee">
                 <ShieldCheck size={18} color="#15803D" />
                 <div>
-                  <strong>Passerelle NabooPay sécurisée</strong>
-                  <p>Paiement instantané par Wave, Orange Money et Cartes.</p>
+                  <strong>
+                    {payment === 'cash'
+                      ? 'Paiement à la livraison sécurisé'
+                      : 'Passerelle NabooPay sécurisée'}
+                  </strong>
+                  <p>
+                    {payment === 'cash'
+                      ? 'Réglez directement en espèces lors de la remise en main propre.'
+                      : 'Paiement instantané par Wave, Orange Money et Cartes.'}
+                  </p>
                 </div>
               </div>
 

@@ -1,5 +1,4 @@
 import { apiClient } from '../client';
-import { adminCategories } from '@/lib/admin/mock-data';
 import type { AdminCategory } from '@/lib/admin/mock-data/types';
 
 export interface CreateCategoryPayload {
@@ -44,15 +43,17 @@ export async function getAdminCategories(): Promise<AdminCategory[]> {
       return data.map((c) => ({
         id: c.id,
         name: c.name,
+        slug: c.slug,
         description: c.description || '',
         productCount: c._count?.products ?? 0,
         status: 'actif',
+        imageUrl: c.imageUrl || undefined,
       }));
     }
-    return adminCategories;
+    return [];
   } catch (error) {
-    console.warn('[Admin Categories] Fallback sur les catégories locales:', error);
-    return adminCategories;
+    console.warn('[Admin Categories] Erreur de récupération des catégories:', error);
+    return [];
   }
 }
 
@@ -61,11 +62,31 @@ export async function getAdminCategories(): Promise<AdminCategory[]> {
  * Endpoint: POST /api/v1/admin/categories
  */
 export async function createAdminCategory(payload: CreateCategoryPayload): Promise<AdminCategory> {
-  const slug = payload.slug || payload.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-  const data = await apiClient.post<BackendCategory>('/admin/categories', {
-    ...payload,
-    slug,
-  }, { isAdmin: true });
+  const slug =
+    payload.slug ||
+    payload.name
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '') ||
+    `cat-${Date.now()}`;
+
+  const cleanImageUrl =
+    typeof payload.imageUrl === 'string' && payload.imageUrl.trim().length > 0
+      ? payload.imageUrl.trim()
+      : null;
+
+  const data = await apiClient.post<BackendCategory>(
+    '/admin/categories',
+    {
+      name: payload.name.trim(),
+      slug,
+      description: payload.description?.trim() || null,
+      imageUrl: cleanImageUrl,
+    },
+    { isAdmin: true }
+  );
 
   return {
     id: data.id,
@@ -73,6 +94,7 @@ export async function createAdminCategory(payload: CreateCategoryPayload): Promi
     description: data.description || '',
     productCount: 0,
     status: 'actif',
+    imageUrl: data.imageUrl || cleanImageUrl || undefined,
   };
 }
 
@@ -84,7 +106,25 @@ export async function updateAdminCategory(
   id: string,
   payload: Partial<CreateCategoryPayload>
 ): Promise<AdminCategory> {
-  const data = await apiClient.patch<BackendCategory>(`/admin/categories/${id}`, payload, {
+  const updatePayload: Record<string, unknown> = {};
+
+  if (payload.name !== undefined) {
+    updatePayload.name = payload.name.trim();
+  }
+  if (payload.slug !== undefined) {
+    updatePayload.slug = payload.slug.trim();
+  }
+  if (payload.description !== undefined) {
+    updatePayload.description = payload.description.trim() || null;
+  }
+  if (payload.imageUrl !== undefined) {
+    updatePayload.imageUrl =
+      typeof payload.imageUrl === 'string' && payload.imageUrl.trim().length > 0
+        ? payload.imageUrl.trim()
+        : null;
+  }
+
+  const data = await apiClient.patch<BackendCategory>(`/admin/categories/${id}`, updatePayload, {
     isAdmin: true,
   });
 
@@ -94,6 +134,7 @@ export async function updateAdminCategory(
     description: data.description || '',
     productCount: data._count?.products ?? 0,
     status: 'actif',
+    imageUrl: data.imageUrl || (updatePayload.imageUrl as string | undefined) || undefined,
   };
 }
 

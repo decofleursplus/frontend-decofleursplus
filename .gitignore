@@ -1,8 +1,12 @@
 node_modules
 .next
 .env
-.env.*
+.env.local
 mockups
 backend-decofleursplus
 AGENTS.md
 CLAUDE.md
+.agents
+*.tsbuildinfo
+test-results/*
+playwright-report/*

@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { API_BASE_URL, ADMIN_TOKEN_KEY } from '@/lib/api/config';
 
-export async function loginAdmin(prevState: any, formData: FormData) {
+export async function loginAdmin(_prevState: unknown, formData: FormData) {
   const email = (formData.get('email') as string)?.trim();
   const password = formData.get('password') as string;
 
@@ -23,7 +23,19 @@ export async function loginAdmin(prevState: any, formData: FormData) {
       cache: 'no-store',
     });
 
-    const data = await res.json();
+    let data: {
+      success?: boolean;
+      data?: { user: { id: string; name?: string; firstName?: string; lastName?: string; email: string; role: string; avatar?: string | null }; token: string };
+      error?: { message?: string; code?: string };
+      message?: string;
+    } | null = null;
+    try {
+      data = await res.json();
+    } catch {
+      return {
+        error: `Erreur du serveur d'authentification (${res.status}). Veuillez réessayer plus tard.`,
+      };
+    }
 
     if (res.ok && data?.success && data?.data) {
       const { user, token } = data.data;
@@ -36,82 +48,64 @@ export async function loginAdmin(prevState: any, formData: FormData) {
         };
       }
 
-      const cookieStore = await cookies();
-      cookieStore.set('admin_auth', 'true', {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 7,
-      });
-
-      if (token) {
-        cookieStore.set(ADMIN_TOKEN_KEY, token, {
-          httpOnly: false,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          path: '/',
-          maxAge: 60 * 60 * 24 * 7,
-        });
+      if (!token) {
+        return {
+          error: 'Jeton de sécurité non fourni par le serveur. Veuillez contacter le support technique.',
+        };
       }
 
-      cookieStore.set('admin_user', JSON.stringify({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      }), {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 7,
-      });
-
-      redirect('/admin/tableau-de-bord');
-    }
-
-    // Fallback mode démonstration si l'API renvoie une erreur
-    if (email === 'admin@decofleur.com' && password === 'admin123') {
       const cookieStore = await cookies();
-      cookieStore.set('admin_auth', 'true', {
+      const cookieOptions = {
         httpOnly: false,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        sameSite: 'lax' as const,
         path: '/',
         maxAge: 60 * 60 * 24 * 7,
-      });
+      };
+
+      cookieStore.set('admin_auth', 'true', cookieOptions);
+      cookieStore.set(ADMIN_TOKEN_KEY, token, cookieOptions);
+      cookieStore.set(
+        'admin_user',
+        JSON.stringify({
+          id: user.id,
+          name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Admin',
+          email: user.email,
+          role: user.role,
+          avatar: user.avatar || null,
+        }),
+        cookieOptions
+      );
+
       redirect('/admin/tableau-de-bord');
     }
 
-    const errorMsg = data?.error?.message || data?.message || 'Identifiants invalides. Veuillez réessayer.';
+    const errorMsg =
+      data?.error?.message ||
+      data?.message ||
+      (res.status === 401
+        ? 'Identifiants invalides (email ou mot de passe incorrect).'
+        : 'Échec de la connexion. Veuillez vérifier vos identifiants.');
+
     return { error: errorMsg };
-  } catch (err: any) {
-    if (err?.digest?.startsWith('NEXT_REDIRECT')) {
+  } catch (err: unknown) {
+    // Si redirect a été levé par Next.js, propager l'exception de redirection
+    if (err && typeof err === 'object' && 'digest' in err && typeof (err as { digest: unknown }).digest === 'string' && (err as { digest: string }).digest.startsWith('NEXT_REDIRECT')) {
       throw err;
     }
 
-    // En cas d'erreur réseau avec le backend, autoriser le compte démo de secours
-    if (email === 'admin@decofleur.com' && password === 'admin123') {
-      const cookieStore = await cookies();
-      cookieStore.set('admin_auth', 'true', {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 7,
-      });
-      redirect('/admin/tableau-de-bord');
-    }
-
-    return { error: 'Impossible de contacter le serveur d’authentification. Veuillez réessayer.' };
+    console.error('[Admin Login Error]:', err);
+    return {
+      error: 'Impossible de contacter le serveur d’authentification. Veuillez vérifier votre connexion.',
+    };
   }
 }
 
 export async function logoutAdmin() {
   const cookieStore = await cookies();
-  cookieStore.delete('admin_auth');
-  cookieStore.delete(ADMIN_TOKEN_KEY);
-  cookieStore.delete('admin_user');
+  const deleteOptions = { path: '/' };
+  cookieStore.delete({ name: 'admin_auth', ...deleteOptions });
+  cookieStore.delete({ name: ADMIN_TOKEN_KEY, ...deleteOptions });
+  cookieStore.delete({ name: 'admin_user', ...deleteOptions });
   redirect('/admin/connexion');
 }

@@ -24,8 +24,10 @@ import {
   Search,
   X,
   Upload,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { uploadAdminMedia } from '@/lib/api/admin/uploads';
 import { WhatsAppColorIcon } from '@/components/icons';
 import { products as allProducts } from '@/lib/products';
 import {
@@ -95,24 +97,32 @@ function EditEventDialogInner({
 }: EditEventDialogProps & { event: SeasonalEvent }) {
   const [formData, setFormData] = useState<SeasonalEvent>(event);
   const [productSearch, setProductSearch] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('La photo ne doit pas dépasser 5 Mo.');
-        return;
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('La photo ne doit pas dépasser 5 Mo.');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const urls = await uploadAdminMedia([file], 'products');
+      if (urls[0]) {
+        setFormData((prev) => ({ ...prev, bgImage: urls[0] }));
+        toast.success('Photo d’ambiance téléversée avec succès sur le serveur.');
       }
-      const reader = new FileReader();
-      reader.onload = (loadEvent) => {
-        const result = loadEvent.target?.result as string;
-        if (result) {
-          setFormData((prev) => ({ ...prev, bgImage: result }));
-          toast.success('Photo personnalisée sélectionnée.');
-        }
-      };
-      reader.readAsDataURL(file);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Échec du téléversement de la photo.');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -415,37 +425,44 @@ function EditEventDialogInner({
                     type="button"
                     variant="outline"
                     size="sm"
+                    disabled={isUploading}
                     onClick={() => fileInputRef.current?.click()}
                     className="h-8 text-xs border-zinc-200 text-zinc-700 hover:text-zinc-900 gap-1.5 shadow-2xs"
                   >
-                    <Upload className="h-3.5 w-3.5 text-zinc-500" />
-                    <span>Choisir une photo sur mon ordinateur</span>
+                    {isUploading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-[#c1647a]" />
+                    ) : (
+                      <Upload className="h-3.5 w-3.5 text-zinc-500" />
+                    )}
+                    <span>{isUploading ? 'Téléversement...' : 'Choisir une photo sur mon ordinateur'}</span>
                   </Button>
                 </div>
               </div>
 
               {/* Aperçu si photo personnalisée importée */}
-              {formData.bgImage?.startsWith('data:') && (
+              {formData.bgImage && !formData.bgImage.startsWith('/images/') && (
                 <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className="relative h-12 w-16 rounded-lg overflow-hidden shrink-0 border border-emerald-300 bg-white">
-                      <Image
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
                         src={formData.bgImage}
                         alt="Photo personnalisée importée"
-                        fill
-                        className="object-cover"
-                        sizes="64px"
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/images/hero.jpg';
+                        }}
                       />
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <Check className="h-3.5 w-3.5 text-emerald-600" />
                         <span className="text-xs font-semibold text-emerald-900">
-                          Photo personnalisée sélectionnée
+                          Photo personnalisée active
                         </span>
                       </div>
                       <p className="text-[11px] text-emerald-700 truncate">
-                        Fichier image local chargé avec succès
+                        Téléversée sur le serveur
                       </p>
                     </div>
                   </div>

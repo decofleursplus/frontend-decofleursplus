@@ -1,6 +1,6 @@
 import { apiClient } from '../client';
-import { adminCustomers } from '@/lib/admin/mock-data/customers';
 import type { AdminCustomer, CustomerSegment } from '@/lib/admin/mock-data/types';
+import { transformAdminOrder } from './orders';
 
 export interface GetAdminCustomersParams {
   search?: string;
@@ -50,6 +50,10 @@ export function transformAdminCustomer(raw: any): AdminCustomer {
     avatar: raw.avatar || '',
     address: addressStr || undefined,
     lastOrderDate: raw.lastOrderDate ? raw.lastOrderDate.split('T')[0] : undefined,
+    loyaltyTier: raw.loyaltyTier,
+    loyaltyPoints: raw.loyaltyPoints ? Number(raw.loyaltyPoints) : 0,
+    notes: raw.notes || '',
+    recentOrders: Array.isArray(raw.recentOrders) ? raw.recentOrders.map(transformAdminOrder) : [],
   };
 }
 
@@ -75,6 +79,13 @@ export async function getAdminCustomers(params?: GetAdminCustomersParams): Promi
     });
 
     if (res && typeof res === 'object') {
+      const dataObj = res.data ?? res;
+      if (Array.isArray(dataObj.items)) {
+        return {
+          customers: dataObj.items.map(transformAdminCustomer),
+          total: dataObj.total ?? dataObj.items.length,
+        };
+      }
       if (Array.isArray(res.customers)) {
         return {
           customers: res.customers.map(transformAdminCustomer),
@@ -95,27 +106,12 @@ export async function getAdminCustomers(params?: GetAdminCustomersParams): Promi
       }
     }
   } catch (err) {
-    console.warn('[AdminCustomersAPI] Falling back to mock customers:', err);
-  }
-
-  // Fallback to local mock
-  let filtered = [...adminCustomers];
-  if (params?.segment && params.segment !== 'all') {
-    filtered = filtered.filter((c) => c.segment === params.segment);
-  }
-  if (params?.search) {
-    const term = params.search.toLowerCase();
-    filtered = filtered.filter(
-      (c) =>
-        c.name.toLowerCase().includes(term) ||
-        c.email.toLowerCase().includes(term) ||
-        c.phone.toLowerCase().includes(term)
-    );
+    console.warn('[AdminCustomersAPI] Erreur de récupération des clients:', err);
   }
 
   return {
-    customers: filtered,
-    total: filtered.length,
+    customers: [],
+    total: 0,
   };
 }
 
@@ -130,13 +126,13 @@ export async function getAdminCustomerById(id: string): Promise<AdminCustomer | 
       cache: 'no-store',
     });
     if (res) {
-      return transformAdminCustomer(res);
+      return transformAdminCustomer(res?.data || res);
     }
   } catch (err) {
     console.warn(`[AdminCustomersAPI] Error fetching customer ${id}:`, err);
   }
 
-  return adminCustomers.find((c) => c.id === id) || null;
+  return null;
 }
 
 /**

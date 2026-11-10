@@ -25,9 +25,32 @@ export default function AdminFournisseurDetailPage({ params }: { params: Promise
   const resolvedParams = use(params);
   const [activeTab, setActiveTab] = useState<'infos' | 'produits' | 'commandes' | 'factures' | 'historique'>('infos');
 
-  const supplier = initialSuppliers.find((s) => s.id === resolvedParams.id) || initialSuppliers[0];
-  const orders = initialSupplierOrders.filter((o) => o.supplierId === supplier.id);
-  const invoices = initialSupplierInvoices.filter((i) => i.supplierId === supplier.id);
+  const supplier = initialSuppliers.find((s) => s.id === resolvedParams.id);
+  const orders = supplier ? initialSupplierOrders.filter((o) => o.supplierId === supplier.id) : [];
+  const invoices = supplier ? initialSupplierInvoices.filter((i) => i.supplierId === supplier.id) : [];
+
+  if (!supplier) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8 space-y-4">
+        <Building2 className="w-12 h-12 text-gray-400" />
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-serif font-bold text-gray-800">Fournisseur introuvable</h2>
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+            À venir
+          </span>
+        </div>
+        <p className="text-xs text-gray-500 max-w-md">
+          Ce fournisseur n&apos;existe pas ou le module d&apos;approvisionnement est en attente d&apos;implémentation backend (spécifications complètes dans docs/endpoints_feedback.md).
+        </p>
+        <Link
+          href="/admin/fournisseurs"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#193e23] text-white text-xs font-semibold"
+        >
+          <ArrowLeft size={14} /> Retour aux fournisseurs
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -54,6 +77,9 @@ export default function AdminFournisseurDetailPage({ params }: { params: Promise
               <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                 {supplier.status === 'actif' ? 'Actif' : 'Inactif'}
               </span>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+                À venir
+              </span>
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
               Fournisseur de {supplier.categories.join(' et de ')}
@@ -62,12 +88,15 @@ export default function AdminFournisseurDetailPage({ params }: { params: Promise
         </div>
 
         <div className="flex items-center gap-2">
-          <Link
-            href="/admin/approvisionnements"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-xs font-semibold shadow-xs transition-colors"
+          <button
+            type="button"
+            disabled
+            aria-disabled="true"
+            title="Module d'approvisionnement en attente d'implémentation backend"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#c8436e] text-white text-xs font-semibold shadow-xs opacity-50 cursor-not-allowed"
           >
-            <Boxes size={15} /> Passer une commande
-          </Link>
+            <Boxes size={15} /> Passer une commande (À venir)
+          </button>
         </div>
       </div>
 

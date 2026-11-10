@@ -1,11 +1,12 @@
 'use client';
 
-import { use } from 'react';
+import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { adminBlogArticles } from '@/lib/admin/mock-data/blog';
+import { getAdminBlogArticleById } from '@/lib/api/admin/blog';
+import type { BlogArticle } from '@/lib/admin/mock-data/types';
 import { ArticleForm } from '@/components/admin/article-form';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, FileText } from 'lucide-react';
+import { ArrowLeft, FileText, Loader2 } from 'lucide-react';
 
 interface EditBlogArticlePageProps {
   params: Promise<{ id: string }>;
@@ -13,8 +14,31 @@ interface EditBlogArticlePageProps {
 
 export default function EditBlogArticlePage({ params }: EditBlogArticlePageProps) {
   const { id } = use(params);
+  const [article, setArticle] = useState<BlogArticle | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const article = adminBlogArticles.find((a) => a.id === id);
+  useEffect(() => {
+    let mounted = true;
+    getAdminBlogArticleById(id)
+      .then((data) => {
+        if (mounted) setArticle(data);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[#24582d] mb-3" />
+        <p className="text-xs text-gray-500 font-medium">Chargement de l&apos;article...</p>
+      </div>
+    );
+  }
 
   if (!article) {
     return (

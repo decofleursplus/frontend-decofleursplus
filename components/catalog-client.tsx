@@ -1,26 +1,13 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
-import { ChevronDown, SlidersHorizontal, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { ChevronDown, SlidersHorizontal, Loader2, Flower2 } from 'lucide-react';
 import { Product } from '@/lib/products';
 import { ProductGrid } from '@/components/product-grid';
 import { getProducts, getCategories, ApiCategory } from '@/lib/api/catalog';
 
-const DEFAULT_CATEGORIES = [
-  'Tous les produits',
-  'Bouquets',
-  'Roses',
-  'Plantes',
-  'Paniers de fruits',
-  'Cadeaux',
-  'Mariages',
-  'Décoration',
-  'Bougies',
-  'Vases & Bougies',
-  'Deuil',
-  'Anniversaires',
-  'Occasions spéciales',
-];
+const DEFAULT_CATEGORIES = ['Tous les produits'];
 
 export function CatalogClient({
   initialQuery = '',
@@ -50,12 +37,15 @@ export function CatalogClient({
     async function loadCats() {
       try {
         const apiCats = await getCategories();
-        if (active && apiCats.length > 0) {
-          const names = ['Tous les produits', ...apiCats.map((c: ApiCategory) => c.name)];
-          setCategoriesList(Array.from(new Set([...names, ...DEFAULT_CATEGORIES])));
+        if (active) {
+          if (apiCats.length > 0) {
+            setCategoriesList(['Tous les produits', ...apiCats.map((c: ApiCategory) => c.name)]);
+          } else {
+            setCategoriesList(['Tous les produits']);
+          }
         }
       } catch {
-        // fallback to default
+        if (active) setCategoriesList(['Tous les produits']);
       }
     }
     loadCats();
@@ -240,22 +230,30 @@ export function CatalogClient({
         ) : productsList.length > 0 ? (
           <ProductGrid products={productsList} />
         ) : (
-          <div className="empty-state">
-            <h2>Aucun produit trouvé</h2>
-            <p>Essayez une autre recherche ou choisissez une autre catégorie.</p>
-            <button
-              className="button button-outline"
-              type="button"
-              onClick={() => {
-                setQuery('');
-                setCategory('Tous les produits');
-                setInStock(false);
-                setNewOnly(false);
-                setMaxPrice(100000);
-              }}
-            >
-              Effacer les filtres
-            </button>
+          <div className="empty-state text-center py-16 px-6 bg-[#fbfdfb] rounded-3xl border border-[#e8efe9] my-6">
+            <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-[#f0f7f1] text-[#24582d] flex items-center justify-center">
+              <Flower2 size={28} />
+            </div>
+            <h2 className="text-xl font-serif font-bold text-[#1c2e20] mb-2">
+              Notre nouvelle collection florale arrive très bientôt
+            </h2>
+            <p className="text-gray-600 mb-6 max-w-md mx-auto text-sm">
+              Le catalogue est actuellement en cours de renouvellement par nos artisans fleuristes. Vous pouvez nous solliciter directement pour une composition sur-mesure ou un devis événementiel.
+            </p>
+            <div className="flex flex-wrap gap-3 justify-center">
+              <Link
+                href="/devis"
+                className="px-5 py-2.5 rounded-full bg-[#24582d] text-white text-sm font-medium hover:bg-[#1a4221] transition-colors"
+              >
+                Demander un devis sur-mesure
+              </Link>
+              <Link
+                href="/contact"
+                className="px-5 py-2.5 rounded-full border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
+              >
+                Nous contacter
+              </Link>
+            </div>
           </div>
         )}
       </section>

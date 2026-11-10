@@ -2,21 +2,25 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Mail, LockKeyhole, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
-import { GoogleIcon, FacebookColorIcon, FloralMotifIcon } from '@/components/icons';
+import { GoogleIcon, FloralMotifIcon } from '@/components/icons';
 import { useAuth } from '@/components/auth-provider';
 
 export function LoginForm() {
   const router = useRouter();
-  const { login, loginWithGoogle, loginWithFacebook } = useAuth();
+  const searchParams = useSearchParams();
+  const rawRedirect = searchParams.get('redirect');
+  const hasValidRedirect = Boolean(rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//'));
+  const redirectTarget = hasValidRedirect && rawRedirect ? rawRedirect : '/compte';
+  const { login, loginWithGoogle } = useAuth();
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [socialLoading, setSocialLoading] = useState<'google' | 'facebook' | null>(null);
+  const [socialLoading, setSocialLoading] = useState<boolean>(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -30,30 +34,28 @@ export function LoginForm() {
       await login(identifier, password);
       setFeedback('Connexion réussie ! Redirection en cours…');
       setTimeout(() => {
-        router.push('/compte');
+        router.push(redirectTarget);
       }, 500);
-    } catch (err: any) {
-      setFeedback(err?.message || 'Identifiant ou mot de passe incorrect.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Identifiant ou mot de passe incorrect.';
+      setFeedback(message);
       setIsSubmitting(false);
     }
   }
 
-  async function handleSocial(provider: 'google' | 'facebook') {
-    setSocialLoading(provider);
+  async function handleSocialGoogle() {
+    setSocialLoading(true);
     setFeedback(null);
     try {
-      if (provider === 'google') {
-        await loginWithGoogle();
-      } else {
-        await loginWithFacebook();
-      }
-      setFeedback(`Connecté avec ${provider === 'google' ? 'Google' : 'Facebook'} ! Redirection…`);
+      await loginWithGoogle();
+      setFeedback('Connecté avec Google ! Redirection…');
       setTimeout(() => {
-        router.push('/compte');
+        router.push(redirectTarget);
       }, 600);
-    } catch {
-      setFeedback('Erreur lors de la connexion sociale. Veuillez réessayer.');
-      setSocialLoading(null);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'La connexion avec Google sera bientôt disponible.';
+      setFeedback(message);
+      setSocialLoading(false);
     }
   }
 
@@ -171,41 +173,38 @@ export function LoginForm() {
           <span className="auth-or-line" />
         </div>
 
-        {/* Social Buttons Row */}
-        <div className="auth-social-grid">
+        {/* Social Buttons Row (Google uniquement - Facebook retiré) */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', marginBottom: '20px' }}>
           <button
             type="button"
-            onClick={() => handleSocial('google')}
-            disabled={isSubmitting || !!socialLoading}
+            onClick={handleSocialGoogle}
+            disabled={isSubmitting || socialLoading}
             className="auth-social-btn"
+            style={{ width: '100%' }}
           >
-            {socialLoading === 'google' ? (
+            {socialLoading ? (
               <Loader2 size={16} className="auth-spinner" />
             ) : (
               <GoogleIcon size={18} />
             )}
-            <span>Google</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleSocial('facebook')}
-            disabled={isSubmitting || !!socialLoading}
-            className="auth-social-btn"
-          >
-            {socialLoading === 'facebook' ? (
-              <Loader2 size={16} className="auth-spinner" />
-            ) : (
-              <FacebookColorIcon size={18} />
-            )}
-            <span>Facebook</span>
+            <span>Continuer avec Google</span>
+            <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 500, marginLeft: '4px' }}>
+              (Bientôt disponible)
+            </span>
           </button>
         </div>
 
         {/* Card Footer Link */}
         <div className="auth-card-footer">
           <span>Vous n’avez pas encore de compte ? </span>
-          <Link href="/inscription" className="auth-accent-link">
+          <Link
+            href={
+              hasValidRedirect && rawRedirect
+                ? `/inscription?redirect=${encodeURIComponent(rawRedirect)}`
+                : '/inscription'
+            }
+            className="auth-accent-link"
+          >
             Créer un compte
           </Link>
         </div>

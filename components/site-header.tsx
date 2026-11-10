@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -17,8 +16,8 @@ import {
   X,
   ChevronDown,
   House,
-  Flower2,
   LayoutGrid,
+  LogOut,
 } from 'lucide-react';
 import { FacebookIcon, InstagramIcon, TikTokIcon } from '@/components/icons';
 import { useCart } from '@/components/cart-provider';
@@ -27,7 +26,7 @@ import { BrandLogo } from '@/components/brand-logo';
 
 export function SiteHeader() {
   const { count, favorites } = useCart();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const [query, setQuery] = useState('');
@@ -313,13 +312,13 @@ export function SiteHeader() {
                 onMouseLeave={handleDropdownLeave}
               >
                 <Link href="/boutique" className="dropdown-item" onClick={closeDropdownInstantly}>Tous les produits</Link>
-                <Link href="/bouquets" className="dropdown-item" onClick={closeDropdownInstantly}>Bouquets élégants</Link>
-                <Link href="/roses" className="dropdown-item" onClick={closeDropdownInstantly}>Roses fraîches</Link>
-                <Link href="/plantes" className="dropdown-item" onClick={closeDropdownInstantly}>Plantes d’intérieur</Link>
-                <Link href="/paniers-de-fruits" className="dropdown-item" onClick={closeDropdownInstantly}>Paniers de fruits</Link>
-                <Link href="/cadeaux" className="dropdown-item" onClick={closeDropdownInstantly}>Coffrets cadeaux</Link>
-                <Link href="/bougies" className="dropdown-item" onClick={closeDropdownInstantly}>Bougies & senteurs</Link>
-                <Link href="/vases" className="dropdown-item" onClick={closeDropdownInstantly}>Vases & contenants</Link>
+                <Link href="/categories/bouquets" className="dropdown-item" onClick={closeDropdownInstantly}>Bouquets élégants</Link>
+                <Link href="/categories/roses" className="dropdown-item" onClick={closeDropdownInstantly}>Roses fraîches</Link>
+                <Link href="/categories/plantes" className="dropdown-item" onClick={closeDropdownInstantly}>Plantes d’intérieur</Link>
+                <Link href="/categories/paniers-de-fruits" className="dropdown-item" onClick={closeDropdownInstantly}>Paniers de fruits</Link>
+                <Link href="/categories/cadeaux" className="dropdown-item" onClick={closeDropdownInstantly}>Coffrets cadeaux</Link>
+                <Link href="/categories/bougies" className="dropdown-item" onClick={closeDropdownInstantly}>Bougies & senteurs</Link>
+                <Link href="/categories/vases" className="dropdown-item" onClick={closeDropdownInstantly}>Vases & contenants</Link>
               </div>
             )}
           </div>
@@ -361,7 +360,7 @@ export function SiteHeader() {
               href="/paysagisme"
               className={`nav-link ${isActive('/paysagisme') ? 'active' : ''}`}
             >
-              Paysagisme <ChevronDown size={14} className="dropdown-arrow" />
+              Paysagisme <span className="ml-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">À venir</span> <ChevronDown size={14} className="dropdown-arrow" />
             </Link>
             {openDropdown === 'paysagisme' && (
               <div
@@ -369,9 +368,18 @@ export function SiteHeader() {
                 onMouseEnter={() => handleDropdownEnter('paysagisme')}
                 onMouseLeave={handleDropdownLeave}
               >
-                <Link href="/paysagisme" className="dropdown-item" onClick={closeDropdownInstantly}>Paysagisme & Aménagement</Link>
-                <Link href="/paysagisme/prestations" className="dropdown-item" onClick={closeDropdownInstantly}>Nos prestations</Link>
-                <Link href="/paysagisme/realisations" className="dropdown-item" onClick={closeDropdownInstantly}>Galerie des réalisations</Link>
+                <Link href="/paysagisme" className="dropdown-item flex items-center justify-between" onClick={closeDropdownInstantly}>
+                  <span>Paysagisme &amp; Aménagement</span>
+                  <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">À venir</span>
+                </Link>
+                <Link href="/paysagisme/prestations" className="dropdown-item flex items-center justify-between" onClick={closeDropdownInstantly}>
+                  <span>Nos prestations</span>
+                  <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">À venir</span>
+                </Link>
+                <Link href="/paysagisme/realisations" className="dropdown-item flex items-center justify-between" onClick={closeDropdownInstantly}>
+                  <span>Galerie des réalisations</span>
+                  <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">À venir</span>
+                </Link>
               </div>
             )}
           </div>
@@ -455,6 +463,39 @@ export function SiteHeader() {
               </button>
             </div>
 
+            {/* Profil connecté & Déconnexion mobile (placé en haut pour visibilité immédiate sans scroll) */}
+            {isAuthenticated && (
+              <div className="mx-4 my-3 p-3 rounded-xl border border-[#e7e4dd] bg-[#faf8f4] flex items-center justify-between shadow-2xs">
+                <Link
+                  href="/compte"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-85 transition-opacity"
+                >
+                  <div className="w-8 h-8 rounded-full bg-[#173f22] text-white flex items-center justify-center text-xs font-bold shrink-0">
+                    {user?.name ? user.name.slice(0, 2).toUpperCase() : 'ME'}
+                  </div>
+                  <div className="flex flex-col min-w-0 pr-2">
+                    <span className="text-xs font-bold text-[#173f22] truncate">{user?.name || 'Mon compte'}</span>
+                    <span className="text-[10.5px] text-gray-500 truncate">{user?.email}</span>
+                  </div>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    logout();
+                    setMobileMenuOpen(false);
+                    router.push('/');
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 transition-colors cursor-pointer shrink-0"
+                  title="Se déconnecter"
+                  aria-label="Se déconnecter"
+                >
+                  <LogOut size={14} />
+                  <span>Déconnexion</span>
+                </button>
+              </div>
+            )}
+
             <nav className="mobile-drawer-links">
               <Link href="/" onClick={() => setMobileMenuOpen(false)} className="drawer-main-link">
                 Accueil
@@ -479,13 +520,13 @@ export function SiteHeader() {
                 {expandedSections['produits'] && (
                   <div className="drawer-sublinks">
                     <Link href="/boutique" onClick={() => setMobileMenuOpen(false)}>Tous les produits</Link>
-                    <Link href="/bouquets" onClick={() => setMobileMenuOpen(false)}>Bouquets élégants</Link>
-                    <Link href="/roses" onClick={() => setMobileMenuOpen(false)}>Roses fraîches</Link>
-                    <Link href="/plantes" onClick={() => setMobileMenuOpen(false)}>Plantes d’intérieur</Link>
-                    <Link href="/paniers-de-fruits" onClick={() => setMobileMenuOpen(false)}>Paniers de fruits</Link>
-                    <Link href="/cadeaux" onClick={() => setMobileMenuOpen(false)}>Coffrets cadeaux</Link>
-                    <Link href="/bougies" onClick={() => setMobileMenuOpen(false)}>Bougies & senteurs</Link>
-                    <Link href="/vases" onClick={() => setMobileMenuOpen(false)}>Vases & contenants</Link>
+                    <Link href="/categories/bouquets" onClick={() => setMobileMenuOpen(false)}>Bouquets élégants</Link>
+                    <Link href="/categories/roses" onClick={() => setMobileMenuOpen(false)}>Roses fraîches</Link>
+                    <Link href="/categories/plantes" onClick={() => setMobileMenuOpen(false)}>Plantes d’intérieur</Link>
+                    <Link href="/categories/paniers-de-fruits" onClick={() => setMobileMenuOpen(false)}>Paniers de fruits</Link>
+                    <Link href="/categories/cadeaux" onClick={() => setMobileMenuOpen(false)}>Coffrets cadeaux</Link>
+                    <Link href="/categories/bougies" onClick={() => setMobileMenuOpen(false)}>Bougies & senteurs</Link>
+                    <Link href="/categories/vases" onClick={() => setMobileMenuOpen(false)}>Vases & contenants</Link>
                   </div>
                 )}
               </div>
@@ -525,7 +566,10 @@ export function SiteHeader() {
                   className="drawer-accordion-btn font-semibold text-[#173f22]"
                   aria-expanded={!!expandedSections['paysagisme']}
                 >
-                  <span>Paysagisme &amp; Aménagement</span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span>Paysagisme &amp; Aménagement</span>
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">À venir</span>
+                  </span>
                   <ChevronDown
                     size={16}
                     className={`transition-transform duration-200 text-[#173f22] ${
@@ -535,9 +579,18 @@ export function SiteHeader() {
                 </button>
                 {expandedSections['paysagisme'] && (
                   <div className="drawer-sublinks">
-                    <Link href="/paysagisme" onClick={() => setMobileMenuOpen(false)}>Paysagisme &amp; Aménagement</Link>
-                    <Link href="/paysagisme/prestations" onClick={() => setMobileMenuOpen(false)}>Nos prestations</Link>
-                    <Link href="/paysagisme/realisations" onClick={() => setMobileMenuOpen(false)}>Galerie réalisations</Link>
+                    <Link href="/paysagisme" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-between">
+                      <span>Paysagisme &amp; Aménagement</span>
+                      <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">À venir</span>
+                    </Link>
+                    <Link href="/paysagisme/prestations" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-between">
+                      <span>Nos prestations</span>
+                      <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">À venir</span>
+                    </Link>
+                    <Link href="/paysagisme/realisations" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-between">
+                      <span>Galerie réalisations</span>
+                      <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">À venir</span>
+                    </Link>
                   </div>
                 )}
               </div>

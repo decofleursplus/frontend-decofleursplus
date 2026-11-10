@@ -1,81 +1,130 @@
-'use client';
-
-import { use, useEffect, useState } from 'react';
+import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import {
-  Calendar,
-  Clock,
-  Heart,
-  Share2,
-  ArrowLeft,
-  Sparkles,
-  Check,
-  Tag,
-  Loader2,
-  ArrowRight,
-} from 'lucide-react';
-import { WhatsAppIcon, FacebookIcon } from '@/components/icons';
+import { Calendar, Clock, ArrowLeft, Tag } from 'lucide-react';
 import { SiteFooter } from '@/components/site-footer';
-import {
-  getBlogArticleBySlug,
-  likeBlogArticle,
-  BlogArticle,
-} from '@/lib/api/blog';
+import { getBlogArticleBySlug } from '@/lib/api/blog';
+import { constructMetadata } from '@/lib/seo/metadata';
+import { getArticleSchema } from '@/lib/seo/schema';
+import { JsonLd } from '@/components/seo/json-ld';
+import { Breadcrumbs } from '@/components/seo/breadcrumbs';
+import { ArticleInteractions } from '@/components/blog/article-interactions';
+import type { BlogArticle } from '@/lib/admin/mock-data/types';
 
-export default function BlogDetailPage({
+export const dynamicParams = true;
+
+export function generateStaticParams() {
+  return [];
+}
+
+async function fetchArticleData(slug: string): Promise<{
+  article: BlogArticle;
+  relatedArticles: BlogArticle[];
+} | null> {
+  try {
+    const apiRes = await getBlogArticleBySlug(slug);
+    if (apiRes && apiRes.article) {
+      return {
+        article: {
+          id: apiRes.article.id,
+          title: apiRes.article.title,
+          slug: apiRes.article.slug,
+          categoryId: apiRes.article.categoryId,
+          categoryName: apiRes.article.categoryName,
+          categoryColor: apiRes.article.categoryColor,
+          authorId: apiRes.article.authorId,
+          authorName: apiRes.article.authorName,
+          authorRole: apiRes.article.authorRole,
+          authorAvatar: apiRes.article.authorAvatar,
+          coverImage: apiRes.article.coverImage,
+          coverImageCaption: apiRes.article.coverImageCaption || undefined,
+          excerpt: apiRes.article.excerpt,
+          content: apiRes.article.content,
+          readTime: apiRes.article.readTime,
+          status: apiRes.article.status,
+          publishedAt: apiRes.article.publishedAt || undefined,
+          createdAt: apiRes.article.createdAt,
+          updatedAt: apiRes.article.updatedAt,
+          viewsCount: apiRes.article.viewsCount,
+          likesCount: apiRes.article.likesCount,
+          isFeatured: apiRes.article.isFeatured,
+          tags: apiRes.article.tags,
+          relatedProductIds: apiRes.article.relatedProductIds,
+        },
+        relatedArticles: (apiRes.relatedArticles || []).map((a) => ({
+          id: a.id,
+          title: a.title,
+          slug: a.slug,
+          categoryId: a.categoryId,
+          categoryName: a.categoryName,
+          categoryColor: a.categoryColor,
+          authorId: a.authorId,
+          authorName: a.authorName,
+          coverImage: a.coverImage,
+          excerpt: a.excerpt,
+          content: a.content,
+          readTime: a.readTime,
+          status: a.status,
+          createdAt: a.createdAt,
+          updatedAt: a.updatedAt,
+          viewsCount: a.viewsCount,
+          likesCount: a.likesCount,
+          isFeatured: a.isFeatured,
+          tags: a.tags,
+        })),
+      };
+    }
+  } catch {
+    // API failed or not found
+  }
+
+  return null;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const data = await fetchArticleData(slug);
+
+  if (!data || !data.article) {
+    return constructMetadata({
+      title: 'Article introuvable',
+      description: 'L’article que vous recherchez n’existe pas ou a été déplacé.',
+      noIndex: true,
+    });
+  }
+
+  const { article } = data;
+
+  return constructMetadata({
+    title: article.seoTitle || `${article.title} | Blog Décofleur Plus`,
+    description: article.seoDescription || article.excerpt,
+    image: article.coverImage,
+    canonical: `/blog/${article.slug}`,
+    type: 'article',
+    publishedTime: article.publishedAt || article.createdAt,
+    modifiedTime: article.updatedAt || article.publishedAt,
+    authors: [article.authorName],
+    keywords: [
+      ...(article.tags || []),
+      'blog fleuriste saly',
+      'fleurs senegal',
+      'conseils floraux dakar',
+    ],
+  });
+}
+
+export default async function BlogDetailPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const { slug } = use(params);
-  const [data, setData] = useState<{
-    article: BlogArticle;
-    relatedArticles: BlogArticle[];
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [likes, setLikes] = useState(0);
-  const [liked, setLiked] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    getBlogArticleBySlug(slug)
-      .then((res) => {
-        if (res) {
-          setData(res);
-          setLikes(res.article.likesCount);
-        }
-      })
-      .finally(() => setLoading(false));
-  }, [slug]);
-
-  const handleLike = async () => {
-    if (liked) return;
-    setLiked(true);
-    setLikes((prev) => prev + 1);
-    await likeBlogArticle(slug);
-  };
-
-  const handleCopyLink = () => {
-    if (typeof window !== 'undefined') {
-      navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  if (loading) {
-    return (
-      <>
-        <div className="content-width page-main py-20 flex flex-col items-center justify-center gap-3 text-neutral-500">
-          <Loader2 size={30} className="animate-spin text-[#173f22]" />
-          <span>Chargement de l’article...</span>
-        </div>
-        <SiteFooter />
-      </>
-    );
-  }
+  const { slug } = await params;
+  const data = await fetchArticleData(slug);
 
   if (!data || !data.article) {
     notFound();
@@ -83,17 +132,26 @@ export default function BlogDetailPage({
 
   const { article, relatedArticles } = data;
 
+  const breadcrumbs = [
+    { label: 'Accueil', href: '/' },
+    { label: 'Blog Floral', href: '/blog' },
+    { label: article.categoryName, href: '/blog' },
+    { label: article.title },
+  ];
+
+  const formattedDate = article.publishedAt
+    ? new Date(article.publishedAt).toLocaleDateString('fr-FR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : 'Récemment';
+
   return (
     <>
+      <JsonLd data={getArticleSchema(article)} />
       <main className="content-width page-main blog-detail-page pb-16">
-        {/* Breadcrumb Navigation */}
-        <nav className="breadcrumbs" aria-label="Fil d'Ariane">
-          <Link href="/">Accueil</Link>
-          <span>›</span>
-          <Link href="/blog">Blog Floral</Link>
-          <span>›</span>
-          <span className="truncate max-w-[200px]">{article.title}</span>
-        </nav>
+        <Breadcrumbs items={breadcrumbs} className="mb-6" />
 
         {/* Article Header */}
         <header className="max-w-3xl mx-auto text-center mb-8">
@@ -105,46 +163,50 @@ export default function BlogDetailPage({
           </Link>
 
           <div className="flex items-center justify-center gap-2 mb-3">
-            <span className="px-3 py-1 bg-pink-50 border border-pink-100 text-[#c8436e] rounded-full text-xs font-bold">
+            <span
+              className="px-3 py-1 rounded-full text-xs font-bold text-white shadow-xs"
+              style={{ backgroundColor: article.categoryColor || '#173f22' }}
+            >
               {article.categoryName}
             </span>
           </div>
 
-          <h1 className="font-serif text-3xl md:text-5xl font-bold text-neutral-900 leading-tight mb-4">
+          <h1 className="font-serif text-3xl md:text-5xl font-bold text-[#173f22] leading-tight mb-4">
             {article.title}
           </h1>
 
-          <p className="text-base text-neutral-600 leading-relaxed mb-6">
+          <p className="text-base text-neutral-600 leading-relaxed mb-6 max-w-2xl mx-auto">
             {article.excerpt}
           </p>
 
           <div className="flex items-center justify-center gap-4 text-xs text-neutral-500 border-y border-neutral-100 py-3">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-neutral-200 flex items-center justify-center text-xs font-bold text-[#173f22]">
-                {article.authorName ? article.authorName.charAt(0) : 'D'}
+              <div className="w-7 h-7 rounded-full bg-[#173f22]/10 text-[#173f22] flex items-center justify-center text-xs font-bold">
+                {article.authorAvatar || 'FD'}
               </div>
-              <span className="font-semibold text-neutral-800">
-                {article.authorName || 'Artisan DécoFleur'}
-              </span>
+              <span className="font-semibold text-neutral-800">{article.authorName}</span>
+              {article.authorRole && (
+                <span className="text-neutral-400 hidden sm:inline">({article.authorRole})</span>
+              )}
             </div>
             <span>•</span>
             <span className="flex items-center gap-1">
               <Calendar size={13} />
-              {new Date(article.publishedAt || article.createdAt).toLocaleDateString('fr-FR')}
+              <time dateTime={article.publishedAt || article.createdAt}>{formattedDate}</time>
             </span>
             <span>•</span>
             <span className="flex items-center gap-1">
               <Clock size={13} />
-              {article.readTime || '3 min'}
+              <span>{article.readTime || '4 min de lecture'}</span>
             </span>
           </div>
         </header>
 
-        {/* Cover Image */}
+        {/* Cover Image with SEO Alt */}
         <div className="max-w-4xl mx-auto relative aspect-16/9 rounded-3xl overflow-hidden mb-10 shadow-sm bg-neutral-100">
           <Image
             src={article.coverImage || '/images/hero.jpg'}
-            alt={article.title}
+            alt={article.coverImageCaption || article.title}
             fill
             priority
             sizes="(max-width: 1024px) 100vw, 900px"
@@ -157,14 +219,14 @@ export default function BlogDetailPage({
           {article.content.split('\n\n').map((paragraph, index) => {
             if (paragraph.startsWith('### ')) {
               return (
-                <h3 key={index} className="font-serif font-bold text-2xl text-[#173f22] pt-4">
+                <h3 key={index} className="font-serif font-bold text-xl sm:text-2xl text-[#173f22] pt-4">
                   {paragraph.replace('### ', '')}
                 </h3>
               );
             }
             if (paragraph.startsWith('## ')) {
               return (
-                <h2 key={index} className="font-serif font-bold text-3xl text-[#173f22] pt-6">
+                <h2 key={index} className="font-serif font-bold text-2xl sm:text-3xl text-[#173f22] pt-6">
                   {paragraph.replace('## ', '')}
                 </h2>
               );
@@ -191,35 +253,12 @@ export default function BlogDetailPage({
             </div>
           )}
 
-          {/* Like & Share Bar */}
-          <div className="flex items-center justify-between p-4 bg-neutral-50 border border-neutral-100 rounded-2xl my-8">
-            <button
-              type="button"
-              onClick={handleLike}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-                liked
-                  ? 'bg-red-50 text-red-600 border border-red-200'
-                  : 'bg-white border border-neutral-200 text-neutral-700 hover:border-red-300 hover:text-red-600'
-              }`}
-            >
-              <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
-              <span>{liked ? 'Aimé !' : 'J’aime'}</span>
-              <span className="text-xs bg-neutral-100 px-2 py-0.5 rounded-full text-neutral-600">
-                {likes}
-              </span>
-            </button>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleCopyLink}
-                className="button button-outline text-xs flex items-center gap-1.5"
-              >
-                {copied ? <Check size={14} className="text-emerald-600" /> : <Share2 size={14} />}
-                <span>{copied ? 'Lien copié' : 'Partager'}</span>
-              </button>
-            </div>
-          </div>
+          {/* Client Interactive Island for Likes, Sharing & Link Copy */}
+          <ArticleInteractions
+            slug={article.slug}
+            initialLikes={article.likesCount || 0}
+            title={article.title}
+          />
         </article>
 
         {/* Related Articles */}
@@ -264,7 +303,6 @@ export default function BlogDetailPage({
           </section>
         )}
       </main>
-
       <SiteFooter />
     </>
   );

@@ -29,9 +29,9 @@ export function CreateCouponDialog({
 }: CreateCouponDialogProps) {
   const [code, setCode] = useState('');
   const [type, setType] = useState<CouponType>('percentage');
-  const [value, setValue] = useState('10');
-  const [minOrder, setMinOrder] = useState('15000');
-  const [maxUsageTotal, setMaxUsageTotal] = useState('200');
+  const [value, setValue] = useState('');
+  const [minOrder, setMinOrder] = useState('');
+  const [maxUsageTotal, setMaxUsageTotal] = useState('');
   const [maxUsagePerCustomer, setMaxUsagePerCustomer] = useState('1');
   const [startDate, setStartDate] = useState(
     new Date().toISOString().split('T')[0]
@@ -84,6 +84,9 @@ export function CreateCouponDialog({
 
     // Reset
     setCode('');
+    setValue('');
+    setMinOrder('');
+    setMaxUsageTotal('');
     setDescription('');
   };
 

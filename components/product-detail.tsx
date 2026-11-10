@@ -6,6 +6,7 @@ import { Check, Heart, ShieldCheck, Truck, Flower2, Minus, Plus, Star, Sparkles 
 import type { Product } from '@/lib/products';
 import { formatPrice } from '@/lib/products';
 import { useCart } from '@/components/cart-provider';
+import { ProductReviews } from '@/components/product-reviews';
 
 export function ProductDetail({ product }: { product: Product }) {
   const { add, favorites, toggleFavorite } = useCart();
@@ -263,6 +264,14 @@ export function ProductDetail({ product }: { product: Product }) {
             </div>
           </div>
         </div>
+
+        {/* Customer Reviews & Ratings Accordion */}
+        <ProductReviews
+          productId={product.id}
+          productName={product.name}
+          initialRating={product.rating}
+          initialReviewsCount={product.reviews}
+        />
       </section>
     </div>
   );

@@ -1,5 +1,4 @@
 import { apiClient } from '../client';
-import { initialDeliveryZones } from '@/lib/admin/mock-data/settings';
 import type { DeliveryZoneSettings } from '@/lib/admin/mock-data/types';
 
 export interface AdminDeliveryZonePayload {
@@ -48,10 +47,10 @@ export async function getAdminDeliveryZones(): Promise<DeliveryZoneSettings[]> {
       return res.zones.map(transformDeliveryZone);
     }
   } catch (err) {
-    console.warn('[AdminDeliveryZonesAPI] Falling back to mock delivery zones:', err);
+    console.warn('[AdminDeliveryZonesAPI] Erreur de récupération des zones de livraison:', err);
   }
 
-  return initialDeliveryZones;
+  return [];
 }
 
 /**

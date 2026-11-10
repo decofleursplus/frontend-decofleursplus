@@ -1,5 +1,4 @@
 import { apiClient } from '../client';
-import { adminOrders } from '@/lib/admin/mock-data/orders';
 import type { AdminOrder, OrderStatus } from '@/lib/admin/mock-data/types';
 
 export interface GetAdminOrdersParams {
@@ -24,10 +23,12 @@ export function mapBackendOrderStatus(status: string): OrderStatus {
   const s = (status || '').toUpperCase();
   switch (s) {
     case 'PENDING':
+    case 'PAID':
     case 'CONFIRMED':
     case 'NOUVELLE':
       return 'nouvelle';
     case 'PREPARING':
+    case 'READY':
     case 'EN_PREPARATION':
       return 'en_preparation';
     case 'IN_DELIVERY':
@@ -51,7 +52,7 @@ export function mapBackendOrderStatus(status: string): OrderStatus {
 export function mapFrontendToBackendOrderStatus(status: OrderStatus | string): string {
   switch (status) {
     case 'nouvelle':
-      return 'CONFIRMED';
+      return 'PENDING';
     case 'en_preparation':
       return 'PREPARING';
     case 'en_livraison':
@@ -59,9 +60,8 @@ export function mapFrontendToBackendOrderStatus(status: OrderStatus | string): s
     case 'livree':
       return 'DELIVERED';
     case 'annulee':
-      return 'CANCELLED';
     case 'remboursee':
-      return 'REFUNDED';
+      return 'CANCELLED';
     default:
       return status.toUpperCase();
   }
@@ -70,25 +70,26 @@ export function mapFrontendToBackendOrderStatus(status: OrderStatus | string): s
 // Transform raw API order to AdminOrder
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function transformAdminOrder(raw: any): AdminOrder {
-  const customerName = raw.customer
-    ? `${raw.customer.firstName || ''} ${raw.customer.lastName || ''}`.trim() || raw.shippingAddress?.fullName || 'Client'
-    : raw.customerName || raw.shippingAddress?.fullName || 'Client DécoFleur';
+  const itemData = raw?.data || raw;
+  const customerName = itemData.customer
+    ? `${itemData.customer.firstName || ''} ${itemData.customer.lastName || ''}`.trim() || itemData.shippingAddress?.fullName || 'Client'
+    : itemData.customerName || itemData.shippingAddress?.fullName || 'Client DécoFleur';
 
-  let deliveryAddress = raw.deliveryAddress || '';
-  if (!deliveryAddress && raw.shippingAddress) {
-    if (typeof raw.shippingAddress === 'string') {
-      deliveryAddress = raw.shippingAddress;
+  let deliveryAddress = itemData.deliveryAddress || '';
+  if (!deliveryAddress && itemData.shippingAddress) {
+    if (typeof itemData.shippingAddress === 'string') {
+      deliveryAddress = itemData.shippingAddress;
     } else {
       deliveryAddress = [
-        raw.shippingAddress.address,
-        raw.shippingAddress.city,
-        raw.shippingAddress.zone,
+        itemData.shippingAddress.address,
+        itemData.shippingAddress.city,
+        itemData.shippingAddress.zone,
       ].filter(Boolean).join(', ');
     }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const items = Array.isArray(raw.items) ? raw.items.map((it: any) => ({
+  const items = Array.isArray(itemData.items) ? itemData.items.map((it: any) => ({
     productId: it.productId || it.product?.id || it.id || '',
     productName: it.productName || it.product?.name || 'Produit floral',
     quantity: it.quantity || 1,
@@ -97,24 +98,24 @@ export function transformAdminOrder(raw: any): AdminOrder {
   })) : [];
 
   return {
-    id: raw.id,
-    ref: raw.orderNumber || raw.ref || raw.id,
-    customerId: raw.customerId || raw.customer?.id || '',
+    id: itemData.id,
+    ref: itemData.orderNumber || itemData.ref || itemData.id,
+    customerId: itemData.customerId || itemData.customer?.id || '',
     customerName,
     items,
-    total: Number(raw.totalAmount ?? raw.total ?? 0),
-    status: mapBackendOrderStatus(raw.status),
-    date: raw.createdAt || raw.date || new Date().toISOString(),
+    total: Number(itemData.totalAmount ?? itemData.total ?? 0),
+    status: mapBackendOrderStatus(itemData.status),
+    date: itemData.createdAt || itemData.date || new Date().toISOString(),
     deliveryAddress: deliveryAddress || 'Adresse non spécifiée',
-    deliveryMode: raw.deliveryMode || (raw.isExpress ? 'Livraison express' : 'Livraison standard'),
-    deliveryFee: Number(raw.deliveryFee ?? 0),
-    paymentMethod: raw.paymentMethod || 'NabooPay',
-    notes: raw.adminNotes || raw.notes || raw.customerNotes || '',
+    deliveryMode: itemData.deliveryMode || (itemData.isExpress ? 'Livraison express' : 'Livraison standard'),
+    deliveryFee: Number(itemData.deliveryFee ?? 0),
+    paymentMethod: itemData.paymentMethod || 'NabooPay',
+    notes: itemData.adminNotes || itemData.notes || itemData.customerNotes || '',
   };
 }
 
 /**
- * Fetch orders list from admin API with fallback to mock data
+ * Fetch orders list from admin API
  */
 export async function getAdminOrders(params?: GetAdminOrdersParams): Promise<AdminOrdersResponse> {
   try {
@@ -139,6 +140,15 @@ export async function getAdminOrders(params?: GetAdminOrdersParams): Promise<Adm
     });
 
     if (res && typeof res === 'object') {
+      const dataObj = res.data ?? res;
+      if (Array.isArray(dataObj.items)) {
+        return {
+          orders: dataObj.items.map(transformAdminOrder),
+          total: dataObj.total ?? dataObj.items.length,
+          page: dataObj.page ?? 1,
+          totalPages: dataObj.totalPages ?? 1,
+        };
+      }
       if (Array.isArray(res.orders)) {
         return {
           orders: res.orders.map(transformAdminOrder),
@@ -161,27 +171,12 @@ export async function getAdminOrders(params?: GetAdminOrdersParams): Promise<Adm
       }
     }
   } catch (err) {
-    console.warn('[AdminOrdersAPI] Falling back to mock orders:', err);
-  }
-
-  // Fallback to local mock data
-  let filtered = [...adminOrders];
-  if (params?.status && params.status !== 'all') {
-    filtered = filtered.filter((o) => o.status === params.status);
-  }
-  if (params?.search) {
-    const term = params.search.toLowerCase();
-    filtered = filtered.filter(
-      (o) =>
-        o.ref.toLowerCase().includes(term) ||
-        o.customerName.toLowerCase().includes(term) ||
-        o.deliveryAddress.toLowerCase().includes(term)
-    );
+    console.warn('[AdminOrdersAPI] Erreur de récupération des commandes:', err);
   }
 
   return {
-    orders: filtered,
-    total: filtered.length,
+    orders: [],
+    total: 0,
     page: 1,
     totalPages: 1,
   };
@@ -201,10 +196,10 @@ export async function getAdminOrderById(id: string): Promise<AdminOrder | null> 
       return transformAdminOrder(res);
     }
   } catch (err) {
-    console.warn(`[AdminOrdersAPI] Fetching order ${id} failed, using fallback:`, err);
+    console.warn(`[AdminOrdersAPI] Fetching order ${id} failed:`, err);
   }
 
-  return adminOrders.find((o) => o.id === id || o.ref === id) || null;
+  return null;
 }
 
 /**

@@ -75,9 +75,9 @@ export default function AccountOrdersPage() {
                 <div className="demo-order" key={order.id}>
                   <Link
                     className="demo-order-name"
-                    href={isInProgress ? `/compte/suivi/${order.orderNumber}` : `/compte/commandes`}
+                    href={`/compte/commandes/${order.orderNumber}`}
                   >
-                    <Image src={itemImg} alt="" width={40} height={40} className="rounded-lg object-cover" />
+                    <Image src={itemImg} alt={itemName || 'Article commandé'} width={40} height={40} className="rounded-lg object-cover" />
                     <span>{itemName}</span>
                   </Link>
 
@@ -89,16 +89,33 @@ export default function AccountOrdersPage() {
 
                   <strong>{formatPrice(order.totalAmount)}</strong>
 
-                  <span className={`order-status ${st.class}`}>
-                    {st.label}
-                  </span>
+                  <div className="flex flex-col gap-1 items-start">
+                    <span className={`order-status ${st.class}`}>
+                      {st.label}
+                    </span>
+                    {order.paymentStatus === 'PENDING' && order.paymentMethod !== 'CASH_ON_DELIVERY' && (
+                      <span className="text-[10px] text-amber-700 font-semibold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                        À payer
+                      </span>
+                    )}
+                  </div>
 
-                  <Link
-                    className="order-action"
-                    href={`/compte/suivi/${order.orderNumber}`}
-                  >
-                    {isInProgress ? 'Suivre' : 'Détails'}
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      className="order-action"
+                      href={`/compte/commandes/${order.orderNumber}`}
+                    >
+                      Détails
+                    </Link>
+                    {isInProgress && (
+                      <Link
+                        className="order-action text-[#173f22] font-semibold"
+                        href={`/compte/suivi/${order.orderNumber}`}
+                      >
+                        Suivre
+                      </Link>
+                    )}
+                  </div>
                 </div>
               );
             })}

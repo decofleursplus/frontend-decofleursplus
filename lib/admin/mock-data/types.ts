@@ -14,10 +14,14 @@ export type CustomerSegment = 'particulier' | 'entreprise' | 'vip';
 
 export type AdminProduct = {
   id: string;
+  slug?: string;
+  variantId?: string;
   name: string;
   category: string;
+  categoryId?: string;
   price: number;
   promoPrice?: number;
+  compareAtPrice?: number | null;
   sku: string;
   stock: number;
   minStock?: number;
@@ -85,14 +89,20 @@ export type AdminCustomer = {
   avatar?: string;
   address?: string;
   lastOrderDate?: string;
+  loyaltyTier?: string;
+  loyaltyPoints?: number;
+  notes?: string;
+  recentOrders?: AdminOrder[];
 };
 
 export type AdminCategory = {
   id: string;
   name: string;
+  slug?: string;
   description: string;
   productCount: number;
   status: 'actif' | 'inactif';
+  imageUrl?: string;
 };
 
 export type KpiData = {
@@ -646,7 +656,8 @@ export type QuoteStatus =
   | 'terminee';
 
 export type LandscapeQuote = {
-  id: string; // DEV-2024-0089
+  id: string; // Database UUID or reference
+  quoteNumber?: string; // DEV-2026-0001
   createdAt: string;
   clientName: string;
   clientEmail: string;

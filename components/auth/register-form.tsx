@@ -2,12 +2,21 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { User as UserIcon, Mail, Phone, LockKeyhole, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
 import { FloralMotifIcon } from '@/components/icons';
 import { useAuth, User } from '@/components/auth-provider';
 import { RegistrationSuccess } from './registration-success';
 
 export function RegisterForm() {
+  const searchParams = useSearchParams();
+  const rawRedirect = searchParams.get('redirect');
+  const hasValidRedirect = Boolean(rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//'));
+  const redirectTarget = hasValidRedirect && rawRedirect ? rawRedirect : '/compte';
+  const loginUrl = hasValidRedirect && rawRedirect
+    ? `/connexion?redirect=${encodeURIComponent(rawRedirect)}`
+    : '/connexion';
+
   const { register } = useAuth();
 
   const [name, setName] = useState('');
@@ -43,15 +52,16 @@ export function RegisterForm() {
 
       setCreatedUser(user);
       setIsSuccess(true);
-    } catch (err: any) {
-      setFeedback(err?.message || 'Une erreur est survenue lors de la création du compte.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Une erreur est survenue lors de la création du compte.';
+      setFeedback(message);
       setIsSubmitting(false);
     }
   }
 
   // If successfully registered, show the exact success screen from mockup panel 6
   if (isSuccess) {
-    return <RegistrationSuccess createdUser={createdUser} />;
+    return <RegistrationSuccess createdUser={createdUser} redirectTarget={redirectTarget} />;
   }
 
   return (
@@ -215,7 +225,7 @@ export function RegisterForm() {
         {/* Card Footer Link */}
         <div className="auth-card-footer">
           <span>Vous avez déjà un compte ? </span>
-          <Link href="/connexion" className="auth-accent-link">
+          <Link href={loginUrl} className="auth-accent-link">
             Se connecter
           </Link>
         </div>

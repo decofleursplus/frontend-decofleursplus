@@ -143,6 +143,30 @@ export function SiteFooter() {
           </div>
         </div>
 
+        {/* Local SEO Zones Bar */}
+        <div className="pt-6 pb-4 border-b border-white/10 flex flex-wrap items-center justify-between gap-y-2 text-[12px] text-neutral-400 font-sans">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-white/70 font-semibold">Livraison &amp; Services locaux :</span>
+            <Link href="/fleuriste-saly" className="hover:text-[#f472b6] transition-colors">Fleuriste Saly</Link>
+            <span className="text-white/20">·</span>
+            <Link href="/fleuriste-dakar" className="hover:text-[#f472b6] transition-colors">Fleuriste Dakar</Link>
+            <span className="text-white/20">·</span>
+            <Link href="/fleuriste-somone" className="hover:text-[#f472b6] transition-colors">Fleuriste Somone</Link>
+            <span className="text-white/20">·</span>
+            <Link href="/fleuriste-mbour" className="hover:text-[#f472b6] transition-colors">Fleuriste Mbour</Link>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap text-neutral-400">
+            <Link href="/blog" className="hover:text-[#f472b6] transition-colors">Blog Floral</Link>
+            <span className="text-white/20">·</span>
+            <span className="inline-flex items-center gap-1">
+              <Link href="/paysagisme" className="hover:text-[#f472b6] transition-colors">Paysagisme</Link>
+              <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">À venir</span>
+            </span>
+            <span className="text-white/20">·</span>
+            <Link href="/location" className="hover:text-[#f472b6] transition-colors">Location événementielle</Link>
+          </div>
+        </div>
+
         {/* Bottom subtle copyright */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-[11px] text-neutral-400 gap-2">
           <span>© {new Date().getFullYear()} Décofleur Plus · Tous droits réservés</span>

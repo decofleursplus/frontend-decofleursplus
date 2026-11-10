@@ -22,30 +22,27 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
-import { initialSupplierOrders, initialSuppliers } from '@/lib/admin/mock-data/suppliers';
+import { initialSuppliers } from '@/lib/admin/mock-data/suppliers';
 import { SupplierOrder, SupplierOrderStatus } from '@/lib/admin/mock-data/types';
 
 export default function AdminApprovisionnementsPage() {
-  const [orders, setOrders] = useState<SupplierOrder[]>(initialSupplierOrders);
+  const [orders, setOrders] = useState<SupplierOrder[]>([]);
   const [statusFilter, setStatusFilter] = useState<'all' | SupplierOrderStatus>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [supplierFilter, setSupplierFilter] = useState<string>('all');
   const [isNewOrderModalOpen, setIsNewOrderModalOpen] = useState(false);
 
   // New order state
-  const [selectedSupplierId, setSelectedSupplierId] = useState(initialSuppliers[0].id);
-  const [orderItems, setOrderItems] = useState<{ name: string; qty: number; unitPrice: number; total: number }[]>([
-    { name: 'Roses rouges (Tige longue)', qty: 100, unitPrice: 500, total: 50000 },
-    { name: 'Lys blanc royal', qty: 50, unitPrice: 1200, total: 60000 },
-  ]);
-  const [notes, setNotes] = useState('Approvisionnement prioritaire pour les commandes de la semaine.');
+  const [selectedSupplierId, setSelectedSupplierId] = useState(initialSuppliers[0]?.id || '');
+  const [orderItems, setOrderItems] = useState<{ name: string; qty: number; unitPrice: number; total: number }[]>([]);
+  const [notes, setNotes] = useState('');
 
   const subtotal = orderItems.reduce((acc, item) => acc + item.total, 0);
 
   const handleAddItem = () => {
     setOrderItems((prev) => [
       ...prev,
-      { name: 'Feuillage eucalyptus', qty: 25, unitPrice: 600, total: 15000 },
+      { name: '', qty: 1, unitPrice: 0, total: 0 },
     ]);
   };
 
@@ -55,15 +52,20 @@ export default function AdminApprovisionnementsPage() {
 
   const handleCreateOrder = (e: React.FormEvent) => {
     e.preventDefault();
-    const sup = initialSuppliers.find((s) => s.id === selectedSupplierId) || initialSuppliers[0];
+    if (orderItems.length === 0 || orderItems.every((it) => !it.name.trim())) {
+      toast.error('Veuillez ajouter au moins un produit à commander.');
+      return;
+    }
+    const sup = initialSuppliers.find((s) => s.id === selectedSupplierId) || { id: 'sup-default', name: 'Fournisseur Général' };
+    const orderNum = String(orders.length + 1).padStart(4, '0');
     const newOrder: SupplierOrder = {
-      id: `CF-2024-${Math.floor(1000 + Math.random() * 9000)}`,
+      id: `CF-2024-${orderNum}`,
       supplierId: sup.id,
       supplierName: sup.name,
       date: 'Aujourd’hui',
       expectedDate: 'Dans 3 jours',
       items: orderItems.map((it, idx) => ({
-        id: `item-${Date.now()}-${idx}`,
+        id: `item-${orders.length + 1}-${idx + 1}`,
         name: it.name,
         orderedQty: it.qty,
         receivedQty: 0,
@@ -114,9 +116,14 @@ export default function AdminApprovisionnementsPage() {
       {/* ── En-tête (Maquette Écran 8) ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#173f22]">
-            Commandes fournisseurs
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#173f22]">
+              Commandes fournisseurs
+            </h1>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+              À venir
+            </span>
+          </div>
           <p className="text-sm text-muted-foreground mt-1">
             Créez et suivez vos commandes d&apos;approvisionnement et consultez vos factures d&apos;achat.
           </p>
@@ -129,18 +136,31 @@ export default function AdminApprovisionnementsPage() {
             title="Consulter le grand livre des factures fournisseurs"
           >
             <ReceiptText size={17} className="text-[#173f22]" />
-            <span>Factures fournisseurs</span>
-            <span className="px-1.5 py-0.5 rounded-full bg-[#edf8ef] text-[#173f22] text-[11px] font-bold">
-              4
+            <span>Factures fournisseurs (À venir)</span>
+            <span className="px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold border border-amber-300">
+              À venir
             </span>
           </Link>
           <button
             type="button"
-            onClick={() => setIsNewOrderModalOpen(true)}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-xs sm:text-sm font-semibold shadow-sm transition-colors w-full sm:w-auto cursor-pointer"
+            disabled
+            aria-disabled="true"
+            title="Module en attente d'implémentation backend"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] text-white text-xs sm:text-sm font-semibold shadow-sm transition-colors w-full sm:w-auto opacity-50 cursor-not-allowed"
           >
-            <Plus size={18} /> Nouvelle commande
+            <Plus size={18} /> Nouvelle commande (À venir)
           </button>
+        </div>
+      </div>
+
+      {/* ── Bannière Information Backend ── */}
+      <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 flex items-start gap-3.5 text-amber-900 text-xs">
+        <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+        <div className="space-y-1">
+          <p className="font-semibold text-sm text-amber-950">Module Approvisionnements en attente d&apos;implémentation backend</p>
+          <p className="text-amber-800 leading-relaxed">
+            Les contrats et spécifications REST complètes pour ce module ont été formalisés dans <code className="px-1.5 py-0.5 bg-amber-100/90 rounded text-[11px] font-mono font-medium">docs/endpoints_feedback.md</code>. Aucune commande fournisseur factice n&apos;est affichée par défaut.
+          </p>
         </div>
       </div>
 
@@ -154,7 +174,7 @@ export default function AdminApprovisionnementsPage() {
           className="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex items-center gap-2 shrink-0"
         >
           <ReceiptText size={16} />
-          Factures fournisseurs (4)
+          Factures fournisseurs
         </Link>
       </div>
 
@@ -167,7 +187,7 @@ export default function AdminApprovisionnementsPage() {
             statusFilter === 'all' ? 'bg-[#193e23] text-white' : 'text-muted-foreground hover:bg-muted'
           }`}
         >
-          Toutes (24)
+          Toutes ({orders.length})
         </button>
         <button
           type="button"
@@ -176,7 +196,7 @@ export default function AdminApprovisionnementsPage() {
             statusFilter === 'brouillon' ? 'bg-[#193e23] text-white' : 'text-muted-foreground hover:bg-muted'
           }`}
         >
-          Brouillon (4)
+          Brouillon ({orders.filter((o) => o.status === 'brouillon').length})
         </button>
         <button
           type="button"
@@ -185,7 +205,7 @@ export default function AdminApprovisionnementsPage() {
             statusFilter === 'a_valider' ? 'bg-[#193e23] text-white' : 'text-muted-foreground hover:bg-muted'
           }`}
         >
-          À valider (3)
+          À valider ({orders.filter((o) => o.status === 'a_valider').length})
         </button>
         <button
           type="button"
@@ -194,7 +214,7 @@ export default function AdminApprovisionnementsPage() {
             statusFilter === 'envoyee' ? 'bg-[#193e23] text-white' : 'text-muted-foreground hover:bg-muted'
           }`}
         >
-          Envoyées (5)
+          Envoyées ({orders.filter((o) => o.status === 'envoyee').length})
         </button>
         <button
           type="button"
@@ -203,7 +223,7 @@ export default function AdminApprovisionnementsPage() {
             statusFilter === 'receptionnee' ? 'bg-[#193e23] text-white' : 'text-muted-foreground hover:bg-muted'
           }`}
         >
-          Réceptionnées (10)
+          Réceptionnées ({orders.filter((o) => o.status === 'receptionnee').length})
         </button>
         <button
           type="button"
@@ -212,7 +232,7 @@ export default function AdminApprovisionnementsPage() {
             statusFilter === 'annulee' ? 'bg-[#193e23] text-white' : 'text-muted-foreground hover:bg-muted'
           }`}
         >
-          Annulées (2)
+          Annulées ({orders.filter((o) => o.status === 'annulee').length})
         </button>
       </div>
 
@@ -246,8 +266,12 @@ export default function AdminApprovisionnementsPage() {
       {/* ── Liste Mobile des Commandes (visible sur < lg) ── */}
       <div className="lg:hidden space-y-3">
         {filteredOrders.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-border p-8 text-center text-muted-foreground text-xs">
-            Aucune commande ne correspond aux filtres sélectionnés.
+          <div className="bg-white rounded-2xl border border-border p-8 text-center text-muted-foreground text-xs space-y-2">
+            <Boxes className="w-8 h-8 text-gray-400 mx-auto" />
+            <p className="font-semibold text-sm text-gray-800">Aucun bon de commande d&apos;approvisionnement</p>
+            <p className="text-gray-500">
+              Module en attente d&apos;implémentation backend (voir docs/endpoints_feedback.md).
+            </p>
           </div>
         ) : (
           filteredOrders.map((order) => (
@@ -311,7 +335,18 @@ export default function AdminApprovisionnementsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border text-xs sm:text-sm">
-              {filteredOrders.map((order) => (
+              {filteredOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-muted-foreground">
+                    <Boxes className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                    <p className="font-semibold text-sm text-gray-800">Aucun bon de commande d&apos;approvisionnement</p>
+                    <p className="text-xs text-gray-500 max-w-sm mx-auto mt-1">
+                      Les approvisionnements seront synchronisés dès l&apos;activation des endpoints backend (spécifications documentées dans docs/endpoints_feedback.md).
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                filteredOrders.map((order) => (
                 <tr key={order.id} className="hover:bg-muted/40 transition-colors">
                   <td className="py-4 px-5 font-mono font-bold text-[#173f22]">
                     <Link
@@ -346,7 +381,7 @@ export default function AdminApprovisionnementsPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>
@@ -371,9 +406,11 @@ export default function AdminApprovisionnementsPage() {
             <button
               type="submit"
               form="new-order-form"
-              className="px-6 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white font-semibold shadow-xs text-xs cursor-pointer transition-colors"
+              disabled
+              aria-disabled="true"
+              className="px-6 py-2.5 rounded-xl bg-[#c8436e] text-white font-semibold shadow-xs text-xs opacity-50 cursor-not-allowed"
             >
-              Générer et transmettre le bon de commande
+              Générer et transmettre le bon de commande (À venir)
             </button>
           </div>
         }
@@ -416,21 +453,29 @@ export default function AdminApprovisionnementsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {orderItems.map((item, idx) => (
-                    <tr key={idx}>
-                      <td className="p-2">
-                        <input
-                          type="text"
-                          value={item.name}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setOrderItems((prev) =>
-                              prev.map((it, i) => (i === idx ? { ...it, name: val } : it))
-                            );
-                          }}
-                          className="w-full p-1.5 border border-border rounded-lg bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs"
-                        />
+                  {orderItems.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="p-4 text-center text-muted-foreground text-xs italic">
+                        Aucun article dans cette commande. Cliquez sur « Ajouter un produit » ci-dessus.
                       </td>
+                    </tr>
+                  ) : (
+                    orderItems.map((item, idx) => (
+                      <tr key={idx}>
+                        <td className="p-2">
+                          <input
+                            type="text"
+                            placeholder="Nom de l'article"
+                            value={item.name}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setOrderItems((prev) =>
+                                prev.map((it, i) => (i === idx ? { ...it, name: val } : it))
+                              );
+                            }}
+                            className="w-full p-1.5 border border-border rounded-lg bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs"
+                          />
+                        </td>
                       <td className="p-2">
                         <input
                           type="number"
@@ -473,7 +518,7 @@ export default function AdminApprovisionnementsPage() {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                  )))}
                 </tbody>
                 <tfoot className="bg-[#faf8f5] font-bold text-xs border-t border-border">
                   <tr>

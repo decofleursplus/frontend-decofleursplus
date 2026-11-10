@@ -1,5 +1,4 @@
 import { apiClient } from '../client';
-import { initialQuotes } from '@/lib/admin/mock-data/quotes';
 import type { LandscapeQuote, QuoteStatus } from '@/lib/admin/mock-data/types';
 
 export interface GetAdminQuotesParams {
@@ -22,6 +21,7 @@ export interface AdminQuotesResponse {
 export function mapBackendQuoteStatus(status: string): QuoteStatus {
   const s = (status || '').toUpperCase();
   switch (s) {
+    case 'NEW':
     case 'SUBMITTED':
     case 'PENDING':
     case 'NOUVELLE':
@@ -30,21 +30,23 @@ export function mapBackendQuoteStatus(status: string): QuoteStatus {
     case 'IN_PROGRESS':
     case 'EN_COURS':
       return 'en_cours';
-    case 'QUOTED':
     case 'SENT':
+    case 'QUOTED':
     case 'DEVIS_ENVOYE':
       return 'devis_envoye';
     case 'ACCEPTED':
     case 'ACCEPTEE':
       return 'acceptee';
+    case 'REFUSED':
     case 'REJECTED':
     case 'REFUSEE':
       return 'refusee';
+    case 'CONVERTED_TO_ORDER':
     case 'COMPLETED':
     case 'TERMINEE':
       return 'terminee';
     default:
-      return (status as QuoteStatus) || 'nouvelle';
+      return 'nouvelle';
   }
 }
 
@@ -52,17 +54,17 @@ export function mapBackendQuoteStatus(status: string): QuoteStatus {
 export function mapFrontendToBackendQuoteStatus(status: QuoteStatus | string): string {
   switch (status) {
     case 'nouvelle':
-      return 'SUBMITTED';
+      return 'NEW';
     case 'en_cours':
       return 'UNDER_REVIEW';
     case 'devis_envoye':
-      return 'QUOTED';
+      return 'SENT';
     case 'acceptee':
       return 'ACCEPTED';
     case 'refusee':
-      return 'REJECTED';
+      return 'REFUSED';
     case 'terminee':
-      return 'COMPLETED';
+      return 'CONVERTED_TO_ORDER';
     default:
       return status.toUpperCase();
   }
@@ -71,12 +73,15 @@ export function mapFrontendToBackendQuoteStatus(status: QuoteStatus | string): s
 // Transform raw backend quote to LandscapeQuote (used by UI)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function transformAdminQuote(raw: any): LandscapeQuote {
-  const clientName = raw.customer
-    ? `${raw.customer.firstName || ''} ${raw.customer.lastName || ''}`.trim() || raw.contactName || 'Client Devis'
-    : raw.contactName || raw.clientName || 'Client Devis';
+  const clientName =
+    raw.customerName ||
+    (raw.customer ? `${raw.customer.firstName || ''} ${raw.customer.lastName || ''}`.trim() : '') ||
+    raw.contactName ||
+    raw.clientName ||
+    'Client Devis';
 
-  const clientEmail = raw.customer?.email || raw.contactEmail || raw.clientEmail || '';
-  const clientPhone = raw.customer?.phone || raw.contactPhone || raw.clientPhone || '';
+  const clientEmail = raw.customerEmail || raw.customer?.email || raw.contactEmail || raw.clientEmail || '';
+  const clientPhone = raw.customerPhone || raw.customer?.phone || raw.contactPhone || raw.clientPhone || '';
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const quoteItems = Array.isArray(raw.items) ? raw.items.map((it: any) => ({
@@ -87,12 +92,13 @@ export function transformAdminQuote(raw: any): LandscapeQuote {
   })) : raw.quoteItems || [];
 
   return {
-    id: raw.quoteNumber || raw.id,
+    id: raw.id, // Primary UUID for API calls
+    quoteNumber: raw.quoteNumber || raw.id, // Display reference e.g. DEV-2026-0005
     createdAt: raw.createdAt ? new Date(raw.createdAt).toLocaleDateString('fr-FR', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
-    }) : raw.createdAt || 'Récemment',
+    }) : 'Récemment',
     clientName,
     clientEmail,
     clientPhone,
@@ -102,7 +108,7 @@ export function transformAdminQuote(raw: any): LandscapeQuote {
     surfaceArea: raw.surfaceArea ? String(raw.surfaceArea) : (raw.estimatedGuests ? `${raw.estimatedGuests} pers.` : 'N/C'),
     desiredDate: raw.eventDate ? raw.eventDate.split('T')[0] : (raw.desiredDate || ''),
     location: raw.eventLocation || raw.location || 'Saly / Dakar',
-    description: raw.description || '',
+    description: raw.details || raw.description || '',
     budget: raw.budgetRange || raw.budget || 'Non spécifié',
     maintenanceFrequency: raw.maintenanceFrequency || '',
     photos: Array.isArray(raw.inspirationImages) ? raw.inspirationImages : (Array.isArray(raw.photos) ? raw.photos : []),
@@ -114,7 +120,7 @@ export function transformAdminQuote(raw: any): LandscapeQuote {
 }
 
 /**
- * Fetch quotes list from admin API with mock fallback
+ * Fetch quotes list from admin API
  */
 export async function getAdminQuotes(params?: GetAdminQuotesParams): Promise<AdminQuotesResponse> {
   try {
@@ -136,6 +142,15 @@ export async function getAdminQuotes(params?: GetAdminQuotesParams): Promise<Adm
     });
 
     if (res && typeof res === 'object') {
+      const dataObj = res.data ?? res;
+      if (Array.isArray(dataObj.items)) {
+        return {
+          quotes: dataObj.items.map(transformAdminQuote),
+          total: dataObj.total ?? dataObj.items.length,
+          page: dataObj.page ?? 1,
+          totalPages: dataObj.totalPages ?? 1,
+        };
+      }
       if (Array.isArray(res.quotes)) {
         return {
           quotes: res.quotes.map(transformAdminQuote),
@@ -158,27 +173,12 @@ export async function getAdminQuotes(params?: GetAdminQuotesParams): Promise<Adm
       }
     }
   } catch (err) {
-    console.warn('[AdminQuotesAPI] Falling back to mock quotes:', err);
-  }
-
-  // Fallback to local mock data
-  let filtered = [...initialQuotes];
-  if (params?.status && params.status !== 'all') {
-    filtered = filtered.filter((q) => q.status === params.status);
-  }
-  if (params?.search) {
-    const term = params.search.toLowerCase();
-    filtered = filtered.filter(
-      (q) =>
-        q.id.toLowerCase().includes(term) ||
-        q.clientName.toLowerCase().includes(term) ||
-        q.location.toLowerCase().includes(term)
-    );
+    console.warn('[AdminQuotesAPI] Erreur de récupération des devis:', err);
   }
 
   return {
-    quotes: filtered,
-    total: filtered.length,
+    quotes: [],
+    total: 0,
     page: 1,
     totalPages: 1,
   };
@@ -201,7 +201,7 @@ export async function getAdminQuoteById(id: string): Promise<LandscapeQuote | nu
     console.warn(`[AdminQuotesAPI] Failed to fetch quote ${id}:`, err);
   }
 
-  return initialQuotes.find((q) => q.id === id) || null;
+  return null;
 }
 
 /**
@@ -238,9 +238,19 @@ export async function updateAdminQuoteStatus(
     `/admin/quotes/${id}/status`,
     {
       status: backendStatus,
-      quotedAmount: body.quotedAmount,
     },
     { useAdminToken: true }
   );
-  return transformAdminQuote(res);
+
+  if (body.quotedAmount !== undefined) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updated = await apiClient.patch<any>(
+      `/admin/quotes/${id}`,
+      { quotedAmount: body.quotedAmount },
+      { useAdminToken: true }
+    );
+    return transformAdminQuote(updated?.data || updated || res?.data || res);
+  }
+
+  return transformAdminQuote(res?.data || res);
 }

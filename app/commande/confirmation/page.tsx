@@ -1,8 +1,8 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Check,
   Flower2,
@@ -14,30 +14,123 @@ import {
   Calendar,
   MapPin,
   CreditCard,
+  RotateCw,
+  Banknote,
+  ShieldCheck,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
 } from 'lucide-react';
 import { SiteFooter } from '@/components/site-footer';
 import { getMyOrder, CustomerOrder } from '@/lib/api/orders';
+import { payOrder } from '@/lib/api/payment';
+import { useAuth } from '@/components/auth-provider';
 import { formatPrice } from '@/lib/products';
 
 function ConfirmationContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const orderNumber = searchParams.get('orderNumber');
-  const [order, setOrder] = useState<CustomerOrder | null>(null);
-  const [loading, setLoading] = useState(false);
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
+  const [order, setOrder] = useState<CustomerOrder | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isPolling, setIsPolling] = useState(false);
+  const [pollCount, setPollCount] = useState(0);
+  const [retryingPayment, setRetryingPayment] = useState(false);
+  const [retryError, setRetryError] = useState('');
+
+  const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Redirection vers connexion si la session a expiré
   useEffect(() => {
-    if (orderNumber) {
-      setLoading(true);
-      getMyOrder(orderNumber)
-        .then((data) => {
-          if (data) setOrder(data);
-        })
-        .finally(() => setLoading(false));
+    if (!authLoading && !isAuthenticated) {
+      const currentUrl = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/commande';
+      router.push(`/connexion?redirect=${encodeURIComponent(currentUrl)}`);
     }
-  }, [orderNumber]);
+  }, [authLoading, isAuthenticated, router]);
+
+  const loadOrder = useCallback(
+    async (showLoadingSpinner = false) => {
+      if (!orderNumber) return null;
+      if (showLoadingSpinner) setLoading(true);
+      try {
+        const data = await getMyOrder(orderNumber);
+        if (data) {
+          setOrder(data);
+          return data;
+        }
+      } catch {
+        // Géré silencieusement
+      } finally {
+        if (showLoadingSpinner) setLoading(false);
+      }
+      return null;
+    },
+    [orderNumber]
+  );
+
+  // Chargement initial
+  useEffect(() => {
+    if (orderNumber && isAuthenticated) {
+      loadOrder(true);
+    }
+  }, [orderNumber, isAuthenticated, loadOrder]);
+
+  // Polling court automatique tant que le paiement en ligne est PENDING
+  useEffect(() => {
+    if (!order) return;
+
+    const isDigitalPending =
+      order.paymentStatus === 'PENDING' &&
+      order.paymentMethod !== 'CASH_ON_DELIVERY' &&
+      order.orderStatus !== 'CANCELLED';
+
+    if (isDigitalPending && pollCount < 5) {
+      setIsPolling(true);
+      pollTimerRef.current = setTimeout(async () => {
+        const updated = await loadOrder(false);
+        setPollCount((prev) => prev + 1);
+        if (updated && updated.paymentStatus === 'PAID') {
+          setIsPolling(false);
+        }
+      }, 2500);
+    } else {
+      setIsPolling(false);
+    }
+
+    return () => {
+      if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
+    };
+  }, [order, pollCount, loadOrder]);
+
+  async function handleRetryPayment() {
+    if (!order) return;
+    setRetryingPayment(true);
+    setRetryError('');
+    const res = await payOrder(order.orderNumber);
+    setRetryingPayment(false);
+
+    if (res.success && res.data?.checkoutUrl) {
+      window.location.href = res.data.checkoutUrl;
+    } else {
+      setRetryError(
+        res.error ||
+          'Impossible de relancer le paiement en ligne. Veuillez contacter la boutique.'
+      );
+    }
+  }
+
+  const paymentLabels: Record<string, string> = {
+    WAVE: 'Wave Sénégal',
+    ORANGE_MONEY: 'Orange Money',
+    FREE_MONEY: 'Free Money',
+    CARD: 'Carte bancaire',
+    CASH_ON_DELIVERY: 'Espèces à la livraison',
+  };
 
   const statusLabels: Record<string, { label: string; color: string }> = {
-    PENDING: { label: 'En attente de paiement', color: 'bg-amber-100 text-amber-800' },
+    PENDING: { label: 'En attente', color: 'bg-amber-100 text-amber-800' },
     PAID: { label: 'Payée avec succès', color: 'bg-emerald-100 text-emerald-800' },
     PREPARING: { label: 'En préparation à l’atelier', color: 'bg-blue-100 text-blue-800' },
     READY: { label: 'Prête en boutique', color: 'bg-purple-100 text-purple-800' },
@@ -49,6 +142,9 @@ function ConfirmationContent() {
   const statusInfo = order
     ? statusLabels[order.orderStatus] || { label: order.orderStatus, color: 'bg-neutral-100 text-neutral-700' }
     : null;
+
+  const isCash = order?.paymentMethod === 'CASH_ON_DELIVERY';
+  const isPaid = order?.paymentStatus === 'PAID';
 
   return (
     <main className="content-width page-main state-page">
@@ -77,25 +173,92 @@ function ConfirmationContent() {
             )}
           </div>
 
-          <p className="text-sm text-neutral-600 mb-4">
-            Merci pour votre commande ! Notre atelier floral prépare avec soin votre composition fraîche.
-          </p>
-
-          {/* Lien de paiement si PENDING avec NabooPay */}
-          {order.checkoutUrl && order.paymentStatus === 'PENDING' && (
+          {/* BANNIÈRE CONTEXTUELLE SELON LE MODE ET STATUT DU PAIEMENT */}
+          {isCash ? (
             <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl mb-4 text-emerald-900">
-              <strong className="block text-sm mb-1">Finalisez votre paiement :</strong>
-              <p className="text-xs text-emerald-700 mb-3">
-                Si vous n’avez pas été redirigé automatiquement vers NabooPay, cliquez ci-dessous pour payer via Wave, Orange Money ou Carte.
-              </p>
-              <a
-                href={order.checkoutUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="button button-primary text-xs inline-flex items-center gap-1.5"
-              >
-                Payer maintenant <ExternalLink size={13} />
-              </a>
+              <div className="flex items-start gap-2.5">
+                <Banknote size={20} className="text-emerald-700 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="block text-sm mb-1">
+                    Commande validée — Règlement en espèces à la livraison
+                  </strong>
+                  <p className="text-xs text-emerald-800 leading-relaxed">
+                    Votre commande est bien transmise à notre atelier. Préparez la somme exacte de{' '}
+                    <strong>{formatPrice(order.totalAmount)}</strong> pour le livreur lors de la remise en main propre.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : isPaid ? (
+            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl mb-4 text-emerald-900">
+              <div className="flex items-start gap-2.5">
+                <CheckCircle2 size={20} className="text-emerald-600 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="block text-sm mb-1">Paiement validé avec succès</strong>
+                  <p className="text-xs text-emerald-800 leading-relaxed">
+                    Votre transaction par {paymentLabels[order.paymentMethod] || 'NabooPay'} a été confirmée. Nos artisans fleuristes s’occupent de composer votre création.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl mb-4 text-amber-900">
+              <div className="flex items-start gap-2.5">
+                {isPolling ? (
+                  <Loader2 size={18} className="animate-spin text-amber-700 shrink-0 mt-0.5" />
+                ) : (
+                  <Clock size={18} className="text-amber-700 shrink-0 mt-0.5" />
+                )}
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <strong className="block text-sm">
+                      {isPolling
+                        ? 'Vérification du paiement NabooPay...'
+                        : 'Paiement en attente de validation'}
+                    </strong>
+                    <button
+                      type="button"
+                      onClick={() => loadOrder(false)}
+                      className="text-xs text-amber-800 hover:text-amber-950 inline-flex items-center gap-1 underline ml-2"
+                      title="Rafraîchir"
+                    >
+                      <RotateCw size={12} className={isPolling ? 'animate-spin' : ''} /> Actualiser
+                    </button>
+                  </div>
+                  <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                    {isPolling
+                      ? 'Nous attendons la confirmation de votre opérateur de paiement (Wave / Orange Money). La page s’actualise automatiquement.'
+                      : 'Si vous avez finalisé le règlement sur NabooPay, cliquez sur "Actualiser". Sinon, vous pouvez relancer la session ci-dessous.'}
+                  </p>
+
+                  {/* Bouton de relance NabooPay direct */}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={handleRetryPayment}
+                      disabled={retryingPayment}
+                      className="button button-primary text-xs inline-flex items-center gap-1.5 py-1.5 px-3"
+                    >
+                      {retryingPayment ? (
+                        <>
+                          <Loader2 size={13} className="animate-spin" />
+                          <span>Connexion à NabooPay...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Payer maintenant ({paymentLabels[order.paymentMethod] || 'NabooPay'})</span>
+                          <ExternalLink size={12} />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  {retryError && (
+                    <p className="text-xs text-red-600 mt-2 flex items-center gap-1">
+                      <AlertCircle size={12} /> {retryError}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
@@ -120,6 +283,14 @@ function ConfirmationContent() {
             </div>
           </div>
 
+          {/* Mode de paiement */}
+          <div className="flex items-center justify-between text-xs text-neutral-600 bg-neutral-50 px-4 py-2.5 rounded-2xl mb-4">
+            <span className="flex items-center gap-1.5 font-medium text-neutral-700">
+              <CreditCard size={14} className="text-[#173f22]" /> Mode de paiement :
+            </span>
+            <strong>{paymentLabels[order.paymentMethod] || order.paymentMethod}</strong>
+          </div>
+
           {/* Articles */}
           <div className="border-t border-neutral-100 pt-3">
             <strong className="text-xs text-neutral-500 block mb-2">Articles commandés</strong>
@@ -136,7 +307,7 @@ function ConfirmationContent() {
             </div>
 
             <div className="flex items-center justify-between border-t border-neutral-100 mt-3 pt-3 text-base">
-              <strong>Total payé</strong>
+              <strong>{isPaid ? 'Total payé' : 'Total à régler'}</strong>
               <strong className="text-[#173f22] text-lg">{formatPrice(order.totalAmount)}</strong>
             </div>
           </div>
