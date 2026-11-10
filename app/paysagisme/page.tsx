@@ -61,6 +61,10 @@ export default function PaysagismePage() {
           <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/25 pointer-events-none" />
 
           <div className="relative z-10 max-w-xl text-white">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 text-amber-200 border border-amber-400/40 text-xs font-semibold mb-3 backdrop-blur-md">
+              <span className="w-2 h-2 rounded-full bg-amber-400" />
+              Service en ligne &amp; catalogue complet à venir
+            </div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-white tracking-tight leading-tight mb-3 drop-shadow-sm">
               Paysagisme &amp; Aménagement Vert
             </h1>
@@ -69,17 +73,17 @@ export default function PaysagismePage() {
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <Link
-                href="/devis?type=paysagisme"
+                href="/devis?type=evenements"
                 className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-[#c8436e] hover:bg-[#b0355d] text-white font-medium text-xs sm:text-sm shadow-md transition-all active:scale-95"
               >
-                Demander un devis
+                Demander un devis (Événements)
                 <ArrowRight size={15} />
               </Link>
               <Link
                 href="/paysagisme/prestations"
                 className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-md text-white border border-white/30 font-medium text-xs sm:text-sm transition-all"
               >
-                Découvrir nos prestations
+                Découvrir nos prestations (À venir)
               </Link>
             </div>
           </div>

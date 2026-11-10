@@ -19,11 +19,16 @@ export default function PrestationsPage() {
       <main className="content-width px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-16">
         {/* ── En-tête de Section (Maquette Écran 2) ── */}
         <div className="mb-8 sm:mb-10">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-[#173f22] tracking-tight">
-            Nos prestations
-          </h1>
-          <p className="text-xs sm:text-sm text-[#526655] ml-4 font-medium mt-1">
-            Des solutions végétales sur mesure adaptées à tous vos espaces
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-[#173f22] tracking-tight">
+              Nos prestations
+            </h1>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+              À venir
+            </span>
+          </div>
+          <p className="text-xs sm:text-sm text-[#526655] font-medium mt-1">
+            Des solutions végétales sur mesure adaptées à tous vos espaces (catalogue en ligne en cours d&apos;implémentation)
           </p>
         </div>
 
@@ -82,11 +87,14 @@ export default function PrestationsPage() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-16 px-6 bg-[#fbfdfb] rounded-3xl border border-[#e8efe9] mb-16 max-w-2xl mx-auto">
-            <h2 className="text-xl font-serif font-bold text-[#173f22] mb-2">
+          <div className="text-center py-16 px-6 bg-[#fbfdfb] rounded-3xl border border-[#e8efe9] mb-16 max-w-2xl mx-auto space-y-4">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+              Catalogue en ligne à venir
+            </span>
+            <h2 className="text-xl font-serif font-bold text-[#173f22]">
               Prestations paysagères sur mesure
             </h2>
-            <p className="text-sm text-[#526655] mb-6">
+            <p className="text-sm text-[#526655] leading-relaxed">
               Nos architectes et paysagistes conçoivent vos projets végétaux personnalisés à Saly, Dakar et sur la Petite Côte. Contactez-nous pour une étude personnalisée de votre espace.
             </p>
             <Link

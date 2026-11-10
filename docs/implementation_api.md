@@ -573,12 +573,27 @@
     - KPIs réels (CA, commandes, 37 clients, produits, graphiques temporels).
     - Zéro mock fallback : si aucune vente n'est encore enregistrée sur la période, affichage propre des zéros et états vides.
 
-12. **Module 12 : Assainissement Fournisseurs, Approvisionnements, Paysagisme**
-    - Modules sans implémentation backend actuelle assainis :
-      - `Fournisseurs` (`/admin/fournisseurs`, `/[id]`)
-      - `Approvisionnements` (`/admin/approvisionnements`, `/factures`, `/reception/[id]`)
-      - `Paysagisme` (`/admin/paysagisme`)
-    - Suppression de tous les tableaux mockés codés en dur.
-    - Affichage d'une bannière informative bienveillante : *"Module en attente d'implémentation backend (Spécifications complètes documentées dans docs/endpoints_feedback.md)"*.
-    - États vides gracieux sur mobile et desktop.
+12. **Module 12 : Blocage des Fonctionnalités à Venir & Gating UI (Fournisseurs, Approvisionnements, Paysagisme)**
+    - **Statut :** ⚠️ Bloqué / Fonctionnalités à venir (En attente d'implémentation backend REST).
+    - **Spécifications techniques de référence :** Les 23 endpoints REST requis pour ces modules sont formellement spécifiés dans `docs/endpoints_feedback.md` (Fournisseurs : 5 routes, Approvisionnements & Factures : 7 routes, Paysagisme : 8 routes).
+    - **Mesures d'assainissement et UI Gating appliquées :**
+      - **Navigation Admin (`components/admin/admin-sidebar.tsx`, `components/admin/admin-mobile-drawer.tsx`) :**
+        - Badge explicite « À venir » affiché sur les liens de menu `Fournisseurs`, `Approvisionnements` et `Paysagisme` (en vue développée et dans les tooltips en vue rétractée).
+      - **Navigation Client & Vitrine (`components/site-header.tsx`, `components/site-footer.tsx`) :**
+        - Badge explicite « À venir » sur le déclencheur et les sous-éléments du menu `Paysagisme` (desktop et tiroir mobile).
+        - Badge « À venir » dans le pied de page (footer) sur le lien `Paysagisme`.
+      - **Module Fournisseurs (`app/admin/(protected)/fournisseurs/page.tsx`, `app/admin/(protected)/fournisseurs/[id]/page.tsx`) :**
+        - Badge « À venir » dans l'en-tête de la page principale et sur la fiche détail.
+        - Boutons d'ajout et de création désactivés (`disabled`, `opacity-50`, `cursor-not-allowed`) avec mention explicite `(À venir)`.
+      - **Module Approvisionnements (`app/admin/(protected)/approvisionnements/page.tsx`, `.../factures/page.tsx`, `.../reception/[id]/page.tsx`) :**
+        - Badge « À venir » dans l'en-tête et sur l'accès aux factures fournisseurs.
+        - Boutons « Nouvelle commande », « Ajouter une facture », « Marquer comme payée », « Enregistrer les modifications » et « Enregistrer la réception » désactivés (`disabled`, `opacity-50`, `cursor-not-allowed`) avec libellé `(À venir)`.
+      - **Module Paysagisme Admin (`app/admin/(protected)/paysagisme/page.tsx`) :**
+        - Badge « À venir » dans l'en-tête.
+        - Boutons de création et de sauvegarde de prestation ou de réalisation désactivés (`disabled`, `opacity-50`, `cursor-not-allowed`) avec libellé `(À venir)`.
+      - **Pages Paysagisme Publiques (`app/paysagisme/page.tsx`, `.../prestations/page.tsx`, `.../realisations/page.tsx`) :**
+        - Bannières et bandeaux d'information proéminents signalant que le service et le catalogue en ligne sont à venir.
+      - **Formulaire de Devis (`app/devis/page.tsx`, `components/shared-devis-form.tsx`) :**
+        - Bascule du type de service par défaut vers `evenements` (qui dispose d'un endpoint backend fonctionnel `POST /quotes`) au lieu de `paysagisme`.
+        - Badge « À venir » positionné sur le sélecteur de métier pour l'option « Paysagisme & Espaces Verts ».
 

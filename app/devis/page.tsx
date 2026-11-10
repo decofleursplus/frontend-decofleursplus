@@ -37,7 +37,7 @@ async function DevisResolver({
   searchParams: Promise<{ type?: string; prestation?: string }>;
 }) {
   const params = await searchParams;
-  const initialType: DevisServiceType = params.type === 'evenements' ? 'evenements' : 'paysagisme';
+  const initialType: DevisServiceType = params.type === 'paysagisme' ? 'paysagisme' : 'evenements';
   const initialPrestation = params.prestation || '';
 
   return (

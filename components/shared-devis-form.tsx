@@ -30,7 +30,7 @@ interface SharedDevisFormProps {
 }
 
 export function SharedDevisForm({
-  initialServiceType = 'paysagisme',
+  initialServiceType = 'evenements',
   initialPrestation = '',
   className = '',
 }: SharedDevisFormProps) {
@@ -156,7 +156,10 @@ export function SharedDevisForm({
             }`}
           >
             <Sprout size={14} />
-            Paysagisme &amp; Espaces Verts
+            <span>Paysagisme &amp; Espaces Verts</span>
+            <span className="ml-1 text-[10px] font-semibold px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+              À venir
+            </span>
           </button>
           <button
             type="button"

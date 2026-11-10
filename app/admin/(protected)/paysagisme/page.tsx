@@ -540,7 +540,7 @@ export default function AdminPaysagismePage() {
                 <option value="/images/paysagisme/prestation-terrasses.jpg">Terrasse & Rooftop</option>
                 <option value="/images/paysagisme/prestation-exterieurs.jpg">Espaces Extérieurs</option>
                 <option value="/images/paysagisme/prestation-interieur.jpg">Végétalisation Intérieure</option>
-                <option value="/images/paysagisme/prestation-entretien.jpg">Contrat d'entretien</option>
+                <option value="/images/paysagisme/prestation-entretien.jpg">Contrat d&apos;entretien</option>
               </select>
             </div>
           </div>
@@ -731,7 +731,7 @@ export default function AdminPaysagismePage() {
               className="w-4 h-4 rounded text-forest-green focus:ring-forest-green"
             />
             <label htmlFor="projFeatured" className="text-xs font-semibold text-foreground cursor-pointer">
-              Mettre en avant sur la page d'accueil (Projet vedette ⭐)
+              Mettre en avant sur la page d&apos;accueil (Projet vedette ⭐)
             </label>
           </div>
         </form>

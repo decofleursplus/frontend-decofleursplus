@@ -57,8 +57,9 @@ export default function AdminApprovisionnementsPage() {
       return;
     }
     const sup = initialSuppliers.find((s) => s.id === selectedSupplierId) || { id: 'sup-default', name: 'Fournisseur Général' };
+    const orderNum = Date.now().toString().slice(-4);
     const newOrder: SupplierOrder = {
-      id: `CF-2024-${Math.floor(1000 + Math.random() * 9000)}`,
+      id: `CF-2024-${orderNum}`,
       supplierId: sup.id,
       supplierName: sup.name,
       date: 'Aujourd’hui',

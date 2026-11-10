@@ -36,16 +36,21 @@ export default function RealisationsPage() {
         {/* ── En-tête (Maquette Écran 3, sans breadcrumbs ni encombrement) ── */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 sm:mb-8">
           <div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-[#173f22] tracking-tight">
-              Nos réalisations
-            </h1>
-            <p className="text-xs sm:text-sm text-[#526655] ml-4 font-medium mt-1">
-              Découvrez quelques-uns de nos projets récents
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-[#173f22] tracking-tight">
+                Nos réalisations
+              </h1>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+                À venir
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm text-[#526655] font-medium mt-1">
+              Découvrez quelques-uns de nos projets récents (galerie en cours de numérisation)
             </p>
           </div>
 
           <Link
-            href="/devis?type=paysagisme"
+            href="/devis?type=evenements"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#c8436e] hover:bg-[#b0355d] text-white font-medium text-xs sm:text-sm shadow-sm transition-colors w-fit"
           >
             Confiez-nous votre projet <ArrowRight size={15} />
@@ -189,15 +194,18 @@ export default function RealisationsPage() {
             })}
           </div>
         ) : (
-          <div className="text-center py-16 px-6 bg-[#fbfdfb] rounded-3xl border border-[#e8efe9] mb-16 max-w-2xl mx-auto">
-            <h2 className="text-xl font-serif font-bold text-[#173f22] mb-2">
+          <div className="text-center py-16 px-6 bg-[#fbfdfb] rounded-3xl border border-[#e8efe9] mb-16 max-w-2xl mx-auto space-y-4">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+              Portfolio en ligne à venir
+            </span>
+            <h2 className="text-xl font-serif font-bold text-[#173f22]">
               Portfolio en cours de mise à jour
             </h2>
-            <p className="text-sm text-[#526655] mb-6">
+            <p className="text-sm text-[#526655] leading-relaxed">
               Nos chantiers et créations paysagères récentes seront bientôt disponibles en photos haute définition. Vous pouvez nous confier votre projet directement.
             </p>
             <Link
-              href="/devis?type=paysagisme"
+              href="/devis"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#173f22] text-white text-sm font-medium hover:bg-[#12311a] transition-colors"
             >
               <span>Demander une étude paysagère</span>
