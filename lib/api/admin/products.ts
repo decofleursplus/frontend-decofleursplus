@@ -29,6 +29,7 @@ export interface CreateProductPayload {
   featuredImage?: string | null;
   images?: string[] | Array<{ url: string; isPrimary?: boolean; order?: number }>;
   variants?: Array<{
+    id?: string;
     name: string;
     sku?: string;
     price: number;
@@ -402,6 +403,9 @@ export async function updateAdminProduct(
         name: v.name.trim(),
         price: typeof v.price === 'number' ? v.price : ((backendPayload.basePrice as number) ?? 0),
       };
+      if (v.id) {
+        variantItem.id = v.id;
+      }
       if (v.sku && v.sku.trim().length > 0) {
         variantItem.sku = v.sku.trim();
       }

@@ -118,6 +118,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         images,
         variants: [
           {
+            id: product.variantId || undefined,
             name: 'Standard',
             sku,
             price: typeof promoPrice === 'number' && promoPrice > 0 ? promoPrice : price,
