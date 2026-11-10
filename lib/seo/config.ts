@@ -1,16 +1,13 @@
-export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL && !process.env.NEXT_PUBLIC_SITE_URL.includes('localhost')
-    ? process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '')
-    : 'https://decofleurplus.com';
+export const SITE_URL = 'https://www.decofleursplus.com';
 
 export const SITE_CONFIG = {
-  name: 'Décofleur Plus',
-  legalName: 'Décofleur Plus SARL',
+  name: 'Décofleurs Plus',
+  legalName: 'Décofleurs Plus SARL',
   tagline: 'Nature en Élégance',
   url: SITE_URL,
   description:
     'Fleuriste artisanal de prestige au Sénégal. Bouquets de roses fraîches, décoration florale de mariage, paysagisme et paniers gourmands livrés à Dakar, Saly, Somone et Mbour.',
-  email: 'contact@decofleurplus.sn',
+  email: 'contact@decofleursplus.sn',
   phoneSaly: '+221 33 957 88 99',
   phoneDakar: '+221 77 941 78 60',
   whatsappNumber: '221779417860',
