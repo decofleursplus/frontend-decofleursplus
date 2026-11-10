@@ -19,6 +19,7 @@ import {
   House,
   Flower2,
   LayoutGrid,
+  LogOut,
 } from 'lucide-react';
 import { FacebookIcon, InstagramIcon, TikTokIcon } from '@/components/icons';
 import { useCart } from '@/components/cart-provider';
@@ -27,7 +28,7 @@ import { BrandLogo } from '@/components/brand-logo';
 
 export function SiteHeader() {
   const { count, favorites } = useCart();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const [query, setQuery] = useState('');
@@ -592,6 +593,38 @@ export function SiteHeader() {
                 Contact
               </Link>
             </nav>
+
+            {/* Profil connecté & Déconnexion mobile */}
+            {isAuthenticated && (
+              <div className="px-4 py-3 border-t border-[#e7e4dd] bg-[#faf8f4] flex items-center justify-between">
+                <Link
+                  href="/compte"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-85 transition-opacity"
+                >
+                  <div className="w-8 h-8 rounded-full bg-[#173f22] text-white flex items-center justify-center text-xs font-bold shrink-0">
+                    {user?.name ? user.name.slice(0, 2).toUpperCase() : 'ME'}
+                  </div>
+                  <div className="flex flex-col min-w-0 pr-2">
+                    <span className="text-xs font-bold text-[#173f22] truncate">{user?.name || 'Mon compte'}</span>
+                    <span className="text-[10.5px] text-gray-500 truncate">{user?.email}</span>
+                  </div>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    logout();
+                    setMobileMenuOpen(false);
+                    router.push('/');
+                  }}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 transition-colors cursor-pointer shrink-0"
+                  title="Se déconnecter"
+                >
+                  <LogOut size={13} />
+                  <span>Déconnexion</span>
+                </button>
+              </div>
+            )}
 
             <div className="mobile-drawer-footer">
               <a href="tel:+221779417860" className="drawer-phone">

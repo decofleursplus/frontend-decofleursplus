@@ -812,7 +812,7 @@ export default function AdminProductsPage() {
                           className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef] transition-colors whitespace-nowrap"
                           render={
                             <Link
-                              href={`/produits/${product.id}`}
+                              href={`/produits/${product.slug || product.id}`}
                               target="_blank"
                               rel="noopener noreferrer"
                             />

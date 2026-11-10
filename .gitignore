@@ -6,3 +6,5 @@ mockups
 backend-decofleursplus
 AGENTS.md
 CLAUDE.md
+.agents
+*.tsbuildinfo

@@ -77,19 +77,25 @@ export function mapApiProductToProduct(item: ApiProduct): Product {
       ? item.category.name
       : String(item.category || 'Général');
 
+  const hasRealDiscount = typeof item.oldPrice === 'number' && item.oldPrice > item.price;
+
   return {
     id: item.id,
     slug: item.slug,
     name: item.name,
     category: categoryName,
     price: item.price,
-    oldPrice: item.oldPrice ?? undefined,
+    oldPrice: hasRealDiscount && typeof item.oldPrice === 'number' ? item.oldPrice : undefined,
     image: item.image || (item.images && item.images[0]) || '/images/hero.jpg',
     images: item.images && item.images.length > 0 ? item.images : [item.image || '/images/hero.jpg'],
     rating: item.rating ?? 4.8,
     reviews: item.reviews ?? 0,
-    badge: item.badge ?? undefined,
-    badgeType: item.badgeType ?? undefined,
+    badge: hasRealDiscount
+      ? item.badge || `-${Math.round(((item.oldPrice! - item.price) / item.oldPrice!) * 100)}%`
+      : item.badge && !item.badge.startsWith('-')
+      ? item.badge
+      : undefined,
+    badgeType: hasRealDiscount ? 'discount' : item.badgeType === 'new' ? 'new' : undefined,
     description: item.description || '',
     inStock: item.inStock ?? true,
     reference: item.reference,

@@ -108,3 +108,5 @@
 ### Phase 11 : Recette E2E, Nettoyage & Sécurité
 - [x] **Tâche 11.1** : Tests d'Intégration Bout en Bout (Parcours Client & Admin validés, TypeScript `tsc --noEmit` à 0 erreur) ✅
 - [x] **Tâche 11.2** : Nettoyage des Mocks, Robustesse Offline & Build de Production (`npm run build` validé : 97/97 pages générées avec succès) ✅
+- [x] **Tâche 11.3** : Ergonomie Mobile & Déconnexion Globale (Bouton de déconnexion direct mobile dans la Topbar, menu déroulant du profil et Drawer mobile Admin & Storefront) ✅
+- [x] **Tâche 11.4** : Gestion Précise des Remises Produits (Basculement explicite de promotion, suppression des remises par défaut, synchronisation variante-basePrice et annulation explicite `compareAtPrice: null`) ✅

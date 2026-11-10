@@ -14,6 +14,7 @@ export type CustomerSegment = 'particulier' | 'entreprise' | 'vip';
 
 export type AdminProduct = {
   id: string;
+  slug?: string;
   variantId?: string;
   name: string;
   category: string;

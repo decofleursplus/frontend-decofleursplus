@@ -26,6 +26,11 @@ export default function NewProductPage() {
   const [images, setImages] = useState<string[]>([]);
   const [primaryImage, setPrimaryImage] = useState<string>('');
 
+  // Pricing & Promo state
+  const [basePriceInput, setBasePriceInput] = useState<string>('');
+  const [hasPromo, setHasPromo] = useState<boolean>(false);
+  const [promoPriceInput, setPromoPriceInput] = useState<string>('');
+
   useEffect(() => {
     let active = true;
     async function load() {
@@ -55,9 +60,11 @@ export default function NewProductPage() {
     const formData = new FormData(e.currentTarget);
     const name = (formData.get('name') as string)?.trim();
     const description = (formData.get('description') as string)?.trim() || '';
-    const price = Number(formData.get('price')) || 0;
-    const promoRaw = formData.get('promo');
-    const promoPrice = promoRaw && Number(promoRaw) > 0 ? Number(promoRaw) : undefined;
+    const price = Number(basePriceInput || formData.get('price')) || 0;
+    const promoPrice =
+      hasPromo && promoPriceInput && Number(promoPriceInput) > 0
+        ? Number(promoPriceInput)
+        : undefined;
     const userSku = (formData.get('sku') as string)?.trim() || '';
     const stock = Number(formData.get('stock')) || 0;
     const statusVal = (formData.get('status') as string) === 'actif' ? 'ACTIVE' : 'HIDDEN';
@@ -78,6 +85,16 @@ export default function NewProductPage() {
       return;
     }
 
+    if (price <= 0) {
+      toast.error('Le prix normal du produit doit être supérieur à 0 FCFA.');
+      return;
+    }
+
+    if (hasPromo && promoPrice && promoPrice >= price) {
+      toast.error('Le prix promotionnel doit être strictement inférieur au prix normal.');
+      return;
+    }
+
     // Référence produit automatique normée
     const selectedCatObj = categories.find((c) => c.id === categoryId);
     const catCode = selectedCatObj
@@ -93,7 +110,7 @@ export default function NewProductPage() {
         description,
         categoryId,
         basePrice: price,
-        promoPrice,
+        promoPrice: hasPromo ? promoPrice : undefined,
         status: statusVal,
         featuredImage: primaryImage || images[0] || null,
         images,
@@ -101,7 +118,7 @@ export default function NewProductPage() {
           {
             name: 'Standard',
             sku: finalSku,
-            price,
+            price: hasPromo && promoPrice ? promoPrice : price,
             stockQuantity: stock,
           },
         ],
@@ -210,27 +227,78 @@ export default function NewProductPage() {
               <CardTitle className="text-[#1e2a1f]">Prix et Inventaire</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="price">Prix (FCFA) <span className="text-[#c1647a]">*</span></Label>
-                  <Input id="price" name="price" type="number" min="0" placeholder="0" required className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="promo">Prix promotionnel (optionnel)</Label>
-                  <Input id="promo" name="promo" type="number" min="0" placeholder="0" className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20" />
-                  <p className="text-[11px] text-gray-500">Si renseigné, le montant le plus bas sera le prix d&apos;achat et le plus élevé le prix barré.</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="sku">Référence (SKU)</Label>
-                  <Input id="sku" name="sku" placeholder="Automatique (ex: DFP-BOU-XXXX)" className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20 text-xs" />
-                  <p className="text-[11px] text-gray-500">Optionnel. Laisser vide pour générer une référence normée.</p>
+                  <Label htmlFor="price">Prix normal de vente (FCFA) <span className="text-[#c1647a]">*</span></Label>
+                  <Input
+                    id="price"
+                    name="price"
+                    type="number"
+                    min="1"
+                    placeholder="Ex: 25000"
+                    value={basePriceInput}
+                    onChange={(e) => setBasePriceInput(e.target.value)}
+                    required
+                    className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="stock">Quantité en stock</Label>
                   <Input id="stock" name="stock" type="number" min="0" placeholder="0" className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20" />
                 </div>
+              </div>
+
+              {/* Remise / Prix Promotionnel Toggle */}
+              <div className="pt-2 border-t border-[#e7e4dd]/70">
+                <label className="flex items-center gap-2.5 cursor-pointer text-sm font-medium text-gray-800 select-none">
+                  <input
+                    type="checkbox"
+                    checked={hasPromo}
+                    onChange={(e) => {
+                      setHasPromo(e.target.checked);
+                      if (!e.target.checked) setPromoPriceInput('');
+                    }}
+                    className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                  />
+                  <span>Appliquer un prix promotionnel (remise)</span>
+                </label>
+
+                {hasPromo && (
+                  <div className="mt-3 p-3.5 rounded-xl bg-amber-50/60 border border-amber-200/60 space-y-2 animate-in fade-in duration-150">
+                    <Label htmlFor="promo" className="text-xs font-semibold text-amber-900">
+                      Prix réduit en promotion (FCFA) <span className="text-[#c1647a]">*</span>
+                    </Label>
+                    <Input
+                      id="promo"
+                      name="promo"
+                      type="number"
+                      min="1"
+                      placeholder="Ex: 20000"
+                      value={promoPriceInput}
+                      onChange={(e) => setPromoPriceInput(e.target.value)}
+                      className="bg-white border-amber-300 focus-visible:ring-amber-500/20"
+                    />
+                    {Number(basePriceInput) > 0 && Number(promoPriceInput) > 0 && Number(promoPriceInput) < Number(basePriceInput) ? (
+                      <p className="text-xs font-medium text-emerald-700">
+                        ✓ Remise calculée de -{Math.round(((Number(basePriceInput) - Number(promoPriceInput)) / Number(basePriceInput)) * 100)}% (Prix barré : {Number(basePriceInput).toLocaleString('fr-FR')} FCFA → Prix d&apos;achat : {Number(promoPriceInput).toLocaleString('fr-FR')} FCFA)
+                      </p>
+                    ) : Number(promoPriceInput) >= Number(basePriceInput) && Number(promoPriceInput) > 0 ? (
+                      <p className="text-xs font-medium text-red-600">
+                        ⚠ Le prix promotionnel ({Number(promoPriceInput).toLocaleString('fr-FR')} FCFA) doit être strictement inférieur au prix normal ({Number(basePriceInput).toLocaleString('fr-FR')} FCFA).
+                      </p>
+                    ) : (
+                      <p className="text-[11px] text-amber-700">
+                        Le produit sera vendu au montant réduit et le prix d&apos;origine sera barré avec le badge de remise.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2 pt-2 border-t border-[#e7e4dd]/70">
+                <Label htmlFor="sku">Référence (SKU)</Label>
+                <Input id="sku" name="sku" placeholder="Automatique (ex: DFP-BOU-XXXX)" className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20 text-xs" />
+                <p className="text-[11px] text-gray-500">Optionnel. Laisser vide pour générer automatiquement une référence normée.</p>
               </div>
             </CardContent>
           </Card>

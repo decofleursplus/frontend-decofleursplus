@@ -93,11 +93,17 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     const description = (formData.get('description') as string)?.trim() || '';
     const price = Number(formData.get('price')) || product.price;
     const promoRaw = formData.get('promo');
-    const promoPrice = promoRaw !== null && promoRaw !== '' ? Number(promoRaw) : undefined;
+    const promoPrice = (promoRaw !== null && promoRaw !== '' && Number(promoRaw) > 0) ? Number(promoRaw) : null;
     const sku = (formData.get('sku') as string)?.trim() || product.sku;
     const stock = Number(formData.get('stock')) ?? product.stock;
     const statusVal = (formData.get('status') as string) === 'actif' ? 'ACTIVE' : 'HIDDEN';
     const categoryId = (formData.get('category') as string)?.trim() || product.categoryId;
+
+    if (promoPrice !== null && promoPrice >= price) {
+      toast.error('Le prix promotionnel doit être strictement inférieur au prix normal.');
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       await updateAdminProduct(product.id, {
@@ -105,7 +111,8 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         description,
         categoryId: categoryId || undefined,
         basePrice: price,
-        promoPrice,
+        promoPrice: promoPrice ?? undefined,
+        compareAtPrice: promoPrice === null ? null : undefined,
         status: statusVal,
         featuredImage: primaryImage || images[0] || null,
         images,
@@ -113,7 +120,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           {
             name: 'Standard',
             sku,
-            price,
+            price: typeof promoPrice === 'number' && promoPrice > 0 ? promoPrice : price,
             stockQuantity: stock,
           },
         ],
@@ -242,15 +249,17 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="promo">Prix promotionnel</Label>
+                  <Label htmlFor="promo">Prix promotionnel (optionnel)</Label>
                   <Input 
                     id="promo" 
                     name="promo"
                     type="number" 
                     min="0"
+                    placeholder="Laisser vide si aucun prix promo"
                     defaultValue={product.promoPrice || ''}
                     className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20" 
                   />
+                  <p className="text-[11px] text-gray-500">Laisser vide pour désactiver toute promotion.</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">

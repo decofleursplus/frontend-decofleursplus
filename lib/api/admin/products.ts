@@ -112,14 +112,21 @@ function mapBackendToAdminProduct(p: BackendProductResponse): AdminProduct {
     mappedStatus = 'rupture';
   }
 
-  // Tarification : compareAtPrice est l'ancien prix barré, basePrice est le prix d'achat effectif
+  // Tarification : compareAtPrice (ou oldPrice) est l'ancien prix barré, basePrice est le prix d'achat effectif
   let price = displayPrice;
   let promoPrice: number | undefined = undefined;
 
-  if (p.compareAtPrice && p.compareAtPrice > displayPrice) {
-    price = p.compareAtPrice; // Prix original barré
-    promoPrice = displayPrice; // Prix promo remisé
-  } else if (p.promoPrice) {
+  const compareVal =
+    typeof p.compareAtPrice === 'number' && p.compareAtPrice > 0
+      ? p.compareAtPrice
+      : typeof (p as { oldPrice?: number | null }).oldPrice === 'number' && (p as { oldPrice?: number | null }).oldPrice! > 0
+      ? (p as { oldPrice?: number | null }).oldPrice!
+      : null;
+
+  if (compareVal && compareVal > displayPrice) {
+    price = compareVal; // Prix original barré
+    promoPrice = displayPrice; // Prix effectif en promo
+  } else if (typeof p.promoPrice === 'number' && p.promoPrice > 0 && p.promoPrice < displayPrice) {
     promoPrice = p.promoPrice;
   }
 
@@ -134,13 +141,14 @@ function mapBackendToAdminProduct(p: BackendProductResponse): AdminProduct {
 
   return {
     id: p.id,
+    slug: p.slug,
     variantId: p.variants?.[0]?.id || '',
     name: p.name,
     category: categoryName || 'Bouquets',
     categoryId: categoryId || '',
     price,
     promoPrice,
-    compareAtPrice: p.compareAtPrice ?? null,
+    compareAtPrice: compareVal && compareVal > displayPrice ? compareVal : null,
     sku: firstSku,
     stock: totalStock,
     minStock: 5,
@@ -264,16 +272,13 @@ export async function createAdminProduct(payload: CreateProductPayload): Promise
     description: payload.description.trim(),
     categoryId: payload.categoryId.trim(),
     basePrice: effectiveBasePrice,
+    compareAtPrice: effectiveCompareAtPrice !== undefined ? effectiveCompareAtPrice : null,
     isFeatured: Boolean(payload.isFeatured),
     status,
   };
 
   if (payload.subCategoryId) {
     backendPayload.subCategoryId = payload.subCategoryId.trim();
-  }
-
-  if (effectiveCompareAtPrice !== undefined) {
-    backendPayload.compareAtPrice = effectiveCompareAtPrice;
   }
 
   if (featured) {
@@ -289,7 +294,7 @@ export async function createAdminProduct(payload: CreateProductPayload): Promise
       const variantItem: Record<string, unknown> = {
         name: v.name.trim(),
         sku: v.sku.trim(),
-        price: typeof v.price === 'number' ? v.price : effectiveBasePrice,
+        price: effectiveBasePrice,
       };
       if (typeof v.stockQuantity === 'number') {
         variantItem.stockQuantity = v.stockQuantity;
@@ -328,21 +333,18 @@ export async function updateAdminProduct(
   // Gestion des prix
   if (payload.promoPrice !== undefined) {
     const base = payload.basePrice ?? 0;
-    if (payload.promoPrice && base) {
-      if (payload.promoPrice < base) {
-        backendPayload.basePrice = payload.promoPrice;
-        backendPayload.compareAtPrice = base;
-      } else if (payload.promoPrice > base) {
-        backendPayload.basePrice = base;
-        backendPayload.compareAtPrice = payload.promoPrice;
-      }
-    } else if (payload.promoPrice === null || payload.promoPrice === 0) {
+    if (payload.promoPrice && base && payload.promoPrice > 0 && payload.promoPrice < base) {
+      backendPayload.basePrice = payload.promoPrice;
+      backendPayload.compareAtPrice = base;
+    } else {
       backendPayload.compareAtPrice = null;
       if (payload.basePrice !== undefined) backendPayload.basePrice = payload.basePrice;
     }
+  } else if (payload.compareAtPrice !== undefined) {
+    backendPayload.compareAtPrice = payload.compareAtPrice;
+    if (payload.basePrice !== undefined) backendPayload.basePrice = payload.basePrice;
   } else {
     if (payload.basePrice !== undefined) backendPayload.basePrice = payload.basePrice;
-    if (payload.compareAtPrice !== undefined) backendPayload.compareAtPrice = payload.compareAtPrice;
   }
 
   // Gestion des images
