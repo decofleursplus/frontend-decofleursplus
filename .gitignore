@@ -8,3 +8,5 @@ AGENTS.md
 CLAUDE.md
 .agents
 *.tsbuildinfo
+test-results/*
+playwright-report/*
