@@ -87,9 +87,14 @@ export default function AdminFournisseursPage() {
       {/* ── En-tête (Maquette Écran 6) ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#173f22]">
-            Gestion des fournisseurs
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#173f22]">
+              Gestion des fournisseurs
+            </h1>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+              À venir
+            </span>
+          </div>
           <p className="text-sm text-muted-foreground mt-1">
             Gérez vos fournisseurs et leurs informations.
           </p>
@@ -97,10 +102,12 @@ export default function AdminFournisseursPage() {
 
         <button
           type="button"
-          onClick={() => setIsAddModalOpen(true)}
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-sm font-semibold shadow-sm transition-colors w-full sm:w-fit cursor-pointer"
+          disabled
+          aria-disabled="true"
+          title="Module en attente d'implémentation backend"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] text-white text-sm font-semibold shadow-sm transition-colors w-full sm:w-fit opacity-50 cursor-not-allowed"
         >
-          <Plus size={18} /> Ajouter un fournisseur
+          <Plus size={18} /> Ajouter un fournisseur (À venir)
         </button>
       </div>
 
@@ -409,9 +416,11 @@ export default function AdminFournisseursPage() {
             <button
               type="submit"
               form="add-supplier-form"
-              className="px-6 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white font-semibold shadow-xs text-xs cursor-pointer transition-colors"
+              disabled
+              aria-disabled="true"
+              className="px-6 py-2.5 rounded-xl bg-[#c8436e] text-white font-semibold shadow-xs text-xs opacity-50 cursor-not-allowed"
             >
-              Créer le fournisseur
+              Créer le fournisseur (À venir)
             </button>
           </div>
         }

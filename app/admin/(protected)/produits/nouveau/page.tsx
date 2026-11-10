@@ -61,10 +61,6 @@ export default function NewProductPage() {
     const name = (formData.get('name') as string)?.trim();
     const description = (formData.get('description') as string)?.trim() || '';
     const price = Number(basePriceInput || formData.get('price')) || 0;
-    const promoPrice =
-      hasPromo && promoPriceInput && Number(promoPriceInput) > 0
-        ? Number(promoPriceInput)
-        : undefined;
     const userSku = (formData.get('sku') as string)?.trim() || '';
     const stock = Number(formData.get('stock')) || 0;
     const statusVal = (formData.get('status') as string) === 'actif' ? 'ACTIVE' : 'HIDDEN';
@@ -90,9 +86,19 @@ export default function NewProductPage() {
       return;
     }
 
-    if (hasPromo && promoPrice && promoPrice >= price) {
-      toast.error('Le prix promotionnel doit être strictement inférieur au prix normal.');
-      return;
+    let promoPrice: number | undefined = undefined;
+    if (hasPromo) {
+      const trimmedPromo = promoPriceInput.trim();
+      const parsedPromo = Number(trimmedPromo);
+      if (!trimmedPromo || isNaN(parsedPromo) || parsedPromo <= 0) {
+        toast.error("Veuillez renseigner un prix promotionnel valide ou décocher l'option de remise.");
+        return;
+      }
+      if (parsedPromo >= price) {
+        toast.error('Le prix promotionnel doit être strictement inférieur au prix normal.');
+        return;
+      }
+      promoPrice = parsedPromo;
     }
 
     // Référence produit automatique normée

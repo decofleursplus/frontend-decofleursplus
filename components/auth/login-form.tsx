@@ -2,13 +2,17 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Mail, LockKeyhole, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
 import { GoogleIcon, FloralMotifIcon } from '@/components/icons';
 import { useAuth } from '@/components/auth-provider';
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const rawRedirect = searchParams.get('redirect');
+  const hasValidRedirect = Boolean(rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//'));
+  const redirectTarget = hasValidRedirect && rawRedirect ? rawRedirect : '/compte';
   const { login, loginWithGoogle } = useAuth();
 
   const [identifier, setIdentifier] = useState('');
@@ -30,7 +34,7 @@ export function LoginForm() {
       await login(identifier, password);
       setFeedback('Connexion réussie ! Redirection en cours…');
       setTimeout(() => {
-        router.push('/compte');
+        router.push(redirectTarget);
       }, 500);
     } catch (err: any) {
       setFeedback(err?.message || 'Identifiant ou mot de passe incorrect.');
@@ -45,7 +49,7 @@ export function LoginForm() {
       await loginWithGoogle();
       setFeedback('Connecté avec Google ! Redirection…');
       setTimeout(() => {
-        router.push('/compte');
+        router.push(redirectTarget);
       }, 600);
     } catch (err: any) {
       setFeedback(err?.message || 'La connexion avec Google sera bientôt disponible.');
@@ -191,7 +195,14 @@ export function LoginForm() {
         {/* Card Footer Link */}
         <div className="auth-card-footer">
           <span>Vous n’avez pas encore de compte ? </span>
-          <Link href="/inscription" className="auth-accent-link">
+          <Link
+            href={
+              hasValidRedirect && rawRedirect
+                ? `/inscription?redirect=${encodeURIComponent(rawRedirect)}`
+                : '/inscription'
+            }
+            className="auth-accent-link"
+          >
             Créer un compte
           </Link>
         </div>

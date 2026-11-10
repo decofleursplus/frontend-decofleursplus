@@ -36,13 +36,13 @@ const navGroups = [
       { label: 'Commandes', href: '/admin/commandes', icon: ClipboardList },
       { label: 'Abonnements', href: '/admin/abonnements', icon: Repeat },
       { label: 'Produits', href: '/admin/produits', icon: ShoppingBag },
-      { label: 'Fournisseurs', href: '/admin/fournisseurs', icon: Building2 },
-      { label: 'Approvisionnements', href: '/admin/approvisionnements', icon: Boxes },
+      { label: 'Fournisseurs', href: '/admin/fournisseurs', icon: Building2, badge: 'À venir' },
+      { label: 'Approvisionnements', href: '/admin/approvisionnements', icon: Boxes, badge: 'À venir' },
       { label: 'Stock', href: '/admin/stock', icon: Package },
       { label: 'Clients', href: '/admin/clients', icon: Users },
       { label: 'Devis', href: '/admin/devis', icon: FileSpreadsheet },
       { label: 'Location', href: '/admin/location', icon: Armchair },
-      { label: 'Paysagisme', href: '/admin/paysagisme', icon: Trees },
+      { label: 'Paysagisme', href: '/admin/paysagisme', icon: Trees, badge: 'À venir' },
       { label: 'Livraisons', href: '/admin/livraisons', icon: Truck },
       { label: 'Catégories', href: '/admin/categories', icon: FolderTree },
       { label: 'Marketing', href: '/admin/marketing', icon: Megaphone },
@@ -153,8 +153,13 @@ export function AdminSidebar() {
                       />
                     </Link>
                     {/* Tooltip flottant au survol */}
-                    <div className="pointer-events-none absolute left-full ml-2.5 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center z-50 whitespace-nowrap rounded-md bg-black/90 px-2.5 py-1 text-xs font-medium text-white shadow-md border border-white/15">
-                      {item.label}
+                    <div className="pointer-events-none absolute left-full ml-2.5 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-1.5 z-50 whitespace-nowrap rounded-md bg-black/90 px-2.5 py-1 text-xs font-medium text-white shadow-md border border-white/15">
+                      <span>{item.label}</span>
+                      {item.badge && (
+                        <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          {item.badge}
+                        </span>
+                      )}
                     </div>
                   </li>
                 );
@@ -171,6 +176,11 @@ export function AdminSidebar() {
                   >
                     <Icon size={18} strokeWidth={isActive ? 2.2 : 1.8} />
                     <span>{item.label}</span>
+                    {item.badge && (
+                      <span className="ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        {item.badge}
+                      </span>
+                    )}
                   </Link>
                 </li>
               );

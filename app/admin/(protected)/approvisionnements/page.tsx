@@ -34,18 +34,15 @@ export default function AdminApprovisionnementsPage() {
 
   // New order state
   const [selectedSupplierId, setSelectedSupplierId] = useState(initialSuppliers[0]?.id || '');
-  const [orderItems, setOrderItems] = useState<{ name: string; qty: number; unitPrice: number; total: number }[]>([
-    { name: 'Roses rouges (Tige longue)', qty: 100, unitPrice: 500, total: 50000 },
-    { name: 'Lys blanc royal', qty: 50, unitPrice: 1200, total: 60000 },
-  ]);
-  const [notes, setNotes] = useState('Approvisionnement prioritaire pour les commandes de la semaine.');
+  const [orderItems, setOrderItems] = useState<{ name: string; qty: number; unitPrice: number; total: number }[]>([]);
+  const [notes, setNotes] = useState('');
 
   const subtotal = orderItems.reduce((acc, item) => acc + item.total, 0);
 
   const handleAddItem = () => {
     setOrderItems((prev) => [
       ...prev,
-      { name: 'Feuillage eucalyptus', qty: 25, unitPrice: 600, total: 15000 },
+      { name: '', qty: 1, unitPrice: 0, total: 0 },
     ]);
   };
 
@@ -55,6 +52,10 @@ export default function AdminApprovisionnementsPage() {
 
   const handleCreateOrder = (e: React.FormEvent) => {
     e.preventDefault();
+    if (orderItems.length === 0 || orderItems.every((it) => !it.name.trim())) {
+      toast.error('Veuillez ajouter au moins un produit à commander.');
+      return;
+    }
     const sup = initialSuppliers.find((s) => s.id === selectedSupplierId) || { id: 'sup-default', name: 'Fournisseur Général' };
     const newOrder: SupplierOrder = {
       id: `CF-2024-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -114,9 +115,14 @@ export default function AdminApprovisionnementsPage() {
       {/* ── En-tête (Maquette Écran 8) ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#173f22]">
-            Commandes fournisseurs
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#173f22]">
+              Commandes fournisseurs
+            </h1>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+              À venir
+            </span>
+          </div>
           <p className="text-sm text-muted-foreground mt-1">
             Créez et suivez vos commandes d&apos;approvisionnement et consultez vos factures d&apos;achat.
           </p>
@@ -129,17 +135,19 @@ export default function AdminApprovisionnementsPage() {
             title="Consulter le grand livre des factures fournisseurs"
           >
             <ReceiptText size={17} className="text-[#173f22]" />
-            <span>Factures fournisseurs</span>
-            <span className="px-1.5 py-0.5 rounded-full bg-[#edf8ef] text-[#173f22] text-[11px] font-bold">
-              4
+            <span>Factures fournisseurs (À venir)</span>
+            <span className="px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold border border-amber-300">
+              À venir
             </span>
           </Link>
           <button
             type="button"
-            onClick={() => setIsNewOrderModalOpen(true)}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-xs sm:text-sm font-semibold shadow-sm transition-colors w-full sm:w-auto cursor-pointer"
+            disabled
+            aria-disabled="true"
+            title="Module en attente d'implémentation backend"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] text-white text-xs sm:text-sm font-semibold shadow-sm transition-colors w-full sm:w-auto opacity-50 cursor-not-allowed"
           >
-            <Plus size={18} /> Nouvelle commande
+            <Plus size={18} /> Nouvelle commande (À venir)
           </button>
         </div>
       </div>
@@ -397,9 +405,11 @@ export default function AdminApprovisionnementsPage() {
             <button
               type="submit"
               form="new-order-form"
-              className="px-6 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white font-semibold shadow-xs text-xs cursor-pointer transition-colors"
+              disabled
+              aria-disabled="true"
+              className="px-6 py-2.5 rounded-xl bg-[#c8436e] text-white font-semibold shadow-xs text-xs opacity-50 cursor-not-allowed"
             >
-              Générer et transmettre le bon de commande
+              Générer et transmettre le bon de commande (À venir)
             </button>
           </div>
         }
@@ -442,21 +452,29 @@ export default function AdminApprovisionnementsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {orderItems.map((item, idx) => (
-                    <tr key={idx}>
-                      <td className="p-2">
-                        <input
-                          type="text"
-                          value={item.name}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setOrderItems((prev) =>
-                              prev.map((it, i) => (i === idx ? { ...it, name: val } : it))
-                            );
-                          }}
-                          className="w-full p-1.5 border border-border rounded-lg bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs"
-                        />
+                  {orderItems.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="p-4 text-center text-muted-foreground text-xs italic">
+                        Aucun article dans cette commande. Cliquez sur « Ajouter un produit » ci-dessus.
                       </td>
+                    </tr>
+                  ) : (
+                    orderItems.map((item, idx) => (
+                      <tr key={idx}>
+                        <td className="p-2">
+                          <input
+                            type="text"
+                            placeholder="Nom de l'article"
+                            value={item.name}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setOrderItems((prev) =>
+                                prev.map((it, i) => (i === idx ? { ...it, name: val } : it))
+                              );
+                            }}
+                            className="w-full p-1.5 border border-border rounded-lg bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs"
+                          />
+                        </td>
                       <td className="p-2">
                         <input
                           type="number"
@@ -499,7 +517,7 @@ export default function AdminApprovisionnementsPage() {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                  )))}
                 </tbody>
                 <tfoot className="bg-[#faf8f5] font-bold text-xs border-t border-border">
                   <tr>

@@ -15,12 +15,14 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { useCart } from '@/components/cart-provider';
+import { useAuth } from '@/components/auth-provider';
 import { formatPrice } from '@/lib/products';
 import { SiteFooter } from '@/components/site-footer';
 import { validateCoupon, ValidatedCoupon } from '@/lib/api/marketing';
 
 export default function CartPage() {
   const { items, subtotal, change, remove } = useCart();
+  const { isAuthenticated } = useAuth();
   const [promo, setPromo] = useState('');
   const [loadingCoupon, setLoadingCoupon] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState<ValidatedCoupon | null>(null);
@@ -277,7 +279,10 @@ export default function CartPage() {
                 <strong>{formatPrice(finalTotal)}</strong>
               </div>
 
-              <Link className="button button-primary checkout-button" href="/commande">
+              <Link
+                className="button button-primary checkout-button"
+                href={isAuthenticated ? '/commande' : '/connexion?redirect=/commande'}
+              >
                 Passer la commande <ArrowRight size={16} />
               </Link>
 

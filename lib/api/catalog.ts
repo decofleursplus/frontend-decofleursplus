@@ -79,23 +79,38 @@ export function mapApiProductToProduct(item: ApiProduct): Product {
 
   const hasRealDiscount = typeof item.oldPrice === 'number' && item.oldPrice > item.price;
 
+  let badge: string | undefined = undefined;
+  let badgeType: 'discount' | 'new' | undefined = undefined;
+
+  if (hasRealDiscount) {
+    badge = item.badge || `-${Math.round(((item.oldPrice! - item.price) / item.oldPrice!) * 100)}%`;
+    badgeType = 'discount';
+  } else if (item.badgeType === 'new') {
+    badge = item.badge || 'Nouveau';
+    badgeType = 'new';
+  } else if (
+    item.badge &&
+    !item.badge.startsWith('-') &&
+    !item.badge.includes('%') &&
+    !/promo|remise|solde|sale|discount/i.test(item.badge) &&
+    item.badgeType !== 'discount'
+  ) {
+    badge = item.badge;
+  }
+
   return {
     id: item.id,
     slug: item.slug,
     name: item.name,
     category: categoryName,
     price: item.price,
-    oldPrice: hasRealDiscount && typeof item.oldPrice === 'number' ? item.oldPrice : undefined,
+    oldPrice: hasRealDiscount ? (item.oldPrice as number) : undefined,
     image: item.image || (item.images && item.images[0]) || '/images/hero.jpg',
     images: item.images && item.images.length > 0 ? item.images : [item.image || '/images/hero.jpg'],
     rating: item.rating ?? 4.8,
     reviews: item.reviews ?? 0,
-    badge: hasRealDiscount
-      ? item.badge || `-${Math.round(((item.oldPrice! - item.price) / item.oldPrice!) * 100)}%`
-      : item.badge && !item.badge.startsWith('-')
-      ? item.badge
-      : undefined,
-    badgeType: hasRealDiscount ? 'discount' : item.badgeType === 'new' ? 'new' : undefined,
+    badge,
+    badgeType,
     description: item.description || '',
     inStock: item.inStock ?? true,
     reference: item.reference,

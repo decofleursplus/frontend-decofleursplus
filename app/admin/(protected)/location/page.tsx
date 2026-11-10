@@ -110,13 +110,13 @@ export default function AdminLocationPage() {
   const [editingEquipmentId, setEditingEquipmentId] = useState<string | null>(null);
   const [eqName, setEqName] = useState('');
   const [eqCategory, setEqCategory] = useState<'mobilier' | 'vaisselle' | 'decoration' | 'accessoires'>('mobilier');
-  const [eqPricePerDay, setEqPricePerDay] = useState(25000);
-  const [eqDeposit, setEqDeposit] = useState(50000);
-  const [eqTotalStock, setEqTotalStock] = useState(20);
-  const [eqAvailableStock, setEqAvailableStock] = useState(20);
+  const [eqPricePerDay, setEqPricePerDay] = useState(0);
+  const [eqDeposit, setEqDeposit] = useState(0);
+  const [eqTotalStock, setEqTotalStock] = useState(1);
+  const [eqAvailableStock, setEqAvailableStock] = useState(1);
   const [eqDimensions, setEqDimensions] = useState('');
   const [eqDescription, setEqDescription] = useState('');
-  const [eqImage, setEqImage] = useState('/images/location/table-ronde.jpg');
+  const [eqImage, setEqImage] = useState('');
 
   const openReservationDetails = (idOrRef: string) => {
     const existing = reservations.find(
@@ -234,13 +234,13 @@ export default function AdminLocationPage() {
       setEditingEquipmentId(null);
       setEqName('');
       setEqCategory('mobilier');
-      setEqPricePerDay(15000);
-      setEqDeposit(30000);
-      setEqTotalStock(10);
-      setEqAvailableStock(10);
-      setEqDimensions('Dimensions standard · Finition soignée');
-      setEqDescription('Équipement haut de gamme pour cérémonies et réceptions.');
-      setEqImage('/images/location/table-ronde.jpg');
+      setEqPricePerDay(0);
+      setEqDeposit(0);
+      setEqTotalStock(1);
+      setEqAvailableStock(1);
+      setEqDimensions('');
+      setEqDescription('');
+      setEqImage('');
     }
     setIsEquipmentDrawerOpen(true);
   };

@@ -242,27 +242,31 @@ export async function createAdminProduct(payload: CreateProductPayload): Promise
     `prd-${Date.now()}`;
 
   // Logique de prix: le backend exige compareAtPrice > basePrice
+  const hasPromo = typeof payload.promoPrice === 'number' && payload.promoPrice > 0;
   let effectiveBasePrice = payload.basePrice;
-  let effectiveCompareAtPrice: number | null | undefined = undefined;
+  let effectiveCompareAtPrice: number | null = null;
+  let status = payload.status || 'ACTIVE';
 
-  if (typeof payload.promoPrice === 'number' && payload.promoPrice > 0) {
-    if (payload.promoPrice < payload.basePrice) {
+  if (hasPromo) {
+    if (payload.promoPrice! < payload.basePrice) {
       // Cas standard : basePrice devient le prix promo réduit, compareAtPrice devient l'ancien prix
-      effectiveBasePrice = payload.promoPrice;
+      effectiveBasePrice = payload.promoPrice!;
       effectiveCompareAtPrice = payload.basePrice;
-    } else if (payload.promoPrice > payload.basePrice) {
+    } else if (payload.promoPrice! > payload.basePrice) {
       // L'utilisateur a saisi l'ancien prix plus élevé dans promoPrice
       effectiveBasePrice = payload.basePrice;
-      effectiveCompareAtPrice = payload.promoPrice;
+      effectiveCompareAtPrice = payload.promoPrice!;
     }
-  } else if (typeof payload.compareAtPrice === 'number' && payload.compareAtPrice > payload.basePrice) {
-    effectiveCompareAtPrice = payload.compareAtPrice;
-  }
-
-  // Statut
-  let status = payload.status || 'ACTIVE';
-  if (!payload.status && effectiveCompareAtPrice && effectiveCompareAtPrice > effectiveBasePrice) {
-    status = 'PROMO';
+    if (!payload.status) {
+      status = 'PROMO';
+    }
+  } else {
+    // Si aucun prix promotionnel n'est renseigné, compareAtPrice est null et le statut par défaut est ACTIVE
+    effectiveBasePrice = payload.basePrice;
+    effectiveCompareAtPrice = null;
+    if (!payload.status || payload.status === 'PROMO') {
+      status = 'ACTIVE';
+    }
   }
 
   // Construction du corps strict conforme à createProductSchema
@@ -272,7 +276,7 @@ export async function createAdminProduct(payload: CreateProductPayload): Promise
     description: payload.description.trim(),
     categoryId: payload.categoryId.trim(),
     basePrice: effectiveBasePrice,
-    compareAtPrice: effectiveCompareAtPrice !== undefined ? effectiveCompareAtPrice : null,
+    compareAtPrice: effectiveCompareAtPrice,
     isFeatured: Boolean(payload.isFeatured),
     status,
   };
@@ -290,11 +294,11 @@ export async function createAdminProduct(payload: CreateProductPayload): Promise
   }
 
   if (payload.variants && payload.variants.length > 0) {
-    backendPayload.variants = payload.variants.map((v) => {
+    backendPayload.variants = payload.variants.map((v, index) => {
       const variantItem: Record<string, unknown> = {
         name: v.name.trim(),
         sku: v.sku.trim(),
-        price: effectiveBasePrice,
+        price: !hasPromo && index === 0 ? payload.basePrice : effectiveBasePrice,
       };
       if (typeof v.stockQuantity === 'number') {
         variantItem.stockQuantity = v.stockQuantity;

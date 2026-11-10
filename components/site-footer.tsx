@@ -158,7 +158,10 @@ export function SiteFooter() {
           <div className="flex items-center gap-2 flex-wrap text-neutral-400">
             <Link href="/blog" className="hover:text-[#f472b6] transition-colors">Blog Floral</Link>
             <span className="text-white/20">·</span>
-            <Link href="/paysagisme" className="hover:text-[#f472b6] transition-colors">Paysagisme</Link>
+            <span className="inline-flex items-center gap-1">
+              <Link href="/paysagisme" className="hover:text-[#f472b6] transition-colors">Paysagisme</Link>
+              <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">À venir</span>
+            </span>
             <span className="text-white/20">·</span>
             <Link href="/location" className="hover:text-[#f472b6] transition-colors">Location événementielle</Link>
           </div>

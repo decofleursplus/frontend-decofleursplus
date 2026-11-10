@@ -10,12 +10,8 @@ import {
   MapPin,
   Calendar,
   Clock,
-  Plus,
   ShieldCheck,
   Search,
-  UserRound,
-  Mail,
-  Phone,
   UserCheck,
   Loader2,
   AlertCircle,
@@ -25,7 +21,6 @@ import {
 } from 'lucide-react';
 import { useCart } from '@/components/cart-provider';
 import { useAuth } from '@/components/auth-provider';
-import { GoogleIcon } from '@/components/icons';
 import { formatPrice } from '@/lib/products';
 import { SiteFooter } from '@/components/site-footer';
 import { getDeliveryZones, DeliveryZone, placeOrder, PlaceOrderPayload } from '@/lib/api/orders';
@@ -37,7 +32,7 @@ type PaymentMethod = 'wave' | 'orange' | 'free' | 'card' | 'cash';
 
 export default function CheckoutPage() {
   const { items, subtotal, clear } = useCart();
-  const { user, isAuthenticated, login, loginWithGoogle, register, logout } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
   const router = useRouter();
 
   const [delivery, setDelivery] = useState<DeliveryMode>('standard');
@@ -61,27 +56,12 @@ export default function CheckoutPage() {
   const [instructions, setInstructions] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<ValidatedCoupon | null>(null);
 
-  // Step 1: Auth state
-  const [isEditingAuth, setIsEditingAuth] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      return params.has('auth');
+  // Redirection d'authentification si le panier contient des articles et l'utilisateur n'est pas connecté
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated && items.length > 0) {
+      router.push('/connexion?redirect=/commande');
     }
-    return false;
-  });
-  const [authTab, setAuthTab] = useState<'login' | 'register'>(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('auth') === 'register') return 'register';
-    }
-    return 'login';
-  });
-  const [authEmail, setAuthEmail] = useState('');
-  const [authPassword, setAuthPassword] = useState('');
-  const [authName, setAuthName] = useState('');
-  const [authPhone, setAuthPhone] = useState('+221 77 123 45 67');
-  const [authError, setAuthError] = useState('');
-  const [authLoading, setAuthLoading] = useState(false);
+  }, [authLoading, isAuthenticated, items.length, router]);
 
   // Charger les zones et les adresses sur montage
   useEffect(() => {
@@ -141,53 +121,13 @@ export default function CheckoutPage() {
   const discountAmount = appliedCoupon?.discountAmount || 0;
   const calculatedTotal = Math.max(0, calculatedSubtotal - discountAmount) + shipping;
 
-  async function handleGoogleLogin() {
-    setAuthLoading(true);
-    setAuthError('');
-    await loginWithGoogle();
-    setIsEditingAuth(false);
-    setAuthLoading(false);
-  }
-
-  async function handleEmailLogin() {
-    if (!authEmail.trim()) {
-      setAuthError('Veuillez renseigner votre adresse e-mail.');
-      return;
-    }
-    setAuthLoading(true);
-    setAuthError('');
-    await login(authEmail, authPassword);
-    setIsEditingAuth(false);
-    setAuthLoading(false);
-  }
-
-  async function handleRegister() {
-    if (!authName.trim() || !authEmail.trim() || !authPhone.trim()) {
-      setAuthError('Veuillez renseigner votre nom, e-mail et numéro de téléphone.');
-      return;
-    }
-    setAuthLoading(true);
-    setAuthError('');
-    await register({
-      name: authName,
-      email: authEmail,
-      phone: authPhone,
-      password: authPassword,
-    });
-    setIsEditingAuth(false);
-    setAuthLoading(false);
-  }
-
   async function submitOrder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setNotice('');
     setOrderError('');
 
     if (!isAuthenticated) {
-      setIsEditingAuth(true);
-      setNotice(
-        'Veuillez vous identifier ou créer votre compte à l’étape 1 avant de finaliser la commande.'
-      );
+      router.push('/connexion?redirect=/commande');
       return;
     }
 
@@ -310,6 +250,18 @@ export default function CheckoutPage() {
     );
   }
 
+  if (!isAuthenticated && items.length > 0) {
+    return (
+      <>
+        <main className="content-width page-main checkout-page py-20 text-center">
+          <Loader2 className="animate-spin mx-auto text-[#24582d] mb-4" size={32} />
+          <p className="text-gray-600">Redirection vers la page de connexion...</p>
+        </main>
+        <SiteFooter />
+      </>
+    );
+  }
+
   return (
     <>
       <main className="content-width page-main checkout-page">
@@ -343,7 +295,7 @@ export default function CheckoutPage() {
           {/* LEFT COLUMN: Steps 1, 2, 3, 4, 5 */}
           <div className="checkout-steps-column">
             {/* 1. Identification & Compte Client */}
-            {isAuthenticated && !isEditingAuth ? (
+            {isAuthenticated ? (
               <section className="checkout-panel checkout-step-panel checkout-step-verified">
                 <div className="step-panel-heading">
                   <div className="step-heading-left">
@@ -356,7 +308,10 @@ export default function CheckoutPage() {
                     <button
                       type="button"
                       className="link-button-pink"
-                      onClick={() => setIsEditingAuth(true)}
+                      onClick={() => {
+                        logout();
+                        router.push('/connexion?redirect=/commande');
+                      }}
                     >
                       Changer de compte
                     </button>
@@ -366,7 +321,7 @@ export default function CheckoutPage() {
                       className="link-button-muted"
                       onClick={() => {
                         logout();
-                        setIsEditingAuth(true);
+                        router.push('/');
                       }}
                     >
                       Déconnexion
@@ -376,7 +331,7 @@ export default function CheckoutPage() {
 
                 <div className="checkout-auth-verified-card">
                   <div className="auth-avatar-circle">
-                    {user?.name ? user.name.slice(0, 2).toUpperCase() : 'FB'}
+                    {user?.name ? user.name.slice(0, 2).toUpperCase() : 'DF'}
                   </div>
                   <div className="auth-verified-info">
                     <div className="auth-verified-name-row">
@@ -397,190 +352,7 @@ export default function CheckoutPage() {
                   </div>
                 </div>
               </section>
-            ) : (
-              <section className="checkout-panel checkout-step-panel checkout-step-active">
-                <div className="step-panel-heading">
-                  <div className="step-heading-left">
-                    <span className="step-num-badge">1</span>
-                    <h2>1. Identification &amp; Compte client</h2>
-                  </div>
-                  {isAuthenticated && (
-                    <button
-                      type="button"
-                      className="link-button-pink"
-                      onClick={() => setIsEditingAuth(false)}
-                    >
-                      Conserver {user?.name?.split(' ')[0]}
-                    </button>
-                  )}
-                </div>
-
-                <p className="step-panel-intro">
-                  Connectez-vous ou créez votre compte client pour cumuler vos points fidélité et suivre votre livraison en temps réel.
-                </p>
-
-                {/* Segmented Switcher */}
-                <div className="checkout-auth-tabs">
-                  <button
-                    type="button"
-                    className={`checkout-auth-tab ${authTab === 'login' ? 'active' : ''}`}
-                    onClick={() => {
-                      setAuthTab('login');
-                      setAuthError('');
-                    }}
-                  >
-                    <UserRound size={15} /> J’ai déjà un compte (Connexion)
-                  </button>
-                  <button
-                    type="button"
-                    className={`checkout-auth-tab ${authTab === 'register' ? 'active' : ''}`}
-                    onClick={() => {
-                      setAuthTab('register');
-                      setAuthError('');
-                    }}
-                  >
-                    <Plus size={15} /> Nouveau client (Créer un compte)
-                  </button>
-                </div>
-
-                {/* Prominent Google Quick Login */}
-                <div className="checkout-google-row">
-                  <button
-                    type="button"
-                    className="btn-google-auth"
-                    onClick={handleGoogleLogin}
-                    disabled={authLoading}
-                  >
-                    <GoogleIcon size={20} />
-                    <span>
-                      {authTab === 'login'
-                        ? 'Se connecter avec Google'
-                        : "S'inscrire rapidement avec Google"}
-                    </span>
-                  </button>
-                </div>
-
-                <div className="auth-separator">
-                  <span>ou avec votre adresse e-mail</span>
-                </div>
-
-                {authTab === 'login' ? (
-                  <div className="checkout-auth-fields">
-                    <div className="form-group">
-                      <label htmlFor="chk-email">
-                        <Mail size={13} /> Adresse e-mail
-                      </label>
-                      <input
-                        id="chk-email"
-                        type="email"
-                        placeholder="ex. fatou.ba@email.com"
-                        value={authEmail}
-                        onChange={(e) => setAuthEmail(e.target.value)}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="chk-pwd">
-                        <LockKeyhole size={13} /> Mot de passe
-                      </label>
-                      <input
-                        id="chk-pwd"
-                        type="password"
-                        placeholder="••••••••"
-                        value={authPassword}
-                        onChange={(e) => setAuthPassword(e.target.value)}
-                      />
-                    </div>
-
-                    <div className="checkout-auth-actions">
-                      <button
-                        type="button"
-                        className="button-pill-pink button-small"
-                        onClick={handleEmailLogin}
-                        disabled={authLoading}
-                      >
-                        Se connecter et continuer
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="checkout-auth-fields">
-                    <div className="checkout-auth-row-2">
-                      <div className="form-group">
-                        <label htmlFor="chk-reg-name">
-                          <UserRound size={13} /> Nom complet
-                        </label>
-                        <input
-                          id="chk-reg-name"
-                          type="text"
-                          placeholder="ex. Fatou Ba"
-                          value={authName}
-                          onChange={(e) => setAuthName(e.target.value)}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label htmlFor="chk-reg-phone">
-                          <Phone size={13} /> Téléphone (Sénégal)
-                        </label>
-                        <input
-                          id="chk-reg-phone"
-                          type="tel"
-                          placeholder="+221 77 123 45 67"
-                          value={authPhone}
-                          onChange={(e) => setAuthPhone(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="checkout-auth-row-2">
-                      <div className="form-group">
-                        <label htmlFor="chk-reg-email">
-                          <Mail size={13} /> Adresse e-mail
-                        </label>
-                        <input
-                          id="chk-reg-email"
-                          type="email"
-                          placeholder="ex. fatou.ba@email.com"
-                          value={authEmail}
-                          onChange={(e) => setAuthEmail(e.target.value)}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label htmlFor="chk-reg-pwd">
-                          <LockKeyhole size={13} /> Mot de passe (min. 8 car.)
-                        </label>
-                        <input
-                          id="chk-reg-pwd"
-                          type="password"
-                          placeholder="••••••••"
-                          value={authPassword}
-                          onChange={(e) => setAuthPassword(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <label className="auth-terms-small">
-                      <input type="checkbox" defaultChecked />
-                      <span>
-                        J’accepte la création de mon compte client Décofleur Plus et la politique de confidentialité.
-                      </span>
-                    </label>
-
-                    <div className="checkout-auth-actions">
-                      <button
-                        type="button"
-                        className="button-pill-pink button-small"
-                        onClick={handleRegister}
-                        disabled={authLoading}
-                      >
-                        Créer mon compte et continuer
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {authError && <p className="auth-error-badge">{authError}</p>}
-              </section>
-            )}
+            ) : null}
 
             {/* 2. Adresse de livraison */}
             <section className="checkout-panel checkout-step-panel">

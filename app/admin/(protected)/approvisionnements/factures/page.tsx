@@ -38,11 +38,13 @@ export default function AdminFacturesPage() {
 
   // Side Drawer : Ajouter une facture
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
-  const [newInvoiceNumber, setNewInvoiceNumber] = useState(`FAC-2024-00${Math.floor(46 + Math.random() * 50)}`);
+  const [newInvoiceNumber, setNewInvoiceNumber] = useState('');
   const [selectedSupplierId, setSelectedSupplierId] = useState(initialSuppliers[0]?.id || '');
-  const [newDate, setNewDate] = useState('14 mars 2024');
-  const [newDueDate, setNewDueDate] = useState('14 avril 2024');
-  const [newAmount, setNewAmount] = useState('125000');
+  const [newDate, setNewDate] = useState(() =>
+    new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+  );
+  const [newDueDate, setNewDueDate] = useState('');
+  const [newAmount, setNewAmount] = useState('');
   const [newStatus, setNewStatus] = useState<SupplierInvoiceStatus>('a_payer');
   const [newNotes, setNewNotes] = useState('');
 
@@ -66,15 +68,23 @@ export default function AdminFacturesPage() {
       toast.error('Veuillez renseigner un numéro de facture.');
       return;
     }
+    const parsedAmount = Number(newAmount) || 0;
+    if (parsedAmount <= 0) {
+      toast.error('Veuillez renseigner un montant valide.');
+      return;
+    }
 
-    const sup = initialSuppliers.find((s) => s.id === selectedSupplierId) || initialSuppliers[0];
+    const sup = initialSuppliers.find((s) => s.id === selectedSupplierId) || {
+      id: 'sup-default',
+      name: 'Fournisseur Général',
+    };
     const created: SupplierInvoice = {
       id: newInvoiceNumber.trim(),
       supplierId: sup.id,
       supplierName: sup.name,
       date: newDate,
-      dueDate: newDueDate,
-      amount: Number(newAmount) || 0,
+      dueDate: newDueDate || '30 jours',
+      amount: parsedAmount,
       status: newStatus,
       notes: newNotes.trim() || 'Facture enregistrée manuellement.',
     };
@@ -84,8 +94,8 @@ export default function AdminFacturesPage() {
     toast.success(`Facture « ${created.id} » créée avec succès pour ${created.supplierName} !`);
 
     // Reset du formulaire
-    setNewInvoiceNumber(`FAC-2024-00${Math.floor(50 + Math.random() * 50)}`);
-    setNewAmount('125000');
+    setNewInvoiceNumber('');
+    setNewAmount('');
     setNewNotes('');
   };
 
@@ -171,9 +181,14 @@ export default function AdminFacturesPage() {
       {/* ── En-tête (Maquette Écran 10) ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#173f22]">
-            Factures fournisseurs
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#173f22]">
+              Factures fournisseurs
+            </h1>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+              À venir
+            </span>
+          </div>
           <p className="text-sm text-muted-foreground mt-1">
             Suivez vos factures, échéances et règlements fournisseurs.
           </p>
@@ -181,10 +196,12 @@ export default function AdminFacturesPage() {
 
         <button
           type="button"
-          onClick={() => setIsAddDrawerOpen(true)}
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-sm font-semibold shadow-sm transition-colors w-full sm:w-auto cursor-pointer"
+          disabled
+          aria-disabled="true"
+          title="Module en attente d'implémentation backend"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] text-white text-sm font-semibold shadow-sm transition-colors w-full sm:w-auto opacity-50 cursor-not-allowed"
         >
-          <Plus size={18} /> Ajouter une facture
+          <Plus size={18} /> Ajouter une facture (À venir)
         </button>
       </div>
 
@@ -425,9 +442,11 @@ export default function AdminFacturesPage() {
             <button
               type="submit"
               form="add-invoice-form"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-xs font-semibold shadow-sm transition-colors cursor-pointer"
+              disabled
+              aria-disabled="true"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] text-white text-xs font-semibold shadow-sm transition-colors opacity-50 cursor-not-allowed"
             >
-              <Plus size={16} /> Enregistrer la facture
+              <Plus size={16} /> Enregistrer la facture (À venir)
             </button>
           </>
         }
@@ -567,9 +586,11 @@ export default function AdminFacturesPage() {
               <button
                 type="submit"
                 form="invoice-details-form"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#173f22] hover:bg-[#102d18] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                disabled
+                aria-disabled="true"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#173f22] text-white text-xs font-semibold shadow-xs transition-colors opacity-50 cursor-not-allowed"
               >
-                <Save size={16} /> Enregistrer les modifications
+                <Save size={16} /> Enregistrer les modifications (À venir)
               </button>
             </>
           }
@@ -598,10 +619,11 @@ export default function AdminFacturesPage() {
               {detailStatus !== 'payee' && (
                 <button
                   type="button"
-                  onClick={handleMarkAsPaid}
-                  className="w-full mt-2 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                  disabled
+                  aria-disabled="true"
+                  className="w-full mt-2 py-2 px-3 rounded-xl bg-emerald-600 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors opacity-50 cursor-not-allowed shadow-2xs"
                 >
-                  <Check size={14} /> Marquer la facture comme payée
+                  <Check size={14} /> Marquer la facture comme payée (À venir)
                 </button>
               )}
             </div>

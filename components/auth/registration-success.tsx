@@ -1,24 +1,31 @@
 'use client';
 
 import React from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Check, ArrowRight } from 'lucide-react';
 import { FloralHeartDivider } from '@/components/icons';
 import { useAuth, User } from '@/components/auth-provider';
 
 interface RegistrationSuccessProps {
   createdUser: User | null;
+  redirectTarget?: string;
 }
 
-export function RegistrationSuccess({ createdUser }: RegistrationSuccessProps) {
+export function RegistrationSuccess({ createdUser, redirectTarget: propRedirect }: RegistrationSuccessProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const rawRedirect = propRedirect || searchParams.get('redirect');
+  const redirectTarget =
+    rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//')
+      ? rawRedirect
+      : '/compte';
   const { loginUser } = useAuth();
 
   function handleGoToAccount() {
     if (createdUser) {
       loginUser(createdUser);
     }
-    router.push('/compte');
+    router.push(redirectTarget);
   }
 
   function handleContinueShopping() {

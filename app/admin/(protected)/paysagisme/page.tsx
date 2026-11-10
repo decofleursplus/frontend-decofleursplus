@@ -45,13 +45,13 @@ export default function AdminPaysagismePage() {
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [projTitle, setProjTitle] = useState('');
   const [projCategory, setProjCategory] = useState<LandscapeProjectCategory>('villas');
-  const [projLocation, setProjLocation] = useState('Saly Portudal');
+  const [projLocation, setProjLocation] = useState('');
   const [projDescription, setProjDescription] = useState('');
-  const [projYear, setProjYear] = useState('2024');
-  const [projSurface, setProjSurface] = useState('650 m²');
-  const [projTags, setProjTags] = useState('Piscine, Palmiers, Gazon');
+  const [projYear, setProjYear] = useState(() => new Date().getFullYear().toString());
+  const [projSurface, setProjSurface] = useState('');
+  const [projTags, setProjTags] = useState('');
   const [projFeatured, setProjFeatured] = useState(false);
-  const [projImage, setProjImage] = useState('/images/paysagisme/paysagisme-villas.jpg');
+  const [projImage, setProjImage] = useState('');
 
   const handleOpenPrestationDrawer = (p?: LandscapePrestation) => {
     if (p) {
@@ -65,11 +65,11 @@ export default function AdminPaysagismePage() {
     } else {
       setEditingPrestationId(null);
       setPresTitle('');
-      setPresSubtitle('Étude et aménagement sur mesure');
+      setPresSubtitle('');
       setPresCategory('Conception');
-      setPresDescription('Service sur mesure par nos architectes paysagistes qualifiés.');
-      setPresHighlights('Étude personnalisée de votre sol\nModélisation 3D du projet\nSélection d’essences tropicales adaptées');
-      setPresImage('/images/paysagisme/prestation-conception.jpg');
+      setPresDescription('');
+      setPresHighlights('');
+      setPresImage('');
     }
     setIsPrestationDrawerOpen(true);
   };
@@ -131,11 +131,11 @@ export default function AdminPaysagismePage() {
       setEditingProjectId(null);
       setProjTitle('');
       setProjCategory('villas');
-      setProjLocation('Saly Portudal');
-      setProjDescription('Création d’un écrin végétal contemporain avec essences locales.');
-      setProjTags('Jardin tropical, Gazon synthétique, Éclairage');
+      setProjLocation('');
+      setProjDescription('');
+      setProjTags('');
       setProjFeatured(false);
-      setProjImage('/images/paysagisme/paysagisme-villas.jpg');
+      setProjImage('');
     }
     setIsProjectDrawerOpen(true);
   };
@@ -210,9 +210,14 @@ export default function AdminPaysagismePage() {
       {/* ── En-tête de page ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#173f22]">
-            Paysagisme &amp; Aménagement Vert
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#173f22]">
+              Paysagisme &amp; Aménagement Vert
+            </h1>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+              À venir
+            </span>
+          </div>
           <p className="text-sm text-muted-foreground mt-1">
             Gérez votre catalogue de prestations paysagères et votre galerie de réalisations publiques.
           </p>
@@ -220,17 +225,13 @@ export default function AdminPaysagismePage() {
 
         <button
           type="button"
-          onClick={() => {
-            if (activeTab === 'prestations') {
-              handleOpenPrestationDrawer();
-            } else {
-              handleOpenProjectDrawer();
-            }
-          }}
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-sm font-semibold shadow-sm transition-colors w-full sm:w-auto"
+          disabled
+          aria-disabled="true"
+          title="Module en attente d'implémentation backend"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] text-white text-sm font-semibold shadow-sm transition-colors w-full sm:w-auto opacity-50 cursor-not-allowed"
         >
           <Plus size={18} />
-          {activeTab === 'prestations' ? 'Ajouter une prestation' : 'Ajouter une réalisation'}
+          {activeTab === 'prestations' ? 'Ajouter une prestation (À venir)' : 'Ajouter une réalisation (À venir)'}
         </button>
       </div>
 
@@ -469,10 +470,12 @@ export default function AdminPaysagismePage() {
             <button
               type="submit"
               form="prestation-form"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#173f22] hover:bg-[#102d18] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              disabled
+              aria-disabled="true"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#173f22] text-white text-xs font-semibold shadow-xs transition-colors opacity-50 cursor-not-allowed"
             >
               <Save size={16} />
-              {editingPrestationId ? 'Enregistrer les modifications' : 'Créer la prestation'}
+              {editingPrestationId ? 'Enregistrer les modifications (À venir)' : 'Créer la prestation (À venir)'}
             </button>
           </div>
         }
@@ -590,10 +593,12 @@ export default function AdminPaysagismePage() {
             <button
               type="submit"
               form="project-form"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#173f22] hover:bg-[#102d18] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              disabled
+              aria-disabled="true"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#173f22] text-white text-xs font-semibold shadow-xs transition-colors opacity-50 cursor-not-allowed"
             >
               <Save size={16} />
-              {editingProjectId ? 'Enregistrer les modifications' : 'Ajouter au portfolio'}
+              {editingProjectId ? 'Enregistrer les modifications (À venir)' : 'Ajouter au portfolio (À venir)'}
             </button>
           </div>
         }

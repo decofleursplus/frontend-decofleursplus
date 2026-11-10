@@ -362,7 +362,7 @@ export function SiteHeader() {
               href="/paysagisme"
               className={`nav-link ${isActive('/paysagisme') ? 'active' : ''}`}
             >
-              Paysagisme <ChevronDown size={14} className="dropdown-arrow" />
+              Paysagisme <span className="ml-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">À venir</span> <ChevronDown size={14} className="dropdown-arrow" />
             </Link>
             {openDropdown === 'paysagisme' && (
               <div
@@ -370,9 +370,18 @@ export function SiteHeader() {
                 onMouseEnter={() => handleDropdownEnter('paysagisme')}
                 onMouseLeave={handleDropdownLeave}
               >
-                <Link href="/paysagisme" className="dropdown-item" onClick={closeDropdownInstantly}>Paysagisme & Aménagement</Link>
-                <Link href="/paysagisme/prestations" className="dropdown-item" onClick={closeDropdownInstantly}>Nos prestations</Link>
-                <Link href="/paysagisme/realisations" className="dropdown-item" onClick={closeDropdownInstantly}>Galerie des réalisations</Link>
+                <Link href="/paysagisme" className="dropdown-item flex items-center justify-between" onClick={closeDropdownInstantly}>
+                  <span>Paysagisme &amp; Aménagement</span>
+                  <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">À venir</span>
+                </Link>
+                <Link href="/paysagisme/prestations" className="dropdown-item flex items-center justify-between" onClick={closeDropdownInstantly}>
+                  <span>Nos prestations</span>
+                  <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">À venir</span>
+                </Link>
+                <Link href="/paysagisme/realisations" className="dropdown-item flex items-center justify-between" onClick={closeDropdownInstantly}>
+                  <span>Galerie des réalisations</span>
+                  <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">À venir</span>
+                </Link>
               </div>
             )}
           </div>
@@ -526,7 +535,10 @@ export function SiteHeader() {
                   className="drawer-accordion-btn font-semibold text-[#173f22]"
                   aria-expanded={!!expandedSections['paysagisme']}
                 >
-                  <span>Paysagisme &amp; Aménagement</span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span>Paysagisme &amp; Aménagement</span>
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">À venir</span>
+                  </span>
                   <ChevronDown
                     size={16}
                     className={`transition-transform duration-200 text-[#173f22] ${
@@ -536,9 +548,18 @@ export function SiteHeader() {
                 </button>
                 {expandedSections['paysagisme'] && (
                   <div className="drawer-sublinks">
-                    <Link href="/paysagisme" onClick={() => setMobileMenuOpen(false)}>Paysagisme &amp; Aménagement</Link>
-                    <Link href="/paysagisme/prestations" onClick={() => setMobileMenuOpen(false)}>Nos prestations</Link>
-                    <Link href="/paysagisme/realisations" onClick={() => setMobileMenuOpen(false)}>Galerie réalisations</Link>
+                    <Link href="/paysagisme" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-between">
+                      <span>Paysagisme &amp; Aménagement</span>
+                      <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">À venir</span>
+                    </Link>
+                    <Link href="/paysagisme/prestations" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-between">
+                      <span>Nos prestations</span>
+                      <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">À venir</span>
+                    </Link>
+                    <Link href="/paysagisme/realisations" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-between">
+                      <span>Galerie réalisations</span>
+                      <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">À venir</span>
+                    </Link>
                   </div>
                 )}
               </div>

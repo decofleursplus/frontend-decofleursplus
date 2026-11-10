@@ -110,3 +110,4 @@
 - [x] **Tâche 11.2** : Nettoyage des Mocks, Robustesse Offline & Build de Production (`npm run build` validé : 97/97 pages générées avec succès) ✅
 - [x] **Tâche 11.3** : Ergonomie Mobile & Déconnexion Globale (Bouton de déconnexion direct mobile dans la Topbar, menu déroulant du profil et Drawer mobile Admin & Storefront) ✅
 - [x] **Tâche 11.4** : Gestion Précise des Remises Produits (Basculement explicite de promotion, suppression des remises par défaut, synchronisation variante-basePrice et annulation explicite `compareAtPrice: null`) ✅
+- [x] **Tâche 11.5** : Assainissement Exhaustif des Formulaires d'Administration & Dépendances Métier (Élimination intégrale des valeurs par défaut mockées dans les dialogues Marketing, Approvisionnements, Factures, Paysagisme et Location d'équipements. Chargement dynamique des cibles réelles et blocage prérequis si aucune catégorie n'existe avant création d'un produit). ✅
