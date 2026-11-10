@@ -2,15 +2,13 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
-import {
-  reportsDatasets,
-  financialTransactions,
-  type ReportPeriodPreset,
-  type FinancialTransaction,
-  type PaymentMethodType,
-  type SettlementStatus,
-} from '@/lib/admin/mock-data';
-import { getAdminReports, getAdminFinancialTransactions } from '@/lib/api/admin/reports';
+import type {
+  ReportPeriodPreset,
+  FinancialTransaction,
+  PaymentMethodType,
+  SettlementStatus,
+} from '@/lib/admin/mock-data/types';
+import { getAdminReports, getAdminFinancialTransactions, emptyReportDataset } from '@/lib/api/admin/reports';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -108,8 +106,8 @@ export default function AdminRapportsPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Dynamic Dataset based on period
-  const [dataset, setDataset] = useState(reportsDatasets[selectedPeriod] || reportsDatasets['30days']);
-  const [transactions, setTransactions] = useState<FinancialTransaction[]>(financialTransactions);
+  const [dataset, setDataset] = useState(emptyReportDataset);
+  const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
 
   // Charger le rapport de ventes selon la période
   useEffect(() => {

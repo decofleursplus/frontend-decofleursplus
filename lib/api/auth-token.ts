@@ -4,16 +4,27 @@
 
 import { AUTH_TOKEN_KEY, ADMIN_TOKEN_KEY } from './config';
 
+export interface AdminSessionUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
 /**
  * Récupère le jeton JWT du client connecté
  */
 export function getAuthToken(): string | null {
   if (typeof window === 'undefined') return null;
   try {
+    const match = document.cookie.match(new RegExp(`(^|;\\s*)${AUTH_TOKEN_KEY}=([^;]+)`));
+    if (match) {
+      const cookieToken = decodeURIComponent(match[2]);
+      if (cookieToken) return cookieToken;
+    }
     const local = localStorage.getItem(AUTH_TOKEN_KEY);
     if (local) return local;
-    const match = document.cookie.match(new RegExp(`(^|;\\s*)${AUTH_TOKEN_KEY}=([^;]+)`));
-    return match ? decodeURIComponent(match[2]) : null;
+    return null;
   } catch {
     return null;
   }
@@ -26,8 +37,7 @@ export function setAuthToken(token: string): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(AUTH_TOKEN_KEY, token);
-    // Poser également un cookie pour les Server Components / Middleware Next.js si besoin
-    document.cookie = `${AUTH_TOKEN_KEY}=${token}; path=/; max-age=${7 * 24 * 3600}; SameSite=Lax`;
+    document.cookie = `${AUTH_TOKEN_KEY}=${encodeURIComponent(token)}; path=/; max-age=${7 * 24 * 3600}; SameSite=Lax`;
   } catch (error) {
     console.error('Erreur lors du stockage du token client:', error);
   }
@@ -52,10 +62,14 @@ export function removeAuthToken(): void {
 export function getAdminAuthToken(): string | null {
   if (typeof window === 'undefined') return null;
   try {
+    const match = document.cookie.match(new RegExp(`(^|;\\s*)${ADMIN_TOKEN_KEY}=([^;]+)`));
+    if (match) {
+      const cookieToken = decodeURIComponent(match[2]);
+      if (cookieToken) return cookieToken;
+    }
     const local = localStorage.getItem(ADMIN_TOKEN_KEY);
     if (local) return local;
-    const match = document.cookie.match(new RegExp(`(^|;\\s*)${ADMIN_TOKEN_KEY}=([^;]+)`));
-    return match ? decodeURIComponent(match[2]) : null;
+    return null;
   } catch {
     return null;
   }
@@ -68,7 +82,7 @@ export function setAdminAuthToken(token: string): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(ADMIN_TOKEN_KEY, token);
-    document.cookie = `${ADMIN_TOKEN_KEY}=${token}; path=/admin; max-age=${7 * 24 * 3600}; SameSite=Lax`;
+    document.cookie = `${ADMIN_TOKEN_KEY}=${encodeURIComponent(token)}; path=/; max-age=${7 * 24 * 3600}; SameSite=Lax`;
   } catch (error) {
     console.error('Erreur lors du stockage du token admin:', error);
   }
@@ -81,8 +95,31 @@ export function removeAdminAuthToken(): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.removeItem(ADMIN_TOKEN_KEY);
-    document.cookie = `${ADMIN_TOKEN_KEY}=; path=/admin; max-age=0; SameSite=Lax`;
+    localStorage.removeItem('admin_user');
+    document.cookie = `${ADMIN_TOKEN_KEY}=; path=/; max-age=0; SameSite=Lax`;
+    document.cookie = `admin_auth=; path=/; max-age=0; SameSite=Lax`;
+    document.cookie = `admin_user=; path=/; max-age=0; SameSite=Lax`;
   } catch (error) {
     console.error('Erreur lors de la suppression du token admin:', error);
+  }
+}
+
+/**
+ * Récupère le profil de l'administrateur connecté depuis les cookies / session
+ */
+export function getAdminUser(): AdminSessionUser | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const match = document.cookie.match(/(^|;\s*)admin_user=([^;]+)/);
+    if (match) {
+      return JSON.parse(decodeURIComponent(match[2]));
+    }
+    const local = localStorage.getItem('admin_user');
+    if (local) {
+      return JSON.parse(local);
+    }
+    return null;
+  } catch {
+    return null;
   }
 }

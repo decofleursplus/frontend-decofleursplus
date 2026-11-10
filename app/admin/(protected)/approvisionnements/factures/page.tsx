@@ -27,11 +27,11 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
-import { initialSupplierInvoices, initialSuppliers } from '@/lib/admin/mock-data/suppliers';
+import { initialSuppliers } from '@/lib/admin/mock-data/suppliers';
 import { SupplierInvoice, SupplierInvoiceStatus } from '@/lib/admin/mock-data/types';
 
 export default function AdminFacturesPage() {
-  const [invoices, setInvoices] = useState<SupplierInvoice[]>(initialSupplierInvoices);
+  const [invoices, setInvoices] = useState<SupplierInvoice[]>([]);
   const [statusFilter, setStatusFilter] = useState<'all' | SupplierInvoiceStatus>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [supplierFilter, setSupplierFilter] = useState<string>('all');
@@ -39,7 +39,7 @@ export default function AdminFacturesPage() {
   // Side Drawer : Ajouter une facture
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
   const [newInvoiceNumber, setNewInvoiceNumber] = useState(`FAC-2024-00${Math.floor(46 + Math.random() * 50)}`);
-  const [selectedSupplierId, setSelectedSupplierId] = useState(initialSuppliers[0].id);
+  const [selectedSupplierId, setSelectedSupplierId] = useState(initialSuppliers[0]?.id || '');
   const [newDate, setNewDate] = useState('14 mars 2024');
   const [newDueDate, setNewDueDate] = useState('14 avril 2024');
   const [newAmount, setNewAmount] = useState('125000');
@@ -186,6 +186,17 @@ export default function AdminFacturesPage() {
         >
           <Plus size={18} /> Ajouter une facture
         </button>
+      </div>
+
+      {/* ── Bannière Information Backend ── */}
+      <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 flex items-start gap-3.5 text-amber-900 text-xs">
+        <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+        <div className="space-y-1">
+          <p className="font-semibold text-sm text-amber-950">Module Factures Fournisseurs en attente d&apos;implémentation backend</p>
+          <p className="text-amber-800 leading-relaxed">
+            Les contrats et spécifications REST complètes pour ce module ont été formalisés dans <code className="px-1.5 py-0.5 bg-amber-100/90 rounded text-[11px] font-mono font-medium">docs/endpoints_feedback.md</code>. Aucune facture factice n&apos;est affichée par défaut.
+          </p>
+        </div>
       </div>
 
       {/* ── Sous-navigation du Module Approvisionnements ── */}

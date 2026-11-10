@@ -1,6 +1,6 @@
 # 📊 Statut d'Implémentation API — DécoFleur Plus (Branche staging)
 
-**Dernière mise à jour :** 2026-11-03  
+**Dernière mise à jour :** 2026-11-06  
 **Branche backend :** `staging` (149 endpoints)  
 **Progression globale :** 44 / 44 tâches (100% — Projet Entièrement Dynamique)  
 
@@ -65,9 +65,9 @@
 
 ### Phase 4 : Tunnel de Commande, Livraisons & NabooPay
 - [x] **Tâche 4.1** : Zones de Livraison & Devis Panier (`GET /delivery-zones`, `POST /orders/quote`) ✅
-- [x] **Tâche 4.2** : Création de Commande & Passerelle NabooPay (`POST /orders`) ✅
-- [x] **Tâche 4.3** : Écrans de Confirmation & Reprise de Paiement (`/commande/confirmation`) ✅
-- [x] **Tâche 4.4** : Historique des Commandes Client (`/compte/commandes`) ✅
+- [x] **Tâche 4.2** : Création de Commande & Passerelle NabooPay (Wave, OM, Free, Card + Cash on delivery) (`POST /orders`) ✅
+- [x] **Tâche 4.3** : Écrans de Confirmation, Détection Webhook & Relance après Échec (`lib/api/payment.ts`, `/commande/confirmation`, `/commande/paiement-echoue`) ✅
+- [x] **Tâche 4.4** : Historique des Commandes & Reprise de Paiement dans l'Espace Client (`/compte/commandes/[id]`, `POST /pay`, `GET /payments`) ✅
 - [x] **Tâche 4.5** : Suivi de Livraison en Direct (`/compte/suivi/[id]`) ✅
 
 ### Phase 5 : Blog Floral & Abonnements Publics
@@ -78,12 +78,12 @@
 ---
 
 ### Phase 6 : Authentification Admin & Tableau de Bord
-- [x] **Tâche 6.1** : Connexion Staff & Sécurisation Back-Office (`/admin/connexion`, `admin-guard.tsx`, rôle staff obligatoire) ✅
+- [x] **Tâche 6.1** : Connexion Staff Réelle API & Sécurisation Back-Office (Suppression des comptes mockés, validation JWT `decofleur_admin_jwt`, rôle staff obligatoire) ✅
 - [x] **Tâche 6.2** : Tableau de Bord d'Administration (`/admin/tableau-de-bord`, stats dynamiques, bouton Actualiser) ✅
 - [x] **Tâche 6.3** : Rapports Financiers & Transactions (`/admin/rapports`, ventes par période & canal, bouton Actualiser) ✅
 
 ### Phase 7 : Catalogue Admin & Inventaire de Stock
-- [x] **Tâche 7.1** : Upload de Médias Produits & Catégories (`POST /admin/uploads`, multipart/form-data) ✅
+- [x] **Tâche 7.1** : Composant Reutilisable Upload de Médias Produits, Catégories, Blog, Marketing & Paramètres (`components/admin/image-uploader.tsx`, `POST /admin/uploads`, `next.config.ts` remotePatterns Cloudflare R2, multipart/form-data) ✅
 - [x] **Tâche 7.2** : Gestion des Catégories & Sous-Catégories (`/admin/categories`, CRUD complet & réorganisation) ✅
 - [x] **Tâche 7.3** : Gestion des Produits Catalogue (`/admin/produits`, `/nouveau`, `/[id]`, formulaire complet) ✅
 - [x] **Tâche 7.4** : Gestion des Stocks & Mouvements d'Inventaire (`/admin/stock`, alertes réappro, ajustements) ✅

@@ -73,11 +73,16 @@ export interface CustomerOrderItem {
 export interface CustomerOrder {
   id: string;
   orderNumber: string;
+  userId?: string | null;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
   orderStatus: 'PENDING' | 'PAID' | 'PREPARING' | 'READY' | 'IN_DELIVERY' | 'DELIVERED' | 'CANCELLED';
   paymentStatus: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
   paymentMethod: 'WAVE' | 'ORANGE_MONEY' | 'FREE_MONEY' | 'CARD' | 'CASH_ON_DELIVERY';
   deliveryMode: 'STANDARD' | 'EXPRESS' | 'PICKUP';
   recipientName?: string | null;
+  recipientPhone?: string | null;
   phone?: string | null;
   deliveryAddress?: string | null;
   deliveryDate?: string | null;
@@ -87,9 +92,13 @@ export interface CustomerOrder {
   discountAmount: number;
   totalAmount: number;
   notes?: string | null;
+  paidAt?: string | null;
+  cancelledAt?: string | null;
+  cancelReason?: string | null;
   items: CustomerOrderItem[];
   checkoutUrl?: string | null;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface DeliveryTrackingStep {

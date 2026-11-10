@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { adminCustomers } from '@/lib/admin/mock-data/customers';
 import type { AdminCustomer } from '@/lib/admin/mock-data/types';
 import { getAdminCustomers, updateAdminCustomer } from '@/lib/api/admin/customers';
+import { ApiClientError } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -49,6 +49,7 @@ import {
   TrendingDown,
   ArrowUpDown,
   RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -56,7 +57,7 @@ import { SendEmailDialog } from '@/components/admin/send-email-dialog';
 import { toast } from 'sonner';
 
 export default function AdminCustomersPage() {
-  const [customers, setCustomers] = useState<AdminCustomer[]>(adminCustomers);
+  const [customers, setCustomers] = useState<AdminCustomer[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -68,8 +69,9 @@ export default function AdminCustomersPage() {
     try {
       const res = await getAdminCustomers();
       if (res?.customers) setCustomers(res.customers);
-    } catch {
-      toast.error('Erreur lors du chargement des clients');
+    } catch (err) {
+      const msg = err instanceof ApiClientError ? err.message : 'Erreur lors du chargement des clients';
+      toast.error(msg);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -705,87 +707,23 @@ export default function AdminCustomersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredCustomers.map((customer) => (
-              <TableRow key={customer.id} className="hover:bg-[#fbfaf7] transition-colors">
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-9 w-9 border border-[#e7e4dd]">
-                      <AvatarFallback className="bg-[#edf8ef] text-[#24582d] font-bold text-xs">
-                        {getInitials(customer.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="font-semibold text-[#1e2a1f] text-sm flex items-center gap-2">
-                        <span>{customer.name}</span>
-                        {customer.status === 'inactif' && (
-                          <span className="h-2 w-2 rounded-full bg-gray-400" title="Inactif" />
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-500">{customer.address || 'Sénégal'}</div>
-                    </div>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={7} className="h-32 text-center text-gray-500">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <Loader2 className="h-6 w-6 animate-spin text-[#24582d]" />
+                    <p className="text-xs text-gray-500">Chargement des clients...</p>
                   </div>
                 </TableCell>
-
-                <TableCell>
-                  <div className="text-sm font-medium text-gray-800">{customer.email}</div>
-                  <div className="text-xs text-gray-500">{customer.phone}</div>
-                </TableCell>
-
-                <TableCell>{getSegmentBadge(customer.segment, customer.status)}</TableCell>
-
-                <TableCell className="text-right font-semibold text-gray-800">
-                  {customer.totalOrders}
-                </TableCell>
-
-                <TableCell className="text-right font-bold text-[#24582d]">
-                  {formatCurrency(customer.totalSpent)}
-                </TableCell>
-
-                <TableCell className="text-right text-sm text-gray-600">
-                  {customer.lastOrderDate ? formatDate(customer.lastOrderDate) : '—'}
-                </TableCell>
-
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:text-[#24582d] hover:bg-gray-100 transition-colors">
-                      <span className="sr-only">Ouvrir le menu</span>
-                      <MoreHorizontal className="h-4 w-4" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-white border-[#e7e4dd] min-w-44">
-                      <DropdownMenuGroup>
-                        <DropdownMenuLabel className="text-xs text-gray-400 uppercase">
-                          Actions client
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="cursor-pointer"
-                          render={<Link href={`/admin/clients/${customer.id}`} />}
-                        >
-                          <Eye className="mr-2 h-4 w-4 text-gray-500" />
-                          Voir le profil
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="cursor-pointer text-[#24582d] font-medium"
-                          onClick={() => handleOpenEmailDialog(customer)}
-                        >
-                          <Mail className="mr-2 h-4 w-4 text-[#24582d]" />
-                          Envoyer un e-mail
-                        </DropdownMenuItem>
-                      </DropdownMenuGroup>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
               </TableRow>
-            ))}
-
-            {filteredCustomers.length === 0 && (
+            ) : filteredCustomers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="h-32 text-center text-gray-500">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <UserX className="h-8 w-8 text-gray-400" />
                     <p className="font-semibold text-gray-700">Aucun client trouvé</p>
                     <p className="text-xs text-gray-500 max-w-sm">
-                      Aucun profil ne correspond à vos filtres actuels. Modifiez vos critères de recherche.
+                      {customers.length === 0 ? "Aucun client n'est encore enregistré." : "Aucun profil ne correspond à vos filtres actuels. Modifiez vos critères de recherche."}
                     </p>
                     <Button
                       variant="outline"
@@ -798,6 +736,79 @@ export default function AdminCustomersPage() {
                   </div>
                 </TableCell>
               </TableRow>
+            ) : (
+              filteredCustomers.map((customer) => (
+                <TableRow key={customer.id} className="hover:bg-[#fbfaf7] transition-colors">
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-9 w-9 border border-[#e7e4dd]">
+                        <AvatarFallback className="bg-[#edf8ef] text-[#24582d] font-bold text-xs">
+                          {getInitials(customer.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-semibold text-[#1e2a1f] text-sm flex items-center gap-2">
+                          <span>{customer.name}</span>
+                          {customer.status === 'inactif' && (
+                            <span className="h-2 w-2 rounded-full bg-gray-400" title="Inactif" />
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-500">{customer.address || 'Sénégal'}</div>
+                      </div>
+                    </div>
+                  </TableCell>
+
+                  <TableCell>
+                    <div className="text-sm font-medium text-gray-800">{customer.email}</div>
+                    <div className="text-xs text-gray-500">{customer.phone}</div>
+                  </TableCell>
+
+                  <TableCell>{getSegmentBadge(customer.segment, customer.status)}</TableCell>
+
+                  <TableCell className="text-right font-semibold text-gray-800">
+                    {customer.totalOrders}
+                  </TableCell>
+
+                  <TableCell className="text-right font-bold text-[#24582d]">
+                    {formatCurrency(customer.totalSpent)}
+                  </TableCell>
+
+                  <TableCell className="text-right text-sm text-gray-600">
+                    {customer.lastOrderDate ? formatDate(customer.lastOrderDate) : '—'}
+                  </TableCell>
+
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:text-[#24582d] hover:bg-gray-100 transition-colors">
+                        <span className="sr-only">Ouvrir le menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-white border-[#e7e4dd] min-w-44">
+                        <DropdownMenuGroup>
+                          <DropdownMenuLabel className="text-xs text-gray-400 uppercase">
+                            Actions client
+                          </DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="cursor-pointer"
+                            render={<Link href={`/admin/clients/${customer.id}`} />}
+                          >
+                            <Eye className="mr-2 h-4 w-4 text-gray-500" />
+                            Voir le profil
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="cursor-pointer text-[#24582d] font-medium"
+                            onClick={() => handleOpenEmailDialog(customer)}
+                          >
+                            <Mail className="mr-2 h-4 w-4 text-[#24582d]" />
+                            Envoyer un e-mail
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
             )}
           </TableBody>
         </Table>
@@ -805,11 +816,18 @@ export default function AdminCustomersPage() {
 
       {/* Mobile Customers Card View */}
       <div className="lg:hidden space-y-3">
-        {filteredCustomers.length === 0 ? (
+        {loading ? (
+          <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-gray-500 flex flex-col items-center justify-center gap-2">
+            <Loader2 className="h-6 w-6 animate-spin text-[#24582d]" />
+            <p className="text-xs text-gray-500">Chargement des clients...</p>
+          </div>
+        ) : filteredCustomers.length === 0 ? (
           <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-gray-500 space-y-2">
             <UserX className="h-8 w-8 text-gray-300 mx-auto" />
             <p className="font-semibold text-gray-700 text-sm">Aucun client trouvé</p>
-            <p className="text-xs text-gray-500">Essayez de modifier vos critères de recherche.</p>
+            <p className="text-xs text-gray-500">
+              {customers.length === 0 ? "Aucun client n'est encore enregistré." : "Essayez de modifier vos critères de recherche."}
+            </p>
             <Button
               variant="outline"
               size="sm"

@@ -57,12 +57,22 @@ export interface DashboardData {
  */
 export async function getAdminDashboard(): Promise<DashboardData> {
   try {
-    const data = await apiClient.get<DashboardData>('/admin/dashboard', {
-      isAdmin: true,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const res = await apiClient.get<any>('/admin/dashboard', {
+      useAdminToken: true,
+      cache: 'no-store',
     });
 
-    if (data && data.kpis) {
-      return data;
+    const dataObj = res?.data ?? res;
+
+    if (dataObj && dataObj.kpis) {
+      return {
+        kpis: dataObj.kpis,
+        salesChart: Array.isArray(dataObj.salesChart) ? dataObj.salesChart : [],
+        orderDistribution: Array.isArray(dataObj.orderDistribution) ? dataObj.orderDistribution : [],
+        recentOrders: Array.isArray(dataObj.recentOrders) ? dataObj.recentOrders : [],
+        topProducts: Array.isArray(dataObj.topProducts) ? dataObj.topProducts : [],
+      };
     }
     throw new Error('Données incomplètes');
   } catch (error) {

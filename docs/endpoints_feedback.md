@@ -1,495 +1,446 @@
-# 🚨 Endpoints Feedback — DécoFleur Plus (Mise à jour Branche staging)
+# 📋 Spécifications des Endpoints Manquants — DécoFleur Plus
 
-**Date :** 2026-11-03  
-**Branche backend analysée :** `staging` (Commit `f37f5c6`)  
-**Statut global :** Sur 149 endpoints recensés sur la branche `staging`, **la quasi-totalité des besoins du frontend (Commandes, Livraisons, NabooPay, CRM Clients, Abonnements, Blog, Marketing, Paramètres, Location) est désormais couverte par le backend !**
-
-Ce document recense les quelques routes encore manquantes, les ajustements de conception à prévoir, et les règles d'intégration strictes entre le frontend et l'API backend.
-
----
-
-## 1. Synthèse par Niveau de Priorité
-
-| Priorité | Sujet | Type | Statut |
-|---|---|---|---|
-| 🟡 **MOYENNE** | Mot de passe oublié & réinitialisation | Route manquante | Non implémenté en V1 |
-| 🟡 **MOYENNE** | OAuth Google & Facebook | Fonctionnalité manquante | Masquer boutons front |
-| 🟢 **FAIBLE** | Dépôt d'avis clients (`POST /reviews`) | Route manquante | Affichage existant, dépôt non géré |
-| 🟢 **FAIBLE** | Synchronisation serveur des favoris | Persistance | Conserver `localStorage` côté client |
-| 🟠 **MOYENNE** | Système de Notifications In-App (Client & Admin) | Module complet manquant | Aucun endpoint, aucun modèle BDD |
-
+**Date de mise à jour :** 2026-11-06  
+**Cible :** API Backend DécoFleur Plus (Branche `staging` / `production`)  
+**Objectif :** Définir formellement les routes REST, structures de requêtes et modèles de données attendus pour les **3 modules d'administration actuellement dépourvus d'endpoints backend** :
+1. **Fournisseurs** (`/admin/fournisseurs`)
+2. **Approvisionnements & Factures d'Achat** (`/admin/approvisionnements`)
+3. **Paysagisme & Portfolio de Réalisations** (`/admin/paysagisme`)
 
 ---
 
-## 2. Détail des Endpoints Manquants ou Partiels
+## 1. Module Fournisseurs (`/admin/fournisseurs`)
 
-### 2.1 Authentification — Mot de passe oublié
-- **Besoin frontend :** Page `/mot-de-passe-oublie` demandant l'email/téléphone pour recevoir un lien ou code de réinitialisation.
-- **État backend :** Aucun endpoint `/auth/forgot-password` ni `/auth/reset-password` n'est implémenté.
-- **Spécification recommandée pour le backend :**
-  ```http
-  POST /api/v1/auth/forgot-password
-  Content-Type: application/json
-  { "email": "client@example.com" }
-  // Réponse 200 : { "success": true, "data": { "message": "Email de réinitialisation envoyé" } }
+Ce module gère le référentiel des partenaires horticoles, grossistes en fleurs fraîches, pépiniéristes et fournisseurs d'emballages.
 
-  POST /api/v1/auth/reset-password
-  Content-Type: application/json
-  { "token": "jwt_reset_token", "newPassword": "NouveauPassword123!" }
+### 1.1 `GET /api/v1/admin/suppliers`
+- **Description :** Liste paginée des fournisseurs avec recherche et filtres.
+- **Rôles autorisés :** `ADMIN`, `MANAGER`
+- **Paramètres Query :**
+  - `page` (number, default: 1)
+  - `limit` (number, default: 20)
+  - `search` (string, optionnel) : recherche sur `name`, `contactName`, `email`, `phone`
+  - `status` (string, optionnel) : `ACTIVE` | `INACTIVE`
+  - `category` (string, optionnel) : `FLEURS_COUPEES`, `PLANTES`, `ACCESSOIRES`, `EMBALLAGES`, `TERREAUX_ENGRAIS`
+  - `sort` (string, optionnel) : `name_asc`, `name_desc`, `newest`
+- **Réponse 200 :**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "items": [
+        {
+          "id": "c1f7a8e2-1a2b-4c3d-9e5f-123456789abc",
+          "name": "Flora Sénégal SARL",
+          "contactName": "Mamadou Diop",
+          "email": "contact@florasenegal.sn",
+          "phone": "+221 77 123 45 67",
+          "address": "Route de Rufisque, Km 14, Dakar",
+          "category": "FLEURS_COUPEES",
+          "status": "ACTIVE",
+          "paymentTerms": "30_DAYS",
+          "totalOrders": 14,
+          "totalSpent": 4850000,
+          "createdAt": "2026-01-15T10:00:00.000Z"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "limit": 20,
+      "totalPages": 1
+    }
+  }
   ```
-- **Solution frontend en attendant :**
-  ✅ **Implémenté :** La page `/mot-de-passe-oublie` affiche désormais un bloc d'assistance prioritaire avec bouton direct WhatsApp (+221 77 941 78 60) et numéro d'appel direct pour réinitialisation manuelle instantanée par le support client.
+
+### 1.2 `GET /api/v1/admin/suppliers/:id`
+- **Description :** Détail complet d'un fournisseur avec synthèse des commandes et factures associées.
+- **Rôles autorisés :** `ADMIN`, `MANAGER`
+- **Réponse 200 :**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "id": "c1f7a8e2-1a2b-4c3d-9e5f-123456789abc",
+      "name": "Flora Sénégal SARL",
+      "contactName": "Mamadou Diop",
+      "email": "contact@florasenegal.sn",
+      "phone": "+221 77 123 45 67",
+      "address": "Route de Rufisque, Km 14, Dakar",
+      "notes": "Fournisseur principal de roses et feuillages tropicaux.",
+      "category": "FLEURS_COUPEES",
+      "status": "ACTIVE",
+      "paymentTerms": "30_DAYS",
+      "bankDetails": "SN08 SN01 2345 6789 0123 45",
+      "stats": {
+        "totalOrders": 14,
+        "totalSpent": 4850000,
+        "pendingInvoicesCount": 2,
+        "pendingInvoicesAmount": 650000
+      },
+      "recentOrders": [
+        {
+          "id": "ord-supp-001",
+          "orderNumber": "CF-2026-0014",
+          "totalAmount": 350000,
+          "status": "RECEIVED",
+          "expectedDate": "2026-11-01"
+        }
+      ]
+    }
+  }
+  ```
+
+### 1.3 `POST /api/v1/admin/suppliers`
+- **Description :** Création d'un nouveau fournisseur.
+- **Rôles autorisés :** `ADMIN`, `MANAGER`
+- **Corps Requête (JSON) :**
+  ```json
+  {
+    "name": "Horti Plus Petite-Côte",
+    "contactName": "Aïssatou Sow",
+    "email": "aissatou@hortiplus.sn",
+    "phone": "+221 78 456 78 90",
+    "address": "Ngaparou, Route de Saly",
+    "category": "PLANTES",
+    "paymentTerms": "IMMEDIATE",
+    "notes": "Pépinière locale pour plantes vertes et arbustes méditerranéens."
+  }
+  ```
+- **Validation :**
+  - `name` : `z.string().min(2).max(100)` (Requis)
+  - `contactName` : `z.string().min(2).max(100).optional()`
+  - `email` : `z.string().email().optional()`
+  - `phone` : `z.string().min(8).max(20)` (Requis)
+  - `category` : enum `FLEURS_COUPEES` | `PLANTES` | `ACCESSOIRES` | `EMBALLAGES` | `TERREAUX_ENGRAIS` (Requis)
+  - `paymentTerms` : enum `IMMEDIATE` | `15_DAYS` | `30_DAYS` | `60_DAYS` (Default: `30_DAYS`)
+- **Réponse 201 :** Objet fournisseur créé.
+
+### 1.4 `PATCH /api/v1/admin/suppliers/:id`
+- **Description :** Mise à jour des coordonnées ou conditions d'un fournisseur.
+- **Rôles autorisés :** `ADMIN`, `MANAGER`
+- **Corps Requête :** Partiel des champs de création + `status` (`ACTIVE` | `INACTIVE`).
+- **Réponse 200 :** Objet fournisseur mis à jour.
+
+### 1.5 `DELETE /api/v1/admin/suppliers/:id`
+- **Description :** Désactivation logique d'un fournisseur (statut `INACTIVE`, conservation pour l'historique comptable).
+- **Rôles autorisés :** `ADMIN`
+- **Réponse 200 :** `{ "success": true, "data": { "id": "...", "status": "INACTIVE" } }`
 
 ---
 
-### 2.2 Connexion Sociale (Google / Facebook)
-- **Besoin frontend :** Boutons « Continuer avec Google » et « Continuer avec Facebook » sur `/connexion` et `/inscription`.
-- **État backend :** L'authentification repose uniquement sur `identifier (email/phone) + password` avec vérification bcrypt et génération JWT. Aucun provider OAuth (Google Client ID, Facebook App ID) n'est configuré côté serveur.
-- **Action frontend :**
-  ✅ **Implémenté :** La connexion Facebook a été complètement retirée. Le bouton Google s'affiche en pleine largeur avec le badge informatif « Bientôt disponible » et une notification explicite au clic.
+## 2. Module Approvisionnements & Achats (`/admin/approvisionnements`)
 
----
+Ce module gère le cycle des commandes d'achat passées aux fournisseurs, le pointage à réception avec mise à jour du stock inventaire, et le suivi des factures d'achat.
 
-### 2.3 Avis Clients & Notations (`Reviews`)
-- **Besoin frontend :** Évaluation des bouquets (étoiles et commentaires clients).
-- **État backend :** Le modèle `Product` contient les champs `rating` (Float, ex: 4.8) et `reviewsCount` (Int, ex: 12), mais il n'existe pas d'entité `Review` ni d'endpoint `POST /api/v1/products/:id/reviews` pour soumettre un avis public.
-- **Action frontend :**
-  ✅ **Implémenté :** Un accordéon interactif « Avis Clients & Notations » est intégré directement sous la fiche produit avec la note globale, des avis certifiés avec likes utiles, et un formulaire complet de dépôt d'avis (étoiles 1-5, nom, ville, commentaire) avec persistance locale et confirmation de remerciement.
+### 2.1 Commandes d'Achat Fournisseurs
 
----
+#### `GET /api/v1/admin/supplier-orders`
+- **Description :** Liste paginée des commandes d'achat.
+- **Rôles autorisés :** `ADMIN`, `MANAGER`, `FLORIST`
+- **Paramètres Query :**
+  - `page`, `limit`
+  - `supplierId` (uuid, optionnel)
+  - `status` (string, optionnel) : `DRAFT` | `CONFIRMED` | `SHIPPED` | `PARTIALLY_RECEIVED` | `RECEIVED` | `CANCELLED`
+  - `dateFrom`, `dateTo` (ISO date, optionnel)
+- **Réponse 200 :**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "items": [
+        {
+          "id": "e4a8b1c2-3d4e-5f6a-7b8c-9d0e1f2a3b4c",
+          "orderNumber": "CF-2026-0042",
+          "supplier": {
+            "id": "c1f7a8e2-1a2b-4c3d-9e5f-123456789abc",
+            "name": "Flora Sénégal SARL"
+          },
+          "status": "CONFIRMED",
+          "totalAmount": 420000,
+          "itemsCount": 5,
+          "expectedDate": "2026-11-10",
+          "createdAt": "2026-11-05T08:30:00.000Z"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "limit": 20
+    }
+  }
+  ```
 
-### 2.4 Synchronisation des Favoris (`Wishlist`)
-- **Besoin frontend :** Page `/favoris` pour sauvegarder des produits coup de cœur.
-- **État backend :** Pas de table de favoris utilisateur en base de données.
-- **Action frontend :**
-  Conserver l'implémentation frontend actuelle basée sur le `localStorage` (`decofleur_favorites`). C'est rapide, performant, et cela fonctionne aussi bien pour les utilisateurs invités que connectés.
-
----
-
-## 3. Règles Métier & Contraintes d'Intégration Strictes
-
-### 3.1 Validation Zod Stricte (Aucun champ superflu)
-Le backend utilise des schémas de validation stricts : **tout champ non prévu dans le schéma de requête provoque un rejet immédiat (`400 VALIDATION_ERROR`)**.
-- ⚠️ **Dans `POST /orders` :** Ne jamais envoyer de `price`, `unitPrice`, `subtotal`, ou `totalAmount` ! Le backend recalcule obligatoirement les prix depuis sa base de données à partir de `variantId`.
-- ⚠️ **Dans `POST /orders` :** Chaque ligne de commande doit contenir le **`variantId`** (UUID) de la variante du produit sélectionné (et non le productId seul).
-
-### 3.2 Format des Identifiants & Téléphones
-- Les IDs sont tous des **UUIDv4** côté backend (et non des entiers `"1"`, `"2"`).
-- Les numéros de téléphone sont normalisés au format international E.164 (`+221771234567`). L'API tolère les saisies avec espaces ou tirets et les normalise automatiquement, mais il est recommandé d'envoyer un format propre.
-
-### 3.3 Devis (`Quotes`) & Upload d'Images d'Inspiration
-- La route `POST /api/v1/quotes` accepte directement la structure du `DevisForm` frontend.
-- Pour les images d'inspiration : utiliser `POST /api/v1/quotes/uploads` (`multipart/form-data`, champ `files`), récupérer les URLs renvoyées, et les transmettre dans le champ `inspirationImages: string[]` lors de la soumission du devis.
-
-### 3.4 Paiement en Ligne (NabooPay)
-- Lors de `POST /api/v1/orders`, si la méthode sélectionnée est en ligne (`WAVE`, `ORANGE_MONEY`, `FREE_MONEY`, `CARD`), la réponse renvoie `checkoutUrl`.
-- Le frontend doit immédiatement effectuer une redirection navigateur : `window.location.href = res.data.checkoutUrl`.
-- À l'issue du paiement, NabooPay redirige le client vers :
-  - Succès : `/commande/confirmation?orderNumber=CMD-AAAA-NNNN`
-  - Échec : `/commande/paiement-echoue?orderNumber=CMD-AAAA-NNNN`
-- Le webhook asynchrone sécurisé (`POST /api/v1/webhooks/naboopay`) valide ensuite la transaction et met à jour le statut en base.
-
-### 3.5 Rôles Staff & Authentification Back-Office
-- Le backend staging exige un rôle staff pour toutes les routes préfixées par `/api/v1/admin/*`.
-- Rôles reconnus côté backend : `ADMIN`, `MANAGER`, `FLORIST`, `DELIVERY`, `SALES`, `ACCOUNTANT`.
-- La page `/admin/connexion` vérifie le rôle après authentification et bloque l'accès aux clients standard avec le message explicite : *« Accès réservé à l'équipe DécoFleur Plus »*.
-- Le client API `lib/api/client.ts` transmet automatiquement l'en-tête `Authorization: Bearer <token_admin>` via l'option `useAdminToken: true`.
-
-### 3.6 Mappage Harmonisé des Statuts de Commande
-- L'API backend utilise des constantes en majuscules anglaises (`PENDING`, `CONFIRMED`, `PROCESSING`, `READY_FOR_DELIVERY`, `OUT_FOR_DELIVERY`, `DELIVERED`, `CANCELLED`).
-- Le frontend assure une conversion bidirectionnelle transparente vers la terminologie florale en français (`en_attente`, `en_preparation`, `en_livraison`, `livree`, `annulee`).
-
-### 3.7 Résilience Hors-Ligne & Fallback Transparent
-- L'ensemble des 16 modules d'administration ainsi que les parcours clients publics intègrent un double mécanisme de résilience :
-  1. Appel réseau vers `https://backend-decofleursplus-staging.up.railway.app/api/v1`
-  2. En cas d'indisponibilité temporaire du serveur distant ou d'erreur réseau, bascule instantanée et silencieuse sur les données locales avec notification discrète à l'utilisateur (`toast.warning('Chargement en mode hors-ligne')`).
-  3. Chaque vue propose un bouton **« Actualiser »** avec indicateur de rotation pour forcer la synchronisation avec le serveur.
-
----
-
-## 4. Note sur l'Environnement Staging (Railway)
-
-| Environnement | Branche Git | URL de Base | État Actuel |
-|---|---|---|---|
-| **Staging Railway** | `staging` | `https://backend-decofleursplus-staging.up.railway.app/api/v1` | Actif (Synchronisé avec la branche `staging`) |
-| **Local Backend** | `staging` | `http://localhost:5000/api/v1` | Prêt et documenté |
-
----
-
-## 5. Système de Notifications In-App — Module Complet Manquant
-
-> **Priorité : 🟠 MOYENNE — À implémenter après le MVP mais avant la mise en production**
-> **Date d'audit : 2026-11-03**
-
-### 5.1 Constat Actuel
-
-Le backend DécoFleur Plus ne dispose d'**aucun endpoint, modèle ou table en base de données** pour gérer des notifications in-app. Voici ce qui existe aujourd'hui :
-
-| Élément | État |
-|---|---|
-| Notification **Settings** (toggles WhatsApp/SMS/Email dans `GET/PUT /admin/settings`) | ✅ Existe |
-| Emails **sortants** fire-and-forget (welcome, devis reçu, alerte admin via Resend) | ✅ Existe |
-| Inbox notifications **client** (in-app, persistées, lue/non-lue) | ✅ **Implémenté côté Front** (`/compte/notifications` volet Boîte de réception) |
-| Inbox notifications **admin** (in-app, persistées, lue/non-lue) | ✅ **Implémenté côté Front** (Menu cloche Topbar avec alertes & badges) |
-| Notifications **push manuelles** admin → client(s) | ❌ Non implémenté en backend V1 |
-| Préférences notifications **client** (persistées) | ✅ **Implémenté côté Front** (`/compte/notifications` volet Préférences) |
-| Page frontend `/compte/notifications` | ✅ **Dynamique** (Boîte de réception + Préférences sauvegardées) |
-| Bell icon admin topbar | ✅ **Interactif** (Dropdown popover avec alertes en direct et actions) |
-
-### 5.2 Spécification des Endpoints Requis — Côté Client
-
-#### 5.2.1 Inbox Notifications Client
-
-```http
-# Lister les notifications du client connecté (paginées)
-GET /api/v1/notifications/mine?page=1&limit=20&unreadOnly=false
-Authorization: Bearer <token_client>
-# Réponse 200 :
-{
-  "success": true,
-  "data": {
-    "notifications": [
-      {
-        "id": "uuid-v4",
-        "type": "ORDER_STATUS" | "DELIVERY_UPDATE" | "QUOTE_UPDATE" | "PAYMENT" | "SUBSCRIPTION" | "PROMOTION" | "LOYALTY" | "BLOG" | "CUSTOM",
-        "title": "Votre commande CMD-2026-0042 est en livraison",
-        "message": "Votre livreur Abdou est en route. Livraison estimée à 14h30.",
-        "isRead": false,
-        "metadata": {
-          "orderNumber": "CMD-2026-0042",    // Optionnel — lien contextuel
-          "quoteNumber": null,
-          "subscriptionNumber": null,
-          "productSlug": null,
-          "articleSlug": null
+#### `GET /api/v1/admin/supplier-orders/:id`
+- **Description :** Détail d'une commande fournisseur avec lignes d'articles et réceptions partielles.
+- **Rôles autorisés :** `ADMIN`, `MANAGER`, `FLORIST`
+- **Réponse 200 :**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "id": "e4a8b1c2-3d4e-5f6a-7b8c-9d0e1f2a3b4c",
+      "orderNumber": "CF-2026-0042",
+      "supplierId": "c1f7a8e2-1a2b-4c3d-9e5f-123456789abc",
+      "supplier": {
+        "id": "c1f7a8e2-1a2b-4c3d-9e5f-123456789abc",
+        "name": "Flora Sénégal SARL",
+        "email": "contact@florasenegal.sn",
+        "phone": "+221 77 123 45 67"
+      },
+      "status": "CONFIRMED",
+      "expectedDate": "2026-11-10",
+      "totalAmount": 420000,
+      "notes": "Livraison matinale avant 8h à la boutique de Saly.",
+      "items": [
+        {
+          "id": "item-001",
+          "variantId": "32640604-59c7-43dd-822c-af3bce51836f",
+          "productName": "Roses Rouges Naomi",
+          "sku": "BQ-ROSE-S",
+          "quantityOrdered": 100,
+          "quantityReceived": 0,
+          "unitCost": 3500,
+          "totalCost": 350000
         },
-        "createdAt": "2026-11-03T14:22:00Z"
-      }
-    ],
-    "pagination": { "total": 47, "page": 1, "limit": 20, "totalPages": 3 },
-    "unreadCount": 5
+        {
+          "id": "item-002",
+          "variantId": null,
+          "productName": "Feuillage Eucalyptus Cinerea",
+          "sku": "MAT-EUC-01",
+          "quantityOrdered": 20,
+          "quantityReceived": 0,
+          "unitCost": 3500,
+          "totalCost": 70000
+        }
+      ],
+      "createdAt": "2026-11-05T08:30:00.000Z"
+    }
   }
-}
-```
+  ```
 
-```http
-# Compter les notifications non-lues (pour le badge)
-GET /api/v1/notifications/mine/unread-count
-Authorization: Bearer <token_client>
-# Réponse 200 :
-{ "success": true, "data": { "unreadCount": 5 } }
-```
-
-```http
-# Marquer une notification comme lue
-PATCH /api/v1/notifications/mine/:notificationId/read
-Authorization: Bearer <token_client>
-# Réponse 200 :
-{ "success": true, "data": { "id": "uuid", "isRead": true } }
-```
-
-```http
-# Marquer toutes les notifications comme lues
-POST /api/v1/notifications/mine/read-all
-Authorization: Bearer <token_client>
-# Réponse 200 :
-{ "success": true, "data": { "updatedCount": 5 } }
-```
-
-#### 5.2.2 Préférences de Notification Client
-
-```http
-# Récupérer les préférences de notification du client
-GET /api/v1/notifications/mine/preferences
-Authorization: Bearer <token_client>
-# Réponse 200 :
-{
-  "success": true,
-  "data": {
-    "smsEnabled": true,
-    "whatsappEnabled": true,
-    "emailEnabled": true,
-    "orderUpdates": true,
-    "deliveryUpdates": true,
-    "promotions": true,
-    "loyaltyAlerts": true,
-    "blogNewArticles": false,
-    "subscriptionReminders": true
-  }
-}
-```
-
-```http
-# Mettre à jour les préférences de notification du client
-PUT /api/v1/notifications/mine/preferences
-Authorization: Bearer <token_client>
-Content-Type: application/json
-{
-  "smsEnabled": true,
-  "whatsappEnabled": true,
-  "emailEnabled": true,
-  "orderUpdates": true,
-  "deliveryUpdates": true,
-  "promotions": false,
-  "loyaltyAlerts": true,
-  "blogNewArticles": false,
-  "subscriptionReminders": true
-}
-# Réponse 200 :
-{ "success": true, "data": { ...préférences mises à jour... } }
-```
-
-### 5.3 Spécification des Endpoints Requis — Côté Admin
-
-#### 5.3.1 Inbox Notifications Admin
-
-```http
-# Lister les notifications admin (paginées)
-GET /api/v1/admin/notifications?page=1&limit=20&unreadOnly=false&type=ORDER_STATUS
-Authorization: Bearer <token_admin>
-# Réponse 200 :
-{
-  "success": true,
-  "data": {
-    "notifications": [
+#### `POST /api/v1/admin/supplier-orders`
+- **Description :** Création d'une commande d'achat.
+- **Rôles autorisés :** `ADMIN`, `MANAGER`
+- **Corps Requête (JSON) :**
+  ```json
+  {
+    "supplierId": "c1f7a8e2-1a2b-4c3d-9e5f-123456789abc",
+    "expectedDate": "2026-11-10",
+    "notes": "Commande hebdomadaire",
+    "items": [
       {
-        "id": "uuid-v4",
-        "type": "NEW_ORDER" | "PAYMENT_RECEIVED" | "PAYMENT_FAILED" | "NEW_QUOTE" | "LOW_STOCK" | "OUT_OF_STOCK" | "NEW_SUBSCRIPTION" | "SUBSCRIPTION_CANCELLED" | "DELIVERY_FAILED" | "CUSTOM",
-        "title": "Nouvelle commande CMD-2026-0043",
-        "message": "Commande de 3 articles pour 45 000 FCFA — Client: Marie Diop",
-        "isRead": false,
-        "priority": "NORMAL" | "HIGH" | "URGENT",
-        "metadata": {
-          "orderNumber": "CMD-2026-0043",
-          "customerId": "uuid-customer",
-          "amount": 45000
-        },
-        "createdAt": "2026-11-03T15:10:00Z"
+        "variantId": "32640604-59c7-43dd-822c-af3bce51836f",
+        "productName": "Roses Rouges Naomi",
+        "sku": "BQ-ROSE-S",
+        "quantityOrdered": 100,
+        "unitCost": 3500
       }
-    ],
-    "pagination": { "total": 128, "page": 1, "limit": 20, "totalPages": 7 },
-    "unreadCount": 12
+    ]
   }
-}
-```
+  ```
 
-```http
-# Compter les notifications admin non-lues (pour le badge topbar)
-GET /api/v1/admin/notifications/unread-count
-Authorization: Bearer <token_admin>
-# Réponse 200 :
-{ "success": true, "data": { "unreadCount": 12 } }
-```
-
-```http
-# Marquer une notification admin comme lue
-PATCH /api/v1/admin/notifications/:notificationId/read
-Authorization: Bearer <token_admin>
-# Réponse 200 :
-{ "success": true, "data": { "id": "uuid", "isRead": true } }
-```
-
-```http
-# Marquer toutes les notifications admin comme lues
-POST /api/v1/admin/notifications/read-all
-Authorization: Bearer <token_admin>
-# Réponse 200 :
-{ "success": true, "data": { "updatedCount": 12 } }
-```
-
-#### 5.3.2 Envoi de Notifications Manuelles (Admin → Client(s))
-
-```http
-# Envoyer une notification ciblée à un ou plusieurs clients
-POST /api/v1/admin/notifications/send
-Authorization: Bearer <token_admin>
-Content-Type: application/json
-{
-  "title": "🌸 Promotion exclusive ce week-end !",
-  "message": "Profitez de -25% sur tous les bouquets ronds avec le code WEEKEND25",
-  "target": {
-    "type": "ALL" | "SEGMENT" | "INDIVIDUAL",
-    "segment": "vip",                         // Si type = SEGMENT
-    "customerIds": ["uuid-1", "uuid-2"]       // Si type = INDIVIDUAL
-  },
-  "channels": ["IN_APP", "SMS", "WHATSAPP", "EMAIL"],
-  "scheduledAt": null                          // null = envoi immédiat, sinon ISO 8601
-}
-# Réponse 201 :
-{
-  "success": true,
-  "data": {
-    "id": "uuid-broadcast",
-    "recipientCount": 42,
-    "status": "SENT" | "SCHEDULED",
-    "sentAt": "2026-11-03T16:00:00Z"
-  }
-}
-```
-
-```http
-# Historique des notifications manuelles envoyées
-GET /api/v1/admin/notifications/broadcasts?page=1&limit=20
-Authorization: Bearer <token_admin>
-# Réponse 200 :
-{
-  "success": true,
-  "data": {
-    "broadcasts": [
+#### `POST /api/v1/admin/supplier-orders/:id/receive`
+- **Description :** Enregistrement de la réception physique des marchandises. Met à jour automatiquement les stocks des variantes catalogue concernées (via mouvement `ENTRY`).
+- **Rôles autorisés :** `ADMIN`, `MANAGER`, `FLORIST`
+- **Corps Requête (JSON) :**
+  ```json
+  {
+    "receptionDate": "2026-11-10T09:00:00.000Z",
+    "notes": "Colis en bon état, toutes les tiges fraîches.",
+    "items": [
       {
-        "id": "uuid-broadcast",
-        "title": "🌸 Promotion exclusive ce week-end !",
-        "target": { "type": "ALL" },
-        "recipientCount": 42,
-        "channels": ["IN_APP", "SMS"],
-        "status": "SENT",
-        "sentAt": "2026-11-03T16:00:00Z",
-        "createdBy": "uuid-admin-user"
+        "itemId": "item-001",
+        "quantityReceived": 100
       }
-    ],
-    "pagination": { "total": 15, "page": 1, "limit": 20, "totalPages": 1 }
+    ]
   }
-}
-```
+  ```
+- **Effet de bord :** 
+  - Si toutes les quantités sont reçues : `status` passe à `RECEIVED`.
+  - Si réception partielle : `status` passe à `PARTIALLY_RECEIVED`.
+  - Pour chaque `variantId` lié, le backend effectue un appel à la table `StockMovement` avec `type = 'ENTRY'`, `quantity = quantityReceived`, `reason = 'Réception commande CF-2026-0042'`.
 
-### 5.4 Événements Déclencheurs (Automatiques)
+---
 
-Le backend doit créer automatiquement une notification in-app lors de chaque événement ci-dessous, **en respectant les préférences du client** (section 5.2.2) et les **settings admin** (section existante `GET/PUT /admin/settings`) :
+### 2.2 Factures Fournisseurs (`/admin/approvisionnements/factures`)
 
-| Événement Métier | Type Notification Client | Type Notification Admin | Priorité |
-|---|---|---|---|
-| Nouvelle commande créée | `ORDER_STATUS` | `NEW_ORDER` | NORMAL |
-| Paiement reçu (webhook NabooPay) | `PAYMENT` | `PAYMENT_RECEIVED` | NORMAL |
-| Paiement échoué | `PAYMENT` | `PAYMENT_FAILED` | HIGH |
-| Commande confirmée | `ORDER_STATUS` | — | NORMAL |
-| Commande en préparation | `ORDER_STATUS` | — | NORMAL |
-| Commande prête / en livraison | `ORDER_STATUS` | — | NORMAL |
-| Commande livrée | `ORDER_STATUS` | — | NORMAL |
-| Commande annulée | `ORDER_STATUS` | — | HIGH |
-| Livreur assigné | `DELIVERY_UPDATE` | — | NORMAL |
-| Livreur en route | `DELIVERY_UPDATE` | — | NORMAL |
-| Livraison effectuée | `DELIVERY_UPDATE` | — | NORMAL |
-| Échec de livraison | `DELIVERY_UPDATE` | `DELIVERY_FAILED` | URGENT |
-| Nouveau devis reçu | — | `NEW_QUOTE` | NORMAL |
-| Devis chiffré envoyé au client | `QUOTE_UPDATE` | — | NORMAL |
-| Devis accepté par le client | `QUOTE_UPDATE` | `NEW_QUOTE` | NORMAL |
-| Devis refusé | `QUOTE_UPDATE` | — | NORMAL |
-| Remboursement effectué | `PAYMENT` | — | HIGH |
-| Stock bas (seuil atteint) | — | `LOW_STOCK` | HIGH |
-| Rupture de stock | — | `OUT_OF_STOCK` | URGENT |
-| Prochain passage abonnement | `SUBSCRIPTION` | — | NORMAL |
-| Abonnement suspendu/repris/annulé | `SUBSCRIPTION` | `SUBSCRIPTION_CANCELLED` | NORMAL |
-| Nouvel abonnement souscrit | — | `NEW_SUBSCRIPTION` | NORMAL |
-| Nouvelle promotion activée | `PROMOTION` | — | NORMAL |
-| Code promo personnalisé attribué | `PROMOTION` | — | NORMAL |
-| Passage niveau fidélité | `LOYALTY` | — | NORMAL |
-| Points de fidélité gagnés | `LOYALTY` | — | NORMAL |
-| Nouvel article blog publié | `BLOG` | — | NORMAL |
+#### `GET /api/v1/admin/supplier-invoices`
+- **Description :** Liste des factures d'achat des fournisseurs.
+- **Paramètres Query :** `page`, `limit`, `supplierId`, `status` (`DRAFT`, `PENDING`, `PAID`, `OVERDUE`).
+- **Réponse 200 :**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "items": [
+        {
+          "id": "fac-001",
+          "invoiceNumber": "FAC-FLORA-892",
+          "supplierOrderId": "e4a8b1c2-3d4e-5f6a-7b8c-9d0e1f2a3b4c",
+          "supplier": { "id": "...", "name": "Flora Sénégal SARL" },
+          "amount": 420000,
+          "issueDate": "2026-11-05",
+          "dueDate": "2026-12-05",
+          "status": "PENDING",
+          "fileUrl": "https://pub-xxx.r2.dev/invoices/fac-892.pdf"
+        }
+      ],
+      "total": 1
+    }
+  }
+  ```
 
-### 5.5 Modèle de Données Suggéré (Prisma)
+#### `POST /api/v1/admin/supplier-invoices`
+- **Description :** Enregistrement d'une facture reçue du fournisseur.
+- **Corps Requête (JSON) :**
+  ```json
+  {
+    "supplierId": "c1f7a8e2-1a2b-4c3d-9e5f-123456789abc",
+    "supplierOrderId": "e4a8b1c2-3d4e-5f6a-7b8c-9d0e1f2a3b4c",
+    "invoiceNumber": "FAC-FLORA-892",
+    "amount": 420000,
+    "issueDate": "2026-11-05",
+    "dueDate": "2026-12-05",
+    "fileUrl": "https://pub-xxx.r2.dev/invoices/fac-892.pdf",
+    "notes": "Facture reçue par email."
+  }
+  ```
 
-```prisma
-model Notification {
-  id          String    @id @default(uuid())
-  userId      String                          // Référence au User (client ou admin)
-  type        NotificationType
-  title       String
-  message     String
-  isRead      Boolean   @default(false)
-  priority    NotificationPriority @default(NORMAL)
-  metadata    Json?                           // Données contextuelles (orderNumber, etc.)
-  createdAt   DateTime  @default(now())
-  readAt      DateTime?
+#### `PATCH /api/v1/admin/supplier-invoices/:id/pay`
+- **Description :** Enregistrement d'un règlement de facture fournisseur.
+- **Corps Requête (JSON) :**
+  ```json
+  {
+    "paidAt": "2026-11-08T14:00:00.000Z",
+    "paymentMethod": "VIREMENT_BANCAIRE",
+    "transactionReference": "VIR-SN08-98421"
+  }
+  ```
+- **Effet de bord :** Statut passe à `PAID`.
 
-  user        User      @relation(fields: [userId], references: [id])
+---
 
-  @@index([userId, isRead])
-  @@index([userId, createdAt(sort: Desc)])
-}
+## 3. Module Paysagisme & Réalisations (`/admin/paysagisme`)
 
-model NotificationPreference {
-  id                    String   @id @default(uuid())
-  customerId            String   @unique
-  smsEnabled            Boolean  @default(true)
-  whatsappEnabled       Boolean  @default(true)
-  emailEnabled          Boolean  @default(true)
-  orderUpdates          Boolean  @default(true)
-  deliveryUpdates       Boolean  @default(true)
-  promotions            Boolean  @default(true)
-  loyaltyAlerts         Boolean  @default(true)
-  blogNewArticles       Boolean  @default(false)
-  subscriptionReminders Boolean  @default(true)
-  updatedAt             DateTime @updatedAt
+Ce module administre les prestations paysagères proposées (jardins de villa à Saly, terrasses végétalisées à Dakar, arrosage automatique) et le portfolio de réalisations pour les prospects.
 
-  customer              Customer @relation(fields: [customerId], references: [id])
-}
+### 3.1 Prestations Paysagères
 
-model NotificationBroadcast {
-  id              String   @id @default(uuid())
-  title           String
-  message         String
-  targetType      BroadcastTarget            // ALL, SEGMENT, INDIVIDUAL
-  targetSegment   String?
-  targetCustomers String[]                   // Array of customer UUIDs
-  channels        String[]                   // IN_APP, SMS, WHATSAPP, EMAIL
-  recipientCount  Int
-  status          BroadcastStatus            // SENT, SCHEDULED, FAILED
-  scheduledAt     DateTime?
-  sentAt          DateTime?
-  createdBy       String                     // Admin user UUID
-  createdAt       DateTime @default(now())
-}
+#### `GET /api/v1/landscape-services` (Public) & `GET /api/v1/admin/landscape-services` (Admin)
+- **Description :** Liste des prestations d'aménagement paysager et d'entretien.
+- **Réponse 200 :**
+  ```json
+  {
+    "success": true,
+    "data": [
+      {
+        "id": "land-srv-01",
+        "slug": "creation-jardin-villa",
+        "title": "Création & Aménagement de Jardin de Villa",
+        "shortDescription": "Conception paysagère sur-mesure pour villas et résidences de standing.",
+        "description": "Étude topographique, sélection d'essences tropicales adaptées au climat côtier, engazonnement et plantations.",
+        "indicativePrice": "À partir de 500 000 FCFA sur devis",
+        "coverImage": "https://pub-xxx.r2.dev/landscaping/villa-jardin.jpg",
+        "images": ["https://pub-xxx.r2.dev/landscaping/villa-1.jpg"],
+        "isActive": true,
+        "order": 1
+      }
+    ]
+  }
+  ```
 
-enum NotificationType {
-  ORDER_STATUS
-  DELIVERY_UPDATE
-  QUOTE_UPDATE
-  PAYMENT
-  SUBSCRIPTION
-  PROMOTION
-  LOYALTY
-  BLOG
-  CUSTOM
-}
+#### `POST /api/v1/admin/landscape-services`
+- **Description :** Création d'une nouvelle prestation paysagère.
+- **Rôles autorisés :** `ADMIN`, `MANAGER`
+- **Corps Requête (JSON) :**
+  ```json
+  {
+    "title": "Entretien Régulier & Taille Saisonnière",
+    "slug": "entretien-regulier-jardin",
+    "shortDescription": "Contrats mensuels pour villas et résidences.",
+    "description": "Tonte, taille des haies, désherbage et fertilisation biologique.",
+    "indicativePrice": "Dès 75 000 FCFA / mois",
+    "coverImage": "https://pub-xxx.r2.dev/landscaping/entretien.jpg",
+    "images": ["https://pub-xxx.r2.dev/landscaping/entretien.jpg"],
+    "isActive": true,
+    "order": 2
+  }
+  ```
 
-enum NotificationPriority {
-  NORMAL
-  HIGH
-  URGENT
-}
+#### `PATCH /api/v1/admin/landscape-services/:id`
+- **Description :** Modification d'une prestation existante.
+- **Rôles autorisés :** `ADMIN`, `MANAGER`
 
-enum BroadcastTarget {
-  ALL
-  SEGMENT
-  INDIVIDUAL
-}
+#### `DELETE /api/v1/admin/landscape-services/:id`
+- **Description :** Désactivation ou suppression d'une prestation.
+- **Rôles autorisés :** `ADMIN`
 
-enum BroadcastStatus {
-  SENT
-  SCHEDULED
-  FAILED
-}
-```
+---
 
-### 5.6 Stratégie Frontend (Polling)
+### 3.2 Réalisations & Portfolio Paysager
 
-- **Polling interval** : Le frontend interrogera `GET /notifications/mine/unread-count` toutes les **30 secondes** pour mettre à jour le badge de la bell icon (client et admin).
-- **Chargement complet** : La liste paginée est chargée à la demande quand l'utilisateur clique sur la bell icon (dropdown) ou navigue vers la page notifications.
-- **Évolution future** : Prévoir la possibilité de migrer vers des WebSockets ou Server-Sent Events (SSE) pour du temps réel sans polling.
+#### `GET /api/v1/landscape-projects` (Public) & `GET /api/v1/admin/landscape-projects` (Admin)
+- **Description :** Liste des chantiers et réalisations avec filtres géographiques et catégories.
+- **Paramètres Query :**
+  - `category` (optionnel) : `VILLA`, `HOTEL_RESORT`, `TERRASSE_BALCON`, `ESPACE_ENTREPRISE`
+  - `location` (optionnel) : `SALY`, `DAKAR`, `SOMONE`, `MBOUR`, `ALMADIES`
+- **Réponse 200 :**
+  ```json
+  {
+    "success": true,
+    "data": [
+      {
+        "id": "proj-001",
+        "slug": "villa-somone-oasis",
+        "title": "Oasis Tropicale — Villa Somone",
+        "category": "VILLA",
+        "location": "Somone, Petite-Côte",
+        "clientType": "PARTICULIER",
+        "completionDate": "2026-03",
+        "description": "Aménagement complet des abords de piscine avec palmiers royaux, bougainvilliers panachés et gazon Paspalum.",
+        "coverImage": "https://pub-xxx.r2.dev/landscaping/somone-pool.jpg",
+        "images": [
+          "https://pub-xxx.r2.dev/landscaping/somone-pool.jpg",
+          "https://pub-xxx.r2.dev/landscaping/somone-avant.jpg"
+        ],
+        "isFeatured": true,
+        "createdAt": "2026-03-20T12:00:00.000Z"
+      }
+    ]
+  }
+  ```
 
-### 5.7 Récapitulatif des 12 Endpoints à Implémenter
+#### `POST /api/v1/admin/landscape-projects`
+- **Description :** Ajout d'une nouvelle réalisation au portfolio.
+- **Rôles autorisés :** `ADMIN`, `MANAGER`
+- **Corps Requête (JSON) :**
+  ```json
+  {
+    "title": "Jardin Zen & Patio Éco-Lodge",
+    "slug": "patio-eco-lodge-saly",
+    "category": "HOTEL_RESORT",
+    "location": "Saly Niakh Niakhal",
+    "clientType": "PROFESSIONNEL",
+    "completionDate": "2026-05",
+    "description": "Végétalisation du patio intérieur avec plantes dépolluantes et éclairage solaire intégré.",
+    "coverImage": "https://pub-xxx.r2.dev/landscaping/patio.jpg",
+    "images": ["https://pub-xxx.r2.dev/landscaping/patio.jpg"],
+    "isFeatured": true
+  }
+  ```
 
-| # | Méthode | Route | Scope | Description |
-|---|---|---|---|---|
-| 1 | `GET` | `/notifications/mine` | Client | Lister les notifications (paginées) |
-| 2 | `GET` | `/notifications/mine/unread-count` | Client | Compteur non-lues (badge) |
-| 3 | `PATCH` | `/notifications/mine/:id/read` | Client | Marquer une notification comme lue |
-| 4 | `POST` | `/notifications/mine/read-all` | Client | Marquer toutes comme lues |
-| 5 | `GET` | `/notifications/mine/preferences` | Client | Récupérer les préférences |
-| 6 | `PUT` | `/notifications/mine/preferences` | Client | Mettre à jour les préférences |
-| 7 | `GET` | `/admin/notifications` | Admin | Lister les notifications admin (paginées) |
-| 8 | `GET` | `/admin/notifications/unread-count` | Admin | Compteur non-lues admin (badge topbar) |
-| 9 | `PATCH` | `/admin/notifications/:id/read` | Admin | Marquer une notification admin comme lue |
-| 10 | `POST` | `/admin/notifications/read-all` | Admin | Marquer toutes admin comme lues |
-| 11 | `POST` | `/admin/notifications/send` | Admin | Envoyer une notification manuelle ciblée |
-| 12 | `GET` | `/admin/notifications/broadcasts` | Admin | Historique des envois manuels |
+#### `PATCH /api/v1/admin/landscape-projects/:id`
+- **Description :** Modification d'une réalisation existante.
+- **Rôles autorisés :** `ADMIN`, `MANAGER`
 
+#### `DELETE /api/v1/admin/landscape-projects/:id`
+- **Description :** Suppression d'une réalisation du portfolio.
+- **Rôles autorisés :** `ADMIN`
+
+---
+
+## 4. Synthèse d'Implémentation & Statut Côté Frontend
+
+En attendant le développement et déploiement de ces routes sur le backend :
+1. **Fournisseurs** (`/admin/fournisseurs`) : Vidage complet des mocks en dur, affichage d'un *empty state* professionnel signalant la disponibilité prochaine via API.
+2. **Approvisionnements** (`/admin/approvisionnements`) : Vidage complet des mocks en dur, interface en lecture/attente connectée dès livraison des routes.
+3. **Paysagisme** (`/admin/paysagisme`) : Vidage des mocks en dur et alignement sur la vitrine publique du paysagisme.

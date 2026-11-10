@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { adminProducts as initialProducts } from '@/lib/admin/mock-data/products';
 import type { AdminProduct } from '@/lib/admin/mock-data/types';
 import { getAdminProducts, deleteAdminProduct } from '@/lib/api/admin/products';
 import { Button } from '@/components/ui/button';
@@ -56,7 +55,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 
 export default function AdminProductsPage() {
-  const [products, setProducts] = useState<AdminProduct[]>(initialProducts);
+  const [products, setProducts] = useState<AdminProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -67,10 +66,8 @@ export default function AdminProductsPage() {
   const [selectedStock, setSelectedStock] = useState<string>('all');
   const [selectedSort, setSelectedSort] = useState<string>('default');
 
-  async function loadProducts(isRefresh = false) {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
-
+  async function handleRefresh() {
+    setRefreshing(true);
     try {
       const res = await getAdminProducts({
         search: searchQuery || undefined,
@@ -81,14 +78,35 @@ export default function AdminProductsPage() {
     } catch {
       toast.error('Erreur lors du chargement des produits');
     } finally {
-      setLoading(false);
       setRefreshing(false);
     }
   }
 
   useEffect(() => {
-    loadProducts();
-  }, [selectedCategory, selectedStatus]);
+    let active = true;
+    async function load() {
+      try {
+        const res = await getAdminProducts({
+          search: searchQuery || undefined,
+          category: selectedCategory !== 'all' ? selectedCategory : undefined,
+          status: selectedStatus !== 'all' ? selectedStatus : undefined,
+        });
+        if (active) {
+          setProducts(res.items);
+        }
+      } catch {
+        toast.error('Erreur lors du chargement des produits');
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+    load();
+    return () => {
+      active = false;
+    };
+  }, [selectedCategory, selectedStatus, searchQuery]);
 
   // Draft filters inside drawer (applied only when clicking "Appliquer")
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -262,7 +280,7 @@ export default function AdminProductsPage() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => loadProducts(true)}
+            onClick={handleRefresh}
             disabled={loading || refreshing}
             className="h-10 text-xs text-gray-700 bg-white border-[#e7e4dd] hover:bg-gray-50"
           >
@@ -682,7 +700,12 @@ export default function AdminProductsPage() {
           </div>
         ))}
 
-        {filteredProducts.length === 0 && (
+        {loading ? (
+          <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-gray-500 space-y-2">
+            <Loader2 className="h-7 w-7 text-[#c1647a] animate-spin mx-auto" />
+            <p className="text-sm font-medium">Chargement des produits...</p>
+          </div>
+        ) : filteredProducts.length === 0 ? (
           <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-gray-500 space-y-2">
             <Package className="h-8 w-8 text-gray-300 mx-auto" />
             <p className="font-medium text-gray-700 text-sm">Aucun produit ne correspond à ces critères</p>
@@ -695,7 +718,7 @@ export default function AdminProductsPage() {
               Effacer les filtres
             </Button>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Products Desktop Table (visible on lg+) */}
@@ -825,7 +848,16 @@ export default function AdminProductsPage() {
               </TableRow>
             ))}
 
-            {filteredProducts.length === 0 && (
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={7} className="h-40 text-center text-gray-500">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <Loader2 className="h-7 w-7 text-[#c1647a] animate-spin" />
+                    <p className="text-sm font-medium text-gray-600">Chargement des produits...</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : filteredProducts.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="h-40 text-center text-gray-500">
                   <div className="flex flex-col items-center justify-center gap-2">
@@ -843,7 +875,7 @@ export default function AdminProductsPage() {
                   </div>
                 </TableCell>
               </TableRow>
-            )}
+            ) : null}
           </TableBody>
         </Table>
       </div>

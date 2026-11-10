@@ -19,14 +19,14 @@ import {
   ToggleLeft,
   ToggleRight,
   Power,
+  AlertCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
-import { initialSuppliers } from '@/lib/admin/mock-data/suppliers';
 import { Supplier, SupplierStatus } from '@/lib/admin/mock-data/types';
 
 export default function AdminFournisseursPage() {
-  const [suppliers, setSuppliers] = useState<Supplier[]>(initialSuppliers);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | SupplierStatus>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -104,6 +104,17 @@ export default function AdminFournisseursPage() {
         </button>
       </div>
 
+      {/* ── Bannière Information Backend ── */}
+      <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 flex items-start gap-3.5 text-amber-900 text-xs">
+        <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+        <div className="space-y-1">
+          <p className="font-semibold text-sm text-amber-950">Module Fournisseurs en attente d&apos;implémentation backend</p>
+          <p className="text-amber-800 leading-relaxed">
+            Les contrats et spécifications REST complètes pour ce module ont été formalisés dans <code className="px-1.5 py-0.5 bg-amber-100/90 rounded text-[11px] font-mono font-medium">docs/endpoints_feedback.md</code>. Aucune donnée factice n&apos;est affichée par défaut.
+          </p>
+        </div>
+      </div>
+
       {/* ── Recherche & Filtres (Maquette Écran 6) ── */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-border shadow-xs">
         <div className="flex items-center gap-3 flex-1 bg-muted/30 px-3 py-2 rounded-xl border border-border">
@@ -133,8 +144,12 @@ export default function AdminFournisseursPage() {
       {/* ── Liste Mobile (visible sur < lg) ── */}
       <div className="lg:hidden space-y-3">
         {filteredSuppliers.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-border p-8 text-center text-muted-foreground text-xs">
-            Aucun fournisseur ne correspond à vos filtres.
+          <div className="bg-white rounded-2xl border border-border p-8 text-center text-muted-foreground text-xs space-y-2">
+            <Building2 className="w-8 h-8 text-gray-400 mx-auto" />
+            <p className="font-semibold text-sm text-gray-800">Aucun fournisseur enregistré</p>
+            <p className="text-gray-500">
+              Module en attente d&apos;implémentation backend (voir docs/endpoints_feedback.md).
+            </p>
           </div>
         ) : (
           filteredSuppliers.map((sup) => (
@@ -248,7 +263,18 @@ export default function AdminFournisseursPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border text-xs sm:text-sm">
-              {filteredSuppliers.map((sup) => (
+              {filteredSuppliers.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-muted-foreground">
+                    <Building2 className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                    <p className="font-semibold text-sm text-gray-800">Aucun fournisseur enregistré</p>
+                    <p className="text-xs text-gray-500 max-w-sm mx-auto mt-1">
+                      Ajoutez vos partenaires et grossistes horticoles pour gérer vos approvisionnements dès la mise en ligne de l&apos;API.
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                filteredSuppliers.map((sup) => (
                 <tr key={sup.id} className="hover:bg-muted/40 transition-colors">
                   <td className="py-4 px-5">
                     <Link
@@ -326,7 +352,7 @@ export default function AdminFournisseursPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -30,6 +30,7 @@ import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
 import { logoutAdmin } from '@/app/admin/connexion/actions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { getAdminUser, AdminSessionUser } from '@/lib/api/auth-token';
 
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -60,11 +61,8 @@ export function AdminMobileDrawer() {
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
   const [isStandalone, setIsStandalone] = useState(false);
   const [isIosSafari, setIsIosSafari] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
+  const [currentUser] = useState<AdminSessionUser | null>(() => getAdminUser());
 
   // Fermer le drawer avec la touche Echap
   useEffect(() => {
@@ -201,22 +199,26 @@ export function AdminMobileDrawer() {
               <Avatar className="h-8 w-8 ring-2 ring-emerald-500/30">
                 <AvatarImage
                   src="/images/admin-avatar.jpg"
-                  alt="Admin"
+                  alt={currentUser?.name || 'Admin'}
                   className="object-cover"
                 />
                 <AvatarFallback className="bg-[#193e23] text-white text-xs font-bold">
-                  A
+                  {currentUser?.name ? currentUser.name.slice(0, 2).toUpperCase() : 'AD'}
                 </AvatarFallback>
               </Avatar>
               <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-1 ring-white" />
             </div>
-            <div className="flex flex-col">
-              <span className="text-xs font-semibold text-white leading-tight">Admin</span>
-              <span className="text-[10.5px] text-white/60 leading-none">admin@decofleur.com</span>
+            <div className="flex flex-col min-w-0">
+              <span className="text-xs font-semibold text-white leading-tight truncate">
+                {currentUser?.name || 'Administrateur'}
+              </span>
+              <span className="text-[10.5px] text-white/60 leading-none truncate max-w-[140px]">
+                {currentUser?.email || 'Session active'}
+              </span>
             </div>
           </div>
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-            Super Admin
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
+            {currentUser?.role || 'Staff'}
           </span>
         </div>
 
@@ -234,8 +236,8 @@ export function AdminMobileDrawer() {
                   <Smartphone size={13} />
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <span className="text-[11.5px] font-semibold text-white leading-tight truncate">Installer l'application</span>
-                  <span className="text-[9.5px] text-white/60 leading-tight truncate">Accès direct écran d'accueil</span>
+                  <span className="text-[11.5px] font-semibold text-white leading-tight truncate">Installer l&apos;application</span>
+                  <span className="text-[9.5px] text-white/60 leading-tight truncate">Accès direct écran d&apos;accueil</span>
                 </div>
               </div>
               <button
@@ -249,7 +251,7 @@ export function AdminMobileDrawer() {
             </div>
           ) : isIosSafari ? (
             <div className="p-2 rounded-lg bg-amber-500/15 border border-amber-400/30 text-amber-200 text-[10px] leading-tight">
-              <strong>Astuce iOS :</strong> Touchez <span className="underline font-semibold">Partager</span> puis <span className="font-semibold">« Sur l'écran d'accueil »</span>.
+              <strong>Astuce iOS :</strong> Touchez <span className="underline font-semibold">Partager</span> puis <span className="font-semibold">« Sur l&apos;écran d&apos;accueil »</span>.
             </div>
           ) : null}
         </div>

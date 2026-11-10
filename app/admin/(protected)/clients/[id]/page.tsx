@@ -1,27 +1,60 @@
 'use client';
 
-import { use, useState } from 'react';
-import { adminCustomers } from '@/lib/admin/mock-data/customers';
-import { adminOrders } from '@/lib/admin/mock-data/orders';
+import { use, useState, useEffect } from 'react';
+import type { AdminCustomer } from '@/lib/admin/mock-data/types';
+import { getAdminCustomerById } from '@/lib/api/admin/customers';
+import { ApiClientError } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Mail, Phone, MapPin, Calendar, Star, ShoppingBag, Gift } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, MapPin, Calendar, Star, ShoppingBag, Gift, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SendEmailDialog } from '@/components/admin/send-email-dialog';
+import { toast } from 'sonner';
 
 export default function CustomerProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const [customer, setCustomer] = useState<AdminCustomer | null>(null);
+  const [loading, setLoading] = useState(true);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
-  const customer = adminCustomers.find(c => c.id === id);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const found = await getAdminCustomerById(id);
+        if (active) setCustomer(found);
+      } catch (err) {
+        if (active) {
+          setCustomer(null);
+          const msg = err instanceof ApiClientError ? err.message : 'Erreur lors du chargement du profil';
+          toast.error(msg);
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-[#24582d]" />
+        <p className="text-gray-500 text-sm">Chargement du profil client...</p>
+      </div>
+    );
+  }
 
   if (!customer) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
         <h1 className="text-2xl font-bold text-gray-800">Client introuvable</h1>
-        <p className="text-gray-500 mt-2">Le client demandé n&apos;existe pas.</p>
+        <p className="text-gray-500 mt-2">Le client demandé n&apos;existe pas ou a été supprimé.</p>
         <Button render={<Link href="/admin/clients" />} variant="cta" className="mt-6 bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs">
           Retour aux clients
         </Button>
@@ -30,7 +63,7 @@ export default function CustomerProfilePage({ params }: { params: Promise<{ id: 
   }
 
   // Find customer's orders
-  const customerOrders = adminOrders.filter(o => o.customerId === customer.id);
+  const customerOrders = customer.recentOrders || [];
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {

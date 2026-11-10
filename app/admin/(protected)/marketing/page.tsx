@@ -2,11 +2,6 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
-  adminCoupons,
-  adminPromotions,
-  adminCampaigns,
-  adminAbandonedCarts,
-  defaultCartRecoverySettings,
   type AdminCoupon,
   type AdminPromotion,
   type AdminCampaign,
@@ -16,7 +11,8 @@ import {
   type PromotionStatus,
   type CampaignChannel,
   type CartRecoveryStatus,
-} from '@/lib/admin/mock-data';
+} from '@/lib/admin/mock-data/types';
+import { defaultCartRecoverySettings as defaultCartSettings } from '@/lib/admin/mock-data/marketing';
 import {
   getAdminCoupons,
   createAdminCoupon,
@@ -35,6 +31,7 @@ import {
   getCartRecoverySettings,
   updateCartRecoverySettings,
 } from '@/lib/api/admin/marketing';
+import { ApiClientError } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -67,6 +64,7 @@ import {
   ExternalLink,
   ShieldCheck,
   RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { WhatsAppColorIcon, WhatsAppButtonIcon } from '@/components/icons';
@@ -81,11 +79,11 @@ export default function AdminMarketingPage() {
   const [activeTab, setActiveTab] = useState<'evenements' | 'coupons' | 'promotions' | 'campagnes' | 'paniers'>('evenements');
 
   // State data
-  const [coupons, setCoupons] = useState<AdminCoupon[]>(adminCoupons);
-  const [promotions, setPromotions] = useState<AdminPromotion[]>(adminPromotions);
-  const [campaigns, setCampaigns] = useState<AdminCampaign[]>(adminCampaigns);
-  const [abandonedCarts, setAbandonedCarts] = useState<AdminAbandonedCart[]>(adminAbandonedCarts);
-  const [cartSettings, setCartSettings] = useState<CartRecoverySettings>(defaultCartRecoverySettings);
+  const [coupons, setCoupons] = useState<AdminCoupon[]>([]);
+  const [promotions, setPromotions] = useState<AdminPromotion[]>([]);
+  const [campaigns, setCampaigns] = useState<AdminCampaign[]>([]);
+  const [abandonedCarts, setAbandonedCarts] = useState<AdminAbandonedCart[]>([]);
+  const [cartSettings, setCartSettings] = useState<CartRecoverySettings>(defaultCartSettings);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -106,8 +104,9 @@ export default function AdminMarketingPage() {
       if (cmpRes && Array.isArray(cmpRes)) setCampaigns(cmpRes);
       if (crtRes && Array.isArray(crtRes)) setAbandonedCarts(crtRes);
       if (setRes) setCartSettings(setRes);
-    } catch {
-      toast.error('Erreur lors du chargement des données marketing');
+    } catch (err) {
+      const msg = err instanceof ApiClientError ? err.message : 'Erreur lors du chargement des données marketing';
+      toast.error(msg);
     } finally {
       setLoading(false);
       setRefreshing(false);

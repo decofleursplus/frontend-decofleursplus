@@ -21,6 +21,7 @@ import {
   AlertCircle,
   Tag,
   ShoppingBag,
+  Banknote,
 } from 'lucide-react';
 import { useCart } from '@/components/cart-provider';
 import { useAuth } from '@/components/auth-provider';
@@ -32,7 +33,7 @@ import { getCustomerAddresses, CustomerAddress } from '@/lib/api/customer';
 import { ValidatedCoupon } from '@/lib/api/marketing';
 
 type DeliveryMode = 'standard' | 'express';
-type PaymentMethod = 'wave' | 'orange' | 'free' | 'card';
+type PaymentMethod = 'wave' | 'orange' | 'free' | 'card' | 'cash';
 
 export default function CheckoutPage() {
   const { items, subtotal, clear } = useCart();
@@ -192,11 +193,12 @@ export default function CheckoutPage() {
 
     setSubmittingOrder(true);
 
-    const paymentMap: Record<PaymentMethod, 'WAVE' | 'ORANGE_MONEY' | 'FREE_MONEY' | 'CARD'> = {
+    const paymentMap: Record<PaymentMethod, 'WAVE' | 'ORANGE_MONEY' | 'FREE_MONEY' | 'CARD' | 'CASH_ON_DELIVERY'> = {
       wave: 'WAVE',
       orange: 'ORANGE_MONEY',
       free: 'FREE_MONEY',
       card: 'CARD',
+      cash: 'CASH_ON_DELIVERY',
     };
 
     // Mappage des items du panier vers le format attendu par le backend
@@ -870,6 +872,24 @@ export default function CheckoutPage() {
                     <span className="payment-subtext">Visa, Mastercard</span>
                   </div>
                 </label>
+
+                {/* Espèces à la livraison */}
+                <label className={`payment-method-row ${payment === 'cash' ? 'selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="cash"
+                    checked={payment === 'cash'}
+                    onChange={() => setPayment('cash')}
+                  />
+                  <div className="payment-brand-badge cash bg-emerald-50 text-emerald-800 flex items-center justify-center rounded-lg p-1.5">
+                    <Banknote size={22} />
+                  </div>
+                  <div className="payment-method-text">
+                    <strong>Espèces à la livraison</strong>
+                    <span className="payment-subtext">Règlement au livreur à la réception</span>
+                  </div>
+                </label>
               </div>
             </section>
 
@@ -966,7 +986,11 @@ export default function CheckoutPage() {
                 ) : (
                   <>
                     <LockKeyhole size={17} />
-                    <span>Payer {formatPrice(calculatedTotal)}</span>
+                    <span>
+                      {payment === 'cash'
+                        ? `Confirmer la commande (${formatPrice(calculatedTotal)})`
+                        : `Payer ${formatPrice(calculatedTotal)}`}
+                    </span>
                   </>
                 )}
               </button>
@@ -975,8 +999,16 @@ export default function CheckoutPage() {
               <div className="checkout-security-guarantee">
                 <ShieldCheck size={18} color="#15803D" />
                 <div>
-                  <strong>Passerelle NabooPay sécurisée</strong>
-                  <p>Paiement instantané par Wave, Orange Money et Cartes.</p>
+                  <strong>
+                    {payment === 'cash'
+                      ? 'Paiement à la livraison sécurisé'
+                      : 'Passerelle NabooPay sécurisée'}
+                  </strong>
+                  <p>
+                    {payment === 'cash'
+                      ? 'Réglez directement en espèces lors de la remise en main propre.'
+                      : 'Paiement instantané par Wave, Orange Money et Cartes.'}
+                  </p>
                 </div>
               </div>
 

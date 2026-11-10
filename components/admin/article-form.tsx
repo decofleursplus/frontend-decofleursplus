@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { BlogArticle, BlogArticleStatus } from '@/lib/admin/mock-data/types';
-import { adminBlogCategories, adminBlogAuthors } from '@/lib/admin/mock-data/blog';
+import { getAdminCategories } from '@/lib/api/admin/categories';
 import { createAdminBlogArticle, updateAdminBlogArticle } from '@/lib/api/admin/blog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,7 @@ import {
   SheetDescription,
   SheetFooter,
 } from '@/components/ui/sheet';
+import { ImageUploader } from '@/components/admin/image-uploader';
 import {
   ArrowLeft,
   Save,
@@ -101,11 +102,28 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
   // Form states
   const [title, setTitle] = useState(initialArticle?.title || '');
   const [slug, setSlug] = useState(initialArticle?.slug || '');
-  const [categoryId, setCategoryId] = useState(initialArticle?.categoryId || adminBlogCategories[0]?.id || '');
-  const [authorId, setAuthorId] = useState(initialArticle?.authorId || adminBlogAuthors[0]?.id || '');
+  const [availableCategories, setAvailableCategories] = useState<{ id: string; name: string }[]>([]);
+  const [categoryId, setCategoryId] = useState(initialArticle?.categoryId || '');
+  const [authorId, setAuthorId] = useState(initialArticle?.authorId || 'admin-author');
   const [readTime, setReadTime] = useState(initialArticle?.readTime || '4 min de lecture');
   const [excerpt, setExcerpt] = useState(initialArticle?.excerpt || '');
   const [content, setContent] = useState(initialArticle?.content || '');
+
+  useEffect(() => {
+    let mounted = true;
+    getAdminCategories()
+      .then((cats) => {
+        if (!mounted || !cats || cats.length === 0) return;
+        setAvailableCategories(cats.map((c) => ({ id: c.id, name: c.name })));
+        if (!categoryId) {
+          setCategoryId(cats[0].id);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, [categoryId]);
 
   // Media
   const [coverImage, setCoverImage] = useState(initialArticle?.coverImage || '/images/bouquet-detail.jpg');
@@ -245,8 +263,8 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
 
     setIsSubmitting(true);
     const targetStatus = finalStatus || status;
-    const selectedCat = adminBlogCategories.find((c) => c.id === categoryId) || adminBlogCategories[0];
-    const selectedAuthor = adminBlogAuthors.find((a) => a.id === authorId) || adminBlogAuthors[0];
+    const selectedCat = availableCategories.find((c) => c.id === categoryId);
+    const categoryName = selectedCat?.name || initialArticle?.categoryName || 'Conseils & Botanique';
 
     const tagsArray = tagsInput
       .split(',')
@@ -257,13 +275,13 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
       id: initialArticle ? initialArticle.id : `art-${Date.now()}`,
       title: title.trim(),
       slug: slug.trim() || generateSlug(title),
-      categoryId: selectedCat?.id || 'bcat-1',
-      categoryName: selectedCat?.name || 'Conseils Fleurs',
-      categoryColor: selectedCat?.color || '#d65d7a',
-      authorId: selectedAuthor?.id || 'author-1',
-      authorName: selectedAuthor?.name || 'Fatou Diop',
-      authorAvatar: selectedAuthor?.avatar || 'FD',
-      authorRole: selectedAuthor?.role || 'Maître Fleuriste',
+      categoryId: selectedCat?.id || categoryId || 'bcat-1',
+      categoryName,
+      categoryColor: '#24582d',
+      authorId: authorId || 'admin-author',
+      authorName: initialArticle?.authorName || 'Équipe Décofleur Plus',
+      authorAvatar: initialArticle?.authorAvatar || 'DP',
+      authorRole: initialArticle?.authorRole || 'Maître Fleuriste',
       coverImage: coverImage.trim() || '/images/bouquet-detail.jpg',
       coverImageCaption: coverImageCaption.trim(),
       excerpt: excerpt.trim(),
@@ -316,8 +334,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
     router.push('/admin/blog');
   };
 
-  const selectedCategory = adminBlogCategories.find((c) => c.id === categoryId);
-  const selectedAuthor = adminBlogAuthors.find((a) => a.id === authorId);
+  const selectedCategory = availableCategories.find((c) => c.id === categoryId);
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-16">
@@ -359,7 +376,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
               </Badge>
             </div>
             <p className="text-[11px] text-[#777] truncate">
-              {selectedCategory?.name} • Par {selectedAuthor?.name}
+              {selectedCategory?.name || 'Catégorie générale'} • Par {initialArticle?.authorName || 'Équipe Décofleur Plus'}
             </p>
           </div>
         </div>
@@ -481,11 +498,11 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
 
           {/* Quick preset thumbnail picker strip */}
           {(showPresetsBar || !coverImage) && (
-            <div className="p-4 rounded-2xl bg-white border border-[#ece8e1] shadow-xs space-y-2.5 animate-in fade-in-50 duration-200">
+            <div className="p-4 rounded-2xl bg-white border border-[#ece8e1] shadow-xs space-y-4 animate-in fade-in-50 duration-200">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-semibold text-[#1e2a1f] flex items-center gap-1.5">
                   <Sparkles size={13} className="text-[#24582d]" />
-                  Galerie florale Décofleur Plus (cliquez pour sélectionner) :
+                  Photo de couverture de l&apos;article :
                 </span>
                 <button
                   type="button"
@@ -495,27 +512,49 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
                   <X size={14} />
                 </button>
               </div>
-              <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-                {PRESET_IMAGES.map((preset, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => {
-                      setCoverImage(preset.url);
-                      setCoverImageCaption(preset.label);
-                      setShowPresetsBar(false);
-                      toast.success(`Couverture mise à jour : ${preset.label}`);
-                    }}
-                    className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all ${
-                      coverImage === preset.url
-                        ? 'border-[#24582d] ring-2 ring-[#24582d]/20 scale-95'
-                        : 'border-[#ece8e1] hover:border-[#24582d]/60 opacity-80 hover:opacity-100'
-                    }`}
-                    title={preset.label}
-                  >
-                    <img src={preset.url} alt={preset.label} className="w-full h-full object-cover" />
-                  </button>
-                ))}
+
+              {/* Uploader direct */}
+              <ImageUploader
+                folder="products"
+                multiple={false}
+                value={coverImage ? [coverImage] : []}
+                onChange={(urls) => {
+                  if (urls[0]) {
+                    setCoverImage(urls[0]);
+                    setShowPresetsBar(false);
+                  }
+                }}
+                label="Téléverser votre propre photo"
+                description="Glissez votre image ou cliquez pour parcourir. Format JPG, PNG, WebP. Max 5 Mo."
+              />
+
+              {/* Presets rapides */}
+              <div className="pt-2 border-t border-[#ece8e1]">
+                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block mb-2">
+                  Ou choisir parmi la galerie florale Décofleur :
+                </span>
+                <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+                  {PRESET_IMAGES.map((preset, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        setCoverImage(preset.url);
+                        setCoverImageCaption(preset.label);
+                        setShowPresetsBar(false);
+                        toast.success(`Couverture mise à jour : ${preset.label}`);
+                      }}
+                      className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all ${
+                        coverImage === preset.url
+                          ? 'border-[#24582d] ring-2 ring-[#24582d]/20 scale-95'
+                          : 'border-[#ece8e1] hover:border-[#24582d]/60 opacity-80 hover:opacity-100'
+                      }`}
+                      title={preset.label}
+                    >
+                      <img src={preset.url} alt={preset.label} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -928,31 +967,30 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
                   onChange={(e) => setCategoryId(e.target.value)}
                   className="w-full p-2.5 rounded-xl border border-[#e7e4dd] bg-[#faf8f4] text-xs font-medium text-[#222] focus:outline-none focus:ring-2 focus:ring-[#24582d]/20"
                 >
-                  {adminBlogCategories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
+                  {availableCategories.length === 0 ? (
+                    <option value="">Sélectionner une catégorie</option>
+                  ) : (
+                    availableCategories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
 
               {/* Auteur */}
               <div>
                 <Label htmlFor="drawer-author" className="text-xs font-semibold text-[#444] block mb-1">
-                  Auteur / Rédacteur fleuriste :
+                  Auteur / Rédacteur :
                 </Label>
-                <select
+                <Input
                   id="drawer-author"
-                  value={authorId}
+                  value={authorId === 'admin-author' ? 'Équipe Décofleur Plus' : authorId}
                   onChange={(e) => setAuthorId(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-[#e7e4dd] bg-[#faf8f4] text-xs font-medium text-[#222] focus:outline-none focus:ring-2 focus:ring-[#24582d]/20"
-                >
-                  {adminBlogAuthors.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name} ({a.role})
-                    </option>
-                  ))}
-                </select>
+                  placeholder="Nom de l'auteur..."
+                  className="w-full text-xs bg-[#faf8f4] border-[#e7e4dd]"
+                />
               </div>
 
               {/* Temps de lecture */}

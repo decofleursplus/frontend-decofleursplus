@@ -103,14 +103,35 @@ export async function getAdminBlogArticles(params?: GetAdminBlogArticlesParams):
       cache: 'no-store',
     });
 
-    if (Array.isArray(res)) return res.map(transformBlogArticle);
-    if (res && Array.isArray(res.articles)) return res.articles.map(transformBlogArticle);
-    if (res && Array.isArray(res.data)) return res.data.map(transformBlogArticle);
+    const dataObj = res?.data ?? res;
+    if (Array.isArray(dataObj)) return dataObj.map(transformBlogArticle);
+    if (Array.isArray(dataObj?.items)) return dataObj.items.map(transformBlogArticle);
+    if (Array.isArray(dataObj?.articles)) return dataObj.articles.map(transformBlogArticle);
   } catch (err) {
     console.warn('[AdminBlogAPI] Erreur de récupération des articles:', err);
   }
 
   return [];
+}
+
+/**
+ * Fetch a single blog article by ID
+ */
+export async function getAdminBlogArticleById(id: string): Promise<BlogArticle | null> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const res = await apiClient.get<any>(`/admin/blog/articles/${id}`, {
+      useAdminToken: true,
+      cache: 'no-store',
+    });
+    const dataObj = res?.data ?? res;
+    if (dataObj && (dataObj.id || dataObj.title)) {
+      return transformBlogArticle(dataObj);
+    }
+  } catch (err) {
+    console.warn(`[AdminBlogAPI] Article introuvable ou erreur pour ${id}:`, err);
+  }
+  return null;
 }
 
 /**
@@ -131,7 +152,8 @@ export async function createAdminBlogArticle(body: {
   const res = await apiClient.post<any>('/admin/blog/articles', body, {
     useAdminToken: true,
   });
-  return transformBlogArticle(res);
+  const dataObj = res?.data ?? res;
+  return transformBlogArticle(dataObj);
 }
 
 /**
@@ -142,7 +164,8 @@ export async function updateAdminBlogArticle(id: string, body: Partial<BlogArtic
   const res = await apiClient.patch<any>(`/admin/blog/articles/${id}`, body, {
     useAdminToken: true,
   });
-  return transformBlogArticle(res);
+  const dataObj = res?.data ?? res;
+  return transformBlogArticle(dataObj);
 }
 
 /**
