@@ -52,7 +52,7 @@ export function mapBackendOrderStatus(status: string): OrderStatus {
 export function mapFrontendToBackendOrderStatus(status: OrderStatus | string): string {
   switch (status) {
     case 'nouvelle':
-      return 'CONFIRMED';
+      return 'PENDING';
     case 'en_preparation':
       return 'PREPARING';
     case 'en_livraison':
@@ -60,9 +60,8 @@ export function mapFrontendToBackendOrderStatus(status: OrderStatus | string): s
     case 'livree':
       return 'DELIVERED';
     case 'annulee':
-      return 'CANCELLED';
     case 'remboursee':
-      return 'REFUNDED';
+      return 'CANCELLED';
     default:
       return status.toUpperCase();
   }
