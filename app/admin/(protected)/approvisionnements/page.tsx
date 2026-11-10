@@ -57,7 +57,7 @@ export default function AdminApprovisionnementsPage() {
       return;
     }
     const sup = initialSuppliers.find((s) => s.id === selectedSupplierId) || { id: 'sup-default', name: 'Fournisseur Général' };
-    const orderNum = Date.now().toString().slice(-4);
+    const orderNum = String(orders.length + 1).padStart(4, '0');
     const newOrder: SupplierOrder = {
       id: `CF-2024-${orderNum}`,
       supplierId: sup.id,
@@ -65,7 +65,7 @@ export default function AdminApprovisionnementsPage() {
       date: 'Aujourd’hui',
       expectedDate: 'Dans 3 jours',
       items: orderItems.map((it, idx) => ({
-        id: `item-${Date.now()}-${idx}`,
+        id: `item-${orders.length + 1}-${idx + 1}`,
         name: it.name,
         orderedQty: it.qty,
         receivedQty: 0,
