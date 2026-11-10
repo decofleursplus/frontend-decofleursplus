@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Menu, LogOut, ExternalLink, Settings } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Menu, LogOut, ExternalLink, Settings, Camera } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -9,6 +9,7 @@ import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
 import { AdminNotificationsDropdown } from '@/components/admin/admin-notifications-dropdown';
 import { getAdminUser, AdminSessionUser } from '@/lib/api/auth-token';
 import { logoutAdmin } from '@/app/admin/connexion/actions';
+import { AdminProfileDialog } from '@/components/admin/admin-profile-dialog';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -20,7 +21,22 @@ import {
 
 export function AdminTopbar() {
   const { toggleMobileDrawer } = useAdminSidebar();
-  const [currentUser] = useState<AdminSessionUser | null>(() => getAdminUser());
+  const [currentUser, setCurrentUser] = useState<AdminSessionUser | null>(() => getAdminUser());
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+
+  useEffect(() => {
+    const handleUserUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<AdminSessionUser | null>;
+      if (customEvent.detail !== undefined) {
+        setCurrentUser(customEvent.detail);
+      } else {
+        setCurrentUser(getAdminUser());
+      }
+    };
+
+    window.addEventListener('admin-user-updated', handleUserUpdate);
+    return () => window.removeEventListener('admin-user-updated', handleUserUpdate);
+  }, []);
 
   return (
     <header className="admin-topbar">
@@ -69,7 +85,7 @@ export function AdminTopbar() {
             <div className="relative">
               <Avatar className="h-8 w-8 ring-2 ring-emerald-600/20">
                 <AvatarImage
-                  src="/images/admin-avatar.jpg"
+                  src={currentUser?.avatar || undefined}
                   alt={currentUser?.name || 'Admin DécoFleur Plus'}
                   className="object-cover"
                 />
@@ -111,6 +127,14 @@ export function AdminTopbar() {
             </div>
 
             <DropdownMenuGroup>
+              <DropdownMenuItem
+                className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-xs text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef]"
+                onClick={() => setIsProfileDialogOpen(true)}
+              >
+                <Camera size={14} className="mr-2 text-gray-400" />
+                <span>Modifier ma photo de profil</span>
+              </DropdownMenuItem>
+
               <DropdownMenuItem
                 className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-xs text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef]"
                 render={<Link href="/" target="_blank" rel="noopener noreferrer" />}
@@ -155,6 +179,14 @@ export function AdminTopbar() {
           </button>
         </form>
       </div>
+
+      {/* Profile Dialog */}
+      <AdminProfileDialog
+        isOpen={isProfileDialogOpen}
+        onOpenChange={setIsProfileDialogOpen}
+        currentUser={currentUser}
+        onUserUpdated={setCurrentUser}
+      />
     </header>
   );
 }

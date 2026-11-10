@@ -25,7 +25,7 @@ export async function loginAdmin(_prevState: unknown, formData: FormData) {
 
     let data: {
       success?: boolean;
-      data?: { user: { id: string; name?: string; firstName?: string; lastName?: string; email: string; role: string }; token: string };
+      data?: { user: { id: string; name?: string; firstName?: string; lastName?: string; email: string; role: string; avatar?: string | null }; token: string };
       error?: { message?: string; code?: string };
       message?: string;
     } | null = null;
@@ -72,6 +72,7 @@ export async function loginAdmin(_prevState: unknown, formData: FormData) {
           name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Admin',
           email: user.email,
           role: user.role,
+          avatar: user.avatar || null,
         }),
         cookieOptions
       );

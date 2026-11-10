@@ -25,12 +25,14 @@ import {
   Armchair,
   Trees,
   Repeat,
+  Camera,
 } from 'lucide-react';
 import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
 import { logoutAdmin } from '@/app/admin/connexion/actions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { getAdminUser, AdminSessionUser } from '@/lib/api/auth-token';
+import { AdminProfileDialog } from '@/components/admin/admin-profile-dialog';
 
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -62,7 +64,23 @@ export function AdminMobileDrawer() {
   const [isStandalone, setIsStandalone] = useState(false);
   const [isIosSafari, setIsIosSafari] = useState(false);
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
-  const [currentUser] = useState<AdminSessionUser | null>(() => getAdminUser());
+  const [currentUser, setCurrentUser] = useState<AdminSessionUser | null>(() => getAdminUser());
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+
+  // Écouter les mises à jour en direct du profil administrateur
+  useEffect(() => {
+    const handleUserUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<AdminSessionUser | null>;
+      if (customEvent.detail !== undefined) {
+        setCurrentUser(customEvent.detail);
+      } else {
+        setCurrentUser(getAdminUser());
+      }
+    };
+
+    window.addEventListener('admin-user-updated', handleUserUpdate);
+    return () => window.removeEventListener('admin-user-updated', handleUserUpdate);
+  }, []);
 
   // Fermer le drawer avec la touche Echap
   useEffect(() => {
@@ -194,11 +212,16 @@ export function AdminMobileDrawer() {
 
         {/* Profil utilisateur connecté & Déconnexion Rapide */}
         <div className="px-4 py-2.5 bg-white/5 border-b border-white/10 flex items-center justify-between">
-          <div className="flex items-center gap-2.5 min-w-0">
+          <button
+            type="button"
+            onClick={() => setIsProfileDialogOpen(true)}
+            className="flex items-center gap-2.5 min-w-0 text-left hover:opacity-90 transition-opacity cursor-pointer group"
+            title="Modifier ma photo de profil"
+          >
             <div className="relative shrink-0">
-              <Avatar className="h-8 w-8 ring-2 ring-emerald-500/30">
+              <Avatar className="h-8 w-8 ring-2 ring-emerald-500/30 group-hover:ring-emerald-400 transition-all">
                 <AvatarImage
-                  src="/images/admin-avatar.jpg"
+                  src={currentUser?.avatar || undefined}
                   alt={currentUser?.name || 'Admin'}
                   className="object-cover"
                 />
@@ -209,14 +232,17 @@ export function AdminMobileDrawer() {
               <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-1 ring-white" />
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-xs font-semibold text-white leading-tight truncate">
-                {currentUser?.name || 'Administrateur'}
-              </span>
+              <div className="flex items-center gap-1">
+                <span className="text-xs font-semibold text-white leading-tight truncate">
+                  {currentUser?.name || 'Administrateur'}
+                </span>
+                <Camera size={11} className="text-white/50 group-hover:text-emerald-300 transition-colors shrink-0" />
+              </div>
               <span className="text-[10.5px] text-white/60 leading-none truncate max-w-[130px]">
                 {currentUser?.email || 'Session active'}
               </span>
             </div>
-          </div>
+          </button>
           <div className="flex items-center gap-2 shrink-0">
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
               {currentUser?.role || 'Staff'}
@@ -338,6 +364,14 @@ export function AdminMobileDrawer() {
           </form>
         </div>
       </aside>
+
+      {/* Profile Dialog */}
+      <AdminProfileDialog
+        isOpen={isProfileDialogOpen}
+        onOpenChange={setIsProfileDialogOpen}
+        currentUser={currentUser}
+        onUserUpdated={setCurrentUser}
+      />
     </div>,
     document.body
   );

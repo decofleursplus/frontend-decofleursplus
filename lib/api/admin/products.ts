@@ -1,4 +1,4 @@
-import { apiClient } from '../client';
+import { apiClient, ApiClientError } from '../client';
 import type { AdminProduct } from '@/lib/admin/mock-data/types';
 
 export interface ProductFilterParams {
@@ -314,8 +314,30 @@ export async function createAdminProduct(payload: CreateProductPayload): Promise
     });
   }
 
-  const res = await apiClient.post<BackendProductResponse>('/admin/products', backendPayload, { isAdmin: true });
-  return mapBackendToAdminProduct(res);
+  try {
+    const res = await apiClient.post<BackendProductResponse>('/admin/products', backendPayload, { isAdmin: true });
+    return mapBackendToAdminProduct(res);
+  } catch (err: unknown) {
+    // Si l'instance active du backend requiert un SKU obligatoire pour les variantes (version legacy)
+    if (
+      err instanceof ApiClientError &&
+      err.status === 400 &&
+      Array.isArray(backendPayload.variants) &&
+      backendPayload.variants.some((v) => typeof v === 'object' && v !== null && !('sku' in v))
+    ) {
+      const fallbackCat = (payload.categoryId || 'PRD').slice(0, 3).toUpperCase();
+      backendPayload.variants = (backendPayload.variants as Array<Record<string, unknown>>).map((v) => {
+        if (!('sku' in v) || !v.sku) {
+          const rand = Math.floor(100000 + Math.random() * 900000);
+          return { ...v, sku: `DFP-${fallbackCat}-${rand}` };
+        }
+        return v;
+      });
+      const retryRes = await apiClient.post<BackendProductResponse>('/admin/products', backendPayload, { isAdmin: true });
+      return mapBackendToAdminProduct(retryRes);
+    }
+    throw err;
+  }
 }
 
 /**
@@ -395,8 +417,29 @@ export async function updateAdminProduct(
     });
   }
 
-  const res = await apiClient.patch<BackendProductResponse>(`/admin/products/${id}`, backendPayload, { isAdmin: true });
-  return mapBackendToAdminProduct(res);
+  try {
+    const res = await apiClient.patch<BackendProductResponse>(`/admin/products/${id}`, backendPayload, { isAdmin: true });
+    return mapBackendToAdminProduct(res);
+  } catch (err: unknown) {
+    if (
+      err instanceof ApiClientError &&
+      err.status === 400 &&
+      Array.isArray(backendPayload.variants) &&
+      backendPayload.variants.some((v) => typeof v === 'object' && v !== null && !('sku' in v))
+    ) {
+      const fallbackCat = (payload.categoryId || 'PRD').slice(0, 3).toUpperCase();
+      backendPayload.variants = (backendPayload.variants as Array<Record<string, unknown>>).map((v) => {
+        if (!('sku' in v) || !v.sku) {
+          const rand = Math.floor(100000 + Math.random() * 900000);
+          return { ...v, sku: `DFP-${fallbackCat}-${rand}` };
+        }
+        return v;
+      });
+      const retryRes = await apiClient.patch<BackendProductResponse>(`/admin/products/${id}`, backendPayload, { isAdmin: true });
+      return mapBackendToAdminProduct(retryRes);
+    }
+    throw err;
+  }
 }
 
 /**
