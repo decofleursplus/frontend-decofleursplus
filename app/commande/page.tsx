@@ -54,7 +54,15 @@ export default function CheckoutPage() {
   });
   const [deliverySlot, setDeliverySlot] = useState<'9h-12h' | '10h-14h' | '14h-18h' | '18h-20h'>('10h-14h');
   const [instructions, setInstructions] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState<ValidatedCoupon | null>(null);
+  const [appliedCoupon] = useState<ValidatedCoupon | null>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const savedCoupon = sessionStorage.getItem('decofleur_applied_coupon');
+      return savedCoupon ? JSON.parse(savedCoupon) : null;
+    } catch {
+      return null;
+    }
+  });
 
   // Redirection d'authentification si le panier contient des articles et l'utilisateur n'est pas connecté
   useEffect(() => {
@@ -75,15 +83,6 @@ export default function CheckoutPage() {
       .catch(() => {
         // Ignorer
       });
-
-    try {
-      const savedCoupon = sessionStorage.getItem('decofleur_applied_coupon');
-      if (savedCoupon) {
-        setAppliedCoupon(JSON.parse(savedCoupon));
-      }
-    } catch {
-      // Ignorer
-    }
   }, []);
 
   useEffect(() => {
@@ -148,18 +147,19 @@ export default function CheckoutPage() {
     const cartSource = items.length > 0 ? items : displayItems;
     const mappedItems = cartSource.map((item) => {
       let variantId = '00000000-0000-0000-0000-000000000001';
-      const p = item.product as any;
+      const p = item.product as { id: string; variants?: { id: string }[] };
       if (p.variants && p.variants.length > 0 && uuidRegex.test(p.variants[0].id)) {
         variantId = p.variants[0].id;
       } else if (uuidRegex.test(item.product.id)) {
         variantId = item.product.id;
       }
 
+      const itemOptions = item.options as { giftWrap?: boolean; cardMessage?: string } | undefined;
       return {
         variantId,
         quantity: item.quantity,
-        giftWrap: Boolean((item.options as any)?.giftWrap),
-        cardMessage: (item.options as any)?.cardMessage || undefined,
+        giftWrap: Boolean(itemOptions?.giftWrap),
+        cardMessage: itemOptions?.cardMessage || undefined,
       };
     });
 
@@ -544,7 +544,7 @@ export default function CheckoutPage() {
                   <select
                     id="deliverySlot"
                     value={deliverySlot}
-                    onChange={(e) => setDeliverySlot(e.target.value as any)}
+                    onChange={(e) => setDeliverySlot(e.target.value as '9h-12h' | '10h-14h' | '14h-18h' | '18h-20h')}
                     className="datetime-select"
                   >
                     <option value="9h-12h">Matinée (09h00 - 12h00)</option>
