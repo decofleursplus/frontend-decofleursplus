@@ -1,12 +1,9 @@
 import { notFound } from 'next/navigation';
 import { AccountSection } from '@/components/account-section';
-
-const validSections = ['adresses', 'informations', 'fidelite', 'avis', 'notifications', 'cartes-cadeaux', 'coupons', 'parrainage', 'devis', 'abonnements'];
-export const dynamicParams = true;
-export function generateStaticParams() { return validSections.map((section) => ({ section })); }
+import { isAccountSection } from '@/lib/account-sections';
 
 export default async function AccountSectionPage({ params }: { params: Promise<{ section: string }> }) {
   const { section } = await params;
-  if (!validSections.includes(section)) notFound();
+  if (!isAccountSection(section)) notFound();
   return <AccountSection section={section} />;
 }

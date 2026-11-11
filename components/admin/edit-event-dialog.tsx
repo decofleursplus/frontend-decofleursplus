@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import {
   Dialog,
@@ -29,7 +29,8 @@ import {
 import { toast } from 'sonner';
 import { uploadAdminMedia } from '@/lib/api/admin/uploads';
 import { WhatsAppColorIcon } from '@/components/icons';
-import { products as allProducts } from '@/lib/products';
+import type { Product } from '@/lib/products';
+import { getProducts } from '@/lib/api/catalog';
 import {
   type SeasonalEvent,
   type EventThemeColor,
@@ -126,13 +127,22 @@ function EditEventDialogInner({
     }
   };
 
+  // Catalogue réel (100 produits les plus populaires) pour la sélection
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  useEffect(() => {
+    getProducts({ limit: 100, sort: 'popular' })
+      .then((res) => setAllProducts(res.items))
+      .catch((err) => setCatalogError(err instanceof Error ? err.message : 'Catalogue indisponible.'));
+  }, []);
+
   // Produits sélectionnés
   const selectedProductIds = formData.featuredProductIds || [];
   const selectedProducts = useMemo(() => {
     return allProducts.filter(
       (p) => selectedProductIds.includes(p.id) || selectedProductIds.includes(p.slug)
     );
-  }, [selectedProductIds]);
+  }, [selectedProductIds, allProducts]);
 
   // Catalogue filtré pour sélection rapide
   const filteredCatalog = useMemo(() => {
@@ -144,7 +154,7 @@ function EditEventDialogInner({
         p.category.toLowerCase().includes(q) ||
         (p.reference && p.reference.toLowerCase().includes(q))
     );
-  }, [productSearch]);
+  }, [productSearch, allProducts]);
 
   const handleToggleProduct = (productId: string) => {
     const isSelected = selectedProductIds.includes(productId);
@@ -589,6 +599,7 @@ function EditEventDialogInner({
               </div>
 
               {/* Résultats rapides du catalogue */}
+              {catalogError && <p className="text-xs text-rose-600">{catalogError}</p>}
               <div className="max-h-36 overflow-y-auto space-y-1 pr-1">
                 {filteredCatalog.slice(0, 8).map((p) => {
                   const isSelected = selectedProductIds.includes(p.id);

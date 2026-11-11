@@ -1,330 +1,242 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { use, useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { AlertTriangle, Check, Headphones, Home, Loader2, MapPin, Package, Phone, RefreshCw, Truck, UserCheck } from 'lucide-react';
+import { formatPrice, PRODUCT_PLACEHOLDER_IMAGE } from '@/lib/products';
 import {
-  Check,
-  Package,
-  Truck,
-  Home,
-  FileText,
-  Headphones,
-  Phone,
-  Star,
-  MapPin,
-  Mail,
-  Smartphone,
-  Loader2,
-} from 'lucide-react';
-import { WhatsAppIcon } from '@/components/icons';
-import { demoOrders } from '@/lib/account-data';
-import { formatPrice } from '@/lib/products';
-import { getOrderTracking, getMyOrder, DeliveryTracking, CustomerOrder } from '@/lib/api/orders';
+  getMyOrder,
+  getOrderTracking,
+  ORDER_STATUS_LABELS,
+  type CustomerOrder,
+  type DeliveryTracking,
+  type DeliveryTrackingStep,
+} from '@/lib/api/orders';
 
+const STEP_ICONS: Record<DeliveryTrackingStep['step'], typeof Check> = {
+  preparation: Package,
+  prise_en_charge: UserCheck,
+  en_acheminement: Truck,
+  livre: Home,
+};
+
+const VEHICLE: Record<string, string> = { MOTO: 'moto', SCOOTER: 'scooter', VAN: 'fourgonnette', CAR: 'voiture' };
+
+const time = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : null;
+
+/** Suivi de livraison : données réelles de la commande et de la livraison, actualisées toutes les minutes. */
 export default function TrackOrderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const [liveOrder, setLiveOrder] = useState<CustomerOrder | null>(null);
-  const [liveTracking, setLiveTracking] = useState<DeliveryTracking | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [order, setOrder] = useState<CustomerOrder | null>(null);
+  const [tracking, setTracking] = useState<DeliveryTracking | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Fallback demo order
-  const demoOrder = demoOrders.find((item) => item.id === id) || demoOrders[0];
+  const load = useCallback(async () => {
+    const [o, t] = await Promise.all([getMyOrder(id), getOrderTracking(id)]);
+    setOrder(o);
+    setTracking(t);
+    setError(null);
+  }, [id]);
 
   useEffect(() => {
     let active = true;
-
-    async function loadTrackingData() {
-      try {
-        const [ord, trk] = await Promise.all([
-          getMyOrder(id).catch(() => null),
-          getOrderTracking(id).catch(() => null),
-        ]);
-
-        if (active) {
-          if (ord) setLiveOrder(ord);
-          if (trk) setLiveTracking(trk);
-        }
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-
-    loadTrackingData();
+    const run = () =>
+      load().catch((err) => active && setError(err instanceof Error ? err.message : 'Suivi indisponible.'));
+    void run();
+    const timer = window.setInterval(run, 60_000);
     return () => {
       active = false;
+      window.clearInterval(timer);
     };
-  }, [id]);
+  }, [load]);
 
-  const orderNumber = liveOrder?.orderNumber || liveTracking?.orderNumber || id;
-  const isEnCours = liveOrder
-    ? ['PENDING', 'PAID', 'PREPARING', 'READY', 'IN_DELIVERY'].includes(liveOrder.orderStatus)
-    : demoOrder.status === 'En cours';
+  const refresh = () => {
+    setRefreshing(true);
+    load()
+      .catch((err) => setError(err instanceof Error ? err.message : 'Suivi indisponible.'))
+      .finally(() => setRefreshing(false));
+  };
 
-  const orderItems = liveOrder
-    ? liveOrder.items.map((it) => ({
-        name: it.productName,
-        quantity: it.quantity,
-        price: it.totalPrice,
-        image: it.image || '/images/hero.jpg',
-      }))
-    : demoOrder.items ?? [
-        { name: demoOrder.name, quantity: 1, price: demoOrder.price, image: '/images/hero.jpg' },
-      ];
+  if (error && !order) {
+    return (
+      <div className="account-panel text-center py-12" role="alert">
+        <AlertTriangle size={32} className="mx-auto text-amber-600 mb-3" />
+        <p className="text-sm text-neutral-700 mb-4">{error}</p>
+        <button type="button" onClick={refresh} className="button button-outline inline-flex items-center gap-1.5">
+          <RefreshCw size={15} /> Réessayer
+        </button>
+        <div className="mt-3">
+          <Link href="/compte/commandes" className="text-sm underline">
+            Retour à mes commandes
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
-  const subtotal = liveOrder ? liveOrder.subtotal : demoOrder.subtotal ?? demoOrder.price;
-  const shipping = liveOrder ? liveOrder.deliveryFee : demoOrder.shipping ?? 2000;
-  const total = liveOrder ? liveOrder.totalAmount : demoOrder.total ?? subtotal + shipping;
+  if (!order || !tracking) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-neutral-500 py-10">
+        <Loader2 size={18} className="animate-spin" /> Chargement du suivi…
+      </div>
+    );
+  }
 
-  const driver = liveTracking?.driver
-    ? {
-        name: liveTracking.driver.name,
-        role: 'Votre livreur',
-        rating: 4.9,
-        reviews: 42,
-        phone: liveTracking.driver.phone,
-        eta: liveTracking.timeSlot || 'entre 13h30 et 14h00',
-        etaMinutes: 15,
-      }
-    : demoOrder.driver ?? {
-        name: 'Moussa Ndiaye',
-        role: 'Votre livreur',
-        rating: 4.8,
-        reviews: 128,
-        phone: '+221779417860',
-        eta: 'entre 13h30 et 14h00',
-        etaMinutes: 12,
-      };
+  const failed = tracking.deliveryStatus === 'FAILED';
+  const delivered = order.orderStatus === 'DELIVERED';
+  const scheduled = tracking.scheduledDate
+    ? `${new Date(tracking.scheduledDate).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}${
+        tracking.timeSlot ? `, créneau ${tracking.timeSlot}` : ''
+      }`
+    : null;
 
-  const deliveryAddress =
-    liveTracking?.deliveryAddress || liveOrder?.deliveryAddress || 'Route de Saly, Résidence les Palmiers, Saly';
-
-  // Déterminer l'état des étapes
-  const steps = liveTracking?.steps;
-  const prepDone = steps ? steps.find((s) => s.step === 'preparation')?.completed : true;
-  const pickupDone = steps ? steps.find((s) => s.step === 'prise_en_charge')?.completed : true;
-  const deliveryDone = steps ? steps.find((s) => s.step === 'en_acheminement')?.completed : isEnCours;
-  const finalDone = steps
-    ? steps.find((s) => s.step === 'livre')?.completed
-    : liveOrder?.orderStatus === 'DELIVERED';
+  const statusText = delivered
+    ? `Livrée le ${time(tracking.deliveredAt) ?? '—'}`
+    : order.orderStatus === 'CANCELLED'
+      ? 'Commande annulée'
+      : failed
+        ? 'Le livreur n’a pas pu remettre votre commande'
+        : tracking.deliveryStatus === 'IN_PROGRESS'
+          ? 'Votre livreur est en route'
+          : tracking.driver
+            ? 'Un livreur a été assigné à votre commande'
+            : ORDER_STATUS_LABELS[order.orderStatus];
 
   return (
     <div className="track-order-container">
-      {/* Breadcrumb Navigation */}
       <nav className="breadcrumbs" aria-label="Fil d'Ariane">
         <Link href="/">Accueil</Link>
         <span>›</span>
         <Link href="/compte/commandes">Mes commandes</Link>
         <span>›</span>
-        <span>Commande #{orderNumber}</span>
+        <span>Suivi {order.orderNumber}</span>
       </nav>
 
-      {/* Header with Title and Actions */}
       <div className="track-header-row">
         <div>
           <h1 className="account-title">Suivi de commande</h1>
           <p className="order-meta-sub">
-            Commande n° <strong>#{orderNumber}</strong> •{' '}
-            {liveOrder
-              ? `Passée le ${new Date(liveOrder.createdAt).toLocaleDateString('fr-FR')}`
-              : `Passée le ${demoOrder.date} à 14h23`}
+            Commande n° <strong>{order.orderNumber}</strong> • Passée le{' '}
+            {new Date(order.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
           </p>
         </div>
         <div className="track-header-actions">
+          <button type="button" onClick={refresh} disabled={refreshing} className="button-pill-outline button-small">
+            <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} /> Actualiser
+          </button>
           <Link href="/contact" className="button-pill-outline button-small">
-            <Headphones size={15} /> Contacter le support
-          </Link>
-          <Link href="/compte/commandes" className="button-pill-pink button-small">
-            Retour aux commandes
+            <Headphones size={15} /> Contacter la boutique
           </Link>
         </div>
       </div>
 
-      {loading && (
-        <div className="flex items-center gap-2 text-xs text-neutral-500 py-2">
-          <Loader2 size={14} className="animate-spin" />
-          <span>Synchronisation du suivi en direct avec l’atelier...</span>
-        </div>
-      )}
-
-      {/* 4-step Stepper Card */}
-      <section className="track-stepper-card" aria-label="Étapes de la commande">
+      <section className="track-stepper-card" aria-label="Étapes de la livraison">
         <div className="stepper-track-line" />
         <div className="stepper-steps-grid">
-          {/* Step 1 */}
           <div className="stepper-step completed">
             <div className="step-circle">
               <Check size={16} />
             </div>
-            <strong className="step-label">Commande confirmée</strong>
-            <span className="step-time">
-              {liveOrder ? new Date(liveOrder.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '14h23'}
-            </span>
+            <strong className="step-label">Commande enregistrée</strong>
+            <span className="step-time">{time(order.createdAt)}</span>
           </div>
-
-          {/* Step 2 */}
-          <div className={`stepper-step ${prepDone ? 'completed' : 'pending'}`}>
-            <div className="step-circle">
-              <Package size={16} />
-            </div>
-            <strong className="step-label">Préparation en atelier</strong>
-            <span className="step-time">{prepDone ? 'Terminée' : 'En cours'}</span>
-          </div>
-
-          {/* Step 3 */}
-          <div className={`stepper-step ${deliveryDone ? (finalDone ? 'completed' : 'active') : 'pending'}`}>
-            <div className="step-circle">
-              <Truck size={16} />
-            </div>
-            <strong className="step-label">En livraison</strong>
-            <span className="step-time">{deliveryDone ? 'En route' : 'En attente'}</span>
-          </div>
-
-          {/* Step 4 */}
-          <div className={`stepper-step ${finalDone ? 'completed' : 'pending'}`}>
-            <div className="step-circle">
-              <Home size={16} />
-            </div>
-            <strong className="step-label">Livrée</strong>
-            <span className="step-time">
-              {finalDone ? 'Livrée' : 'Prévue aujourd’hui'}
-            </span>
-          </div>
+          {tracking.steps.map((step, index) => {
+            const Icon = STEP_ICONS[step.step] ?? Check;
+            const nextDone = tracking.steps[index + 1]?.completed;
+            const state = step.completed ? (nextDone || step.step === 'livre' ? 'completed' : 'active') : 'pending';
+            return (
+              <div key={step.step} className={`stepper-step ${state}`}>
+                <div className="step-circle">
+                  <Icon size={16} />
+                </div>
+                <strong className="step-label">{step.label}</strong>
+                <span className="step-time">{time(step.time) ?? (step.completed ? 'Fait' : 'À venir')}</span>
+              </div>
+            );
+          })}
         </div>
       </section>
 
-      {/* Main Content: Left Column & Right Details Column */}
       <div className="track-columns-grid">
-        {/* Left Column: Live Status & Map */}
-        <div className="track-left-col">
-          <section className="account-panel track-status-card">
-            <div className="status-banner-header">
-              <div className="status-vehicle-icon">
-                <Truck size={24} />
-              </div>
-              <div className="status-banner-text">
-                <h2>
-                  {finalDone
-                    ? 'Votre commande a été livrée !'
-                    : isEnCours
-                    ? 'Votre commande est en livraison'
-                    : 'Commande enregistrée'}
-                </h2>
-                <p>
-                  {finalDone
-                    ? 'Merci de votre confiance en Décofleur Plus Saly Portudal.'
-                    : 'Notre livreur achemine votre bouquet frais avec soin.'}
-                </p>
-              </div>
-            </div>
-
-            <div className="eta-badge-wrap">
-              <span className="eta-badge-pill">
-                Créneau : {liveTracking?.timeSlot || driver.eta}
-              </span>
-            </div>
-
-            {/* Courier Card */}
-            <div className="courier-card">
-              <div className="courier-avatar">
-                <span>{driver.name.slice(0, 2).toUpperCase()}</span>
-              </div>
-              <div className="courier-details">
-                <strong>{driver.name}</strong>
-                <span className="courier-role">{driver.role}</span>
-                <div className="courier-rating">
-                  <Star size={13} fill="#F59E0B" color="#F59E0B" />
-                  <span>{driver.rating}</span>
-                  <small>({driver.reviews} avis)</small>
+        <div className="track-left-col space-y-4">
+          <section className={`account-panel ${failed ? 'border-red-200 bg-red-50/60' : ''}`}>
+            <h2 className="flex items-center gap-2">
+              <Truck size={17} /> {statusText}
+            </h2>
+            {failed && tracking.failureReason && <p className="text-sm text-red-800">Motif : {tracking.failureReason}. Notre équipe vous recontacte pour une nouvelle livraison.</p>}
+            {scheduled && !delivered && <p className="text-sm text-neutral-700">Livraison prévue {scheduled}.</p>}
+            {tracking.driver && !delivered && (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-200 p-3">
+                <div>
+                  <strong className="block text-sm">{tracking.driver.name}</strong>
+                  <span className="text-xs text-neutral-500">
+                    Votre livreur{VEHICLE[tracking.driver.vehicle] ? ` — ${VEHICLE[tracking.driver.vehicle]}` : ''}
+                  </span>
                 </div>
-              </div>
-              <div className="courier-actions">
-                <a
-                  href={`tel:${driver.phone}`}
-                  className="courier-action-circle phone"
-                  aria-label={`Appeler ${driver.name}`}
-                  title="Appeler"
-                >
-                  <Phone size={17} />
-                </a>
-                <a
-                  href={`https://wa.me/${driver.phone.replace(/[^0-9]/g, '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="courier-action-circle whatsapp"
-                  aria-label={`Écrire à ${driver.name} sur WhatsApp`}
-                  title="WhatsApp"
-                >
-                  <WhatsAppIcon size={18} />
+                <a href={`tel:${tracking.driver.phone}`} className="button-pill-pink button-small">
+                  <Phone size={14} /> Appeler
                 </a>
               </div>
-            </div>
+            )}
+            {!tracking.driver && !delivered && order.orderStatus !== 'CANCELLED' && (
+              <p className="text-xs text-neutral-500 mt-2">Le nom de votre livreur apparaîtra ici dès son affectation.</p>
+            )}
+          </section>
 
-            {/* Live Map Representation */}
-            <div className="track-map-wrapper">
-              <Image
-                src="/images/order-map.jpg"
-                alt="Itinéraire en direct Saly et Mbour"
-                fill
-                className="track-map-image"
-                sizes="(max-width: 900px) 100vw, 650px"
-              />
-              <div className="map-courier-bubble">
-                <Truck size={14} />
-                <span>Le livreur est en route vers votre adresse</span>
-              </div>
-              <div className="map-destination-tag">
-                <MapPin size={15} />
-                <span>{deliveryAddress}</span>
-              </div>
-            </div>
+          <section className="account-panel">
+            <h2 className="flex items-center gap-2">
+              <MapPin size={16} /> Adresse de livraison
+            </h2>
+            <p className="text-sm text-neutral-700">
+              {order.recipientName ? `${order.recipientName} — ` : ''}
+              {tracking.deliveryAddress}
+              {tracking.deliveryZone ? ` (${tracking.deliveryZone.name})` : ''}
+            </p>
+            {order.recipientPhone && <p className="text-xs text-neutral-500 mt-1">Tél. destinataire : {order.recipientPhone}</p>}
           </section>
         </div>
 
-        {/* Right Column: Order Details */}
         <div className="track-right-col">
-          <section className="account-panel track-recap-card">
-            <h3>Détails de la commande</h3>
-
+          <section className="account-panel">
+            <h2>Récapitulatif</h2>
             <div className="track-recap-items">
-              {orderItems.map((item, index) => (
-                <div key={index} className="track-recap-item">
-                  <div className="recap-item-image">
-                    <Image src={item.image} alt={item.name} width={50} height={50} className="rounded-lg object-cover" />
-                  </div>
-                  <div className="recap-item-info">
-                    <strong>{item.name}</strong>
-                    <span>Quantité : {item.quantity}</span>
-                  </div>
-                  <strong className="recap-item-price">{formatPrice(item.price)}</strong>
+              {order.items.map((it) => (
+                <div key={it.id} className="track-recap-item">
+                  <Image src={it.image || PRODUCT_PLACEHOLDER_IMAGE} alt={it.productName} width={48} height={48} className="rounded-lg object-cover" />
+                  <span className="flex-1 text-xs">
+                    <strong className="block">{it.productName}</strong>
+                    Quantité : {it.quantity}
+                  </span>
+                  <strong className="text-xs">{formatPrice(it.totalPrice + it.extrasPrice)}</strong>
                 </div>
               ))}
             </div>
-
-            <div className="track-totals-breakdown">
-              <div className="totals-row">
+            <div className="track-totals-breakdown text-xs space-y-1 mt-3">
+              <div className="flex justify-between">
                 <span>Sous-total</span>
-                <span>{formatPrice(subtotal)}</span>
+                <span>{formatPrice(order.subtotal + order.extrasAmount)}</span>
               </div>
-              <div className="totals-row">
-                <span>Frais de livraison</span>
-                <span>{formatPrice(shipping)}</span>
+              {order.discountAmount > 0 && (
+                <div className="flex justify-between text-emerald-700">
+                  <span>Réduction</span>
+                  <span>−{formatPrice(order.discountAmount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span>Livraison</span>
+                <span>{order.deliveryFee === 0 ? 'Offerte' : formatPrice(order.deliveryFee)}</span>
               </div>
-              <div className="totals-row total-highlight">
-                <strong>Total payé</strong>
-                <strong>{formatPrice(total)}</strong>
-              </div>
-            </div>
-
-            <div className="track-address-card">
-              <div className="track-address-icon">
-                <MapPin size={18} />
-              </div>
-              <div className="track-address-info">
-                <strong>Adresse de livraison</strong>
-                <p>{deliveryAddress}</p>
+              <div className="flex justify-between font-bold text-sm border-t border-neutral-100 pt-2">
+                <span>{order.paymentStatus === 'PAID' ? 'Total payé' : 'Total à régler'}</span>
+                <span>{formatPrice(order.totalAmount)}</span>
               </div>
             </div>
+            <Link href={`/compte/commandes/${encodeURIComponent(order.orderNumber)}`} className="button button-outline button-small mt-3">
+              Voir le détail de la commande
+            </Link>
           </section>
         </div>
       </div>

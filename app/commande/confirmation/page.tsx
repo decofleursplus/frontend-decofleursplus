@@ -34,11 +34,11 @@ function ConfirmationContent() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   const [order, setOrder] = useState<CustomerOrder | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isPolling, setIsPolling] = useState(false);
+  const [loading, setLoading] = useState(Boolean(orderNumber));
   const [pollCount, setPollCount] = useState(0);
   const [retryingPayment, setRetryingPayment] = useState(false);
   const [retryError, setRetryError] = useState('');
+  const [loadError, setLoadError] = useState('');
 
   const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -51,19 +51,17 @@ function ConfirmationContent() {
   }, [authLoading, isAuthenticated, router]);
 
   const loadOrder = useCallback(
-    async (showLoadingSpinner = false) => {
+    async () => {
       if (!orderNumber) return null;
-      if (showLoadingSpinner) setLoading(true);
       try {
         const data = await getMyOrder(orderNumber);
-        if (data) {
-          setOrder(data);
-          return data;
-        }
-      } catch {
-        // Géré silencieusement
+        setOrder(data);
+        setLoadError('');
+        return data;
+      } catch (err) {
+        setLoadError(err instanceof Error ? err.message : 'Impossible de charger la commande.');
       } finally {
-        if (showLoadingSpinner) setLoading(false);
+        setLoading(false);
       }
       return null;
     },
@@ -72,53 +70,49 @@ function ConfirmationContent() {
 
   // Chargement initial
   useEffect(() => {
-    if (orderNumber && isAuthenticated) {
-      loadOrder(true);
-    }
-  }, [orderNumber, isAuthenticated, loadOrder]);
+    // `loading` vaut déjà true au premier rendu
+    if (!orderNumber || !isAuthenticated) return;
+    getMyOrder(orderNumber)
+      .then(setOrder)
+      .catch((err) => setLoadError(err instanceof Error ? err.message : 'Impossible de charger la commande.'))
+      .finally(() => setLoading(false));
+  }, [orderNumber, isAuthenticated]);
 
-  // Polling court automatique tant que le paiement en ligne est PENDING
+  // Vérification automatique (5 essais) tant que le paiement en ligne est en attente
+  const isDigitalPending =
+    Boolean(order) &&
+    order!.paymentStatus === 'PENDING' &&
+    order!.paymentMethod !== 'CASH_ON_DELIVERY' &&
+    order!.orderStatus !== 'CANCELLED';
+  const isPolling = isDigitalPending && pollCount < 5;
+
   useEffect(() => {
-    if (!order) return;
-
-    const isDigitalPending =
-      order.paymentStatus === 'PENDING' &&
-      order.paymentMethod !== 'CASH_ON_DELIVERY' &&
-      order.orderStatus !== 'CANCELLED';
-
-    if (isDigitalPending && pollCount < 5) {
-      setIsPolling(true);
-      pollTimerRef.current = setTimeout(async () => {
-        const updated = await loadOrder(false);
-        setPollCount((prev) => prev + 1);
-        if (updated && updated.paymentStatus === 'PAID') {
-          setIsPolling(false);
-        }
-      }, 2500);
-    } else {
-      setIsPolling(false);
-    }
+    if (!isPolling) return;
+    pollTimerRef.current = setTimeout(async () => {
+      await loadOrder();
+      setPollCount((prev) => prev + 1);
+    }, 2500);
 
     return () => {
       if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
     };
-  }, [order, pollCount, loadOrder]);
+  }, [isPolling, pollCount, loadOrder]);
 
   async function handleRetryPayment() {
     if (!order) return;
     setRetryingPayment(true);
     setRetryError('');
-    const res = await payOrder(order.orderNumber);
-    setRetryingPayment(false);
-
-    if (res.success && res.data?.checkoutUrl) {
-      window.location.href = res.data.checkoutUrl;
-    } else {
-      setRetryError(
-        res.error ||
-          'Impossible de relancer le paiement en ligne. Veuillez contacter la boutique.'
-      );
+    try {
+      const session = await payOrder(order.orderNumber);
+      if (session.checkoutUrl) {
+        window.location.href = session.checkoutUrl;
+        return;
+      }
+      setRetryError('Le service de paiement n’a pas renvoyé de lien. Réessayez dans un instant.');
+    } catch (err) {
+      setRetryError(err instanceof Error ? err.message : 'Impossible de relancer le paiement en ligne.');
     }
+    setRetryingPayment(false);
   }
 
   const paymentLabels: Record<string, string> = {
@@ -148,11 +142,13 @@ function ConfirmationContent() {
 
   return (
     <main className="content-width page-main state-page">
-      <span className="state-icon success">
-        <Check size={28} />
-      </span>
+      {order && (
+        <span className="state-icon success">
+          <Check size={28} />
+        </span>
+      )}
 
-      <h1>Confirmation de commande</h1>
+      <h1>{order ? 'Merci, votre commande est enregistrée' : 'Confirmation de commande'}</h1>
 
       {loading ? (
         <div className="flex items-center justify-center p-8 gap-2 text-neutral-500">
@@ -218,7 +214,7 @@ function ConfirmationContent() {
                     </strong>
                     <button
                       type="button"
-                      onClick={() => loadOrder(false)}
+                      onClick={() => void loadOrder()}
                       className="text-xs text-amber-800 hover:text-amber-950 inline-flex items-center gap-1 underline ml-2"
                       title="Rafraîchir"
                     >
@@ -267,8 +263,20 @@ function ConfirmationContent() {
             <div className="flex items-start gap-2">
               <MapPin size={15} className="text-[#173f22] shrink-0 mt-0.5" />
               <div>
-                <strong className="block text-neutral-800">Adresse de livraison</strong>
-                <span>{order.deliveryAddress || 'Saly Portudal'}</span>
+                <strong className="block text-neutral-800">
+                  {order.deliveryMode === 'PICKUP' ? 'Retrait en boutique' : 'Adresse de livraison'}
+                </strong>
+                <span>
+                  {order.deliveryMode === 'PICKUP'
+                    ? 'À retirer à notre atelier'
+                    : [order.deliveryAddress, order.deliveryZone?.name].filter(Boolean).join(' — ')}
+                </span>
+                {order.recipientName && (
+                  <span className="block">
+                    Pour : {order.recipientName}
+                    {order.recipientPhone ? ` (${order.recipientPhone})` : ''}
+                  </span>
+                )}
               </div>
             </div>
             <div className="flex items-start gap-2">
@@ -276,8 +284,10 @@ function ConfirmationContent() {
               <div>
                 <strong className="block text-neutral-800">Date & Créneau</strong>
                 <span>
-                  {order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString('fr-FR') : 'Aujourd’hui'}{' '}
-                  {order.timeSlot ? `(${order.timeSlot})` : ''}
+                  {order.deliveryDate
+                    ? new Date(order.deliveryDate).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+                    : 'À convenir avec la boutique'}
+                  {order.timeSlot ? ` (${order.timeSlot})` : ''}
                 </span>
               </div>
             </div>
@@ -306,6 +316,24 @@ function ConfirmationContent() {
               ))}
             </div>
 
+            <div className="border-t border-neutral-100 mt-3 pt-3 space-y-1 text-xs text-neutral-600">
+              {order.extrasAmount > 0 && (
+                <div className="flex justify-between">
+                  <span>Options cadeau</span>
+                  <span>{formatPrice(order.extrasAmount)}</span>
+                </div>
+              )}
+              {order.discountAmount > 0 && (
+                <div className="flex justify-between text-emerald-700">
+                  <span>Remise{order.couponCode ? ` (${order.couponCode})` : ''}</span>
+                  <span>−{formatPrice(order.discountAmount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span>{order.deliveryMode === 'PICKUP' ? 'Retrait' : 'Livraison'}</span>
+                <span>{order.deliveryFee === 0 ? 'Offerte' : formatPrice(order.deliveryFee)}</span>
+              </div>
+            </div>
             <div className="flex items-center justify-between border-t border-neutral-100 mt-3 pt-3 text-base">
               <strong>{isPaid ? 'Total payé' : 'Total à régler'}</strong>
               <strong className="text-[#173f22] text-lg">{formatPrice(order.totalAmount)}</strong>
@@ -313,18 +341,30 @@ function ConfirmationContent() {
           </div>
         </div>
       ) : (
-        <p className="max-w-md mx-auto text-neutral-600 mb-6">
-          Votre commande a bien été enregistrée. Vous pouvez suivre son avancée en direct depuis votre espace client.
-        </p>
+        <div className="max-w-md mx-auto text-neutral-700 mb-6 space-y-3" role="alert">
+          <p>
+            {orderNumber
+              ? `Nous n’avons pas pu afficher la commande ${orderNumber}${loadError ? ` : ${loadError}` : '.'}`
+              : 'Aucune commande n’est indiquée.'}
+          </p>
+          {orderNumber && (
+            <button type="button" onClick={() => {
+                setLoading(true);
+                void loadOrder();
+              }} className="button button-outline inline-flex items-center gap-1.5">
+              <RotateCw size={14} /> Réessayer
+            </button>
+          )}
+        </div>
       )}
 
       <div className="state-actions">
-        {order ? (
+        {order && order.deliveryMode !== 'PICKUP' ? (
           <Link
             className="button button-primary flex items-center gap-1.5"
             href={`/compte/suivi/${order.orderNumber}`}
           >
-            <Truck size={16} /> Suivre ma livraison en direct
+            <Truck size={16} /> Suivre ma livraison
           </Link>
         ) : (
           <Link className="button button-primary" href="/compte/commandes">

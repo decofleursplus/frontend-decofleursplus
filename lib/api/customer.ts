@@ -18,9 +18,28 @@ export interface CustomerProfile {
   loyaltyPoints: number;
   loyaltyTier: LoyaltyTier;
   segment?: 'PARTICULIER' | 'ENTREPRISE' | 'VIP';
-  ordersCount: number;
+  totalOrders: number;
   totalSpent: number;
-  createdAt?: string;
+  lastOrderDate: string | null;
+  defaultAddress: CustomerAddress | null;
+}
+
+export interface LoyaltyOverview {
+  points: number;
+  tier: LoyaltyTier;
+  nextTier: { tier: LoyaltyTier; minPoints: number; pointsToGo: number } | null;
+  tiers: { tier: LoyaltyTier; minPoints: number }[];
+  /** 1 point par tranche de `fcfaPerPoint` FCFA, crédité à la livraison */
+  fcfaPerPoint: number;
+  history: { id: string; points: number; balance: number; reason: string; createdAt: string }[];
+}
+
+export interface MyReview {
+  id: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  product: { id: string; name: string; slug: string; image: string | null };
 }
 
 export interface CustomerAddress {
@@ -118,4 +137,12 @@ export async function deleteCustomerAddress(id: string): Promise<{ success: bool
  */
 export async function setDefaultCustomerAddress(id: string): Promise<CustomerAddress> {
   return apiClient.post<CustomerAddress>(`/customers/me/addresses/${id}/default`);
+}
+
+export async function getMyLoyalty(): Promise<LoyaltyOverview> {
+  return apiClient.get<LoyaltyOverview>('/customers/me/loyalty');
+}
+
+export async function getMyReviews(): Promise<MyReview[]> {
+  return apiClient.get<MyReview[]>('/customers/me/reviews');
 }

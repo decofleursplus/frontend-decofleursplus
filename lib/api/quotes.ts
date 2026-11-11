@@ -13,15 +13,26 @@ export interface SubmitQuotePayload {
   inspirationImages?: string[];
 }
 
+export type QuoteStatus = 'NEW' | 'UNDER_REVIEW' | 'SENT' | 'ACCEPTED' | 'REFUSED' | 'CONVERTED_TO_ORDER';
+
+/** Devis vu par le client (sans notes internes). */
 export interface QuoteItem {
   id: string;
   quoteNumber: string;
-  status: 'NEW' | 'UNDER_REVIEW' | 'SENT' | 'ACCEPTED' | 'REFUSED' | 'CONVERTED_TO_ORDER';
+  status: QuoteStatus;
   eventType: string;
-  eventDate?: string | null;
+  eventDate: string | null;
   eventLocation: string;
-  budgetRange?: string | null;
-  quotedAmount?: number | null;
+  budgetRange: string | null;
+  estimatedGuests: number | null;
+  details: string | null;
+  inspirationImages: string[];
+  /** null tant que la proposition n'est pas envoyée */
+  quotedAmount: number | null;
+  /** Lignes de la proposition (vide tant qu'elle n'est pas envoyée) */
+  items: { description: string; quantity: number; unitPrice: number }[];
+  sentAt: string | null;
+  respondedAt: string | null;
   createdAt: string;
 }
 
@@ -94,10 +105,13 @@ export async function submitQuote(payload: SubmitQuotePayload): Promise<{
  * Endpoint: GET /api/v1/quotes/mine
  */
 export async function getMyQuotes(): Promise<QuoteItem[]> {
-  try {
-    const quotes = await apiClient.get<QuoteItem[]>('/quotes/mine');
-    return quotes || [];
-  } catch {
-    return [];
-  }
+  return apiClient.get<QuoteItem[]>('/quotes/mine');
+}
+
+/** Accepter ou refuser une proposition reçue (statut SENT). */
+export async function respondToQuote(id: string, decision: 'ACCEPTED' | 'REFUSED', comment?: string): Promise<QuoteItem> {
+  return apiClient.post<QuoteItem>(`/quotes/mine/${id}/respond`, {
+    decision,
+    ...(comment?.trim() ? { comment: comment.trim() } : {}),
+  });
 }

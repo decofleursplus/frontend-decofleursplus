@@ -1,4 +1,17 @@
+/**
+ * Commandes client : zones, chiffrage du panier, passage de commande, suivi.
+ * Les erreurs de l'API remontent (ApiClientError) : l'écran affiche le message exact.
+ */
 import { apiClient } from './client';
+
+export type DeliveryMode = 'STANDARD' | 'EXPRESS' | 'PICKUP';
+export type OrderPaymentMethod = 'WAVE' | 'ORANGE_MONEY' | 'FREE_MONEY' | 'CARD' | 'CASH_ON_DELIVERY';
+export type OrderStatus = 'PENDING' | 'PAID' | 'PREPARING' | 'READY' | 'IN_DELIVERY' | 'DELIVERED' | 'CANCELLED';
+export type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+
+/** Créneaux acceptés par le serveur */
+export const TIME_SLOTS = ['9h-12h', '10h-14h', '14h-18h', '18h-20h'] as const;
+export type TimeSlot = (typeof TIME_SLOTS)[number];
 
 export interface DeliveryZone {
   id: string;
@@ -7,6 +20,7 @@ export interface DeliveryZone {
   coverage: string | null;
   fee: number;
   expressFee: number;
+  /** Livraison standard offerte à partir de ce sous-total ; null = jamais */
   freeAbove: number | null;
   estimatedTimeHours: number;
   sortOrder: number;
@@ -22,36 +36,51 @@ export interface OrderCartItemInput {
 
 export interface QuoteCartPayload {
   items: OrderCartItemInput[];
-  deliveryMode?: 'STANDARD' | 'EXPRESS' | 'PICKUP';
+  deliveryMode?: DeliveryMode;
   deliveryZoneId?: string;
   couponCode?: string;
 }
 
-export interface OrderTotals {
+export interface QuotedLine {
+  productId: string;
+  variantId: string;
+  productName: string;
+  variantName: string | null;
+  sku: string | null;
+  image: string | null;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  giftWrap: boolean;
+  cardMessage: string | null;
+  extrasPrice: number;
+  availableStock: number;
+  /** Prix catalogue si une promotion s'applique */
+  originalUnitPrice: number | null;
+  promotion: { id: string; name: string; badgeText: string; discountPercentage: number } | null;
+}
+
+/** Montants calculés par le serveur (seule source de vérité des prix). */
+export interface CartQuote {
+  items: QuotedLine[];
+  deliveryZone: { id: string; name: string } | null;
+  appliedCoupon: { id: string; code: string; discountAmount: number; freeShipping: boolean } | null;
   subtotal: number;
-  deliveryFee: number;
+  extrasAmount: number;
   discountAmount: number;
+  deliveryFee: number;
   totalAmount: number;
 }
 
-export interface QuoteCartResponse {
-  totals: OrderTotals;
-  zone: DeliveryZone | null;
-  appliedCoupon?: { id: string; code: string; discountAmount: number } | null;
-}
-
-export interface PlaceOrderPayload {
-  items: OrderCartItemInput[];
-  deliveryMode?: 'STANDARD' | 'EXPRESS' | 'PICKUP';
-  deliveryZoneId?: string;
-  couponCode?: string;
-  paymentMethod: 'WAVE' | 'ORANGE_MONEY' | 'FREE_MONEY' | 'CARD' | 'CASH_ON_DELIVERY';
+export interface PlaceOrderPayload extends QuoteCartPayload {
+  paymentMethod: OrderPaymentMethod;
   phone?: string;
   recipientName?: string;
   recipientPhone?: string;
   deliveryAddress?: string;
+  /** AAAA-MM-JJ */
   deliveryDate?: string;
-  timeSlot?: '9h-12h' | '10h-14h' | '14h-18h' | '18h-20h';
+  timeSlot?: TimeSlot;
   notes?: string;
 }
 
@@ -68,37 +97,50 @@ export interface CustomerOrderItem {
   totalPrice: number;
   giftWrap: boolean;
   cardMessage: string | null;
+  extrasPrice: number;
+}
+
+export interface OrderStatusHistoryEntry {
+  id: string;
+  fromStatus: OrderStatus | null;
+  toStatus: OrderStatus;
+  note: string | null;
+  createdAt: string;
 }
 
 export interface CustomerOrder {
   id: string;
   orderNumber: string;
-  userId?: string | null;
-  customerName?: string;
-  customerEmail?: string;
-  customerPhone?: string;
-  orderStatus: 'PENDING' | 'PAID' | 'PREPARING' | 'READY' | 'IN_DELIVERY' | 'DELIVERED' | 'CANCELLED';
-  paymentStatus: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
-  paymentMethod: 'WAVE' | 'ORANGE_MONEY' | 'FREE_MONEY' | 'CARD' | 'CASH_ON_DELIVERY';
-  deliveryMode: 'STANDARD' | 'EXPRESS' | 'PICKUP';
-  recipientName?: string | null;
-  recipientPhone?: string | null;
-  phone?: string | null;
-  deliveryAddress?: string | null;
-  deliveryDate?: string | null;
-  timeSlot?: string | null;
+  userId: string | null;
+  customerName: string;
+  customerEmail: string | null;
+  customerPhone: string;
+  recipientName: string | null;
+  recipientPhone: string | null;
+  deliveryMode: DeliveryMode;
+  deliveryAddress: string | null;
+  deliveryZone: { id: string; name: string } | null;
+  deliveryDate: string | null;
+  timeSlot: string | null;
   subtotal: number;
-  deliveryFee: number;
+  extrasAmount: number;
   discountAmount: number;
+  couponCode: string | null;
+  deliveryFee: number;
   totalAmount: number;
-  notes?: string | null;
-  paidAt?: string | null;
-  cancelledAt?: string | null;
-  cancelReason?: string | null;
+  paymentStatus: PaymentStatus;
+  paymentMethod: OrderPaymentMethod;
+  orderStatus: OrderStatus;
+  notes: string | null;
+  paidAt: string | null;
+  cancelledAt: string | null;
+  cancelReason: string | null;
   items: CustomerOrderItem[];
-  checkoutUrl?: string | null;
+  statusHistory: OrderStatusHistoryEntry[];
+  /** URL de paiement en ligne (uniquement à la création ou après une relance) */
+  checkoutUrl: string | null;
   createdAt: string;
-  updatedAt?: string;
+  updatedAt: string;
 }
 
 export interface DeliveryTrackingStep {
@@ -110,16 +152,16 @@ export interface DeliveryTrackingStep {
 
 export interface DeliveryTracking {
   orderNumber: string;
-  orderStatus: string;
-  deliveryMode: 'STANDARD' | 'EXPRESS' | 'PICKUP';
-  deliveryStatus: 'PENDING' | 'ASSIGNED' | 'IN_PROGRESS' | 'DELIVERED' | 'FAILED' | 'CANCELLED' | null;
-  deliveryAddress?: string | null;
-  deliveryZone?: { id: string; name: string } | null;
-  scheduledDate?: string | null;
-  timeSlot?: string | null;
-  driver?: { name: string; phone: string; vehicle?: string } | null;
-  deliveredAt?: string | null;
-  failureReason?: string | null;
+  orderStatus: OrderStatus;
+  deliveryMode: DeliveryMode;
+  deliveryStatus: 'TO_DELIVER' | 'IN_PROGRESS' | 'DELIVERED' | 'FAILED' | 'CANCELLED' | null;
+  deliveryAddress: string | null;
+  deliveryZone: { id: string; name: string } | null;
+  scheduledDate: string | null;
+  timeSlot: string | null;
+  driver: { name: string; phone: string; vehicle: string } | null;
+  deliveredAt: string | null;
+  failureReason: string | null;
   steps: DeliveryTrackingStep[];
 }
 
@@ -131,104 +173,76 @@ export interface PaginatedOrders {
   totalPages: number;
 }
 
-/**
- * Récupère les zones de livraison actives
- * Endpoint: GET /api/v1/delivery-zones
- */
+export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
+  PENDING: 'En attente',
+  PAID: 'Payée',
+  PREPARING: 'En préparation',
+  READY: 'Prête',
+  IN_DELIVERY: 'En livraison',
+  DELIVERED: 'Livrée',
+  CANCELLED: 'Annulée',
+};
+
+export const PAYMENT_METHOD_LABELS: Record<OrderPaymentMethod, string> = {
+  WAVE: 'Wave',
+  ORANGE_MONEY: 'Orange Money',
+  FREE_MONEY: 'Free Money',
+  CARD: 'Carte bancaire',
+  CASH_ON_DELIVERY: 'Paiement à la livraison',
+};
+
+export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
+  PENDING: 'En attente de paiement',
+  PAID: 'Payée',
+  FAILED: 'Paiement échoué',
+  REFUNDED: 'Remboursée',
+};
+
+export const DELIVERY_MODE_LABELS: Record<DeliveryMode, string> = {
+  STANDARD: 'Livraison standard',
+  EXPRESS: 'Livraison express',
+  PICKUP: 'Retrait en boutique',
+};
+
+/** Zones de livraison actives (triées par le serveur). */
 export async function getDeliveryZones(): Promise<DeliveryZone[]> {
-  try {
-    const zones = await apiClient.get<DeliveryZone[]>('/delivery-zones');
-    return zones || [];
-  } catch {
-    return [];
-  }
+  return apiClient.get<DeliveryZone[]>('/delivery-zones');
 }
 
-/**
- * Calcule et valide le montant du panier côté serveur
- * Endpoint: POST /api/v1/orders/quote
- */
-export async function quoteOrder(payload: QuoteCartPayload): Promise<QuoteCartResponse | null> {
-  try {
-    const res = await apiClient.post<QuoteCartResponse>('/orders/quote', payload);
-    return res;
-  } catch {
-    return null;
-  }
+/** Chiffre le panier côté serveur (prix, options, promotions, coupon, livraison). */
+export async function quoteOrder(payload: QuoteCartPayload): Promise<CartQuote> {
+  return apiClient.post<CartQuote>('/orders/quote', payload);
 }
 
-/**
- * Crée une commande et initialise le paiement NabooPay (si applicable)
- * Endpoint: POST /api/v1/orders
- */
-export async function placeOrder(payload: PlaceOrderPayload): Promise<{
-  success: boolean;
-  order?: CustomerOrder;
-  error?: string;
-}> {
-  try {
-    const order = await apiClient.post<CustomerOrder>('/orders', payload);
-    return { success: true, order };
-  } catch (err: any) {
-    return {
-      success: false,
-      error: err.message || 'Impossible de créer la commande. Veuillez vérifier vos informations.',
-    };
-  }
+/** Crée la commande ; `checkoutUrl` est renseigné pour un paiement en ligne. */
+export async function placeOrder(payload: PlaceOrderPayload): Promise<CustomerOrder> {
+  return apiClient.post<CustomerOrder>('/orders', payload);
 }
 
-/**
- * Récupère les commandes du client connecté
- * Endpoint: GET /api/v1/orders/mine
- */
 export async function getMyOrders(page = 1, limit = 20): Promise<PaginatedOrders> {
-  try {
-    const res = await apiClient.get<PaginatedOrders>('/orders/mine', {
-      params: { page, limit },
-    });
-    return res || { items: [], total: 0, page: 1, limit: 20, totalPages: 1 };
-  } catch {
-    return { items: [], total: 0, page: 1, limit: 20, totalPages: 1 };
-  }
+  return apiClient.get<PaginatedOrders>('/orders/mine', { params: { page, limit } });
 }
 
-/**
- * Récupère le détail d'une commande par son numéro
- * Endpoint: GET /api/v1/orders/mine/:orderNumber
- */
-export async function getMyOrder(orderNumber: string): Promise<CustomerOrder | null> {
-  try {
-    const order = await apiClient.get<CustomerOrder>(`/orders/mine/${encodeURIComponent(orderNumber)}`);
-    return order;
-  } catch {
-    return null;
-  }
+export async function getMyOrder(orderNumber: string): Promise<CustomerOrder> {
+  return apiClient.get<CustomerOrder>(`/orders/mine/${encodeURIComponent(orderNumber)}`);
 }
 
-/**
- * Annule une commande en attente
- * Endpoint: POST /api/v1/orders/mine/:orderNumber/cancel
- */
-export async function cancelMyOrder(orderNumber: string, reason?: string): Promise<boolean> {
-  try {
-    await apiClient.post(`/orders/mine/${encodeURIComponent(orderNumber)}/cancel`, { reason });
-    return true;
-  } catch {
-    return false;
-  }
+export async function cancelMyOrder(orderNumber: string, reason?: string): Promise<CustomerOrder> {
+  return apiClient.post<CustomerOrder>(`/orders/mine/${encodeURIComponent(orderNumber)}/cancel`, {
+    ...(reason?.trim() ? { reason: reason.trim() } : {}),
+  });
 }
 
-/**
- * Suivi en temps réel de la livraison d'une commande
- * Endpoint: GET /api/v1/orders/mine/:orderNumber/tracking
- */
-export async function getOrderTracking(orderNumber: string): Promise<DeliveryTracking | null> {
-  try {
-    const tracking = await apiClient.get<DeliveryTracking>(
-      `/orders/mine/${encodeURIComponent(orderNumber)}/tracking`
-    );
-    return tracking;
-  } catch {
-    return null;
-  }
+export async function getOrderTracking(orderNumber: string): Promise<DeliveryTracking> {
+  return apiClient.get<DeliveryTracking>(`/orders/mine/${encodeURIComponent(orderNumber)}/tracking`);
+}
+
+/** Enregistre le panier du client connecté (relances « paniers abandonnés » côté back-office). */
+export async function saveMyCart(items: OrderCartItemInput[]): Promise<void> {
+  await apiClient.put('/cart/mine', { items });
+}
+
+/** Vide le panier enregistré côté serveur. */
+export async function clearMyCart(): Promise<void> {
+  await apiClient.delete('/cart/mine');
 }

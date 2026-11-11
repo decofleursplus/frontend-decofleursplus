@@ -9796,3 +9796,22 @@ body:has(.mobile-drawer-overlay) .floating-whatsapp-btn {
     color: #24251f;
   }
 }
+
+/* ── Impression d'une facture client : seule la feuille est imprimée ── */
+@media print {
+  body:has(.invoice-sheet) .site-header,
+  body:has(.invoice-sheet) footer,
+  body:has(.invoice-sheet) .account-sidebar,
+  body:has(.invoice-sheet) .floating-whatsapp-btn,
+  body:has(.invoice-sheet) aside[aria-label='Promotion en cours'],
+  body:has(.invoice-sheet) .invoice-actions {
+    display: none !important;
+  }
+  body:has(.invoice-sheet) .account-layout {
+    display: block;
+  }
+  body:has(.invoice-sheet) .invoice-sheet {
+    border: none;
+    padding: 0;
+  }
+}

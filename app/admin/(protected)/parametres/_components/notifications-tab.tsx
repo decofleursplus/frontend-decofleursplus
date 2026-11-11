@@ -15,17 +15,14 @@ type BooleanKey = {
   [K in keyof NotificationSettings]: NotificationSettings[K] extends boolean ? K : never;
 }[keyof NotificationSettings];
 
-const CHANNELS: { key: BooleanKey; label: string }[] = [
-  { key: 'emailEnabled', label: 'Email' },
-  { key: 'whatsappEnabled', label: 'WhatsApp' },
-  { key: 'smsEnabled', label: 'SMS' },
-];
+/** Canaux réellement disponibles : seul l'email a un fournisseur d'envoi branché. */
+const UNAVAILABLE_CHANNELS = ['WhatsApp', 'SMS'];
 
 const EVENTS: { key: BooleanKey; label: string; desc: string }[] = [
-  { key: 'onNewOrder', label: 'Nouvelle commande', desc: 'Prévenir l’équipe à chaque nouvelle commande.' },
-  { key: 'onDriverAssigned', label: 'Livreur assigné', desc: 'Prévenir le client lorsqu’un livreur prend en charge sa commande.' },
-  { key: 'onDelivered', label: 'Commande livrée', desc: 'Confirmer la livraison au client.' },
-  { key: 'onLowStock', label: 'Stock bas', desc: 'Alerter l’équipe lorsqu’un produit passe sous son seuil d’alerte.' },
+  { key: 'onNewOrder', label: 'Nouvelle commande', desc: 'Email à l’adresse d’alerte ci-dessous à chaque nouvelle commande.' },
+  { key: 'onLowStock', label: 'Stock bas ou rupture', desc: 'Email à l’adresse d’alerte quand un produit passe sous son seuil d’alerte.' },
+  { key: 'onDriverAssigned', label: 'Livreur en route', desc: 'Email au client quand le livreur démarre la livraison (avec le lien de suivi).' },
+  { key: 'onDelivered', label: 'Commande livrée', desc: 'Email au client pour confirmer la livraison.' },
 ];
 
 export function NotificationsTab({
@@ -76,7 +73,7 @@ export function NotificationsTab({
           <div>
             <CardTitle className="text-base font-bold text-gray-900">Notifications & alertes</CardTitle>
             <CardDescription className="text-xs text-gray-500">
-              Canaux souhaités, événements à signaler et contacts d&apos;alerte de la gérance.
+              Emails envoyés automatiquement à l&apos;équipe et aux clients.
             </CardDescription>
           </div>
           {canEdit && (
@@ -95,27 +92,32 @@ export function NotificationsTab({
 
       <CardContent className="space-y-5 pt-2 text-xs">
         {!canEdit && <ReadOnlyNote />}
-        <InfoNote tone="warning">
-          Ces préférences sont enregistrées sur le serveur, mais ne pilotent pas encore les envois : les emails
-          transactionnels et les notifications internes partent aujourd&apos;hui indépendamment de ces réglages, et
-          aucun fournisseur WhatsApp ou SMS n&apos;est connecté.
+        <InfoNote>
+          Les notifications internes (cloche du back-office) sont toujours envoyées. Ces réglages pilotent les{' '}
+          <strong>emails</strong> : un client ne reçoit en plus un email que s&apos;il ne l&apos;a pas désactivé dans ses
+          propres préférences.
         </InfoNote>
 
         <div className="space-y-2">
-          <h4 className="font-semibold text-gray-900">Canaux souhaités</h4>
+          <h4 className="font-semibold text-gray-900">Canaux d&apos;envoi</h4>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {CHANNELS.map((channel) => (
+            <div className="flex items-center justify-between p-3 rounded-lg border border-gray-200 bg-white">
+              <span className="font-medium text-gray-800">Email</span>
+              <Switch
+                aria-label="Email"
+                checked={draft.emailEnabled}
+                disabled={!canEdit}
+                onCheckedChange={(checked) => set({ emailEnabled: checked })}
+              />
+            </div>
+            {UNAVAILABLE_CHANNELS.map((label) => (
               <div
-                key={channel.key}
-                className="flex items-center justify-between p-3 rounded-lg border border-gray-200 bg-white"
+                key={label}
+                className="flex items-center justify-between p-3 rounded-lg border border-dashed border-gray-200 bg-gray-50/60"
+                title="Aucun fournisseur d’envoi n’est connecté pour ce canal"
               >
-                <span className="font-medium text-gray-800">{channel.label}</span>
-                <Switch
-                  aria-label={channel.label}
-                  checked={draft[channel.key]}
-                  disabled={!canEdit}
-                  onCheckedChange={(checked) => set({ [channel.key]: checked })}
-                />
+                <span className="font-medium text-gray-500">{label}</span>
+                <span className="text-[10px] font-semibold text-gray-400">Non disponible</span>
               </div>
             ))}
           </div>
@@ -146,21 +148,8 @@ export function NotificationsTab({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-gray-100">
           <div className="space-y-1.5">
-            <Label htmlFor="adminAlertPhone" className="font-semibold text-gray-700">
-              Téléphone d&apos;alerte de la gérance
-            </Label>
-            <Input
-              id="adminAlertPhone"
-              value={draft.adminAlertPhone}
-              disabled={!canEdit}
-              onChange={(e) => set({ adminAlertPhone: e.target.value })}
-              className="h-9 text-xs"
-            />
-            <FieldError message={errors['notifications.adminAlertPhone']} />
-          </div>
-          <div className="space-y-1.5">
             <Label htmlFor="adminAlertEmail" className="font-semibold text-gray-700">
-              Email d&apos;alerte de la gérance
+              Adresse email d&apos;alerte de l&apos;équipe
             </Label>
             <Input
               id="adminAlertEmail"
@@ -171,6 +160,7 @@ export function NotificationsTab({
               className="h-9 text-xs"
             />
             <FieldError message={errors['notifications.adminAlertEmail']} />
+            <p className="text-[11px] text-gray-400">Reçoit les alertes « nouvelle commande » et « stock bas ».</p>
           </div>
         </div>
       </CardContent>

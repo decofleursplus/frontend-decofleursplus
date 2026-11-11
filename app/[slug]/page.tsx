@@ -16,7 +16,6 @@ import {
   Star,
   Truck,
   BookOpen,
-  Calendar,
   Calculator,
   Sprout,
   CheckCircle2,
@@ -24,13 +23,14 @@ import {
   UtensilsCrossed,
   Building2,
 } from 'lucide-react';
-import { products } from '@/lib/products';
+import { formatPrice } from '@/lib/products';
+import { getCategories } from '@/lib/api/catalog';
+import { getPublicSettings } from '@/lib/api/settings';
+import { LiveProductGrid, loadZones } from '@/components/storefront/live-data';
 import { CatalogClient } from '@/components/catalog-client';
-import { ProductGrid } from '@/components/product-grid';
 import { SiteFooter } from '@/components/site-footer';
 import { ContactForm } from '@/components/contact-form';
 import { ContactMap } from '@/components/contact-map';
-import { SharedDevisForm } from '@/components/shared-devis-form';
 import { BotanicalCorners } from '@/components/botanical-corners';
 
 const categories: Record<string, string> = {
@@ -151,7 +151,6 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
     redirect('/#faq');
   }
 
-  if (title) return <CategoryPage title={title} slug={slug} />;
   if (slug === 'recherche') {
     return (
       <>
@@ -186,24 +185,12 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
             </div>
           </section>
 
-          <div className="content-links">
-            {[
-              ['Mariages & Cérémonies', '/mariages'],
-              ['Anniversaires & Réceptions', '/anniversaires'],
-              ['Décoration & Tables', '/decoration'],
-              ['Cérémonies de deuil', '/deuil'],
-            ].map(([label, href]) => (
-              <Link className="content-link-card" href={href} key={href}>
-                <span>{label}</span>
-                <ArrowRight size={16} />
-              </Link>
-            ))}
-          </div>
+          <EventCategoryLinks />
 
           <div className="section-heading" style={{ marginTop: '36px' }}>
             <h2>Compositions recommandées pour vos réceptions</h2>
           </div>
-          <ProductGrid products={products.filter((p) => p.category === 'Mariages' || p.category === 'Bouquets')} />
+          <LiveProductGrid limit={8} />
 
           <div style={{ marginTop: '48px', marginBottom: '40px', display: 'flex', justifyContent: 'center' }}>
             <Link className="button-pill-pink" href="/devis?type=evenements" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
@@ -218,8 +205,6 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
   if (slug === 'livraison') return <DeliveryPage />;
   if (slug === 'a-propos') return <AboutPage />;
   if (slug === 'contact') return <ContactPage />;
-  if (slug === 'faq') redirect('/#faq');
-  if (slug === 'blog') return <BlogPage />;
   if (slug === 'conditions' || slug === 'confidentialite') {
     return (
       <>
@@ -252,95 +237,24 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
   notFound();
 }
 
-function CategoryPage({ title, slug }: { title: string; slug: string }) {
-  return (
-    <div className="relative min-h-screen bg-white text-[#1c2e20] overflow-x-hidden">
-      <BotanicalCorners />
-      <main className="content-width page-main">
-        <section className="page-banner shop-banner">
-          <Image
-            src="/images/hero.jpg"
-            alt={`Compositions ${title} Décofleur Plus`}
-            fill
-            sizes="100vw"
-          />
-          <div>
-            <h1>{title}</h1>
-            <p>Découvrez nos créations artisanales fraîches pour la catégorie {title}.</p>
-          </div>
-        </section>
-
-        <div className="breadcrumbs">
-          <Link href="/">Accueil</Link>
-          <span>›</span>
-          <Link href="/boutique">Boutique</Link>
-          <span>›</span>
-          <span>{title}</span>
-        </div>
-
-        <CatalogClient initialCategory={title} />
-
-        <div className="category-crosslinks">
-          {Object.entries(categories)
-            .filter(([other]) => other !== slug)
-            .slice(0, 6)
-            .map(([other, label]) => (
-              <Link href={`/${other}`} key={other}>
-                {label}
-              </Link>
-            ))}
-        </div>
-      </main>
-      <SiteFooter />
-    </div>
-  );
-}
-
-function DeliveryPage() {
-  const deliveryZones = [
-    {
-      zone: 'Zone 1 · Saly Cœur',
-      places: 'Saly Portudal, Saly Niakhniakhal, Saly Tapée, Saly Carrefour, Résidences balnéaires',
-      time: 'Livraison en 2h à 3h (ou créneau horaire précis)',
-      price: '2 000 FCFA',
-      tag: 'Express 90 min dispo',
-    },
-    {
-      zone: 'Zone 2 · Saly & Mbour Nord',
-      places: 'Saly Joseph, Ngaparou, Mbour centre, Saly Golf',
-      time: 'Livraison en 3h à 4h',
-      price: '2 500 FCFA',
-      tag: 'Quotidien',
-    },
-    {
-      zone: 'Zone 3 · Petite Côte Sud & Ouest',
-      places: 'La Somone, Warang, Nianing, Mbour Tefess',
-      time: 'Livraison en 3h à 5h',
-      price: '3 500 FCFA',
-      tag: 'Quotidien',
-    },
-    {
-      zone: 'Zone 4 · Périphérie Petite Côte',
-      places: 'Popenguine, Toubab Dialaw, Sindia, Malicounda',
-      time: 'Même jour pour toute commande avant 14h',
-      price: '5 000 FCFA',
-      tag: 'Sur créneau',
-    },
-    {
-      zone: 'Zone 5 · Dakar & Environs',
-      places: 'Dakar ville, Almadies, Plateau, Diamniadio, Thiès',
-      time: 'Navette quotidienne sécurisée ou coursier dédié',
-      price: '8 000 FCFA',
-      tag: 'Navette sécurisée',
-    },
-    {
-      zone: 'Atelier DécoFleur Plus',
-      places: 'Retrait sur place à la boutique (Route de la Plage, Saly Portudal)',
-      time: 'Prêt en 60 minutes après commande',
-      price: 'Gratuit',
-      tag: 'Click & Collect',
-    },
-  ];
+async function DeliveryPage() {
+  const [zones, settings] = await Promise.all([loadZones(), getPublicSettings().catch(() => null)]);
+  const deliveryZones = (zones ?? []).map((z) => ({
+    zone: z.name,
+    places: z.coverage || '—',
+    time: `Délai indicatif : ${z.estimatedTimeHours < 24 ? `${z.estimatedTimeHours} h` : `${Math.round(z.estimatedTimeHours / 24)} jour(s)`}`,
+    price: formatPrice(z.fee),
+    tag: [`Express ${formatPrice(z.expressFee)}`, z.freeAbove ? `Offerte dès ${formatPrice(z.freeAbove)}` : null]
+      .filter(Boolean)
+      .join(' · '),
+  }));
+  deliveryZones.push({
+    zone: 'Retrait à l’atelier',
+    places: settings?.boutique.address ?? 'À notre boutique',
+    time: 'Au créneau choisi lors de la commande',
+    price: 'Gratuit',
+    tag: 'Click & Collect',
+  });
 
   const steps = [
     {
@@ -467,6 +381,11 @@ function DeliveryPage() {
                   </tr>
                 </thead>
                 <tbody>
+                  {zones === null && (
+                    <tr>
+                      <td colSpan={4}>Les tarifs sont momentanément indisponibles : ils restent affichés au panier.</td>
+                    </tr>
+                  )}
                   {deliveryZones.map((z, idx) => (
                     <tr key={idx}>
                       <td>
@@ -826,82 +745,26 @@ function ContactPage() {
   );
 }
 
-function BlogPage() {
-  const blogArticles = [
-    {
-      title: 'Comment entretenir vos roses et bouquets sous le climat de Saly',
-      category: 'Conseils Fleurs',
-      date: '15 Septembre 2026',
-      readTime: '4 min de lecture',
-      excerpt: 'Découvrez nos astuces de fleuristes pour prolonger la fraîcheur de vos bouquets de fleurs coupées face à la chaleur et à l’air marin de la Petite Côte.',
-      image: '/images/bouquet-detail.jpg',
-    },
-    {
-      title: 'Mariage sur la Petite Côte : les fleurs idéales pour une cérémonie inoubliable',
-      category: 'Mariages',
-      date: '02 Septembre 2026',
-      readTime: '6 min de lecture',
-      excerpt: 'Du bouquet de mariée aux arches florales de plage, découvrez les variétés résistantes et les palettes de couleurs tendance pour célébrer votre union à Saly.',
-      image: '/images/mariage.jpg',
-    },
-    {
-      title: 'Pourquoi offrir un panier de fruits tropicaux pour vos réceptions',
-      category: 'Idées Cadeaux',
-      date: '20 Août 2026',
-      readTime: '3 min de lecture',
-      excerpt: 'Une alternative saine, élégante et gourmande aux cadeaux traditionnels. Sélection des meilleurs fruits du Sénégal pour ravir vos convives.',
-      image: '/images/fruits.jpg',
-    },
-    {
-      title: 'Les bienfaits des plantes d’intérieur dépolluantes chez vous',
-      category: 'Plantes & Déco',
-      date: '10 Août 2026',
-      readTime: '5 min de lecture',
-      excerpt: 'Monstera, Ficus et Orchidées : comment purifier l’atmosphère de votre villa ou appartement tout en créant une oasis végétale apaisante.',
-      image: '/images/plante-monstera.jpg',
-    },
-  ];
-
+/** Liens vers les catégories réelles du catalogue (page Événements). */
+async function EventCategoryLinks() {
+  let categories: { slug: string; name: string }[] = [];
+  try {
+    categories = await getCategories();
+  } catch (error) {
+    console.error('[Événements] Catégories indisponibles :', error);
+  }
   return (
-    <>
-      <main className="content-width page-main">
-        <div className="page-copy">
-          <span className="eyebrow"><BookOpen size={16} /> Le Journal Floral</span>
-          <h1>Conseils, Inspirations & Tendances</h1>
-          <p>Retrouvez nos guides d’experts fleuristes, conseils d’entretien et inspirations pour vos décors et événements.</p>
-        </div>
-
-        <div className="blog-grid">
-          {blogArticles.map((art, idx) => (
-            <article key={idx} className="blog-card">
-              <div className="blog-card-image">
-                <Image
-                  src={art.image}
-                  alt={art.title}
-                  fill
-                  sizes="(max-width: 768px) 100vw, 500px"
-                  style={{ objectFit: 'cover', objectPosition: 'center' }}
-                  priority={idx === 0}
-                />
-                <span className="blog-badge">{art.category}</span>
-              </div>
-              <div className="blog-card-body">
-                <div className="blog-meta">
-                  <span><Calendar size={13} /> {art.date}</span>
-                  <span>•</span>
-                  <span>{art.readTime}</span>
-                </div>
-                <h3>{art.title}</h3>
-                <p>{art.excerpt}</p>
-                <Link href="/boutique" className="blog-read-more">
-                  Découvrir nos compositions associées <ArrowRight size={14} />
-                </Link>
-              </div>
-            </article>
-          ))}
-        </div>
-      </main>
-      <SiteFooter />
-    </>
+    <div className="content-links">
+      {categories.map((c) => (
+        <Link className="content-link-card" href={`/categories/${c.slug}`} key={c.slug}>
+          <span>{c.name}</span>
+          <ArrowRight size={16} />
+        </Link>
+      ))}
+      <Link className="content-link-card" href="/devis?type=evenements">
+        <span>Décoration événementielle sur devis</span>
+        <ArrowRight size={16} />
+      </Link>
+    </div>
   );
 }

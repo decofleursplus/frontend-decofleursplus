@@ -19,8 +19,7 @@ import { constructMetadata } from '@/lib/seo/metadata';
 import { Breadcrumbs } from '@/components/seo/breadcrumbs';
 import { JsonLd } from '@/components/seo/json-ld';
 import { getLocalLandingSchema } from '@/lib/seo/schema';
-import { products } from '@/lib/products';
-import { ProductGrid } from '@/components/product-grid';
+import { LiveProductGrid, ZoneFeeSentence } from '@/components/storefront/live-data';
 
 export const metadata: Metadata = constructMetadata({
   title: 'Fleuriste Mbour — Livraison de Bouquets & Cadeaux | Décofleur Plus',
@@ -54,7 +53,6 @@ export default function FleuristeMbourPage() {
     { label: 'Fleuriste Mbour' },
   ];
 
-  const mbourProducts = products.filter((p) => p.category === 'Paniers de fruits' || p.category === 'Bouquets' || p.category === 'Cadeaux').slice(0, 4);
 
   return (
     <div className="relative min-h-screen bg-white text-[#1c2e20] overflow-x-hidden">
@@ -125,7 +123,7 @@ export default function FleuristeMbourPage() {
               Course dans la journée
             </h3>
             <p className="text-neutral-600 text-xs sm:text-sm leading-relaxed">
-              Commandez le matin pour une livraison soignée dans l’après-midi. Forfait 3 000 FCFA (offert dès 50 000 FCFA).
+              Commandez le matin pour une livraison soignée dans l’après-midi. <ZoneFeeSentence zoneSlug="mbour" />.
             </p>
           </div>
 
@@ -157,7 +155,7 @@ export default function FleuristeMbourPage() {
               Voir tout le catalogue →
             </Link>
           </div>
-          <ProductGrid products={mbourProducts} />
+          <LiveProductGrid />
         </section>
 
         {/* FAQ Locale Mbour */}

@@ -1,7 +1,16 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { AlertTriangle, Info, Loader2, Lock, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { ApiClientError } from '@/lib/api/client';
 
 /** Message exact renvoyé par l'API, complété par le détail des champs refusés. */
@@ -72,7 +81,7 @@ export function ErrorBlock({
   );
 }
 
-export function InfoNote({ children, tone = 'info' }: { children: React.ReactNode; tone?: 'info' | 'warning' }) {
+export function InfoNote({ children, tone = 'info' }: { children: ReactNode; tone?: 'info' | 'warning' }) {
   const styles =
     tone === 'warning'
       ? 'border-amber-200 bg-amber-50/70 text-amber-900'
@@ -118,4 +127,48 @@ export function formatDateTime(iso: string | null): string | null {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+/** Confirmation d'une action destructive ; reste ouverte tant que l'action est en cours. */
+export function ConfirmDialog({
+  open,
+  title,
+  description,
+  confirmLabel = 'Confirmer',
+  busy = false,
+  onConfirm,
+  onCancel,
+}: {
+  open: boolean;
+  title: string;
+  description: ReactNode;
+  confirmLabel?: string;
+  busy?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={(next) => !next && !busy && onCancel()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription className="text-sm text-gray-600">{description}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="gap-2">
+          <Button type="button" variant="outline" onClick={onCancel} disabled={busy}>
+            Annuler
+          </Button>
+          <Button
+            type="button"
+            onClick={onConfirm}
+            disabled={busy}
+            className="bg-rose-600 hover:bg-rose-700 text-white gap-1.5"
+          >
+            {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {confirmLabel}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }

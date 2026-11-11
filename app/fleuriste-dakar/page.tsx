@@ -20,8 +20,7 @@ import { constructMetadata } from '@/lib/seo/metadata';
 import { Breadcrumbs } from '@/components/seo/breadcrumbs';
 import { JsonLd } from '@/components/seo/json-ld';
 import { getLocalLandingSchema } from '@/lib/seo/schema';
-import { products } from '@/lib/products';
-import { ProductGrid } from '@/components/product-grid';
+import { LiveProductGrid, ZoneFeeSentence } from '@/components/storefront/live-data';
 
 export const metadata: Metadata = constructMetadata({
   title: 'Fleuriste Dakar & Livraison de Fleurs Fraîches | Décofleur Plus',
@@ -57,7 +56,6 @@ export default function FleuristeDakarPage() {
     { label: 'Fleuriste Dakar' },
   ];
 
-  const dakarProducts = products.slice(0, 4);
 
   return (
     <div className="relative min-h-screen bg-white text-[#1c2e20] overflow-x-hidden">
@@ -174,7 +172,7 @@ export default function FleuristeDakarPage() {
               Voir tout le catalogue →
             </Link>
           </div>
-          <ProductGrid products={dakarProducts} />
+          <LiveProductGrid />
         </section>
 
         {/* Prestations Événementielles à Dakar */}
@@ -237,7 +235,7 @@ export default function FleuristeDakarPage() {
                 Quel est le tarif de livraison pour Dakar ?
               </h3>
               <p className="text-neutral-600 text-xs sm:text-sm leading-relaxed">
-                Le forfait d’acheminement frigorifique vers Dakar est de 5 000 FCFA pour l’ensemble des quartiers de la capitale (Plateau, Almadies, Fann, Yoff, etc.). La livraison est offerte pour toute commande à partir de 75 000 FCFA.
+                Livraison dans tous les quartiers de la capitale (Plateau, Almadies, Fann, Yoff, etc.) : <ZoneFeeSentence zoneSlug="dakar" />. Le montant exact est confirmé au panier.
               </p>
             </div>
 

@@ -19,8 +19,7 @@ import { constructMetadata } from '@/lib/seo/metadata';
 import { Breadcrumbs } from '@/components/seo/breadcrumbs';
 import { JsonLd } from '@/components/seo/json-ld';
 import { getLocalLandingSchema } from '@/lib/seo/schema';
-import { products } from '@/lib/products';
-import { ProductGrid } from '@/components/product-grid';
+import { LiveProductGrid, ZoneFeeSentence } from '@/components/storefront/live-data';
 import { SITE_CONFIG } from '@/lib/seo/config';
 
 export const revalidate = 3600;
@@ -66,7 +65,6 @@ export default function FleuristeSalyPage() {
     { label: 'Fleuriste Saly' },
   ];
 
-  const salyProducts = products.slice(0, 4);
 
   return (
     <div className="relative min-h-screen bg-white text-[#1c2e20] overflow-x-hidden">
@@ -154,7 +152,7 @@ export default function FleuristeSalyPage() {
               Livraison Express Saly 2h
             </h3>
             <p className="text-neutral-700 text-xs sm:text-sm leading-relaxed">
-              Course express en 2h chrono sur Saly Centre, Niakh Niakhal, Saly Tapée et Palm Beach. Forfait 2 000 FCFA (offert dès 35 000 FCFA).
+              Livraison sur Saly Centre, Niakh Niakhal, Saly Tapée et Palm Beach. <ZoneFeeSentence zoneSlug="saly" />.
             </p>
           </div>
         </section>
@@ -174,7 +172,7 @@ export default function FleuristeSalyPage() {
               Voir tout le catalogue →
             </Link>
           </div>
-          <ProductGrid products={salyProducts} />
+          <LiveProductGrid />
         </section>
 
         {/* Section Magasin de Décoration à Saly-Portudal */}

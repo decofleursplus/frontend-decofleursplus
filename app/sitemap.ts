@@ -1,22 +1,11 @@
 import type { MetadataRoute } from 'next';
 import { SITE_URL } from '@/lib/seo/config';
-import { products } from '@/lib/products';
-import { adminBlogArticles } from '@/lib/admin/mock-data/blog';
+import { apiClient } from '@/lib/api/client';
+import { getCategories, getProducts } from '@/lib/api/catalog';
 
-const CATEGORY_SLUGS = [
-  'bouquets',
-  'roses',
-  'plantes',
-  'paniers-de-fruits',
-  'cadeaux',
-  'mariages',
-  'decoration',
-  'bougies',
-  'vases',
-  'deuil',
-  'anniversaires',
-  'occasions',
-];
+// Régénéré toutes les heures à partir du catalogue et du blog réels
+export const revalidate = 3600;
+
 
 const LOCAL_LANDING_SLUGS = [
   'fleuriste-dakar',
@@ -25,7 +14,39 @@ const LOCAL_LANDING_SLUGS = [
   'fleuriste-mbour',
 ];
 
-export default function sitemap(): MetadataRoute.Sitemap {
+/** Toutes les pages d'une liste paginée (100 par page). */
+async function collectAll<T>(fetchPage: (page: number) => Promise<{ items: T[]; totalPages: number }>): Promise<T[]> {
+  const first = await fetchPage(1);
+  const rest = await Promise.all(
+    Array.from({ length: Math.max(0, first.totalPages - 1) }, (_, i) => fetchPage(i + 2)),
+  );
+  return [first, ...rest].flatMap((p) => p.items);
+}
+
+/** Une source indisponible ne doit pas empêcher de servir le reste du plan du site. */
+async function safely<T>(label: string, task: () => Promise<T[]>): Promise<T[]> {
+  try {
+    return await task();
+  } catch (error) {
+    console.error(`[Sitemap] ${label} indisponibles :`, error);
+    return [];
+  }
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const [categories, products, articles] = await Promise.all([
+    safely('Catégories', () => getCategories()),
+    safely('Produits', () => collectAll((page) => getProducts({ page, limit: 100 }))),
+    safely('Articles', () =>
+      collectAll((page) =>
+        apiClient.get<{ items: { slug: string; updatedAt?: string; publishedAt?: string }[]; totalPages: number }>(
+          '/blog/articles',
+          { params: { page, limit: 100 } },
+        ),
+      ),
+    ),
+  ]);
+
   const now = new Date();
 
   // 1. Static Core Pages
@@ -131,7 +152,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }));
 
   // 3. Category Pages
-  const categoryRoutes: MetadataRoute.Sitemap = CATEGORY_SLUGS.map((slug) => ({
+  const categoryRoutes: MetadataRoute.Sitemap = categories.map(({ slug }) => ({
     url: `${SITE_URL}/categories/${slug}`,
     lastModified: now,
     changeFrequency: 'daily',
@@ -147,9 +168,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }));
 
   // 5. Published Blog Articles
-  const blogRoutes: MetadataRoute.Sitemap = adminBlogArticles
-    .filter((article) => article.status === 'publie')
-    .map((article) => ({
+  const blogRoutes: MetadataRoute.Sitemap = articles.map((article) => ({
       url: `${SITE_URL}/blog/${article.slug}`,
       lastModified: new Date(article.updatedAt || article.publishedAt || now),
       changeFrequency: 'weekly',
