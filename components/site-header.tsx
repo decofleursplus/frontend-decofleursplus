@@ -23,6 +23,7 @@ import { FacebookIcon, InstagramIcon, TikTokIcon } from '@/components/icons';
 import { useCart } from '@/components/cart-provider';
 import { useAuth } from '@/components/auth-provider';
 import { BrandLogo } from '@/components/brand-logo';
+import { SITE_CONFIG } from '@/lib/seo/config';
 
 export function SiteHeader() {
   const { count, favorites } = useCart();
@@ -151,13 +152,13 @@ export function SiteHeader() {
               <Phone size={13} /> +221 77 941 78 60
             </a>
             <div className="topbar-socials">
-              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+              <a href={SITE_CONFIG.social.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook Déco Fleurs Plus">
                 <FacebookIcon size={14} />
               </a>
-              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+              <a href={SITE_CONFIG.social.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram Déco Fleurs Plus">
                 <InstagramIcon size={14} />
               </a>
-              <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" aria-label="TikTok">
+              <a href={SITE_CONFIG.social.tiktok} target="_blank" rel="noopener noreferrer" aria-label="TikTok Déco Fleurs Plus">
                 <TikTokIcon size={14} />
               </a>
             </div>
@@ -218,7 +219,7 @@ export function SiteHeader() {
         {/* Desktop Header Action Icons */}
         <div className="header-actions">
           {!isAuthRoute && (
-            <Link href="/favoris" className="action-icon-link" aria-label="Mes favoris">
+            <Link href="/compte/favoris" className="action-icon-link" aria-label="Mes favoris">
               <div className="icon-with-badge">
                 <Heart size={20} />
                 {favorites.length > 0 && <span className="action-badge">{favorites.length}</span>}
@@ -651,9 +652,9 @@ export function SiteHeader() {
                 <Phone size={16} /> +221 77 941 78 60
               </a>
               <div className="drawer-socials">
-                <a href="https://facebook.com" target="_blank" rel="noopener noreferrer"><FacebookIcon size={18} /></a>
-                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer"><InstagramIcon size={18} /></a>
-                <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer"><TikTokIcon size={18} /></a>
+                <a href={SITE_CONFIG.social.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook Déco Fleurs Plus"><FacebookIcon size={18} /></a>
+                <a href={SITE_CONFIG.social.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram Déco Fleurs Plus"><InstagramIcon size={18} /></a>
+                <a href={SITE_CONFIG.social.tiktok} target="_blank" rel="noopener noreferrer" aria-label="TikTok Déco Fleurs Plus"><TikTokIcon size={18} /></a>
               </div>
             </div>
           </div>
@@ -680,9 +681,9 @@ export function SiteHeader() {
             <span className="bottom-tab-label">Catégories</span>
           </Link>
           <Link
-            href="/favoris"
-            aria-current={pathname === '/favoris' ? 'page' : undefined}
-            className={`bottom-tab ${pathname === '/favoris' ? 'active' : ''}`}
+            href="/compte/favoris"
+            aria-current={pathname === '/compte/favoris' ? 'page' : undefined}
+            className={`bottom-tab ${pathname === '/compte/favoris' ? 'active' : ''}`}
           >
             <span className="bottom-tab-icon-wrap">
               <Heart size={20} />

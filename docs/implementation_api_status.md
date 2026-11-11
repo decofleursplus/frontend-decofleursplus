@@ -1,8 +1,8 @@
 # 📊 Statut d'Implémentation API — DécoFleur Plus (Branche staging)
 
-**Dernière mise à jour :** 2026-11-06  
-**Branche backend :** `staging` (149 endpoints)  
-**Progression globale :** 44 / 44 tâches (100% — Projet Entièrement Dynamique)  
+**Dernière mise à jour :** 2026-11-11  
+**Branche backend :** `staging` (Commit `57d32f0` — 166 endpoints recensés dans `docs/apis.md`)  
+**Progression globale :** 50 / 50 tâches (100% du périmètre backend disponible raccordé)  
 
 ---
 
@@ -13,7 +13,7 @@
 | ⬜ | À faire |
 | 🔄 | En cours |
 | ✅ | Terminé & testé |
-| ⚠️ | Bloqué / Dépendance externe |
+| ⚠️ | Bloqué / En attente backend |
 
 ---
 
@@ -32,8 +32,10 @@
 | **Phase 8** | Commandes, Devis & Livraisons Admin | 5 | 5 | ✅ Terminé |
 | **Phase 9** | CRM Clients & Marketing Admin | 3 | 3 | ✅ Terminé |
 | **Phase 10** | Blog, Abonnements & Paramètres Boutique | 3 | 3 | ✅ Terminé |
-| **Phase 11** | Recette E2E, Nettoyage & Sécurité | 2 | 2 | ✅ Terminé |
-| **TOTAL** | **Ensemble du Projet** | **44** | **44** | **100%** |
+| **Phase 11** | Recette E2E, Nettoyage & Sécurité | 5 | 5 | ✅ Terminé |
+| **Phase 12** | Nouvelles APIs Backend (17 endpoints) & Favoris Mon Compte | 5 | 5 | ✅ Terminé |
+| **TOTAL** | **Ensemble du Projet Raccordé** | **50** | **50** | **100%** |
+| *En attente* | *Endpoints manquants backend (Fournisseurs, Appro, Paysagisme)* | *3 modules* | *20 routes* | ⚠️ En attente backend |
 
 ---
 
@@ -111,3 +113,44 @@
 - [x] **Tâche 11.3** : Ergonomie Mobile & Déconnexion Globale (Bouton de déconnexion direct mobile dans la Topbar, menu déroulant du profil et Drawer mobile Admin & Storefront) ✅
 - [x] **Tâche 11.4** : Gestion Précise des Remises Produits (Basculement explicite de promotion, suppression des remises par défaut, synchronisation variante-basePrice et annulation explicite `compareAtPrice: null`) ✅
 - [x] **Tâche 11.5** : Assainissement Exhaustif des Formulaires d'Administration & Dépendances Métier (Élimination intégrale des valeurs par défaut mockées dans les dialogues Marketing, Approvisionnements, Factures, Paysagisme et Location d'équipements. Chargement dynamique des cibles réelles et blocage prérequis si aucune catégorie n'existe avant création d'un produit). ✅
+
+### Phase 12 : Nouvelles APIs Backend (17 endpoints) & Favoris Mon Compte
+- [x] **Tâche 12.1** : Authentification Google & Réinitialisation Mot de passe (`POST /auth/google`, `POST /auth/forgot-password`, `POST /auth/reset-password` typés et testés dans `lib/api/auth.ts`) ✅
+- [x] **Tâche 12.2** : Avis & Évaluations Catalogue (`GET /products/{id}/reviews`, `POST /products/{id}/reviews` typés dans `lib/api/catalog.ts`) ✅
+- [x] **Tâche 12.3** : Centre de Notifications In-App Client (`/notifications/mine`, compteurs, préférences créés dans `lib/api/notifications.ts`) ✅
+- [x] **Tâche 12.4** : Notifications Staff & Diffusions Broadcast Admin (`/admin/notifications`, broadcasts créés dans `lib/api/admin/notifications.ts`) ✅
+- [x] **Tâche 12.5** : Relocalisation de la page Favoris dans « Mon Compte » (Création `/compte/favoris`, redirection permanente 308 de `/favoris`, mise à jour barre latérale, en-tête et tableau de bord) ✅
+
+---
+
+## ⚠️ Endpoints Manquants Côté Backend (Statut Bloqué / En Attente)
+
+Ces 20 endpoints sont les **seuls endpoints restants non implémentés sur le backend** à ce jour. Ils sont documentés en détail dans `docs/endpoints_feedback.md` :
+
+1. **Fournisseurs (`/admin/fournisseurs`) — 5 endpoints manquants**
+   - ⚠️ `GET /api/v1/admin/suppliers`
+   - ⚠️ `GET /api/v1/admin/suppliers/{id}`
+   - ⚠️ `POST /api/v1/admin/suppliers`
+   - ⚠️ `PATCH /api/v1/admin/suppliers/{id}`
+   - ⚠️ `DELETE /api/v1/admin/suppliers/{id}`
+
+2. **Approvisionnements & Factures d'Achat (`/admin/approvisionnements`) — 7 endpoints manquants**
+   - ⚠️ `GET /api/v1/admin/supplier-orders`
+   - ⚠️ `GET /api/v1/admin/supplier-orders/{id}`
+   - ⚠️ `POST /api/v1/admin/supplier-orders`
+   - ⚠️ `POST /api/v1/admin/supplier-orders/{id}/receive`
+   - ⚠️ `GET /api/v1/admin/supplier-invoices`
+   - ⚠️ `POST /api/v1/admin/supplier-invoices`
+   - ⚠️ `PATCH /api/v1/admin/supplier-invoices/{id}/pay`
+
+3. **Paysagisme & Portfolio (`/admin/paysagisme`, `/paysagisme`) — 8 endpoints manquants**
+   - ⚠️ `GET /api/v1/landscape-services` (Public)
+   - ⚠️ `GET /api/v1/admin/landscape-services` (Admin)
+   - ⚠️ `POST /api/v1/admin/landscape-services`
+   - ⚠️ `PATCH /api/v1/admin/landscape-services/{id}`
+   - ⚠️ `DELETE /api/v1/admin/landscape-services/{id}`
+   - ⚠️ `GET /api/v1/landscape-projects` (Public)
+   - ⚠️ `GET /api/v1/admin/landscape-projects` (Admin)
+   - ⚠️ `POST /api/v1/admin/landscape-projects`
+   - ⚠️ `PATCH /api/v1/admin/landscape-projects/{id}`
+   - ⚠️ `DELETE /api/v1/admin/landscape-projects/{id}`

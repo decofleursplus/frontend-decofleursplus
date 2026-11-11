@@ -18,6 +18,24 @@ export interface LoginPayload {
   password: string;
 }
 
+export interface GoogleAuthPayload {
+  credential?: string;
+  idToken?: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  avatar?: string;
+}
+
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ResetPasswordPayload {
+  token: string;
+  newPassword: string;
+}
+
 /**
  * Inscription d'un nouveau compte client
  */
@@ -50,6 +68,38 @@ export async function loginUser(payload: LoginPayload): Promise<AuthResponseData
   }
 
   return data;
+}
+
+/**
+ * Connexion / Inscription client via Google OAuth
+ */
+export async function loginWithGoogle(payload: GoogleAuthPayload): Promise<AuthResponseData> {
+  const data = await apiClient.post<AuthResponseData>('/auth/google', payload);
+
+  if (data?.token) {
+    setAuthToken(data.token);
+  }
+
+  return data;
+}
+
+/**
+ * Demande de réinitialisation de mot de passe par email
+ */
+export async function forgotPassword(payload: ForgotPasswordPayload): Promise<{ message: string }> {
+  return apiClient.post<{ message: string }>('/auth/forgot-password', {
+    email: payload.email.trim().toLowerCase(),
+  });
+}
+
+/**
+ * Réinitialisation effective du mot de passe avec le token reçu
+ */
+export async function resetPassword(payload: ResetPasswordPayload): Promise<{ message: string }> {
+  return apiClient.post<{ message: string }>('/auth/reset-password', {
+    token: payload.token.trim(),
+    newPassword: payload.newPassword,
+  });
 }
 
 /**

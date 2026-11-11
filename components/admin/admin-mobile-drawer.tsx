@@ -31,7 +31,7 @@ import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
 import { logoutAdmin } from '@/app/admin/connexion/actions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { getAdminUser, AdminSessionUser } from '@/lib/api/auth-token';
+import type { AdminSessionUser } from '@/lib/api/auth-token';
 import { AdminProfileDialog } from '@/components/admin/admin-profile-dialog';
 
 type InstallPromptEvent = Event & {
@@ -56,31 +56,16 @@ const drawerMenuItems = [
   { label: 'Paramètres & Équipe', href: '/admin/parametres', icon: Settings },
 ];
 
-export function AdminMobileDrawer() {
+export function AdminMobileDrawer({ initialUser }: { initialUser?: AdminSessionUser | null } = {}) {
   const pathname = usePathname();
-  const { isMobileDrawerOpen, closeMobileDrawer } = useAdminSidebar();
+  const { isMobileDrawerOpen, closeMobileDrawer, currentUser: contextUser, setCurrentUser } = useAdminSidebar();
+  const currentUser = contextUser ?? initialUser ?? null;
 
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
   const [isStandalone, setIsStandalone] = useState(false);
   const [isIosSafari, setIsIosSafari] = useState(false);
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
-  const [currentUser, setCurrentUser] = useState<AdminSessionUser | null>(() => getAdminUser());
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
-
-  // Écouter les mises à jour en direct du profil administrateur
-  useEffect(() => {
-    const handleUserUpdate = (e: Event) => {
-      const customEvent = e as CustomEvent<AdminSessionUser | null>;
-      if (customEvent.detail !== undefined) {
-        setCurrentUser(customEvent.detail);
-      } else {
-        setCurrentUser(getAdminUser());
-      }
-    };
-
-    window.addEventListener('admin-user-updated', handleUserUpdate);
-    return () => window.removeEventListener('admin-user-updated', handleUserUpdate);
-  }, []);
 
   // Fermer le drawer avec la touche Echap
   useEffect(() => {
@@ -225,7 +210,7 @@ export function AdminMobileDrawer() {
                   alt={currentUser?.name || 'Admin'}
                   className="object-cover"
                 />
-                <AvatarFallback className="bg-[#193e23] text-white text-xs font-bold">
+                <AvatarFallback suppressHydrationWarning className="bg-[#193e23] text-white text-xs font-bold">
                   {currentUser?.name ? currentUser.name.slice(0, 2).toUpperCase() : 'AD'}
                 </AvatarFallback>
               </Avatar>

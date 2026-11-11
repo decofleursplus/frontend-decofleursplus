@@ -8,7 +8,7 @@ export function getOrganizationSchema() {
     '@type': 'Organization',
     '@id': `${SITE_URL}/#organization`,
     name: SITE_CONFIG.legalName,
-    alternateName: SITE_CONFIG.name,
+    alternateName: SITE_CONFIG.alternateNames,
     url: SITE_URL,
     logo: {
       '@type': 'ImageObject',
@@ -35,6 +35,7 @@ export function getOrganizationSchema() {
       SITE_CONFIG.social.instagram,
       SITE_CONFIG.social.facebook,
       SITE_CONFIG.social.tiktok,
+      SITE_CONFIG.social.whatsapp,
     ],
   };
 }
@@ -42,9 +43,10 @@ export function getOrganizationSchema() {
 export function getFloristSchema() {
   return {
     '@context': 'https://schema.org',
-    '@type': ['Florist', 'LocalBusiness'],
+    '@type': ['Florist', 'HomeGoodsStore', 'LocalBusiness'],
     '@id': `${SITE_URL}/#florist`,
-    name: SITE_CONFIG.name,
+    name: `${SITE_CONFIG.name} — Fleuriste & Magasin de Décoration`,
+    alternateName: SITE_CONFIG.alternateNames,
     description: SITE_CONFIG.description,
     url: SITE_URL,
     telephone: SITE_CONFIG.phoneSaly,
@@ -90,7 +92,11 @@ export function getFloristSchema() {
         },
         {
           '@type': 'OfferCatalog',
-          name: 'Décoration événementielle & Mariages',
+          name: 'Magasin de décoration, vases d’art, bougies & art de la table',
+        },
+        {
+          '@type': 'OfferCatalog',
+          name: 'Décoration événementielle & Mariages à Saly et Dakar',
         },
         {
           '@type': 'OfferCatalog',
@@ -98,7 +104,7 @@ export function getFloristSchema() {
         },
         {
           '@type': 'OfferCatalog',
-          name: 'Location de matériel et vaisselle de réception',
+          name: 'Location de matériel et mobilier événementiel',
         },
         {
           '@type': 'OfferCatalog',
@@ -260,11 +266,16 @@ export function getLocalLandingSchema(options: {
     ? options.pageUrl
     : `${SITE_URL}${options.pageUrl.startsWith('/') ? '' : '/'}${options.pageUrl}`;
 
+  const isSaly = options.city.toLowerCase().includes('saly');
+
   return {
     '@context': 'https://schema.org',
-    '@type': ['Florist', 'LocalBusiness'],
+    '@type': isSaly ? ['Florist', 'HomeGoodsStore', 'LocalBusiness'] : ['Florist', 'LocalBusiness'],
     '@id': `${pageUrl}#localbusiness`,
-    name: `Décofleur Plus — Fleuriste ${options.city}`,
+    name: isSaly
+      ? `Décofleur Plus — Fleuriste & Magasin de Décoration à Saly Portudal`
+      : `Décofleur Plus — Fleuriste ${options.city}`,
+    alternateName: isSaly ? SITE_CONFIG.alternateNames : undefined,
     description: options.description,
     url: pageUrl,
     telephone: options.city === 'Dakar' ? SITE_CONFIG.phoneDakar : SITE_CONFIG.phoneSaly,

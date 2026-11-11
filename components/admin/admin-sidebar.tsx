@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { logoutAdmin } from '@/app/admin/connexion/actions';
 import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getAdminUser, AdminSessionUser } from '@/lib/api/auth-token';
+import type { AdminSessionUser } from '@/lib/api/auth-token';
 import { AdminProfileDialog } from '@/components/admin/admin-profile-dialog';
 import {
   LayoutDashboard,
@@ -57,25 +57,11 @@ const navGroups = [
   },
 ];
 
-export function AdminSidebar() {
+export function AdminSidebar({ initialUser }: { initialUser?: AdminSessionUser | null } = {}) {
   const pathname = usePathname();
-  const { isCollapsed, toggleSidebar } = useAdminSidebar();
-  const [currentUser, setCurrentUser] = useState<AdminSessionUser | null>(() => getAdminUser());
+  const { isCollapsed, toggleSidebar, currentUser: contextUser, setCurrentUser } = useAdminSidebar();
+  const currentUser = contextUser ?? initialUser ?? null;
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
-
-  useEffect(() => {
-    const handleUserUpdate = (e: Event) => {
-      const customEvent = e as CustomEvent<AdminSessionUser | null>;
-      if (customEvent.detail !== undefined) {
-        setCurrentUser(customEvent.detail);
-      } else {
-        setCurrentUser(getAdminUser());
-      }
-    };
-
-    window.addEventListener('admin-user-updated', handleUserUpdate);
-    return () => window.removeEventListener('admin-user-updated', handleUserUpdate);
-  }, []);
 
   return (
     <aside
@@ -227,7 +213,7 @@ export function AdminSidebar() {
                     alt={currentUser?.name || 'Admin'}
                     className="object-cover"
                   />
-                  <AvatarFallback className="bg-[#193e23] text-white text-xs font-bold">
+                  <AvatarFallback suppressHydrationWarning className="bg-[#193e23] text-white text-xs font-bold">
                     {currentUser?.name ? currentUser.name.slice(0, 2).toUpperCase() : 'AD'}
                   </AvatarFallback>
                 </Avatar>
@@ -270,7 +256,7 @@ export function AdminSidebar() {
                     alt={currentUser?.name || 'Admin'}
                     className="object-cover"
                   />
-                  <AvatarFallback className="bg-[#193e23] text-white text-xs font-bold">
+                  <AvatarFallback suppressHydrationWarning className="bg-[#193e23] text-white text-xs font-bold">
                     {currentUser?.name ? currentUser.name.slice(0, 2).toUpperCase() : 'AD'}
                   </AvatarFallback>
                 </Avatar>

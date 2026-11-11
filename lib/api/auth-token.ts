@@ -127,6 +127,43 @@ export function setAdminUser(user: AdminSessionUser): void {
 }
 
 /**
+ * Analyse et extrait de manière sécurisée les données d'un profil administrateur
+ * depuis une chaîne de cookie (encodée ou brute JSON) côté serveur ou client
+ */
+export function parseAdminUserCookie(rawCookie?: string | null): AdminSessionUser | null {
+  if (!rawCookie) return null;
+  try {
+    const decoded = rawCookie.startsWith('%') ? decodeURIComponent(rawCookie) : rawCookie;
+    const parsed = JSON.parse(decoded);
+    if (parsed && typeof parsed === 'object') {
+      return {
+        id: String(parsed.id || 'admin'),
+        name: String(parsed.name || 'Admin'),
+        email: String(parsed.email || ''),
+        role: String(parsed.role || 'ADMIN'),
+        avatar: parsed.avatar || null,
+      };
+    }
+  } catch {
+    try {
+      const parsed = JSON.parse(decodeURIComponent(rawCookie));
+      if (parsed && typeof parsed === 'object') {
+        return {
+          id: String(parsed.id || 'admin'),
+          name: String(parsed.name || 'Admin'),
+          email: String(parsed.email || ''),
+          role: String(parsed.role || 'ADMIN'),
+          avatar: parsed.avatar || null,
+        };
+      }
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+/**
  * Récupère le profil de l'administrateur connecté depuis les cookies / session
  */
 export function getAdminUser(): AdminSessionUser | null {
@@ -134,25 +171,13 @@ export function getAdminUser(): AdminSessionUser | null {
   try {
     const match = document.cookie.match(/(^|;\s*)admin_user=([^;]+)/);
     if (match) {
-      const parsed = JSON.parse(decodeURIComponent(match[2]));
-      return {
-        id: parsed.id,
-        name: parsed.name,
-        email: parsed.email,
-        role: parsed.role,
-        avatar: parsed.avatar || null,
-      };
+      const parsed = parseAdminUserCookie(match[2]);
+      if (parsed) return parsed;
     }
     const local = localStorage.getItem('admin_user');
     if (local) {
-      const parsed = JSON.parse(local);
-      return {
-        id: parsed.id,
-        name: parsed.name,
-        email: parsed.email,
-        role: parsed.role,
-        avatar: parsed.avatar || null,
-      };
+      const parsed = parseAdminUserCookie(local);
+      if (parsed) return parsed;
     }
     return null;
   } catch {

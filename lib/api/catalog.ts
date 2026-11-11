@@ -220,3 +220,64 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
 
   return null;
 }
+
+/**
+ * Types Avis Produits
+ */
+export interface ProductReview {
+  id: string;
+  productId: string;
+  userId?: string | null;
+  userName: string;
+  userEmail?: string | null;
+  rating: number;
+  comment: string;
+  createdAt: string;
+}
+
+export interface ProductReviewsResponse {
+  reviews: ProductReview[];
+  total: number;
+  averageRating: number;
+  reviewsCount: number;
+}
+
+export interface AddProductReviewPayload {
+  rating: number;
+  comment: string;
+  authorName?: string;
+  userName?: string;
+  authorEmail?: string;
+  userEmail?: string;
+}
+
+/**
+ * Récupère les avis d'un produit avec la note moyenne et le total
+ */
+export async function getProductReviews(
+  productId: string,
+  options?: { page?: number; limit?: number },
+): Promise<ProductReviewsResponse> {
+  return apiClient.get<ProductReviewsResponse>(`/products/${productId}/reviews`, {
+    params: options,
+  });
+}
+
+/**
+ * Dépose un avis client sur un produit
+ */
+export async function addProductReview(
+  productId: string,
+  payload: AddProductReviewPayload,
+): Promise<ProductReview> {
+  const authorName = payload.authorName || payload.userName || 'Client DécoFleur';
+  const authorEmail = payload.authorEmail || payload.userEmail;
+
+  return apiClient.post<ProductReview>(`/products/${productId}/reviews`, {
+    rating: payload.rating,
+    comment: payload.comment.trim(),
+    authorName,
+    ...(authorEmail ? { authorEmail: authorEmail.trim() } : {}),
+  });
+}
+

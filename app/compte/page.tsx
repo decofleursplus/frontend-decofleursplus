@@ -252,7 +252,7 @@ export default function AccountDashboard() {
         <section className="account-panel dashboard-favorites-card">
           <div className="account-panel-heading">
             <h2>Mes favoris</h2>
-            <Link href="/favoris" className="see-all-link">
+            <Link href="/compte/favoris" className="see-all-link">
               Voir tous <ArrowRight size={14} />
             </Link>
           </div>
@@ -263,7 +263,7 @@ export default function AccountDashboard() {
               { name: 'Plante Monstera', image: '/images/plante-monstera.jpg' },
               { name: 'Bouquet Blanc', image: '/images/bouquet-blanc.jpg' },
             ].map((fav, i) => (
-              <Link href="/favoris" key={i} className="dashboard-favorite-thumb">
+              <Link href="/compte/favoris" key={i} className="dashboard-favorite-thumb">
                 <Image src={fav.image} alt={fav.name} fill sizes="110px" />
                 <span className="fav-heart-tag">
                   <Heart size={13} fill="var(--pink)" color="var(--pink)" />

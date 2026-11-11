@@ -1,11 +1,40 @@
 # 📋 Spécifications des Endpoints Manquants — DécoFleur Plus
 
-**Date de mise à jour :** 2026-11-06  
+**Date de mise à jour :** 2026-11-11  
 **Cible :** API Backend DécoFleur Plus (Branche `staging` / `production`)  
-**Objectif :** Définir formellement les routes REST, structures de requêtes et modèles de données attendus pour les **3 modules d'administration actuellement dépourvus d'endpoints backend** :
-1. **Fournisseurs** (`/admin/fournisseurs`)
-2. **Approvisionnements & Factures d'Achat** (`/admin/approvisionnements`)
-3. **Paysagisme & Portfolio de Réalisations** (`/admin/paysagisme`)
+**Version backend actuelle :** Commit `57d32f0` (166 endpoints opérationnels dans `docs/apis.md`)  
+**Objectif :** Définir formellement et exclusivement les routes REST, structures de requêtes et modèles de données attendus pour les **3 modules d'administration actuellement dépourvus d'endpoints backend** (total : **20 endpoints manquants**) :
+
+> [!NOTE]
+> Les 17 endpoints précédemment attendus (Google OAuth, réinitialisation de mot de passe, avis & évaluations catalogue, centre de notifications client et admin) ont été livrés et intégrés avec succès dans le backend (commit `57d32f0`).  
+> **Ce document recense uniquement et strictement les endpoints restant à implémenter côté backend.**
+
+### 📊 Tableau Récapitulatif des 20 Endpoints Manquants
+
+| Module | Méthode | Route REST | Description | Rôles Requis |
+|---|---|---|---|---|
+| **Fournisseurs** | `GET` | `/api/v1/admin/suppliers` | Liste paginée avec recherche et filtres | `ADMIN, MANAGER` |
+| **Fournisseurs** | `GET` | `/api/v1/admin/suppliers/{id}` | Détail avec historique commandes/factures | `ADMIN, MANAGER` |
+| **Fournisseurs** | `POST` | `/api/v1/admin/suppliers` | Création d'un nouveau fournisseur | `ADMIN, MANAGER` |
+| **Fournisseurs** | `PATCH` | `/api/v1/admin/suppliers/{id}` | Mise à jour des coordonnées / conditions | `ADMIN, MANAGER` |
+| **Fournisseurs** | `DELETE` | `/api/v1/admin/suppliers/{id}` | Désactivation logique du fournisseur | `ADMIN` |
+| **Approvisionnements** | `GET` | `/api/v1/admin/supplier-orders` | Liste paginée des commandes d'achat | `ADMIN, MANAGER, FLORIST` |
+| **Approvisionnements** | `GET` | `/api/v1/admin/supplier-orders/{id}` | Détail complet d'une commande d'achat | `ADMIN, MANAGER, FLORIST` |
+| **Approvisionnements** | `POST` | `/api/v1/admin/supplier-orders` | Création d'une commande d'achat | `ADMIN, MANAGER, FLORIST` |
+| **Approvisionnements** | `POST` | `/api/v1/admin/supplier-orders/{id}/receive` | Réception marchandises & incrémentation stock | `ADMIN, MANAGER, FLORIST` |
+| **Approvisionnements** | `GET` | `/api/v1/admin/supplier-invoices` | Liste des factures d'achat fournisseurs | `ADMIN, MANAGER, ACCOUNTANT` |
+| **Approvisionnements** | `POST` | `/api/v1/admin/supplier-invoices` | Enregistrement d'une facture d'achat | `ADMIN, MANAGER, ACCOUNTANT` |
+| **Approvisionnements** | `PATCH` | `/api/v1/admin/supplier-invoices/{id}/pay` | Règlement d'une facture fournisseur | `ADMIN, ACCOUNTANT` |
+| **Paysagisme** | `GET` | `/api/v1/landscape-services` | Liste des prestations paysagères (Public) | 🌐 Public |
+| **Paysagisme** | `GET` | `/api/v1/admin/landscape-services` | Liste complète des prestations (Admin) | `ADMIN, MANAGER` |
+| **Paysagisme** | `POST` | `/api/v1/admin/landscape-services` | Création d'une nouvelle prestation | `ADMIN, MANAGER` |
+| **Paysagisme** | `PATCH` | `/api/v1/admin/landscape-services/{id}` | Mise à jour d'une prestation existante | `ADMIN, MANAGER` |
+| **Paysagisme** | `DELETE` | `/api/v1/admin/landscape-services/{id}` | Suppression / désactivation prestation | `ADMIN` |
+| **Paysagisme** | `GET` | `/api/v1/landscape-projects` | Portfolio des réalisations paysagères | 🌐 Public |
+| **Paysagisme** | `GET` | `/api/v1/admin/landscape-projects` | Gestion des réalisations (Admin) | `ADMIN, MANAGER` |
+| **Paysagisme** | `POST` | `/api/v1/admin/landscape-projects` | Ajout d'une réalisation au portfolio | `ADMIN, MANAGER` |
+| **Paysagisme** | `PATCH` | `/api/v1/admin/landscape-projects/{id}` | Mise à jour d'une réalisation | `ADMIN, MANAGER` |
+| **Paysagisme** | `DELETE` | `/api/v1/admin/landscape-projects/{id}` | Suppression d'une réalisation | `ADMIN` |
 
 ---
 
