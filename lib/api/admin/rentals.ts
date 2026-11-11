@@ -1,6 +1,27 @@
+/**
+ * API back-office — location de matériel (équipements, réservations, planning Gantt).
+ * Les erreurs remontent telles quelles (ApiClientError) : à l'écran de les afficher.
+ */
 import { apiClient } from '../client';
-import type { RentalEquipment, RentalEquipmentCategory } from '@/lib/admin/mock-data/types';
+import type {
+  RentalDepositStatus,
+  RentalEquipment,
+  RentalReservation,
+  RentalReservationStatus,
+} from '../rentals';
 
+export type {
+  RentalDepositStatus,
+  RentalEquipment,
+  RentalItemStatus,
+  RentalReservation,
+  RentalReservationStatus,
+} from '../rentals';
+
+/** Statuts qu'un gestionnaire peut attribuer à un équipement. */
+export type RentalItemAdminStatus = 'AVAILABLE' | 'MAINTENANCE' | 'UNAVAILABLE';
+
+/** Corps accepté par POST /admin/rentals (schéma strict côté serveur). */
 export interface CreateRentalEquipmentPayload {
   name: string;
   category: string;
@@ -9,102 +30,181 @@ export interface CreateRentalEquipmentPayload {
   totalQuantity: number;
   description: string;
   dimensions?: string;
-  imageUrl?: string;
+  featuredImage?: string;
+  images?: string[];
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function transformRentalEquipment(raw: any): RentalEquipment {
-  let category: RentalEquipmentCategory = 'mobilier';
-  const rawCat = (raw.category || '').toLowerCase();
-  if (rawCat.includes('vaisselle')) category = 'vaisselle';
-  else if (rawCat.includes('decor')) category = 'decoration';
-  else if (rawCat.includes('access')) category = 'accessoires';
-
-  const categoryLabels: Record<RentalEquipmentCategory, string> = {
-    mobilier: 'Mobilier & Assises',
-    vaisselle: 'Arts de la table',
-    decoration: 'Décoration & Arches',
-    accessoires: 'Accessoires & Vases',
-  };
-
-  const totalStock = Number(raw.totalQuantity ?? raw.totalStock ?? 1);
-  const availableStock = Number(raw.availableQuantity ?? raw.availableStock ?? totalStock);
-
-  let status: 'disponible' | 'stock_faible' | 'indisponible' = 'disponible';
-  if (availableStock === 0) status = 'indisponible';
-  else if (availableStock <= 3) status = 'stock_faible';
-
-  return {
-    id: raw.id,
-    name: raw.name,
-    category,
-    categoryLabel: categoryLabels[category],
-    pricePerDay: Number(raw.pricePerDay ?? 0),
-    deposit: Number(raw.depositAmount ?? raw.deposit ?? 0),
-    totalStock,
-    availableStock,
-    image: raw.imageUrl || raw.image || '/images/location/table-ronde.jpg',
-    description: raw.description || '',
-    dimensions: raw.dimensions || undefined,
-    status,
-  };
+/** Corps accepté par PATCH /admin/rentals/:id (`null` retire la valeur). */
+export interface UpdateRentalEquipmentPayload {
+  name?: string;
+  category?: string;
+  pricePerDay?: number;
+  depositAmount?: number;
+  totalQuantity?: number;
+  description?: string;
+  dimensions?: string | null;
+  featuredImage?: string | null;
+  images?: string[];
+  status?: RentalItemAdminStatus;
 }
 
-/**
- * Fetch all rental equipments from API
- */
-export async function getAdminRentalEquipment(): Promise<RentalEquipment[]> {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const res = await apiClient.get<any>('/admin/rentals', {
-      useAdminToken: true,
-      cache: 'no-store',
-    });
-
-    if (Array.isArray(res)) return res.map(transformRentalEquipment);
-    if (res && Array.isArray(res.data)) return res.data.map(transformRentalEquipment);
-    if (res && Array.isArray(res.items)) return res.items.map(transformRentalEquipment);
-  } catch (err) {
-    console.warn('[AdminRentalsAPI] Erreur de récupération des équipements:', err);
-  }
-
-  return [];
+export interface AdminRentalListParams {
+  category?: string;
+  search?: string;
+  status?: RentalItemAdminStatus;
 }
 
-/**
- * Create rental equipment
- */
-export async function createAdminRentalEquipment(
-  data: CreateRentalEquipmentPayload
-): Promise<RentalEquipment> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const res = await apiClient.post<any>('/admin/rentals', data, {
-    useAdminToken: true,
+export interface RentalEquipmentDeleted {
+  id: string;
+  /** true : supprimé définitivement */
+  deleted: boolean;
+  /** true : conservé pour l'historique des réservations, mais retiré du catalogue */
+  deactivated: boolean;
+}
+
+export type RentalReservationCounts = Record<RentalReservationStatus, number>;
+
+export interface AdminRentalReservationList {
+  items: RentalReservation[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  /** Compteurs sur l'ensemble des réservations (indépendants des filtres) */
+  counts: RentalReservationCounts;
+}
+
+export interface AdminRentalReservationParams {
+  status?: RentalReservationStatus;
+  search?: string;
+  equipmentId?: string;
+  from?: string;
+  to?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface GanttBooking {
+  /** Identifiant de la réservation */
+  id: string;
+  reservationNumber: string;
+  equipmentId: string;
+  equipmentName: string;
+  quantity: number;
+  month: number;
+  year: number;
+  /** Premier et dernier jours occupés dans le mois affiché (inclus) */
+  startDay: number;
+  endDay: number;
+  startsBeforeMonth: boolean;
+  endsAfterMonth: boolean;
+  startDate: string;
+  endDate: string;
+  status: RentalReservationStatus;
+  statusLabel: string;
+  clientName: string;
+  clientPhone: string;
+  clientEmail: string | null;
+  totalRental: number;
+  deposit: number;
+  depositStatus: RentalDepositStatus;
+}
+
+export interface GanttCalendar {
+  /** 0 = janvier */
+  month: number;
+  year: number;
+  daysInMonth: number;
+  equipment: RentalEquipment[];
+  bookings: GanttBooking[];
+  /** Somme des stocks des équipements affichés */
+  totalUnits: number;
+  /** Unités réservées pour chaque jour du mois (index 0 = le 1er) */
+  dailyReservedUnits: number[];
+  /** Taux d'occupation du mois en % */
+  occupancyRate: number;
+}
+
+const admin = { useAdminToken: true } as const;
+
+// ── Équipements ───────────────────────────────────────────────
+
+/** GET /admin/rentals — `availableStock` = stock disponible aujourd'hui. */
+export function getAdminRentalEquipment(params: AdminRentalListParams = {}): Promise<RentalEquipment[]> {
+  return apiClient.get<RentalEquipment[]>('/admin/rentals', {
+    ...admin,
+    params: {
+      category: params.category && params.category !== 'all' ? params.category : undefined,
+      search: params.search,
+      status: params.status,
+    },
   });
-  return transformRentalEquipment(res?.data || res);
 }
 
-/**
- * Update rental equipment
- */
-export async function updateAdminRentalEquipment(
+export function createAdminRentalEquipment(data: CreateRentalEquipmentPayload): Promise<RentalEquipment> {
+  return apiClient.post<RentalEquipment>('/admin/rentals', data, admin);
+}
+
+export function updateAdminRentalEquipment(
   id: string,
-  data: Partial<CreateRentalEquipmentPayload>
+  data: UpdateRentalEquipmentPayload,
 ): Promise<RentalEquipment> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const res = await apiClient.patch<any>(`/admin/rentals/${id}`, data, {
-    useAdminToken: true,
-  });
-  return transformRentalEquipment(res?.data || res);
+  return apiClient.patch<RentalEquipment>(`/admin/rentals/${id}`, data, admin);
 }
 
-/**
- * Delete rental equipment
- */
-export async function deleteAdminRentalEquipment(id: string): Promise<boolean> {
-  await apiClient.delete(`/admin/rentals/${id}`, {
-    useAdminToken: true,
-  });
-  return true;
+export function deleteAdminRentalEquipment(id: string): Promise<RentalEquipmentDeleted> {
+  return apiClient.delete<RentalEquipmentDeleted>(`/admin/rentals/${id}`, admin);
 }
 
+// ── Réservations ──────────────────────────────────────────────
+
+export function getAdminRentalReservations(
+  params: AdminRentalReservationParams = {},
+): Promise<AdminRentalReservationList> {
+  return apiClient.get<AdminRentalReservationList>('/admin/rental-reservations', {
+    ...admin,
+    params: { ...params },
+  });
+}
+
+/** Accepte l'identifiant ou le numéro de réservation (RL-AAAA-NNNN). */
+export function getAdminRentalReservation(idOrNumber: string): Promise<RentalReservation> {
+  return apiClient.get<RentalReservation>(
+    `/admin/rental-reservations/${encodeURIComponent(idOrNumber)}`,
+    admin,
+  );
+}
+
+/** PATCH /admin/rental-reservations/:id — notes internes et statut de caution. */
+export function updateAdminRentalReservation(
+  id: string,
+  data: { adminNotes?: string | null; depositStatus?: RentalDepositStatus },
+): Promise<RentalReservation> {
+  return apiClient.patch<RentalReservation>(`/admin/rental-reservations/${id}`, data, admin);
+}
+
+/** PATCH /admin/rental-reservations/:id/status — `cancelReason` obligatoire pour CANCELLED. */
+export function changeAdminRentalReservationStatus(
+  id: string,
+  data: { status: RentalReservationStatus; cancelReason?: string },
+): Promise<RentalReservation> {
+  return apiClient.patch<RentalReservation>(`/admin/rental-reservations/${id}/status`, data, admin);
+}
+
+// ── Planning ──────────────────────────────────────────────────
+
+/** GET /admin/rental-reservations/gantt — `month` : 0 = janvier. */
+export function getAdminRentalGantt(params: {
+  month: number;
+  year: number;
+  category?: string;
+}): Promise<GanttCalendar> {
+  return apiClient.get<GanttCalendar>('/admin/rental-reservations/gantt', {
+    ...admin,
+    params: {
+      month: params.month,
+      year: params.year,
+      category: params.category && params.category !== 'all' ? params.category : undefined,
+    },
+  });
+}

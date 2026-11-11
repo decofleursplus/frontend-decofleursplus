@@ -9,19 +9,26 @@ import { ApiError, ApiValidationErrorDetail } from './types';
 export class ApiClientError extends Error {
   code: string;
   status: number;
+  /** Erreurs de validation champ par champ (VALIDATION_ERROR) */
   details?: ApiValidationErrorDetail[];
+  /** Contexte renvoyé par certains codes (ex. EMAIL_NOT_VERIFIED, TOO_MANY_REQUESTS) */
+  context?: Record<string, unknown>;
 
   constructor(
     message: string,
     code: string = 'API_ERROR',
     status: number = 500,
-    details?: ApiValidationErrorDetail[],
+    details?: ApiValidationErrorDetail[] | Record<string, unknown>,
   ) {
     super(message);
     this.name = 'ApiClientError';
     this.code = code;
     this.status = status;
-    this.details = details;
+    if (Array.isArray(details)) {
+      this.details = details;
+    } else if (details && typeof details === 'object') {
+      this.context = details;
+    }
   }
 }
 

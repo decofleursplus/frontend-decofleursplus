@@ -785,6 +785,116 @@
   color: #b91c1c;
 }
 
+/* ── Code OTP (vérification email, mot de passe oublié) ── */
+.auth-otp-row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  max-width: 340px;
+  margin: 2px auto 0;
+  width: 100%;
+}
+
+.auth-otp-cell {
+  width: 100%;
+  height: 52px;
+  box-sizing: border-box;
+  padding: 0;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #173f22;
+  background: #fbfbfa;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.auth-otp-cell:focus {
+  background: #ffffff;
+  border-color: #e11d48;
+  box-shadow: 0 0 0 3.5px rgba(225, 29, 72, 0.1);
+}
+
+.auth-otp-cell:disabled {
+  opacity: 0.6;
+}
+
+.auth-otp-hint {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #64748b;
+  text-align: center;
+}
+
+.auth-otp-hint svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.auth-otp-resend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: #64748b;
+}
+
+.auth-otp-resend-button {
+  background: transparent;
+  border: none;
+  padding: 4px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #e11d48;
+  cursor: pointer;
+}
+
+.auth-otp-resend-button:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.auth-back-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.auth-google-wrap {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.auth-google-button {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+}
+
+.auth-google-error {
+  margin: 8px 0 0;
+  font-size: 11.5px;
+  color: #b91c1c;
+  text-align: center;
+}
+
+.auth-password-rules {
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  color: #64748b;
+}
+
 /* ── Screen 6: Inscription Réussie ── */
 .auth-success-card-body {
   align-items: center;

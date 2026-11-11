@@ -4,8 +4,11 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Mail, LockKeyhole, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
-import { GoogleIcon, FloralMotifIcon } from '@/components/icons';
+import { FloralMotifIcon } from '@/components/icons';
 import { useAuth } from '@/components/auth-provider';
+import { ApiClientError } from '@/lib/api/client';
+import { EmailVerificationStep } from './email-verification-step';
+import { GoogleSignInButton } from './google-sign-in-button';
 
 export function LoginForm() {
   const router = useRouter();
@@ -21,42 +24,66 @@ export function LoginForm() {
   const [rememberMe, setRememberMe] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [socialLoading, setSocialLoading] = useState<boolean>(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  // Compte dont l'email n'a pas encore été confirmé : on bascule sur la saisie du code
+  const [pendingVerification, setPendingVerification] = useState<{ email: string; cooldown: number } | null>(null);
+
+  function goToTarget(message: string) {
+    setFeedback({ type: 'success', text: message });
+    router.push(redirectTarget);
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!identifier.trim()) return;
+    if (!identifier.trim() || isSubmitting) return;
 
     setIsSubmitting(true);
     setFeedback(null);
 
     try {
-      await login(identifier, password);
-      setFeedback('Connexion réussie ! Redirection en cours…');
-      setTimeout(() => {
-        router.push(redirectTarget);
-      }, 500);
+      await login(identifier, password, rememberMe);
+      goToTarget('Connexion réussie ! Redirection en cours…');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Identifiant ou mot de passe incorrect.';
-      setFeedback(message);
+      if (err instanceof ApiClientError && err.code === 'EMAIL_NOT_VERIFIED') {
+        setPendingVerification({
+          email: String(err.context?.email || identifier.trim()),
+          cooldown: Number(err.context?.resendAvailableInSeconds) || 60,
+        });
+      } else {
+        setFeedback({
+          type: 'error',
+          text: err instanceof Error ? err.message : 'Identifiant ou mot de passe incorrect.',
+        });
+      }
       setIsSubmitting(false);
     }
   }
 
-  async function handleSocialGoogle() {
+  async function handleGoogleCredential(credential: string) {
     setSocialLoading(true);
     setFeedback(null);
     try {
-      await loginWithGoogle();
-      setFeedback('Connecté avec Google ! Redirection…');
-      setTimeout(() => {
-        router.push(redirectTarget);
-      }, 600);
+      await loginWithGoogle(credential);
+      goToTarget('Connecté avec Google ! Redirection…');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'La connexion avec Google sera bientôt disponible.';
-      setFeedback(message);
+      setFeedback({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'La connexion avec Google a échoué.',
+      });
       setSocialLoading(false);
     }
+  }
+
+  if (pendingVerification) {
+    return (
+      <EmailVerificationStep
+        email={pendingVerification.email}
+        initialCooldown={pendingVerification.cooldown}
+        onVerified={() => router.push(redirectTarget)}
+        onBack={() => setPendingVerification(null)}
+        backLabel="Retour à la connexion"
+      />
+    );
   }
 
   return (
@@ -71,8 +98,11 @@ export function LoginForm() {
       </div>
 
       {feedback && (
-        <div className="auth-feedback-banner" role="status">
-          <span>{feedback}</span>
+        <div
+          className={`auth-feedback-banner${feedback.type === 'error' ? ' auth-feedback-error' : ''}`}
+          role={feedback.type === 'error' ? 'alert' : 'status'}
+        >
+          <span>{feedback.text}</span>
         </div>
       )}
 
@@ -173,26 +203,11 @@ export function LoginForm() {
           <span className="auth-or-line" />
         </div>
 
-        {/* Social Buttons Row (Google uniquement - Facebook retiré) */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', marginBottom: '20px' }}>
-          <button
-            type="button"
-            onClick={handleSocialGoogle}
-            disabled={isSubmitting || socialLoading}
-            className="auth-social-btn"
-            style={{ width: '100%' }}
-          >
-            {socialLoading ? (
-              <Loader2 size={16} className="auth-spinner" />
-            ) : (
-              <GoogleIcon size={18} />
-            )}
-            <span>Continuer avec Google</span>
-            <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 500, marginLeft: '4px' }}>
-              (Bientôt disponible)
-            </span>
-          </button>
-        </div>
+        <GoogleSignInButton
+          onCredential={handleGoogleCredential}
+          onError={(text) => setFeedback({ type: 'error', text })}
+          disabled={isSubmitting || socialLoading}
+        />
 
         {/* Card Footer Link */}
         <div className="auth-card-footer">
