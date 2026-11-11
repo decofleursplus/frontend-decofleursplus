@@ -175,7 +175,7 @@ export function ArticleEditorDialog({
         setContent((prev) => `${prev}\n\n- Premier conseil\n- Deuxième conseil\n- Troisième conseil`);
         break;
       case 'quote':
-        setContent((prev) => `${prev}\n\n> « La fleur est la poésie de la terre. » — Fatou Diop`);
+        setContent((prev) => `${prev}\n\n> « La fleur est la poésie de la terre. » - Fatou Diop`);
         break;
     }
   };

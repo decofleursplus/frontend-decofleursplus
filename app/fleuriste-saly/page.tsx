@@ -23,14 +23,24 @@ import { products } from '@/lib/products';
 import { ProductGrid } from '@/components/product-grid';
 import { SITE_CONFIG } from '@/lib/seo/config';
 
+export const revalidate = 3600;
+
 export const metadata: Metadata = constructMetadata({
-  title: 'Fleuriste à Saly Portudal — Boutique & Livraison Express 2h | Décofleur Plus',
+  title: 'Fleuriste à Saly & Magasin de Décoration à Saly-Portudal | Déco Fleurs Plus',
   description:
-    'Boutique florale et atelier d’artisan à Saly Portudal (Rue des Palmiers). Livraison de fleurs fraîches en 2h chrono à Niakh Niakhal, Saly Tapée et Palm Beach. Retrait en magasin et devis événementiel.',
+    'Déco Fleurs Plus (Déco Fleurs / Déco-Fleurs), artisan fleuriste et magasin de décoration à Saly-Portudal (Rue des Palmiers). Bouquets de roses fraîches, vases design, décoration d’intérieur pour villas et événements, livraison express en 2h.',
   canonical: '/fleuriste-saly',
   keywords: [
+    'deco fleurs saly',
+    'Déco Fleurs Plus',
+    'Déco-Fleurs',
+    'Déco Fleurs',
+    'fleuriste à Saly',
     'fleuriste saly',
     'fleuriste saly portudal',
+    'Magasins de décoration à SALY-PORTUDAL',
+    'Magasins de décoration',
+    'magasin de décoration saly',
     'livraison fleurs saly',
     'boutique fleurs saly',
     'bouquet roses saly',
@@ -79,13 +89,13 @@ export default function FleuristeSalyPage() {
           <div className="relative z-10 max-w-2xl text-white">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/15 backdrop-blur-md border border-white/25 rounded-full text-xs font-semibold text-white mb-4">
               <Store size={13} className="text-[#fbb6ce]" />
-              Boutique Physique &amp; Atelier Floral à Saly Portudal
+              Fleuriste &amp; Magasin de Décoration à Saly-Portudal
             </span>
             <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold leading-tight mb-4">
-              Votre Artisan Fleuriste à Saly Portudal
+              Votre Artisan Fleuriste &amp; Magasin de Décoration à Saly-Portudal
             </h1>
             <p className="text-white/90 text-sm sm:text-base leading-relaxed mb-6 font-medium">
-              Bienvenue chez Décofleur Plus, au cœur de Saly Portudal (Rue des Palmiers). Venez découvrir notre atelier de composition ou commandez en ligne avec livraison express en 2h chez vous ou dans votre villa.
+              Bienvenue chez <strong>Déco Fleurs Plus</strong> (également connu sous les noms <strong>Déco Fleurs</strong> ou <strong>Déco-Fleurs</strong> à Saly). Référence parmi les fleuristes et magasins de décoration à Saly-Portudal, notre boutique de la Rue des Palmiers vous accueille pour vos compositions florales sur mesure, vos vases design, la décoration de vos villas et événements, avec livraison express en 2h chrono.
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <Link
@@ -167,6 +177,67 @@ export default function FleuristeSalyPage() {
           <ProductGrid products={salyProducts} />
         </section>
 
+        {/* Section Magasin de Décoration à Saly-Portudal */}
+        <section className="mb-14 p-8 md:p-10 rounded-3xl bg-linear-to-br from-[#173f22] to-[#1e522d] text-white shadow-md">
+          <div className="max-w-3xl">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/15 backdrop-blur-md border border-white/25 rounded-full text-xs font-semibold text-white mb-3">
+              <Sparkles size={13} className="text-[#fbb6ce]" />
+              Magasins de décoration à SALY-PORTUDAL
+            </span>
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold leading-tight mb-4">
+              Votre Magasin de Décoration &amp; d’Art Floral à Saly-Portudal
+            </h2>
+            <p className="text-white/90 text-sm sm:text-base leading-relaxed mb-6 font-medium">
+              Chez <strong>Déco Fleurs Plus</strong> (également connu sous les appellations <strong>Déco Fleurs</strong> ou <strong>Déco-Fleurs</strong>), notre adresse de Saly-Portudal réunit la passion d’un <strong>fleuriste à Saly</strong> et l’univers raffiné d’un <strong>magasin de décoration</strong>. Nous accompagnons résidents, propriétaires de villas et professionnels dans la valorisation de leurs espaces de vie :
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-6">
+            <div className="p-5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
+              <h3 className="font-serif font-bold text-base text-white mb-2">
+                Vases d’Art &amp; Céramiques
+              </h3>
+              <p className="text-white/80 text-xs sm:text-sm leading-relaxed">
+                Large choix de vases en verre soufflé, céramiques contemporaines et contenants design pensés pour sublimer vos tables et consoles.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
+              <h3 className="font-serif font-bold text-base text-white mb-2">
+                Plantes &amp; Décor Végétal
+              </h3>
+              <p className="text-white/80 text-xs sm:text-sm leading-relaxed">
+                Orchidées d’exception, monsteras et plantes tropicales acclimatées pour apporter fraîcheur et élégance naturelle à votre intérieur.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
+              <h3 className="font-serif font-bold text-base text-white mb-2">
+                Scénographie &amp; Événements
+              </h3>
+              <p className="text-white/80 text-xs sm:text-sm leading-relaxed">
+                Décoration florale de mariages sur la plage, réceptions privées, location d’arches fleuries et de mobilier sur toute la Petite-Côte.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link
+              href="/categories/vases"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#c8436e] hover:bg-[#b0355d] text-white font-medium text-xs sm:text-sm shadow-md transition-all"
+            >
+              Découvrir nos vases &amp; contenants
+              <ArrowRight size={14} />
+            </Link>
+            <Link
+              href="/devis"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-md text-white border border-white/30 font-medium text-xs sm:text-sm transition-all"
+            >
+              Demander un devis décoration
+            </Link>
+          </div>
+        </section>
+
         {/* Abonnements & Aménagement de Villas à Saly */}
         <section className="mb-14 p-8 md:p-10 rounded-3xl bg-[#faf8f5] border border-neutral-100">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
@@ -214,7 +285,7 @@ export default function FleuristeSalyPage() {
           <div className="text-center mb-8">
             <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#173f22] mb-2 flex items-center justify-center gap-2">
               <HelpCircle size={24} className="text-[#c8436e]" />
-              Questions fréquentes — Fleuriste Saly Portudal
+              Questions fréquentes : Fleuriste Saly Portudal
             </h2>
             <p className="text-neutral-600 text-xs sm:text-sm">
               Réponses pratiques pour vos achats en boutique ou en livraison.
@@ -237,6 +308,15 @@ export default function FleuristeSalyPage() {
               </h3>
               <p className="text-neutral-600 text-xs sm:text-sm leading-relaxed">
                 Sur toute la zone de Saly (Niakh Niakhal, Saly Tapée, Palm Beach), nos coursiers vous livrent en moins de 2 heures après confirmation de votre commande.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl border border-neutral-100 bg-white shadow-xs">
+              <h3 className="font-serif font-bold text-base text-[#173f22] mb-1.5">
+                Où trouver un magasin de décoration et fleuriste à Saly-Portudal ?
+              </h3>
+              <p className="text-neutral-600 text-xs sm:text-sm leading-relaxed">
+                <strong>Déco Fleurs Plus</strong> (aussi recherché sous <strong>Déco Fleurs</strong>, <strong>Déco-Fleurs</strong> ou <strong>deco fleurs saly</strong>) est situé Rue des Palmiers à Saly-Portudal. C’est à la fois un atelier d’artisan fleuriste et un magasin de décoration proposant vases haut de gamme, bougies parfumées, plantes tropicales d’intérieur, et prestations de décoration pour villas et mariages.
               </p>
             </div>
           </div>

@@ -16,7 +16,7 @@ export function BrandLogo({ variant = 'light', className = '', isLink = true }: 
     <div className={`brand-logo-container flex items-center select-none ${className}`}>
       <Image
         src={isDark ? '/images/logo-footer-white-v2.png' : '/images/logo-exact-v2.png'}
-        alt="Décofleur Plus — Nature en Élégance"
+        alt="Décofleur Plus · Nature en Élégance"
         width={332}
         height={100}
         priority

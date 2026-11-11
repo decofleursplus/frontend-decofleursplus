@@ -3,14 +3,23 @@ export const SITE_URL = 'https://www.decofleursplus.com';
 export const SITE_CONFIG = {
   name: 'Décofleurs Plus',
   legalName: 'Décofleurs Plus SARL',
+  alternateNames: [
+    'Déco Fleurs Plus',
+    'Déco-Fleurs',
+    'Déco Fleurs',
+    'deco fleurs saly',
+    'Decofleurs Plus',
+    'Deco Fleurs Saly',
+  ],
   tagline: 'Nature en Élégance',
   url: SITE_URL,
   description:
-    'Fleuriste artisanal de prestige au Sénégal. Bouquets de roses fraîches, décoration florale de mariage, paysagisme et paniers gourmands livrés à Dakar, Saly, Somone et Mbour.',
+    'Artisan fleuriste et magasin de décoration de prestige à Saly Portudal et Dakar. Bouquets de roses fraîches, décoration florale événementielle, objets déco, paysagisme et cadeaux livrés à Saly, Dakar, Somone et Mbour.',
   email: 'contact@decofleursplus.sn',
   phoneSaly: '+221 33 957 88 99',
   phoneDakar: '+221 77 941 78 60',
   whatsappNumber: '221779417860',
+  whatsappUrl: 'https://wa.me/221779417860',
   currency: 'XOF',
   currencySymbol: 'FCFA',
   priceRange: '$$',
@@ -43,9 +52,10 @@ export const SITE_CONFIG = {
   ],
   
   social: {
-    instagram: 'https://instagram.com/decofleurplus',
-    facebook: 'https://facebook.com/decofleurplus',
-    tiktok: 'https://tiktok.com/@decofleurplus',
+    instagram: 'https://www.instagram.com/deco_fleurs_plus/',
+    facebook: 'https://www.facebook.com/p/D%C3%A9co-Fleurs-Plus-61586988403846',
+    tiktok: 'https://www.tiktok.com/@decofleursaly',
+    whatsapp: 'https://wa.me/221779417860',
   },
 
   serviceAreas: [

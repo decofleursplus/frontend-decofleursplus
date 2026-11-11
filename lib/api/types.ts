@@ -71,3 +71,31 @@ export interface AuthResponseData {
   user: ApiUser;
   token: string;
 }
+
+/**
+ * Types Notifications In-App & Alertes
+ */
+export type NotificationType =
+  | 'ORDER_STATUS'
+  | 'DELIVERY_UPDATE'
+  | 'QUOTE_UPDATE'
+  | 'PAYMENT'
+  | 'SUBSCRIPTION'
+  | 'PROMOTION'
+  | 'LOYALTY'
+  | 'BLOG'
+  | 'CUSTOM'
+  | 'NEW_ORDER'
+  | 'PAYMENT_RECEIVED'
+  | 'PAYMENT_FAILED'
+  | 'NEW_QUOTE'
+  | 'LOW_STOCK'
+  | 'OUT_OF_STOCK'
+  | 'NEW_SUBSCRIPTION'
+  | 'SUBSCRIPTION_CANCELLED'
+  | 'DELIVERY_FAILED';
+
+export type NotificationPriority = 'NORMAL' | 'HIGH' | 'URGENT';
+export type BroadcastTarget = 'ALL' | 'SEGMENT' | 'INDIVIDUAL';
+export type BroadcastStatus = 'SENT' | 'SCHEDULED' | 'FAILED';
+

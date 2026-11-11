@@ -1,10 +1,12 @@
 # 📋 Plan d'Implémentation API — DécoFleur Plus (Branche staging)
 
 **Date de début :** 2026-11-03  
+**Dernière mise à jour :** 2026-11-11  
 **Backend Staging :** `https://backend-decofleursplus-staging.up.railway.app/api/v1`  
 **Backend Local :** `http://localhost:5000/api/v1`  
-**Stratégie globale :** Client d'abord (Phases 0 à 5) → Admin ensuite (Phases 6 à 10) → Recette & Tests (Phase 11)  
-**Total des tâches :** 44 tâches réparties en 12 phases structurées  
+**Version backend :** Commit `57d32f0` (166 endpoints recensés dans `docs/apis.md`)  
+**Stratégie globale :** Client d'abord (Phases 0 à 5) → Admin ensuite (Phases 6 à 10) → Recette & Tests (Phase 11) → Nouveautés Backend v1.1 & Espace Compte (Phase 12)  
+**Total des tâches :** 49 tâches réparties en 13 phases structurées  
 
 ---
 
@@ -27,6 +29,9 @@
 
 ### Partie 3 : Clôture & Optimisations (Phase 11)
 - [Phase 11 : Recette E2E, Nettoyage & Sécurité](#phase-11--recette-e2e-nettoyage--sécurité) (Tâches 11.1 à 11.2)
+
+### Partie 4 : Nouveautés Backend v1.1 & Espace Compte (Phase 12)
+- [Phase 12 : Nouvelles APIs Backend (17 endpoints) & Favoris Mon Compte](#phase-12--nouvelles-apis-backend-17-endpoints--favoris-mon-compte) (Tâches 12.1 à 12.5)
 
 ---
 
@@ -596,4 +601,67 @@
       - **Formulaire de Devis (`app/devis/page.tsx`, `components/shared-devis-form.tsx`) :**
         - Bascule du type de service par défaut vers `evenements` (qui dispose d'un endpoint backend fonctionnel `POST /quotes`) au lieu de `paysagisme`.
         - Badge « À venir » positionné sur le sélecteur de métier pour l'option « Paysagisme & Espaces Verts ».
+
+---
+
+## Phase 12 : Nouvelles APIs Backend (17 endpoints) & Favoris Mon Compte
+
+Cette phase couvre la prise en compte des 17 nouveaux endpoints introduits par le commit backend `57d32f0` (PR #8 & #9), ainsi que la relocalisation de la page Favoris dans l'espace client unifié.
+
+### Tâche 12.1 : Authentification Google & Réinitialisation de Mot de Passe
+- **Fichiers :** `lib/api/auth.ts`, `app/mot-de-passe-oublie/page.tsx`, `components/auth/forgot-password-form.tsx`
+- **Endpoints :**
+  - `POST /api/v1/auth/google` (Connexion / Inscription Google OAuth)
+  - `POST /api/v1/auth/forgot-password` (Demande de lien de réinitialisation)
+  - `POST /api/v1/auth/reset-password` (Application du nouveau mot de passe via token)
+- **Description :** Création des méthodes clientes typées `loginWithGoogle`, `forgotPassword`, `resetPassword`. Raccordement au formulaire de mot de passe oublié.
+- **Statut :** ✅ Services créés & typés dans `lib/api/auth.ts`
+
+### Tâche 12.2 : Avis & Évaluations Catalogue
+- **Fichiers :** `lib/api/catalog.ts`, `app/produits/[slug]/page.tsx`
+- **Endpoints :**
+  - `GET /api/v1/products/{id}/reviews` (Liste des avis avec moyenne et répartition)
+  - `POST /api/v1/products/{id}/reviews` (Dépôt d'un avis noté de 1 à 5)
+- **Description :** Création des types `ProductReview`, `ProductReviewsResponse` et des méthodes `getProductReviews`, `addProductReview`.
+- **Statut :** ✅ Services créés & typés dans `lib/api/catalog.ts`
+
+### Tâche 12.3 : Centre de Notifications In-App Client
+- **Fichiers :** `lib/api/notifications.ts`, `components/account-section.tsx`
+- **Endpoints :**
+  - `GET /api/v1/notifications/mine`
+  - `GET /api/v1/notifications/mine/unread-count`
+  - `PATCH /api/v1/notifications/mine/{id}/read`
+  - `POST /api/v1/notifications/mine/read-all`
+  - `GET /api/v1/notifications/mine/preferences`
+  - `PUT /api/v1/notifications/mine/preferences`
+- **Description :** Service client complet pour le suivi des alertes commandes, livraisons et messages personnalisés.
+- **Statut :** ✅ Service créé & typé dans `lib/api/notifications.ts`
+
+### Tâche 12.4 : Notifications Staff & Diffusions Broadcast Admin
+- **Fichiers :** `lib/api/admin/notifications.ts`
+- **Endpoints :**
+  - `GET /api/v1/admin/notifications`
+  - `GET /api/v1/admin/notifications/unread-count`
+  - `PATCH /api/v1/admin/notifications/{id}/read`
+  - `POST /api/v1/admin/notifications/read-all`
+  - `POST /api/v1/admin/notifications/send`
+  - `GET /api/v1/admin/notifications/broadcasts`
+- **Description :** Service d'administration pour la gestion des alertes d'activité internes et des campagnes de messages broadcast ciblés.
+- **Statut :** ✅ Service créé & typé dans `lib/api/admin/notifications.ts`
+
+### Tâche 12.5 : Relocalisation de la page Favoris dans « Mon Compte »
+- **Fichiers :** `app/compte/favoris/page.tsx`, `app/favoris/page.tsx`, `next.config.ts`, `components/account-sidebar.tsx`, `components/site-header.tsx`, `app/compte/page.tsx`
+- **Endpoints :** Aucun (Composant d'affichage de la wishlist client synchronisée avec le panier / localStorage)
+- **Description :** Déplacement de la page externe `/favoris` vers `/compte/favoris` avec gabarit `AccountLayout`, redirection permanente 308 et mise à jour de la navigation desktop/mobile.
+- **Statut :** ✅ Terminé & validé
+
+---
+
+## 📌 Récapitulatif des Endpoints Manquants (En Attente Backend)
+
+Les seuls modules et endpoints non implémentés à ce jour par le backend sont strictement limités aux 3 modules d'exploitation ci-dessous (**20 endpoints au total**, spécifiés dans `docs/endpoints_feedback.md`) :
+1. **Fournisseurs** (5 endpoints : `/api/v1/admin/suppliers`...)
+2. **Approvisionnements & Factures** (7 endpoints : `/api/v1/admin/supplier-orders`, `/admin/supplier-invoices`...)
+3. **Paysagisme & Portfolio** (8 endpoints : `/api/v1/landscape-services`, `/api/v1/landscape-projects`...)
+
 

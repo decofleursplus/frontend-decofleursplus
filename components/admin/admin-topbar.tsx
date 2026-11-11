@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Menu, LogOut, ExternalLink, Settings, Camera } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
 import { AdminNotificationsDropdown } from '@/components/admin/admin-notifications-dropdown';
-import { getAdminUser, AdminSessionUser } from '@/lib/api/auth-token';
+import type { AdminSessionUser } from '@/lib/api/auth-token';
 import { logoutAdmin } from '@/app/admin/connexion/actions';
 import { AdminProfileDialog } from '@/components/admin/admin-profile-dialog';
 import {
@@ -19,24 +19,10 @@ import {
   DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
 
-export function AdminTopbar() {
-  const { toggleMobileDrawer } = useAdminSidebar();
-  const [currentUser, setCurrentUser] = useState<AdminSessionUser | null>(() => getAdminUser());
+export function AdminTopbar({ initialUser }: { initialUser?: AdminSessionUser | null } = {}) {
+  const { toggleMobileDrawer, currentUser: contextUser, setCurrentUser } = useAdminSidebar();
+  const currentUser = contextUser ?? initialUser ?? null;
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
-
-  useEffect(() => {
-    const handleUserUpdate = (e: Event) => {
-      const customEvent = e as CustomEvent<AdminSessionUser | null>;
-      if (customEvent.detail !== undefined) {
-        setCurrentUser(customEvent.detail);
-      } else {
-        setCurrentUser(getAdminUser());
-      }
-    };
-
-    window.addEventListener('admin-user-updated', handleUserUpdate);
-    return () => window.removeEventListener('admin-user-updated', handleUserUpdate);
-  }, []);
 
   return (
     <header className="admin-topbar">
@@ -89,7 +75,7 @@ export function AdminTopbar() {
                   alt={currentUser?.name || 'Admin DécoFleur Plus'}
                   className="object-cover"
                 />
-                <AvatarFallback className="bg-[#102617] text-white text-xs font-bold">
+                <AvatarFallback suppressHydrationWarning className="bg-[#102617] text-white text-xs font-bold">
                   {currentUser?.name ? currentUser.name.slice(0, 2).toUpperCase() : 'DF'}
                 </AvatarFallback>
               </Avatar>

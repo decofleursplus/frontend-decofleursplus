@@ -175,7 +175,7 @@ export default function CartPage() {
                     <div className="flex items-center gap-2 text-emerald-800">
                       <Tag size={16} />
                       <div>
-                        <strong>{appliedCoupon.code}</strong> —{' '}
+                        <strong>{appliedCoupon.code}</strong> :{' '}
                         {appliedCoupon.freeShipping
                           ? 'Livraison offerte'
                           : `-${formatPrice(appliedCoupon.discountAmount)}`}

@@ -52,7 +52,7 @@ export async function generateMetadata({
   const priceFormatted = `${product.price.toLocaleString('fr-FR')} FCFA`;
 
   return constructMetadata({
-    title: `${product.name} — Fleuriste Saly & Dakar (${priceFormatted})`,
+    title: `${product.name} | Fleuriste Saly & Dakar (${priceFormatted})`,
     description: `${product.description} Prix : ${priceFormatted}. Fleurs fraîches artisanales, livraison express en 2h à Saly, le jour même à Somone et 24h à Dakar.`,
     image: product.image,
     canonical: `/produits/${product.slug}`,

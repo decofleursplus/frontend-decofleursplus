@@ -1,20 +1,20 @@
 # 📡 Recensement Exhaustif des APIs — DécoFleur Plus (Branche staging)
 
-**Version backend :** Staging (Branch `staging`, Commit `f37f5c6`)  
+**Version backend :** Staging (Branch `staging`, Commit `57d32f0` / PR #8 & #9)  
 **Base URL Staging :** `https://backend-decofleursplus-staging.up.railway.app/api/v1`  
 **Base URL Local :** `http://localhost:5000/api/v1`  
 **Swagger UI :** `/api/docs` | **Spécification OpenAPI :** `/api/docs/openapi.json`  
-**Total des endpoints recensés :** 149 (48 Client / Public + 101 Admin / Staff)  
+**Total des endpoints recensés :** 166 (59 Client / Public + 107 Admin / Staff)  
 
 ---
 
 ## 📑 Sommaire
 
 1. [Conventions Générales](#1-conventions-générales)
-2. [APIs Client & Public (48 endpoints)](#2-apis-client--public-48-endpoints)
+2. [APIs Client & Public (59 endpoints)](#2-apis-client--public-59-endpoints)
    - 2.1 [Système & Santé (1)](#21-système--santé)
-   - 2.2 [Authentification Client (3)](#22-authentification-client)
-   - 2.3 [Catalogue Public (4)](#23-catalogue-public)
+   - 2.2 [Authentification Client (6)](#22-authentification-client)
+   - 2.3 [Catalogue Public & Avis (6)](#23-catalogue-public--avis)
    - 2.4 [Devis Événementiels (3)](#24-devis-événementiels)
    - 2.5 [Commandes & Panier (6)](#25-commandes--panier)
    - 2.6 [Livraisons & Suivi Colis (1)](#26-livraisons--suivi-colis)
@@ -24,21 +24,26 @@
    - 2.10 [Marketing & Promotions (2)](#210-marketing--promotions)
    - 2.11 [Blog Floral Public (5)](#211-blog-floral-public)
    - 2.12 [Abonnements Floraux (7)](#212-abonnements-floraux)
-3. [APIs Admin & Back-Office (101 endpoints)](#3-apis-admin--back-office-101-endpoints)
+   - 2.13 [Notifications In-App Client (6)](#213-notifications-in-app-client)
+3. [APIs Admin & Back-Office (107 endpoints)](#3-apis-admin--back-office-107-endpoints)
    - 3.1 [Médias & Uploads (1)](#31-médias--uploads)
    - 3.2 [Catalogue & Catégories (11)](#32-catalogue--catégories)
    - 3.3 [Stock & Inventaire (3)](#33-stock--inventaire)
    - 3.4 [Devis Admin (4)](#34-devis-admin)
-   - 3.5 [Commandes & Zones Admin (8)](#35-commandes--zones-admin)
-   - 3.6 [Livraisons & Livreurs Admin (12)](#36-livraisons--livreurs-admin)
-   - 3.7 [Espace Livreur (5)](#37-espace-livreur)
-   - 3.8 [CRM Clients Admin (3)](#38-crm-clients-admin)
-   - 3.9 [Tableau de Bord & Rapports Financiers (3)](#39-tableau-de-bord--rapports-financiers)
-   - 3.10 [Marketing, Coupons & Relances (19)](#310-marketing-coupons--relances)
-   - 3.11 [Blog Editorial Admin (11)](#311-blog-editorial-admin)
-   - 3.12 [Abonnements Floraux Admin (4)](#312-abonnements-floraux-admin)
-   - 3.13 [Location & Calendrier Gantt (9)](#313-location--calendrier-gantt)
-   - 3.14 [Paramètres Boutique, Rôles & Collaborateurs (8)](#314-paramètres-boutique-rôles--collaborateurs)
+   - 3.5 [Commandes Admin (4)](#35-commandes-admin)
+   - 3.6 [Zones de Livraison Admin (4)](#36-zones-de-livraison-admin)
+   - 3.7 [Livraisons Admin (7)](#37-livraisons-admin)
+   - 3.8 [Gestion des Livreurs Admin (5)](#38-gestion-des-livreurs-admin)
+   - 3.9 [Espace Livreur Mobile/Course (5)](#39-espace-livreur-mobilecourse)
+   - 3.10 [CRM Clients Admin (3)](#310-crm-clients-admin)
+   - 3.11 [Tableau de Bord & Rapports Financiers (3)](#311-tableau-de-bord--rapports-financiers)
+   - 3.12 [Marketing, Coupons & Relances (19)](#312-marketing-coupons--relances)
+   - 3.13 [Blog Éditorial Admin (11)](#313-blog-éditorial-admin)
+   - 3.14 [Abonnements Floraux Admin (4)](#314-abonnements-floraux-admin)
+   - 3.15 [Location & Matériel Admin (4)](#315-location--matériel-admin)
+   - 3.16 [Réservations Location & Gantt (5)](#316-réservations-location--gantt)
+   - 3.17 [Paramètres Boutique, Rôles & Collaborateurs (8)](#317-paramètres-boutique-rôles--collaborateurs)
+   - 3.18 [Notifications & Diffusions Broadcast Staff (6)](#318-notifications--diffusions-broadcast-staff)
 4. [Matrice des Rôles & Accès](#4-matrice-des-rôles--accès)
 
 ---
@@ -85,7 +90,7 @@ Paramètres de requête : `?page=1&limit=20` (max limit : 100).
 
 ---
 
-## 2. APIs Client & Public (48 endpoints)
+## 2. APIs Client & Public (59 endpoints)
 
 ### 2.1 Système & Santé
 
@@ -97,11 +102,14 @@ Paramètres de requête : `?page=1&limit=20` (max limit : 100).
 
 | Méthode | Route | Description | Auth | Paramètres Query | Corps Requête |
 |---|---|---|---|---|---|
-| `POST` | `/auth/register` | Créer un compte client | 🌐 Public | — | JSON |
-| `POST` | `/auth/login` | Connexion (email ou téléphone) | 🌐 Public | — | JSON |
+| `POST` | `/auth/register` | Créer un compte client | 🌐 Public | — | JSON (**name**, **email**, **phone**, **password**) |
+| `POST` | `/auth/login` | Connexion (email ou téléphone) | 🌐 Public | — | JSON (**identifier**, **password**) |
+| `POST` | `/auth/google` | Connexion / Inscription via Google OAuth | 🌐 Public | — | JSON (credential, idToken, email, firstName, lastName, avatar) |
+| `POST` | `/auth/forgot-password` | Demande de réinitialisation de mot de passe | 🌐 Public | — | JSON (**email**) |
+| `POST` | `/auth/reset-password` | Réinitialisation effective de mot de passe avec token | 🌐 Public | — | JSON (**token**, **newPassword**) |
 | `GET` | `/auth/me` | Utilisateur connecté | 🔒 Client JWT | — | — |
 
-### 2.3 Catalogue Public
+### 2.3 Catalogue Public & Avis
 
 | Méthode | Route | Description | Auth | Paramètres Query | Corps Requête |
 |---|---|---|---|---|---|
@@ -109,6 +117,8 @@ Paramètres de requête : `?page=1&limit=20` (max limit : 100).
 | `GET` | `/categories/{slug}` | Détail catégorie | 🌐 Public | — | — |
 | `GET` | `/products` | Lister les produits visibles | 🌐 Public | page, limit, category, subCategory, status, featured, search, minPrice, maxPrice, sort | — |
 | `GET` | `/products/{slug}` | Détail produit | 🌐 Public | — | — |
+| `GET` | `/products/{id}/reviews` | Lister les avis d’un produit (moyenne, pagination) | 🌐 Public | page, limit | — |
+| `POST` | `/products/{id}/reviews` | Déposer un avis / note sur un produit | 🌐 Public / JWT optionnel | — | JSON (**rating** [1-5], **comment**, authorName, authorEmail) |
 
 ### 2.4 Devis Événementiels
 
@@ -195,9 +205,20 @@ Paramètres de requête : `?page=1&limit=20` (max limit : 100).
 | `PATCH` | `/subscriptions/mine/{subscriptionNumber}/resume` | Reprendre un abonnement suspendu | 🔒 Client JWT | — | — |
 | `PATCH` | `/subscriptions/mine/{subscriptionNumber}/cancel` | Résilier définitivement un abonnement | 🔒 Client JWT | — | `CancelSubscriptionRequest` |
 
+### 2.13 Notifications In-App Client
+
+| Méthode | Route | Description | Auth | Paramètres Query | Corps Requête |
+|---|---|---|---|---|---|
+| `GET` | `/notifications/mine` | Lister mes notifications in-app | 🔒 Client JWT | page, limit, unreadOnly | — |
+| `GET` | `/notifications/mine/unread-count` | Nombre de notifications non lues | 🔒 Client JWT | — | — |
+| `PATCH` | `/notifications/mine/{id}/read` | Marquer une notification comme lue | 🔒 Client JWT | — | — |
+| `POST` | `/notifications/mine/read-all` | Marquer toutes mes notifications comme lues | 🔒 Client JWT | — | — |
+| `GET` | `/notifications/mine/preferences` | Consulter mes préférences de notification | 🔒 Client JWT | — | — |
+| `PUT` | `/notifications/mine/preferences` | Mettre à jour mes préférences de notification | 🔒 Client JWT | — | `UpdateNotificationPreferencesRequest` |
+
 ---
 
-## 3. APIs Admin & Back-Office (101 endpoints)
+## 3. APIs Admin & Back-Office (107 endpoints)
 
 ### 3.1 Médias & Uploads
 
@@ -384,6 +405,17 @@ Paramètres de requête : `?page=1&limit=20` (max limit : 100).
 | `GET` | `/admin/users/{id}` | Détail d’un collaborateur | `ADMIN, MANAGER` | — | — |
 | `PUT` | `/admin/users/{id}` | Mettre à jour un collaborateur | `ADMIN, MANAGER` | — | `UpdateStaffUserRequest` |
 | `DELETE` | `/admin/users/{id}` | Supprimer un collaborateur | `ADMIN, MANAGER` | — | — |
+
+### 3.18 Notifications & Diffusions Broadcast Staff
+
+| Méthode | Route | Description | Rôles Autorisés | Paramètres Query | Corps Requête |
+|---|---|---|---|---|---|
+| `GET` | `/admin/notifications` | Lister toutes les notifications d'activité (staff) | `ADMIN, MANAGER, FLORIST, DELIVERY, SALES, ACCOUNTANT` | page, limit, unreadOnly, type | — |
+| `GET` | `/admin/notifications/unread-count` | Nombre d'alertes staff non lues | `ADMIN, MANAGER, FLORIST, DELIVERY, SALES, ACCOUNTANT` | — | — |
+| `PATCH` | `/admin/notifications/{id}/read` | Marquer une notification staff comme lue | `ADMIN, MANAGER, FLORIST, DELIVERY, SALES, ACCOUNTANT` | — | — |
+| `POST` | `/admin/notifications/read-all` | Tout marquer comme lu pour le staff | `ADMIN, MANAGER, FLORIST, DELIVERY, SALES, ACCOUNTANT` | — | — |
+| `POST` | `/admin/notifications/send` | Diffuser une notification broadcast manuelle | `ADMIN, MANAGER` | — | `SendBroadcastNotificationRequest` (**title**, **message**, **target**, channels, scheduledAt) |
+| `GET` | `/admin/notifications/broadcasts` | Historique des campagnes de diffusions broadcasts | `ADMIN, MANAGER, FLORIST, DELIVERY, SALES, ACCOUNTANT` | page, limit | — |
 
 ---
 

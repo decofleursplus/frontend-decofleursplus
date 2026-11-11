@@ -174,7 +174,7 @@ export const initialSeasonalEvents: SeasonalEvent[] = [
   },
   {
     id: 'femmes-8mars',
-    name: '8 Mars — Journée de la Femme',
+    name: '8 Mars : Journée de la Femme',
     categoryLabel: 'Hommage & Célébration',
     datesLabel: '8 Mars',
     headline: '8 Mars : Honorez les femmes d’exception',

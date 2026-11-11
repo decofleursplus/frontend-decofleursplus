@@ -13,16 +13,23 @@ Cette matrice recense les requêtes cibles pour Décofleur Plus au Sénégal, ve
 
 ---
 
-## 2. Cluster 1 : Fleuriste Local & Livraison de Fleurs (Priorité 1)
+## 2. Cluster 1 : Fleuriste Local, Magasin de Décoration & Marque à Saly (Priorité 1)
 
-Ce cluster regroupe les requêtes géolocalisées à plus fort taux de conversion pour la boutique en ligne et l'atelier de Saly.
+Ce cluster regroupe les requêtes géolocalisées à plus fort taux de conversion pour la boutique physique, l'atelier floral et le magasin de décoration de Saly Portudal, ainsi que les requêtes directes de marque.
 
 | Mot-Clé / Requête Cible | Intention | URL Cible | Zone Géographique | Volume Relatif | Priorité |
 | :--- | :---: | :--- | :--- | :---: | :---: |
+| **deco fleurs saly** | N / T / C | `/fleuriste-saly` | Saly Portudal | Très Élevé | **P1** |
+| **Déco Fleurs Plus** | N | `/` / `/fleuriste-saly` | Sénégal / Saly | Très Élevé | **P1** |
+| **Déco-Fleurs** | N | `/` / `/fleuriste-saly` | Saly / Dakar | Très Élevé | **P1** |
+| **Déco Fleurs** | N / C | `/` / `/fleuriste-saly` | Saly / Dakar | Très Élevé | **P1** |
+| **fleuriste à Saly** | T / C | `/fleuriste-saly` | Saly Portudal | Élevé | **P1** |
+| **fleuriste saly** | T / C | `/fleuriste-saly` | Saly Portudal | Élevé | **P1** |
+| **Magasins de décoration à SALY-PORTUDAL** | C / T | `/fleuriste-saly` | Saly Portudal | Élevé | **P1** |
+| **Magasins de décoration** | C / T | `/fleuriste-saly` | Petite-Côte | Élevé | **P1** |
+| **livraison fleurs saly** | T | `/fleuriste-saly` | Saly Portudal | Élevé | **P1** |
 | **fleuriste dakar** | T / C | `/fleuriste-dakar` | Dakar | Très Élevé | **P1** |
 | **livraison de fleurs dakar** | T | `/fleuriste-dakar` | Dakar | Très Élevé | **P1** |
-| **fleuriste saly** | T / C | `/fleuriste-saly` | Saly Portudal | Élevé | **P1** |
-| **livraison fleurs saly** | T | `/fleuriste-saly` | Saly Portudal | Élevé | **P1** |
 | **fleuriste somone** | T / C | `/fleuriste-somone` | Somone | Moyen | **P1** |
 | **livraison fleurs somone** | T | `/fleuriste-somone` | Somone | Moyen | **P1** |
 | **fleuriste mbour** | T / C | `/fleuriste-mbour` | Mbour / Petite-Côte | Élevé | **P1** |

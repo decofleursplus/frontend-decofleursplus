@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { logoutAdmin } from '@/app/admin/connexion/actions';
 import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getAdminUser, AdminSessionUser } from '@/lib/api/auth-token';
+import type { AdminSessionUser } from '@/lib/api/auth-token';
 import { AdminProfileDialog } from '@/components/admin/admin-profile-dialog';
 import {
   LayoutDashboard,
@@ -57,25 +57,11 @@ const navGroups = [
   },
 ];
 
-export function AdminSidebar() {
+export function AdminSidebar({ initialUser }: { initialUser?: AdminSessionUser | null } = {}) {
   const pathname = usePathname();
-  const { isCollapsed, toggleSidebar } = useAdminSidebar();
-  const [currentUser, setCurrentUser] = useState<AdminSessionUser | null>(() => getAdminUser());
+  const { isCollapsed, toggleSidebar, currentUser: contextUser, setCurrentUser } = useAdminSidebar();
+  const currentUser = contextUser ?? initialUser ?? null;
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
-
-  useEffect(() => {
-    const handleUserUpdate = (e: Event) => {
-      const customEvent = e as CustomEvent<AdminSessionUser | null>;
-      if (customEvent.detail !== undefined) {
-        setCurrentUser(customEvent.detail);
-      } else {
-        setCurrentUser(getAdminUser());
-      }
-    };
-
-    window.addEventListener('admin-user-updated', handleUserUpdate);
-    return () => window.removeEventListener('admin-user-updated', handleUserUpdate);
-  }, []);
 
   return (
     <aside
@@ -212,32 +198,6 @@ export function AdminSidebar() {
       {/* ── Pied de Sidebar : Profil & Déconnexion ── */}
       <div className={cn('admin-sidebar-footer', isCollapsed && 'p-2 flex flex-col items-center gap-2')}>
         {isCollapsed ? (
-          <>
-            <div className="relative group flex justify-center">
-              <button
-                type="button"
-                onClick={() => setIsProfileDialogOpen(true)}
-                className="flex items-center justify-center h-10 w-10 rounded-lg hover:ring-2 hover:ring-emerald-400 transition-all cursor-pointer"
-                title={currentUser?.name || 'Modifier mon profil'}
-                aria-label="Modifier ma photo de profil"
-              >
-                <Avatar className="h-8 w-8 ring-2 ring-emerald-500/40">
-                  <AvatarImage
-                    src={currentUser?.avatar || undefined}
-                    alt={currentUser?.name || 'Admin'}
-                    className="object-cover"
-                  />
-                  <AvatarFallback className="bg-[#193e23] text-white text-xs font-bold">
-                    {currentUser?.name ? currentUser.name.slice(0, 2).toUpperCase() : 'AD'}
-                  </AvatarFallback>
-                </Avatar>
-              </button>
-              <div className="pointer-events-none absolute left-full ml-2.5 top-1/2 -translate-y-1/2 hidden group-hover:flex flex-col z-50 whitespace-nowrap rounded-md bg-[#102617] px-2.5 py-1 text-xs text-white shadow-md border border-emerald-800/40">
-                <span className="font-semibold">{currentUser?.name || 'Administrateur'}</span>
-                <span className="text-[10px] text-emerald-300">Modifier la photo</span>
-              </div>
-            </div>
-
             <form action={logoutAdmin} className="w-full flex justify-center">
               <div className="relative group flex justify-center">
                 <button
@@ -253,39 +213,9 @@ export function AdminSidebar() {
                 </div>
               </div>
             </form>
-          </>
         ) : (
           <>
             {/* Profil Administrateur Desktop */}
-            <button
-              type="button"
-              onClick={() => setIsProfileDialogOpen(true)}
-              className="w-full flex items-center gap-2.5 p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all cursor-pointer mb-2 text-left group"
-              title="Modifier ma photo de profil"
-            >
-              <div className="relative shrink-0">
-                <Avatar className="h-8 w-8 ring-2 ring-emerald-500/40 group-hover:ring-emerald-400 transition-all">
-                  <AvatarImage
-                    src={currentUser?.avatar || undefined}
-                    alt={currentUser?.name || 'Admin'}
-                    className="object-cover"
-                  />
-                  <AvatarFallback className="bg-[#193e23] text-white text-xs font-bold">
-                    {currentUser?.name ? currentUser.name.slice(0, 2).toUpperCase() : 'AD'}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-1 ring-[#102617]" />
-              </div>
-              <div className="flex flex-col min-w-0 flex-1">
-                <span className="text-xs font-semibold text-white leading-tight truncate group-hover:text-emerald-200 transition-colors">
-                  {currentUser?.name || 'Administrateur'}
-                </span>
-                <span className="text-[10px] text-emerald-300/80 leading-none truncate mt-0.5">
-                  {currentUser?.role || 'Staff'} • Photo
-                </span>
-              </div>
-            </button>
-
             <form action={logoutAdmin} className="w-full">
               <button
                 type="submit"

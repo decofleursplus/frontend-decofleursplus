@@ -23,7 +23,7 @@ import { products } from '@/lib/products';
 import { ProductGrid } from '@/components/product-grid';
 
 export const metadata: Metadata = constructMetadata({
-  title: 'Fleuriste Mbour — Livraison de Bouquets & Cadeaux | Décofleur Plus',
+  title: 'Fleuriste Mbour · Livraison de Bouquets & Cadeaux | Décofleur Plus',
   description:
     'Fleuriste artisanal pour Mbour et la Petite-Côte. Livraison de fleurs fraîches, paniers de fruits locaux et coffrets cadeaux le jour même à Grand Mbour, Tefess et Oncad. Paiement Wave & OM.',
   canonical: '/fleuriste-mbour',
@@ -165,7 +165,7 @@ export default function FleuristeMbourPage() {
           <div className="text-center mb-8">
             <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#173f22] mb-2 flex items-center justify-center gap-2">
               <HelpCircle size={24} className="text-[#c8436e]" />
-              FAQ — Fleuriste Mbour
+              FAQ : Fleuriste Mbour
             </h2>
             <p className="text-neutral-600 text-xs sm:text-sm">
               Questions courantes sur nos livraisons de fleurs et corbeilles à Mbour.

@@ -28,7 +28,7 @@ export function constructMetadata({
 }: MetadataOptions = {}): Metadata {
   const fullTitle = title
     ? `${title} | ${SITE_CONFIG.name}`
-    : `${SITE_CONFIG.name} — ${SITE_CONFIG.tagline} | Fleuriste à Saly & Dakar`;
+    : `${SITE_CONFIG.name} · ${SITE_CONFIG.tagline} | Fleuriste à Saly & Dakar`;
 
   const absoluteImageUrl = image.startsWith('http')
     ? image
@@ -41,8 +41,16 @@ export function constructMetadata({
     : undefined;
 
   const defaultKeywords = [
-    'fleuriste dakar',
+    'deco fleurs saly',
+    'Déco Fleurs Plus',
+    'Déco-Fleurs',
+    'Déco Fleurs',
+    'fleuriste à Saly',
     'fleuriste saly',
+    'Magasins de décoration à SALY-PORTUDAL',
+    'Magasins de décoration',
+    'magasin de décoration saly',
+    'fleuriste dakar',
     'livraison fleurs dakar',
     'livraison fleurs saly',
     'bouquet de roses senegal',

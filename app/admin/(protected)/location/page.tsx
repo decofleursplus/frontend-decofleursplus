@@ -919,7 +919,7 @@ export default function AdminLocationPage() {
                                     width: `${Math.min(100, Math.max(2, widthPercent))}%`,
                                   }}
                                   className={`absolute h-7.5 rounded-lg px-2 flex items-center justify-center text-[10px] font-bold shadow-xs cursor-pointer hover:scale-[1.01] hover:ring-2 hover:ring-black/20 hover:z-20 transition-all ${bgClass}`}
-                                  title={`${b.id} — ${b.clientName || 'Réservé'} (${b.equipmentName})\nDu ${b.startDay} au ${b.endDay} ${MONTH_NAMES[currentMonth]} ${currentYear}\nStatut : ${b.status}\nCliquer pour inspecter ou modifier.`}
+                                  title={`${b.id} : ${b.clientName || 'Réservé'} (${b.equipmentName})\nDu ${b.startDay} au ${b.endDay} ${MONTH_NAMES[currentMonth]} ${currentYear}\nStatut : ${b.status}\nCliquer pour inspecter ou modifier.`}
                                 >
                                   <span className="truncate flex items-center gap-1">
                                     {isCutLeft && <span>◀</span>}

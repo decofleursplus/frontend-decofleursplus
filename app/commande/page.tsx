@@ -435,7 +435,7 @@ export default function CheckoutPage() {
                   >
                     {zones.map((z) => (
                       <option key={z.id} value={z.id}>
-                        {z.name} — {formatPrice(delivery === 'express' ? z.expressFee : z.fee)}{' '}
+                        {z.name} : {formatPrice(delivery === 'express' ? z.expressFee : z.fee)}{' '}
                         {z.coverage ? `(${z.coverage})` : ''}
                       </option>
                     ))}

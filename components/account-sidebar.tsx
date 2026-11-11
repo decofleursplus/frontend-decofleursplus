@@ -13,7 +13,7 @@ const entries = [
   ['Mes abonnements floraux', '/compte/abonnements', Calendar],
   ['Mes adresses', '/compte/adresses', MapPin],
   ['Mes informations', '/compte/informations', UserRound],
-  ['Mes favoris', '/favoris', Heart],
+  ['Mes favoris', '/compte/favoris', Heart],
   ['Mes points fidélité', '/compte/fidelite', Star],
   ['Mes avis', '/compte/avis', Star],
   ['Mes notifications', '/compte/notifications', Bell],

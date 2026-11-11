@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowUpRight, Check, Heart } from 'lucide-react';
-import { FacebookIcon, InstagramIcon, TikTokIcon, YouTubeIcon } from '@/components/icons';
+import { FacebookIcon, InstagramIcon, TikTokIcon, WhatsAppIcon } from '@/components/icons';
 import { BrandLogo } from '@/components/brand-logo';
+import { SITE_CONFIG } from '@/lib/seo/config';
 
 export function SiteFooter() {
   const [email, setEmail] = useState('');
@@ -59,40 +60,40 @@ export function SiteFooter() {
             </h4>
             <div className="flex items-center gap-2.5">
               <a
-                href="https://facebook.com"
+                href={SITE_CONFIG.social.facebook}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Facebook"
+                aria-label="Facebook Déco Fleurs Plus"
                 className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#c8436e] flex items-center justify-center text-white transition-all duration-300"
               >
                 <FacebookIcon size={15} />
               </a>
               <a
-                href="https://instagram.com"
+                href={SITE_CONFIG.social.instagram}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Instagram"
+                aria-label="Instagram Déco Fleurs Plus"
                 className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#c8436e] flex items-center justify-center text-white transition-all duration-300"
               >
                 <InstagramIcon size={15} />
               </a>
               <a
-                href="https://tiktok.com"
+                href={SITE_CONFIG.social.tiktok}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="TikTok"
+                aria-label="TikTok Déco Fleurs Saly"
                 className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#c8436e] flex items-center justify-center text-white transition-all duration-300"
               >
                 <TikTokIcon size={15} />
               </a>
               <a
-                href="https://youtube.com"
+                href={SITE_CONFIG.social.whatsapp}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="YouTube"
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#c8436e] flex items-center justify-center text-white transition-all duration-300"
+                aria-label="WhatsApp Déco Fleurs Plus"
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#25D366] flex items-center justify-center text-white transition-all duration-300"
               >
-                <YouTubeIcon size={15} />
+                <WhatsAppIcon size={15} />
               </a>
             </div>
           </div>
