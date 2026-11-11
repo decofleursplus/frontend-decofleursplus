@@ -94,7 +94,7 @@ export async function generateMetadata({
   }
 
   return constructMetadata({
-    title: `${cat.title} — Fleuriste Saly & Dakar`,
+    title: `${cat.title} | Fleuriste Saly & Dakar`,
     description: cat.description,
     canonical: `/categories/${slug}`,
     image: cat.image,
@@ -146,7 +146,7 @@ export default async function CategoryRoute({
         <section className="page-banner shop-banner">
           <Image
             src={cat.image || '/images/hero.jpg'}
-            alt={`${cat.title} — Décofleur Plus`}
+            alt={`${cat.title} · Décofleur Plus`}
             fill
             sizes="100vw"
             priority

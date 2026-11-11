@@ -76,7 +76,7 @@ export async function generateMetadata({
   if (categories[slug]) {
     const title = categories[slug];
     return constructMetadata({
-      title: `${title} — Fleuriste Saly & Dakar`,
+      title: `${title} | Fleuriste Saly & Dakar`,
       canonical: `/categories/${slug}`,
     });
   }
@@ -100,7 +100,7 @@ export async function generateMetadata({
       });
     case 'a-propos':
       return constructMetadata({
-        title: 'À Propos de Décofleur Plus — Savoir-Faire Floral & Héritage Artisanal',
+        title: 'À Propos de Décofleur Plus | Savoir-Faire Floral & Héritage Artisanal',
         description: 'Découvrez l’histoire de Décofleur Plus : artisanat floral de prestige, sélection rigoureuse des fleurs fraîches et passion botanique à Saly Portudal.',
         canonical: '/a-propos',
         image: '/images/boutique-equipe.jpg',
@@ -617,7 +617,7 @@ function AboutPage() {
               <Sparkles size={15} /> Maison Florale &amp; Végétale
             </span>
             <h1>Décofleur Plus</h1>
-            <p>Nature en Élégance — Saly Portudal, Petite Côte du Sénégal</p>
+            <p>Nature en Élégance · Saly Portudal, Petite Côte du Sénégal</p>
           </div>
         </section>
 
@@ -643,7 +643,7 @@ function AboutPage() {
             <blockquote className="about-large-quote">
               La proximité d’une maison locale, avec les standards d’une marque d’exception.
             </blockquote>
-            <p className="quote-author">Maison DécoFleur Plus — Saly Portudal</p>
+            <p className="quote-author">Maison DécoFleur Plus · Saly Portudal</p>
           </div>
         </div>
 

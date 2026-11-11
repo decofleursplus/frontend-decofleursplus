@@ -39,7 +39,7 @@ export function PromotionBanner() {
             {promo.badgeText || `-${promo.discountPercentage}%`}
           </span>
           <span className="font-medium text-white/95 truncate">
-            {promo.name} — Profitez de {promo.discountPercentage}% de remise immédiate !
+            {promo.name} : Profitez de {promo.discountPercentage}% de remise immédiate !
           </span>
           <Link
             href="/boutique"

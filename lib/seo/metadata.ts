@@ -28,7 +28,7 @@ export function constructMetadata({
 }: MetadataOptions = {}): Metadata {
   const fullTitle = title
     ? `${title} | ${SITE_CONFIG.name}`
-    : `${SITE_CONFIG.name} — ${SITE_CONFIG.tagline} | Fleuriste à Saly & Dakar`;
+    : `${SITE_CONFIG.name} · ${SITE_CONFIG.tagline} | Fleuriste à Saly & Dakar`;
 
   const absoluteImageUrl = image.startsWith('http')
     ? image

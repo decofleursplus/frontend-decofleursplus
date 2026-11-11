@@ -26,7 +26,7 @@ const leftColumnContent = {
     welcome: 'Bienvenue',
     brand: 'chez Décofleur Plus',
     intro:
-      'Connectez-vous pour accéder à votre compte et profiter d’une expérience personnalisée. —',
+      'Connectez-vous pour accéder à votre compte et profiter d’une expérience personnalisée.',
     perks: [
       {
         icon: PackageCheck,

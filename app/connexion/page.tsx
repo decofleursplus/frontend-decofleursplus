@@ -4,7 +4,7 @@ import { LoginForm } from '@/components/auth/login-form';
 import { Loader2 } from 'lucide-react';
 
 export const metadata = {
-  title: 'Connexion — Décofleur Plus',
+  title: 'Connexion | Décofleur Plus',
   description:
     'Connectez-vous à votre compte client Décofleur Plus pour suivre vos commandes, vos favoris et vos adresses.',
 };

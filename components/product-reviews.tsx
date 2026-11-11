@@ -194,47 +194,11 @@ export function ProductReviews({
       {/* Accordion Collapsible Content */}
       {isOpen && (
         <div className="p-4 sm:p-6 border-t border-neutral-100 space-y-6 animate-in fade-in-50 duration-200">
-          {/* Summary Banner */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-[#faf9f5] border border-amber-100/60 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-            <div className="text-left sm:border-r border-amber-200/50 sm:pr-5 shrink-0">
-              <span className="text-3xl font-serif font-bold text-[#173f22] block leading-none">
-                {rating.toFixed(1)}/5
-              </span>
-              <div className="flex items-center gap-1 my-1.5">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    size={14}
-                    fill={i < Math.round(rating) ? '#F59E0B' : 'none'}
-                    stroke={i < Math.round(rating) ? '#F59E0B' : '#CBD5E1'}
-                  />
-                ))}
-              </div>
-              <span className="text-[11px] text-neutral-600 block whitespace-nowrap">
-                {reviewsCount} avis certifiés
-              </span>
-            </div>
 
-            <div className="text-xs text-neutral-600 space-y-1.5">
-              <div className="flex items-center gap-2 text-neutral-900 font-medium">
-                <CheckCircle2 size={15} className="text-emerald-700 shrink-0" />
-                <span>Fleurs fraîches coupées du jour et préparées avec soin</span>
-              </div>
-              <div className="flex items-center gap-2 text-neutral-900 font-medium">
-                <CheckCircle2 size={15} className="text-emerald-700 shrink-0" />
-                <span>Navette climatisée Dakar &amp; livraison express Petite-Côte</span>
-              </div>
-              <div className="flex items-center gap-2 text-neutral-900 font-medium">
-                <CheckCircle2 size={15} className="text-emerald-700 shrink-0" />
-                <span>Service client joignable par téléphone et WhatsApp 7j/7</span>
-              </div>
-            </div>
-          </div>
 
           {/* Form: Déposer un avis */}
           <div className="p-5 rounded-2xl border border-emerald-100/80 bg-emerald-50/30">
             <h3 className="text-sm font-semibold text-neutral-900 mb-1 flex items-center gap-2">
-              <Send size={15} className="text-emerald-700" />
               <span>Donner votre avis sur ce bouquet</span>
             </h3>
             <p className="text-xs text-neutral-600 mb-4">
@@ -277,7 +241,7 @@ export function ProductReviews({
                     );
                   })}
                   <span className="text-xs font-bold text-amber-700 ml-2">
-                    {selectedStars}/5 — {['Décevant', 'Passable', 'Bien', 'Très bien', 'Exceptionnel'][selectedStars - 1]}
+                    {selectedStars}/5 : {['Décevant', 'Passable', 'Bien', 'Très bien', 'Exceptionnel'][selectedStars - 1]}
                   </span>
                 </div>
               </div>

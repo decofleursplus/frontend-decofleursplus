@@ -118,7 +118,7 @@ export function ArticlePreviewDialog({
             </div>
             <div>
               <span className="text-xs font-semibold text-white tracking-wide">
-                Aperçu Storefront — Journal Floral Décofleur Plus
+                Aperçu Storefront : Journal Floral Décofleur Plus
               </span>
               <span className="hidden sm:inline-block text-[11px] text-[#a0a6a0] ml-2">
                 • /blog/{article.slug}

@@ -210,7 +210,7 @@ export function ArticlePreviewView({ article }: ArticlePreviewViewProps) {
           </div>
           <div>
             <span className="text-xs font-semibold text-white">
-              Visualisation en situation réelle — Expérience visiteur
+              Visualisation en situation réelle : Expérience visiteur
             </span>
             <p className="text-[11px] text-[#a0a6a0]">
               Mise en page, typographies Georgia, signatures d'artisans et produits associés exactement comme sur le site public.

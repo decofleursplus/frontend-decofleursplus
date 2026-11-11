@@ -1293,7 +1293,7 @@ export function AccountSection({ section }: { section: string }) {
                         </span>
                       </div>
                       <div className="text-sm text-neutral-600">
-                        <strong>{q.eventType}</strong> — {q.eventLocation}
+                        <strong>{q.eventType}</strong> · {q.eventLocation}
                       </div>
                       <div className="text-xs text-neutral-400 mt-1">
                         Créé le {new Date(q.createdAt).toLocaleDateString('fr-FR')} {q.eventDate ? `· Événement le ${new Date(q.eventDate).toLocaleDateString('fr-FR')}` : ''}
