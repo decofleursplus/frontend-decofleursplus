@@ -50,11 +50,11 @@ export default function PaysagismePage() {
         {/* ── 1. Hero Banner Panoramique Compact (Hauteur Réduite) ── */}
         <section className="relative w-full rounded-xl overflow-hidden min-h-[280px] sm:min-h-[310px] lg:min-h-[340px] flex items-center p-6 sm:p-8 lg:p-10 mb-6 sm:mb-8 shadow-md border border-[#e6ded5]">
           <Image
-            src="/images/paysagisme/paysagisme-hero.jpg"
-            alt="Aménagement paysager d'exception avec villa et piscine par Décofleur Plus"
+            src="/images/paysagisme/hero-paysagisme.png"
+            alt="Aménagement paysager et scénographie végétale par Décofleur Plus"
             fill
             priority
-            className="object-cover"
+            className="object-cover object-center"
             sizes="100vw"
           />
           {/* Dégradé doux et protecteur pour lisibilité optimale */}

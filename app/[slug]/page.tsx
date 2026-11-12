@@ -174,10 +174,11 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
         <main className="content-width page-main">
           <section className="page-banner shop-banner">
             <Image
-              src="/images/mariage.jpg"
+              src="/images/evenements/hero-event.png"
               alt="Décoration florale de mariage et réceptions"
               fill
               sizes="100vw"
+              className='object-bottom object-contain'
             />
             <div className="page-banner-content">
               <span className="banner-badge"><Heart size={15} /> Savoir-faire floral</span>
