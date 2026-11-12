@@ -14,6 +14,7 @@ import { TestimonialCarousel } from '@/components/testimonial-carousel';
 import { EventHero } from '@/components/event-hero';
 import { EventFeaturedRow } from '@/components/event-featured-row';
 import { MockupCategories } from '@/components/mockup-categories';
+import { HomeFaq } from '@/components/home-faq';
 import { constructMetadata } from '@/lib/seo/metadata';
 import { JsonLd } from '@/components/seo/json-ld';
 import { SITE_URL, SITE_CONFIG } from '@/lib/seo/config';
@@ -66,14 +67,14 @@ export default function HomePage() {
         {/* 1. Dynamic Hero Section Coordinated with Active Event (defaults to HeroMockup) */}
         <EventHero />
 
-        {/* 2. 7 Catégories Circulaires du Mockup */}
+        {/* 2. Catégories de la boutique (back-office) + services */}
         <MockupCategories />
 
         {/* 3. Section Phare : Carte Événements & Grille 4 Produits Phares */}
         <EventFeaturedRow />
 
-        {/* 4. Badges de Réassurance & Bannière Carte Cadeau */}
-        <section className="trust-and-gift-section content-width" aria-label="Engagements et cartes cadeaux">
+        {/* 4. Badges de réassurance & bannière abonnements */}
+        <section className="trust-and-gift-section content-width" aria-label="Engagements et abonnements floraux">
           {/* Left: 4 Trust Badges exact mockup */}
           <div className="trust-badges-grid">
             <div className="trust-badge-card">
@@ -117,19 +118,17 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Right: Gift Card Promo Banner with luxury gift box image in background + gradient */}
+          {/* Droite : bannière Abonnements floraux (fonctionnalité réelle, en remplacement des cartes cadeaux) */}
           <div className="gift-card-banner relative overflow-hidden">
-            {/* Background image anchored right */}
             <div className="absolute inset-0 z-0 pointer-events-none">
               <Image
                 src="/images/gift-banner-bg.jpg"
-                alt="Cartes cadeaux Décofleur Plus"
+                alt="Bouquets livrés chaque semaine par Décofleur Plus"
                 fill
                 priority
                 sizes="(max-width: 900px) 100vw, 550px"
                 className="object-cover object-right"
               />
-              {/* Smooth gradient fade to blush pink on the left to ensure crisp text readability */}
               <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
@@ -139,23 +138,25 @@ export default function HomePage() {
               />
             </div>
 
-            {/* Banner content floating on top */}
             <div className="gift-banner-content relative z-10">
               <div className="gift-icon-tag">
                 <Gift size={28} strokeWidth={1.6} />
               </div>
               <div>
-                <h3>Offrez des émotions avec nos cartes cadeaux</h3>
-                <Link href="/compte/cartes-cadeaux" className="button-pill-pink button-small">
-                  <span>Acheter une carte cadeau</span> <ArrowRight size={14} />
+                <h3>Des fleurs fraîches livrées chaque semaine</h3>
+                <Link href="/abonnements" className="button-pill-pink button-small">
+                  <span>Découvrir nos abonnements</span> <ArrowRight size={14} />
                 </Link>
               </div>
             </div>
           </div>
         </section>
 
-        {/* 5. Témoignages Clients ("Ils nous font confiance") */}
+        {/* 5. Témoignages Clients ("Ils nous font confiance") — avis réels */}
         <TestimonialCarousel />
+
+        {/* 6. Questions fréquentes (cible du lien /faq) */}
+        <HomeFaq />
       </main>
 
       <SiteFooter />

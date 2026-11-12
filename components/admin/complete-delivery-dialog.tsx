@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { AdminDelivery } from '@/lib/admin/mock-data/types';
 import {
   Dialog,
@@ -19,7 +19,8 @@ interface CompleteDeliveryDialogProps {
   delivery: AdminDelivery | null;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onComplete: (deliveryId: string, recipientName: string, notes?: string) => void;
+  /** Résout à true si l'API a validé la livraison (la fenêtre se ferme alors). */
+  onComplete: (deliveryId: string, recipientName: string, notes?: string) => Promise<boolean>;
 }
 
 export function CompleteDeliveryDialog({
@@ -28,34 +29,24 @@ export function CompleteDeliveryDialog({
   onOpenChange,
   onComplete,
 }: CompleteDeliveryDialogProps) {
-  const [recipientName, setRecipientName] = useState('');
+  // Le parent remonte ce composant (key) à chaque livraison : l'état part des valeurs de la livraison.
+  const [recipientName, setRecipientName] = useState(delivery?.customerName ?? '');
+  const [submitting, setSubmitting] = useState(false);
   const [completionNotes, setCompletionNotes] = useState('');
-  const [currentTime, setCurrentTime] = useState('');
-
-  useEffect(() => {
-    if (delivery) {
-      setRecipientName(delivery.customerName || '');
-      setCompletionNotes('');
-
-      const now = new Date();
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      setCurrentTime(`${hours}:${minutes}`);
-    }
-  }, [delivery]);
+  const [currentTime] = useState(() => new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }));
 
   if (!delivery) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!recipientName.trim()) {
+    if (recipientName.trim().length < 2) {
       toast.error('Veuillez indiquer le nom de la personne ayant réceptionné le colis');
       return;
     }
-
-    onComplete(delivery.id, recipientName.trim(), completionNotes.trim() || undefined);
-    toast.success(`Livraison ${delivery.id} marquée comme terminée avec succès`);
-    onOpenChange(false);
+    setSubmitting(true);
+    const ok = await onComplete(delivery.id, recipientName.trim(), completionNotes.trim() || undefined);
+    setSubmitting(false);
+    if (ok) onOpenChange(false);
   };
 
   return (
@@ -69,7 +60,7 @@ export function CompleteDeliveryDialog({
             </DialogTitle>
             <DialogDescription className="text-xs text-gray-500">
               Validez la remise du colis et clôturez la course{' '}
-              <span className="font-semibold text-gray-800">{delivery.id}</span>.
+              <span className="font-semibold text-gray-800">{delivery.deliveryNumber}</span>.
             </DialogDescription>
           </DialogHeader>
 
@@ -145,6 +136,7 @@ export function CompleteDeliveryDialog({
             </Button>
             <Button
               type="submit"
+              disabled={submitting}
               className="bg-[#166534] hover:bg-[#14532d] text-white text-xs font-semibold h-10 px-5 gap-1.5"
             >
               <CheckCircle2 className="h-3.5 w-3.5" />

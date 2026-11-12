@@ -10,10 +10,12 @@ import {
   getAdminDeliveries,
   getAdminDrivers,
   assignDeliveryDriver,
+  startAdminDelivery,
   completeAdminDelivery,
   failAdminDelivery,
   createAdminDriver,
   updateAdminDriver,
+  type AdminDeliveriesResponse,
 } from '@/lib/api/admin/deliveries';
 import { ApiClientError } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
@@ -38,7 +40,6 @@ import {
   UserCheck,
   Bike,
   Clock,
-  Calendar,
   AlertTriangle,
   UserPlus,
   Users,
@@ -61,32 +62,42 @@ export default function AdminDeliveriesPage() {
   // Deliveries and Drivers State
   const [deliveries, setDeliveries] = useState<AdminDelivery[]>([]);
   const [drivers, setDrivers] = useState<DeliveryDriver[]>([]);
+  const [serverCounts, setServerCounts] = useState<AdminDeliveriesResponse['counts'] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadData = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
+  const fetchAll = useCallback(
+    () =>
+      Promise.all([getAdminDeliveries(), getAdminDrivers(true)])
+        .then(([delRes, drvRes]) => {
+          setDeliveries(delRes.deliveries);
+          setServerCounts(delRes.counts);
+          setDrivers(drvRes);
+          setLoadError(null);
+        })
+        .catch((err) => {
+          const msg = err instanceof ApiClientError ? err.message : 'Erreur lors du chargement des livraisons et livreurs';
+          setLoadError(msg);
+          toast.error(msg);
+        }),
+    [],
+  );
 
-    try {
-      const [delRes, drvRes] = await Promise.all([
-        getAdminDeliveries(),
-        getAdminDrivers(true),
-      ]);
-      if (delRes?.deliveries) setDeliveries(delRes.deliveries);
-      if (drvRes && Array.isArray(drvRes)) setDrivers(drvRes);
-    } catch (err) {
-      const msg = err instanceof ApiClientError ? err.message : 'Erreur lors du chargement des livraisons et livreurs';
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
+  const loadData = useCallback(
+    (isRefresh = false) => {
+      if (isRefresh) setRefreshing(true);
+      return fetchAll().finally(() => {
+        setLoading(false);
+        setRefreshing(false);
+      });
+    },
+    [fetchAll],
+  );
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    fetchAll().finally(() => setLoading(false));
+  }, [fetchAll]);
 
   // Status Sub-Pill Filter on courses tab
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -117,14 +128,9 @@ export default function AdminDeliveriesPage() {
 
   // Counts for pills
   const counts = useMemo(() => {
-    return {
-      all: deliveries.length,
-      a_livrer: deliveries.filter((d) => d.status === 'a_livrer').length,
-      en_cours: deliveries.filter((d) => d.status === 'en_cours').length,
-      livree: deliveries.filter((d) => d.status === 'livree').length,
-      echec: deliveries.filter((d) => d.status === 'echec').length,
-    };
-  }, [deliveries]);
+    const c = serverCounts ?? { a_livrer: 0, en_cours: 0, livree: 0, echec: 0 };
+    return { all: c.a_livrer + c.en_cours + c.livree + c.echec, ...c };
+  }, [serverCounts]);
 
   // Drawer filter handler
   const handleOpenFilterDrawer = (open: boolean) => {
@@ -184,7 +190,7 @@ export default function AdminDeliveriesPage() {
       // Search query
       if (searchQuery.trim() !== '') {
         const query = searchQuery.toLowerCase();
-        const matchesId = d.id.toLowerCase().includes(query);
+        const matchesId = d.deliveryNumber.toLowerCase().includes(query);
         const matchesRef = d.orderRef.toLowerCase().includes(query);
         const matchesCustomer = d.customerName.toLowerCase().includes(query);
         const matchesAddress = d.deliveryAddress.toLowerCase().includes(query);
@@ -227,229 +233,68 @@ export default function AdminDeliveriesPage() {
     }
   };
 
-  // Status change helper
+  /** Exécute une action serveur puis recharge la liste ; aucune mise à jour locale en cas d'échec. */
+  const runAction = async (action: () => Promise<unknown>, success: string): Promise<boolean> => {
+    try {
+      await action();
+      toast.success(success);
+      await fetchAll();
+      return true;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Action impossible');
+      return false;
+    }
+  };
+
+  const syncSelected = (deliveryId: string) => {
+    if (selectedDelivery?.id === deliveryId) setIsDetailOpen(false);
+  };
+
+  // Transitions : démarrer (en_cours), clôturer (livree, via la fenêtre), échec (motif), replanifier (réassignation)
   const handleStatusChange = async (deliveryId: string, newStatus: DeliveryStatus) => {
-    setDeliveries((prev) =>
-      prev.map((d) => {
-        if (d.id === deliveryId) {
-          const updatedSteps = (d.trackingSteps || []).map((step) => {
-            if (newStatus === 'en_cours' && step.step === 'en_acheminement') {
-              return { ...step, completed: true, time: 'À l’instant' };
-            }
-            if (newStatus === 'livree') {
-              return { ...step, completed: true, time: 'Validé' };
-            }
-            return step;
-          });
-
-          return {
-            ...d,
-            status: newStatus,
-            deliveredAt: newStatus === 'livree' ? 'Aujourd’hui' : d.deliveredAt,
-            trackingSteps: updatedSteps,
-          };
-        }
-        return d;
-      })
-    );
-
-    if (selectedDelivery && selectedDelivery.id === deliveryId) {
-      setSelectedDelivery((prev) => (prev ? { ...prev, status: newStatus } : null));
-    }
-
-    try {
-      if (newStatus === 'livree') {
-        await completeAdminDelivery(deliveryId, {});
-      } else if (newStatus === 'echec') {
-        await failAdminDelivery(deliveryId, { reason: 'Signalé par l’administrateur' });
+    const delivery = deliveries.find((d) => d.id === deliveryId);
+    if (!delivery) return;
+    if (newStatus === 'en_cours') {
+      await runAction(() => startAdminDelivery(deliveryId), `Course ${delivery.deliveryNumber} démarrée`);
+    } else if (newStatus === 'livree') {
+      syncSelected(deliveryId);
+      handleOpenCompleteModal(delivery);
+    } else if (newStatus === 'echec') {
+      const reason = window.prompt('Motif de l’échec de livraison (3 caractères minimum) :', '');
+      if (reason === null) return;
+      if (reason.trim().length < 3) {
+        toast.error('Indiquez un motif d’au moins 3 caractères.');
+        return;
       }
-      toast.success(`Statut mis à jour : ${newStatus}`);
-    } catch {
-      toast.warning('Statut mis à jour localement');
+      if (await runAction(() => failAdminDelivery(deliveryId, { reason: reason.trim() }), 'Échec de livraison enregistré')) syncSelected(deliveryId);
+    } else if (newStatus === 'a_livrer') {
+      syncSelected(deliveryId);
+      handleOpenAssignModal(delivery);
     }
   };
 
-  // Driver assignment handler
-  const handleAssignDriver = async (
-    deliveryId: string,
-    driverId: string,
-    timeSlot: string,
-    notes?: string
-  ) => {
+  const handleAssignDriver = (deliveryId: string, driverId: string, timeSlot: string, notes?: string) => {
     const drv = drivers.find((d) => d.id === driverId);
-    if (!drv) return;
-
-    setDeliveries((prev) =>
-      prev.map((d) => {
-        if (d.id === deliveryId) {
-          const updatedSteps = (d.trackingSteps || []).map((step) => {
-            if (step.step === 'prise_en_charge') {
-              return {
-                ...step,
-                completed: true,
-                label: `Pris en charge par ${drv.name}`,
-                time: 'À l’instant',
-              };
-            }
-            return step;
-          });
-
-          return {
-            ...d,
-            driverId: drv.id,
-            driverName: drv.name,
-            driverPhone: drv.phone,
-            driverVehicle: `${drv.vehicle} ${drv.vehiclePlate ? `(${drv.vehiclePlate})` : ''}`,
-            timeSlot: timeSlot || d.timeSlot,
-            notes: notes !== undefined ? notes : d.notes,
-            trackingSteps: updatedSteps,
-          };
-        }
-        return d;
-      })
+    return runAction(
+      () => assignDeliveryDriver(deliveryId, { driverId, timeSlot: timeSlot || undefined, note: notes || undefined }),
+      `Livreur ${drv?.name ?? ''} assigné`,
     );
-
-    // Update driver active courses count
-    setDrivers((prev) =>
-      prev.map((d) => (d.id === driverId ? { ...d, activeDeliveriesCount: d.activeDeliveriesCount + 1 } : d))
-    );
-
-    if (selectedDelivery && selectedDelivery.id === deliveryId) {
-      setSelectedDelivery((prev) =>
-        prev
-          ? {
-              ...prev,
-              driverId: drv.id,
-              driverName: drv.name,
-              driverPhone: drv.phone,
-              driverVehicle: `${drv.vehicle} ${drv.vehiclePlate ? `(${drv.vehiclePlate})` : ''}`,
-              timeSlot: timeSlot || prev.timeSlot,
-              notes: notes !== undefined ? notes : prev.notes,
-            }
-          : null
-      );
-    }
-
-    try {
-      await assignDeliveryDriver(deliveryId, {
-        driverId,
-        timeSlot,
-        note: notes,
-      });
-      toast.success(`Livreur ${drv.name} assigné avec succès`);
-    } catch {
-      toast.warning('Assignation enregistrée localement');
-    }
   };
 
-  // Complete delivery handler
-  const handleCompleteDelivery = async (deliveryId: string, recipientName: string, notes?: string) => {
-    const now = new Date();
-    const timeFormatted = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const dateFormatted = `Aujourd'hui à ${timeFormatted}`;
+  const handleCompleteDelivery = (deliveryId: string, recipientName: string, notes?: string) =>
+    runAction(() => completeAdminDelivery(deliveryId, { recipientName, notes }), 'Livraison marquée comme effectuée');
 
-    let completedDriverId: string | undefined;
+  const handleAddDriver = (input: { name: string; phone: string; vehicle: DeliveryDriver['vehicle']; vehiclePlate?: string; available: boolean }) =>
+    runAction(() => createAdminDriver(input), `Livreur ${input.name} ajouté à la flotte`);
 
-    setDeliveries((prev) =>
-      prev.map((d) => {
-        if (d.id === deliveryId) {
-          completedDriverId = d.driverId;
-          const updatedSteps = (d.trackingSteps || []).map((step) => {
-            if (step.step === 'livre') {
-              return {
-                ...step,
-                completed: true,
-                label: `Remis à ${recipientName}`,
-                time: timeFormatted,
-              };
-            }
-            return { ...step, completed: true };
-          });
-
-          return {
-            ...d,
-            status: 'livree',
-            deliveredAt: dateFormatted,
-            recipientName,
-            notes: notes ? `${d.notes ? d.notes + ' • ' : ''}${notes}` : d.notes,
-            trackingSteps: updatedSteps,
-          };
-        }
-        return d;
-      })
-    );
-
-    // Decrement driver active deliveries count
-    if (completedDriverId) {
-      setDrivers((prev) =>
-        prev.map((drv) =>
-          drv.id === completedDriverId
-            ? { ...drv, activeDeliveriesCount: Math.max(0, drv.activeDeliveriesCount - 1) }
-            : drv
-        )
-      );
-    }
-
-    if (selectedDelivery && selectedDelivery.id === deliveryId) {
-      setSelectedDelivery((prev) =>
-        prev
-          ? {
-              ...prev,
-              status: 'livree',
-              deliveredAt: dateFormatted,
-              recipientName,
-            }
-          : null
-      );
-    }
-
-    try {
-      await completeAdminDelivery(deliveryId, { recipientName, notes });
-      toast.success('Livraison marquée comme effectuée !');
-    } catch {
-      toast.warning('Livraison validée localement');
-    }
-  };
-
-  // Add new driver
-  const handleAddDriver = async (newDriver: DeliveryDriver) => {
-    setDrivers((prev) => [newDriver, ...prev]);
-    try {
-      await createAdminDriver({
-        name: newDriver.name,
-        phone: newDriver.phone,
-        vehicle: newDriver.vehicle,
-        vehiclePlate: newDriver.vehiclePlate,
-      });
-      toast.success('Nouveau livreur enregistré dans la base');
-    } catch {
-      toast.warning('Livreur ajouté localement');
-    }
-  };
-
-  // Toggle driver status
   const handleToggleDriverStatus = async (driverId: string) => {
     const drv = drivers.find((d) => d.id === driverId);
     if (!drv) return;
-    const nextStatus = drv.status === 'disponible' ? 'indisponible' : 'disponible';
-
-    setDrivers((prev) =>
-      prev.map((d) => {
-        if (d.id === driverId) {
-          return { ...d, status: nextStatus };
-        }
-        return d;
-      })
+    const makeAvailable = drv.status === 'indisponible';
+    await runAction(
+      () => updateAdminDriver(driverId, { available: makeAvailable }),
+      `${drv.name} est maintenant ${makeAvailable ? 'disponible' : 'indisponible'}`,
     );
-    toast.info(`${drv.name} est maintenant marqué comme ${nextStatus}`);
-
-    try {
-      await updateAdminDriver(driverId, {
-        availability: nextStatus === 'disponible' ? 'AVAILABLE' : 'OFFLINE',
-      });
-    } catch {
-      // Keep optimistic
-    }
   };
 
   // Modals opening helpers
@@ -491,6 +336,15 @@ export default function AdminDeliveriesPage() {
           </Button>
         </div>
       </div>
+
+      {loadError && (
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-800">
+          <span>{loadError}</span>
+          <Button type="button" variant="outline" size="sm" onClick={() => loadData(true)} className="h-8 text-xs">
+            Réessayer
+          </Button>
+        </div>
+      )}
 
       {/* Main Top Navigation Tabs */}
       <div className="flex border-b border-[#e7e4dd] gap-2 overflow-x-auto no-scrollbar">
@@ -908,7 +762,7 @@ export default function AdminDeliveriesPage() {
                       {/* #Livraison + Command Ref */}
                       <TableCell className="font-mono text-xs px-3 py-2.5">
                         <span className="font-bold text-gray-900 group-hover:text-[#c1647a] transition-colors block">
-                          {delivery.id}
+                          {delivery.deliveryNumber}
                         </span>
                         <span className="text-[10px] text-gray-400 font-mono">
                           {delivery.orderRef}
@@ -988,8 +842,7 @@ export default function AdminDeliveriesPage() {
                                   if (!delivery.driverId) {
                                     handleOpenAssignModal(delivery);
                                   } else {
-                                    handleStatusChange(delivery.id, 'en_cours');
-                                    toast.success('Course démarrée');
+                                    void handleStatusChange(delivery.id, 'en_cours');
                                   }
                                 }}
                                 className={`h-7 px-2.5 text-xs font-semibold ${
@@ -999,15 +852,6 @@ export default function AdminDeliveriesPage() {
                                 }`}
                               >
                                 {delivery.driverId ? 'Démarrer' : 'Assigner'}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                title="Marquer directement comme livrée"
-                                onClick={() => handleOpenCompleteModal(delivery)}
-                                className="h-7 w-7 p-0 border-[#bbf7d0] bg-[#f0fdf4] text-[#166534] hover:bg-[#dcfce7] hover:border-green-300"
-                              >
-                                <CheckCircle className="h-3.5 w-3.5" />
                               </Button>
                             </>
                           )}
@@ -1040,22 +884,10 @@ export default function AdminDeliveriesPage() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => {
-                                  handleStatusChange(delivery.id, 'a_livrer');
-                                  toast.info('Livraison replanifiée');
-                                }}
+                                onClick={() => void handleStatusChange(delivery.id, 'a_livrer')}
                                 className="h-7 px-2 text-xs font-medium text-[#c1647a] border-[#c1647a] hover:bg-[#fdf2f4]"
                               >
                                 Replanifier
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                title="Marquer comme livrée"
-                                onClick={() => handleOpenCompleteModal(delivery)}
-                                className="h-7 w-7 p-0 border-[#bbf7d0] bg-[#f0fdf4] text-[#166534] hover:bg-[#dcfce7]"
-                              >
-                                <CheckCircle className="h-3.5 w-3.5" />
                               </Button>
                             </>
                           )}
@@ -1110,7 +942,7 @@ export default function AdminDeliveriesPage() {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-mono font-bold text-sm text-gray-900">
-                          {delivery.id}
+                          {delivery.deliveryNumber}
                         </span>
                         <span className="text-xs font-mono text-gray-400">
                           {delivery.orderRef}
@@ -1188,8 +1020,7 @@ export default function AdminDeliveriesPage() {
                             if (!delivery.driverId) {
                               handleOpenAssignModal(delivery);
                             } else {
-                              handleStatusChange(delivery.id, 'en_cours');
-                              toast.success('Course démarrée');
+                              void handleStatusChange(delivery.id, 'en_cours');
                             }
                           }}
                           className={`flex-1 h-8 text-xs font-semibold ${
@@ -1199,16 +1030,6 @@ export default function AdminDeliveriesPage() {
                           }`}
                         >
                           {delivery.driverId ? 'Démarrer course' : 'Assigner livreur'}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          title="Marquer livrée"
-                          onClick={() => handleOpenCompleteModal(delivery)}
-                          className="h-8 px-3 border-[#bbf7d0] bg-[#f0fdf4] text-[#166534] hover:bg-[#dcfce7] text-xs font-semibold gap-1 shrink-0"
-                        >
-                          <CheckCircle className="h-3.5 w-3.5" />
-                          <span>Livrée</span>
                         </Button>
                       </>
                     )}
@@ -1226,10 +1047,7 @@ export default function AdminDeliveriesPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => {
-                            handleStatusChange(delivery.id, 'echec');
-                            toast.error('Livraison marquée en échec');
-                          }}
+                          onClick={() => void handleStatusChange(delivery.id, 'echec')}
                           className="h-8 px-2.5 border-red-200 text-red-600 hover:bg-red-50 text-xs font-medium shrink-0"
                         >
                           Échec
@@ -1253,10 +1071,7 @@ export default function AdminDeliveriesPage() {
                       <div className="flex items-center gap-2 w-full">
                         <Button
                           size="sm"
-                          onClick={() => {
-                            handleStatusChange(delivery.id, 'a_livrer');
-                            toast.info('Livraison replanifiée');
-                          }}
+                          onClick={() => void handleStatusChange(delivery.id, 'a_livrer')}
                           className="flex-1 h-8 bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold"
                         >
                           Replanifier
@@ -1395,6 +1210,7 @@ export default function AdminDeliveriesPage() {
 
       {/* Driver Assignment Dialog */}
       <AssignDriverDialog
+        key={`assign-${assignDeliveryTarget?.id ?? 'none'}`}
         delivery={assignDeliveryTarget}
         isOpen={isAssignOpen}
         onOpenChange={setIsAssignOpen}
@@ -1404,6 +1220,7 @@ export default function AdminDeliveriesPage() {
 
       {/* Complete Delivery Dialog */}
       <CompleteDeliveryDialog
+        key={`complete-${completeDeliveryTarget?.id ?? 'none'}`}
         delivery={completeDeliveryTarget}
         isOpen={isCompleteOpen}
         onOpenChange={setIsCompleteOpen}

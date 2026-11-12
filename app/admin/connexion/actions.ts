@@ -2,6 +2,7 @@
 
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { adminHomeForRole } from '@/lib/admin/access';
 import { API_BASE_URL, ADMIN_TOKEN_KEY } from '@/lib/api/config';
 
 export async function loginAdmin(_prevState: unknown, formData: FormData) {
@@ -77,7 +78,7 @@ export async function loginAdmin(_prevState: unknown, formData: FormData) {
         cookieOptions
       );
 
-      redirect('/admin/tableau-de-bord');
+      redirect(adminHomeForRole(user.role));
     }
 
     const errorMsg =

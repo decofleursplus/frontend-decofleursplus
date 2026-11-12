@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { BlogArticle, BlogArticleStatus } from '@/lib/admin/mock-data/types';
-import { getAdminCategories } from '@/lib/api/admin/categories';
+import { getAdminBlogAuthors, getAdminBlogCategories } from '@/lib/api/admin/blog';
 import { createAdminBlogArticle, updateAdminBlogArticle } from '@/lib/api/admin/blog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,6 +46,7 @@ import {
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ApiClientError } from '@/lib/api/client';
 
 interface ArticleFormProps {
   initialArticle?: BlogArticle | null;
@@ -104,26 +105,30 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
   const [slug, setSlug] = useState(initialArticle?.slug || '');
   const [availableCategories, setAvailableCategories] = useState<{ id: string; name: string }[]>([]);
   const [categoryId, setCategoryId] = useState(initialArticle?.categoryId || '');
-  const [authorId, setAuthorId] = useState(initialArticle?.authorId || 'admin-author');
+  const [authorId, setAuthorId] = useState(initialArticle?.authorId || '');
+  const [availableAuthors, setAvailableAuthors] = useState<{ id: string; name: string }[]>([]);
+  const [seoTitle, setSeoTitle] = useState(initialArticle?.seoTitle || '');
+  const [seoDescription, setSeoDescription] = useState(initialArticle?.seoDescription || '');
   const [readTime, setReadTime] = useState(initialArticle?.readTime || '4 min de lecture');
   const [excerpt, setExcerpt] = useState(initialArticle?.excerpt || '');
   const [content, setContent] = useState(initialArticle?.content || '');
 
+  // Rubriques et auteurs du blog (et non les catégories de produits)
   useEffect(() => {
     let mounted = true;
-    getAdminCategories()
-      .then((cats) => {
-        if (!mounted || !cats || cats.length === 0) return;
+    Promise.all([getAdminBlogCategories(), getAdminBlogAuthors()])
+      .then(([cats, authors]) => {
+        if (!mounted) return;
         setAvailableCategories(cats.map((c) => ({ id: c.id, name: c.name })));
-        if (!categoryId) {
-          setCategoryId(cats[0].id);
-        }
+        setAvailableAuthors(authors.map((a) => ({ id: a.id, name: a.name })));
+        setCategoryId((current) => current || cats[0]?.id || '');
+        setAuthorId((current) => current || authors[0]?.id || '');
       })
-      .catch(() => {});
+      .catch((err) => toast.error(err instanceof Error ? err.message : 'Rubriques et auteurs indisponibles.'));
     return () => {
       mounted = false;
     };
-  }, [categoryId]);
+  }, []);
 
   // Media
   const [coverImage, setCoverImage] = useState(initialArticle?.coverImage || '/images/bouquet-detail.jpg');
@@ -301,37 +306,48 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
       relatedProductIds: initialArticle?.relatedProductIds || [],
     };
 
-    if (onSave) {
-      onSave(savedArticle);
+    if (!categoryId) {
+      toast.error('Choisissez une rubrique (créez-en une dans Blog › Rubriques).');
+      setIsSubmitting(false);
+      return;
     }
+    if (!authorId) {
+      toast.error('Choisissez un auteur (créez-en un dans Blog › Auteurs).');
+      setIsSubmitting(false);
+      return;
+    }
+    const payload = {
+      title: savedArticle.title,
+      slug: savedArticle.slug,
+      categoryId,
+      authorId,
+      coverImage: savedArticle.coverImage,
+      coverImageCaption: savedArticle.coverImageCaption || null,
+      excerpt: savedArticle.excerpt,
+      content: savedArticle.content,
+      readTime: savedArticle.readTime,
+      status: targetStatus,
+      scheduledAt: targetStatus === 'planifie' && scheduledAt ? new Date(scheduledAt).toISOString() : null,
+      isFeatured,
+      tags: tagsArray,
+      seoTitle: seoTitle.trim() || null,
+      seoDescription: seoDescription.trim() || null,
+      relatedProductIds: savedArticle.relatedProductIds,
+    };
 
     try {
-      if (initialArticle) {
-        await updateAdminBlogArticle(initialArticle.id, savedArticle);
-      } else {
-        await createAdminBlogArticle({
-          title: savedArticle.title,
-          slug: savedArticle.slug,
-          content: savedArticle.content,
-          excerpt: savedArticle.excerpt,
-          coverImage: savedArticle.coverImage,
-          categoryId: savedArticle.categoryId,
-          authorId: savedArticle.authorId,
-          isFeatured: savedArticle.isFeatured,
-          status: savedArticle.status === 'publie' ? 'PUBLISHED' : 'DRAFT',
-        });
-      }
-    } catch {
-      // Keep optimistic
+      const result = initialArticle
+        ? await updateAdminBlogArticle(initialArticle.id, payload as Partial<BlogArticle>)
+        : await createAdminBlogArticle(payload as Parameters<typeof createAdminBlogArticle>[0]);
+      onSave?.(result);
+      toast.success(initialArticle ? `L'article « ${result.title} » a été mis à jour.` : `L'article « ${result.title} » a été créé.`);
+      router.push('/admin/blog');
+    } catch (err) {
+      const details = err instanceof ApiClientError && err.details?.length ? err.details.map((d) => d.message).join(' · ') : null;
+      toast.error(details ?? (err instanceof Error ? err.message : "Enregistrement de l'article impossible."));
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setIsSubmitting(false);
-    toast.success(
-      initialArticle
-        ? `L'article « ${savedArticle.title} » a été mis à jour.`
-        : `L'article « ${savedArticle.title} » a été créé avec succès.`
-    );
-    router.push('/admin/blog');
   };
 
   const selectedCategory = availableCategories.find((c) => c.id === categoryId);
@@ -630,7 +646,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
               />
               <div className="flex items-center justify-between text-[11px] text-gray-500 px-0.5">
                 <span className="text-[10px] text-gray-400">
-                  Affiché sur la page d'accueil et les fiches articles
+                  Affiché sur la page d’accueil et les fiches articles
                 </span>
                 <span className={excerpt.length > 200 ? 'text-amber-600 font-semibold' : 'text-gray-400'}>
                   {excerpt.length} / 250 caractères recommandés
@@ -984,13 +1000,19 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
                 <Label htmlFor="drawer-author" className="text-xs font-semibold text-[#444] block mb-1">
                   Auteur / Rédacteur :
                 </Label>
-                <Input
+                <select
                   id="drawer-author"
-                  value={authorId === 'admin-author' ? 'Équipe Décofleur Plus' : authorId}
+                  value={authorId}
                   onChange={(e) => setAuthorId(e.target.value)}
-                  placeholder="Nom de l'auteur..."
-                  className="w-full text-xs bg-[#faf8f4] border-[#e7e4dd]"
-                />
+                  className="w-full h-9 rounded-md text-xs bg-[#faf8f4] border border-[#e7e4dd] px-2"
+                >
+                  {availableAuthors.length === 0 && <option value="">Aucun auteur : créez-en un dans l’onglet Auteurs</option>}
+                  {availableAuthors.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Temps de lecture */}
@@ -1006,6 +1028,29 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
                   className="text-xs h-9 border-[#e7e4dd]"
                 />
               </div>
+            </div>
+
+            {/* Référencement (SEO) */}
+            <div className="p-4 rounded-2xl border border-[#ece8e1] bg-white shadow-2xs space-y-2.5">
+              <h3 className="text-xs font-bold text-[#1e2a1f] uppercase tracking-wider">Référencement (Google)</h3>
+              <Input
+                value={seoTitle}
+                onChange={(e) => setSeoTitle(e.target.value)}
+                maxLength={120}
+                placeholder={`${title || 'Titre de l’article'} | Blog Décofleur Plus`}
+                aria-label="Titre SEO"
+                className="text-xs h-9 border-[#e7e4dd]"
+              />
+              <textarea
+                value={seoDescription}
+                onChange={(e) => setSeoDescription(e.target.value)}
+                maxLength={320}
+                rows={2}
+                placeholder={excerpt.slice(0, 160) || 'Description affichée dans les résultats de recherche'}
+                aria-label="Description SEO"
+                className="w-full rounded-md border border-[#e7e4dd] p-2 text-xs"
+              />
+              <p className="text-[11px] text-[#888]">Laissés vides, le titre et le résumé de l’article sont utilisés.</p>
             </div>
 
             {/* Section 3: Mots-clés & Tags */}

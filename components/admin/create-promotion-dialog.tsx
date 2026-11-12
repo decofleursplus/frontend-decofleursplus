@@ -21,7 +21,8 @@ import { toast } from 'sonner';
 interface CreatePromotionDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreate: (promotion: AdminPromotion) => void;
+  /** Résout à true si l'API a créé la promotion (la fenêtre se ferme alors). */
+  onCreate: (promotion: AdminPromotion) => Promise<boolean>;
 }
 
 export function CreatePromotionDialog({
@@ -31,16 +32,18 @@ export function CreatePromotionDialog({
 }: CreatePromotionDialogProps) {
   const [name, setName] = useState('');
   const [targetType, setTargetType] = useState<PromotionTargetType>('categories');
+  // Cibles sélectionnées par identifiant (le backend applique la promotion aux ids)
   const [selectedTargets, setSelectedTargets] = useState<string[]>([]);
-  const [categoriesList, setCategoriesList] = useState<string[]>([]);
-  const [productsList, setProductsList] = useState<string[]>([]);
+  const [categoriesList, setCategoriesList] = useState<{ id: string; name: string }[]>([]);
+  const [productsList, setProductsList] = useState<{ id: string; name: string }[]>([]);
+  const [saving, setSaving] = useState(false);
   const [isLoadingTargets, setIsLoadingTargets] = useState(false);
   const [discount, setDiscount] = useState('');
   const [badgeText, setBadgeText] = useState('');
-  const [startDate, setStartDate] = useState(
+  const [startDate, setStartDate] = useState(() =>
     new Date().toISOString().split('T')[0]
   );
-  const [endDate, setEndDate] = useState(
+  const [endDate, setEndDate] = useState(() =>
     new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   );
 
@@ -55,15 +58,11 @@ export function CreatePromotionDialog({
           getAdminProducts({ limit: 50 }),
         ]);
         if (isMounted) {
-          if (cats && cats.length > 0) {
-            setCategoriesList(cats.map((c) => c.name));
-          }
-          if (prods && prods.items && prods.items.length > 0) {
-            setProductsList(prods.items.map((p) => p.name));
-          }
+          setCategoriesList(cats.map((c) => ({ id: c.id, name: c.name })));
+          setProductsList(prods.items.map((p) => ({ id: p.id, name: p.name })));
         }
       } catch (err) {
-        console.warn('Erreur chargement cibles promotion:', err);
+        toast.error(err instanceof Error ? err.message : 'Catégories et produits indisponibles.');
       } finally {
         if (isMounted) setIsLoadingTargets(false);
       }
@@ -89,7 +88,7 @@ export function CreatePromotionDialog({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       toast.error('Veuillez renseigner un nom pour cette promotion');
@@ -111,7 +110,8 @@ export function CreatePromotionDialog({
       id: `PRM-${Date.now().toString().slice(-4)}`,
       name: name.trim(),
       targetType,
-      targetNames: selectedTargets,
+      targetIds: selectedTargets,
+      targetNames: (targetType === 'categories' ? categoriesList : productsList).filter((t) => selectedTargets.includes(t.id)).map((t) => t.name),
       discountPercentage: numDiscount,
       startDate,
       endDate,
@@ -121,8 +121,10 @@ export function CreatePromotionDialog({
       revenueGenerated: 0,
     };
 
-    onCreate(newPromo);
-    toast.success(`Promotion "${newPromo.name}" activée sur le catalogue !`);
+    setSaving(true);
+    const ok = await onCreate(newPromo);
+    setSaving(false);
+    if (!ok) return;
     onOpenChange(false);
 
     // Reset
@@ -216,13 +218,13 @@ export function CreatePromotionDialog({
                     Aucun(e) {targetType === 'categories' ? 'catégorie' : 'produit'} disponible.
                   </p>
                 ) : (
-                  (targetType === 'categories' ? categoriesList : productsList).map((item) => {
-                    const isSelected = selectedTargets.includes(item);
+                  (targetType === 'categories' ? categoriesList : productsList).map(({ id, name: label }) => {
+                    const isSelected = selectedTargets.includes(id);
                     return (
                       <button
                         type="button"
-                        key={item}
-                        onClick={() => toggleTarget(item)}
+                        key={id}
+                        onClick={() => toggleTarget(id)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
                           isSelected
                             ? 'bg-[#c1647a] text-white shadow-xs'
@@ -230,7 +232,7 @@ export function CreatePromotionDialog({
                         }`}
                       >
                         {isSelected && <Check className="h-3.5 w-3.5" />}
-                        <span className="whitespace-nowrap">{item}</span>
+                        <span className="whitespace-nowrap">{label}</span>
                       </button>
                     );
                   })
@@ -301,9 +303,11 @@ export function CreatePromotionDialog({
             </Button>
             <Button
               type="submit"
-              className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold h-10 px-5"
+              disabled={saving}
+              className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold h-10 px-5 gap-2"
             >
-              Appliquer la promotion
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+              {saving ? 'Enregistrement…' : 'Appliquer la promotion'}
             </Button>
           </DialogFooter>
         </form>

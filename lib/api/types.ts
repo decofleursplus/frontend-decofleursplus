@@ -17,7 +17,7 @@ export interface ApiError {
     | 'CONFLICT_ERROR'
     | 'INTERNAL_SERVER_ERROR'
     | string;
-  details?: ApiValidationErrorDetail[];
+  details?: ApiValidationErrorDetail[] | Record<string, unknown>;
 }
 
 export interface ApiSuccessResponse<T> {
@@ -60,9 +60,10 @@ export interface ApiUser {
   firstName?: string;
   lastName?: string;
   role: UserRole;
-  avatar?: string;
+  avatar?: string | null;
   provider?: 'email' | 'google' | 'facebook';
   isActive?: boolean;
+  emailVerified?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -70,6 +71,14 @@ export interface ApiUser {
 export interface AuthResponseData {
   user: ApiUser;
   token: string;
+}
+
+/** Réponse d'une inscription ou d'un renvoi de code : le compte attend sa validation par code OTP */
+export interface PendingVerificationData {
+  requiresVerification: true;
+  email: string;
+  expiresInMinutes: number;
+  resendAvailableInSeconds: number;
 }
 
 /**

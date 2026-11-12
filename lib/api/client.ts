@@ -9,19 +9,26 @@ import { ApiError, ApiValidationErrorDetail } from './types';
 export class ApiClientError extends Error {
   code: string;
   status: number;
+  /** Erreurs de validation champ par champ (VALIDATION_ERROR) */
   details?: ApiValidationErrorDetail[];
+  /** Contexte renvoyé par certains codes (ex. EMAIL_NOT_VERIFIED, TOO_MANY_REQUESTS) */
+  context?: Record<string, unknown>;
 
   constructor(
     message: string,
     code: string = 'API_ERROR',
     status: number = 500,
-    details?: ApiValidationErrorDetail[],
+    details?: ApiValidationErrorDetail[] | Record<string, unknown>,
   ) {
     super(message);
     this.name = 'ApiClientError';
     this.code = code;
     this.status = status;
-    this.details = details;
+    if (Array.isArray(details)) {
+      this.details = details;
+    } else if (details && typeof details === 'object') {
+      this.context = details;
+    }
   }
 }
 
@@ -29,7 +36,7 @@ export interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   headers?: Record<string, string>;
   params?: Record<string, string | number | boolean | undefined | null>;
-  body?: any;
+  body?: unknown;
   token?: string;
   isAdmin?: boolean;
   useAdminToken?: boolean;
@@ -85,7 +92,7 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
   }
 
   // 3. Préparer le corps de la requête
-  let requestBody: any = undefined;
+  let requestBody: BodyInit | undefined = undefined;
   if (body !== undefined && body !== null) {
     if (typeof FormData !== 'undefined' && body instanceof FormData) {
       requestBody = body;
@@ -107,7 +114,7 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
       cache,
       ...(next ? { next } : {}),
     });
-  } catch (networkError: any) {
+  } catch (networkError: unknown) {
     console.error(`[API Network Error] ${method} ${url}:`, networkError);
     throw new ApiClientError(
       'Impossible de contacter le serveur DécoFleur Plus. Veuillez vérifier votre connexion.',
@@ -117,7 +124,8 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
   }
 
   // 5. Décoder la réponse JSON
-  let json: any;
+  /** Enveloppe standard du backend : { success, data?, error?, message? } */
+  let json: { success?: boolean; data?: unknown; error?: ApiError; message?: string };
   try {
     json = await response.json();
   } catch {
@@ -156,13 +164,13 @@ export const apiClient = {
   get: <T>(endpoint: string, options?: Omit<RequestOptions, 'method' | 'body'>) =>
     request<T>(endpoint, { ...options, method: 'GET' }),
 
-  post: <T>(endpoint: string, body?: any, options?: Omit<RequestOptions, 'method' | 'body'>) =>
+  post: <T>(endpoint: string, body?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>) =>
     request<T>(endpoint, { ...options, method: 'POST', body }),
 
-  put: <T>(endpoint: string, body?: any, options?: Omit<RequestOptions, 'method' | 'body'>) =>
+  put: <T>(endpoint: string, body?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>) =>
     request<T>(endpoint, { ...options, method: 'PUT', body }),
 
-  patch: <T>(endpoint: string, body?: any, options?: Omit<RequestOptions, 'method' | 'body'>) =>
+  patch: <T>(endpoint: string, body?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>) =>
     request<T>(endpoint, { ...options, method: 'PATCH', body }),
 
   delete: <T>(endpoint: string, options?: Omit<RequestOptions, 'method' | 'body'>) =>

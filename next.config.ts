@@ -1,7 +1,15 @@
 import type { NextConfig } from 'next';
 
+// Backend ciblé par le proxy /api/v1 (même origine côté navigateur, donc pas de CORS).
+// En local : API_PROXY_TARGET=http://localhost:5050 pnpm dev
+const API_PROXY_TARGET = (
+  process.env.API_PROXY_TARGET || 'https://backend-decofleursplus-staging.up.railway.app'
+).replace(/\/+$/, '');
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Permet de lancer une seconde instance de dev (ex. branchée sur un backend local) sans conflit de cache
+  ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
   images: {
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 2592000,
@@ -39,7 +47,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/v1/:path*',
-        destination: 'https://backend-decofleursplus-staging.up.railway.app/api/v1/:path*',
+        destination: `${API_PROXY_TARGET}/api/v1/:path*`,
       },
     ];
   },

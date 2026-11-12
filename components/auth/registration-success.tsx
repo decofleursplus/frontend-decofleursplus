@@ -4,14 +4,13 @@ import React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Check, ArrowRight } from 'lucide-react';
 import { FloralHeartDivider } from '@/components/icons';
-import { useAuth, User } from '@/components/auth-provider';
 
 interface RegistrationSuccessProps {
-  createdUser: User | null;
   redirectTarget?: string;
 }
 
-export function RegistrationSuccess({ createdUser, redirectTarget: propRedirect }: RegistrationSuccessProps) {
+/** Affiché une fois le code validé : la session est déjà ouverte. */
+export function RegistrationSuccess({ redirectTarget: propRedirect }: RegistrationSuccessProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const rawRedirect = propRedirect || searchParams.get('redirect');
@@ -19,19 +18,11 @@ export function RegistrationSuccess({ createdUser, redirectTarget: propRedirect 
     rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//')
       ? rawRedirect
       : '/compte';
-  const { loginUser } = useAuth();
-
   function handleGoToAccount() {
-    if (createdUser) {
-      loginUser(createdUser);
-    }
     router.push(redirectTarget);
   }
 
   function handleContinueShopping() {
-    if (createdUser) {
-      loginUser(createdUser);
-    }
     router.push('/boutique');
   }
 
@@ -47,7 +38,7 @@ export function RegistrationSuccess({ createdUser, redirectTarget: propRedirect 
       <h2 className="auth-success-title">Compte créé avec succès !</h2>
 
       <p className="auth-success-description">
-        Votre compte a bien été créé. Vous pouvez maintenant vous connecter et profiter de tous
+        Votre adresse email est vérifiée et vous êtes connecté. Profitez dès maintenant de tous
         nos services.
       </p>
 
@@ -58,7 +49,7 @@ export function RegistrationSuccess({ createdUser, redirectTarget: propRedirect 
           onClick={handleGoToAccount}
           className="auth-submit-button"
         >
-          <span>Se connecter</span>
+          <span>{redirectTarget === '/compte' ? 'Accéder à mon compte' : 'Continuer'}</span>
           <ArrowRight size={18} />
         </button>
 

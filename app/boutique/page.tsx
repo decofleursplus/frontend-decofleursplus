@@ -23,13 +23,7 @@ export const metadata: Metadata = constructMetadata({
   ],
 });
 
-export default async function BoutiquePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string; category?: string }>;
-}) {
-  const params = await searchParams;
-
+export default function BoutiquePage() {
   const breadcrumbs = [
     { label: 'Accueil', href: '/' },
     { label: 'Boutique' },
@@ -75,7 +69,7 @@ export default async function BoutiquePage({
 
         <Breadcrumbs items={breadcrumbs} className="my-4" />
 
-        <CatalogClient initialQuery={params.q ?? ''} initialCategory={params.category ?? ''} />
+        <CatalogClient />
       </main>
       <SiteFooter />
     </div>

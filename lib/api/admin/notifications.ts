@@ -62,9 +62,10 @@ export interface ListAdminNotificationsParams {
  */
 export async function getAdminNotifications(
   params?: ListAdminNotificationsParams,
-): Promise<PaginatedResponse<AdminNotification>> {
-  return apiClient.get<PaginatedResponse<AdminNotification>>('/admin/notifications', {
+): Promise<{ notifications: AdminNotification[]; unreadCount: number; pagination: { total: number; page: number; limit: number; totalPages: number } }> {
+  return apiClient.get('/admin/notifications', {
     useAdminToken: true,
+    cache: 'no-store',
     params: {
       page: params?.page,
       limit: params?.limit,
@@ -75,13 +76,44 @@ export async function getAdminNotifications(
 }
 
 /**
- * Récupère le nombre d'alertes non lues pour l'équipe admin
+ * Nombre d'alertes non lues du membre de l'équipe connecté
  */
 export async function getAdminUnreadNotificationCount(): Promise<number> {
-  const data = await apiClient.get<{ count: number }>('/admin/notifications/unread-count', {
+  const data = await apiClient.get<{ unreadCount: number }>('/admin/notifications/unread-count', {
     useAdminToken: true,
+    cache: 'no-store',
   });
-  return data?.count ?? 0;
+  return data.unreadCount;
+}
+
+/** Page du back-office liée à une alerte (lien explicite, sinon déduit du type). */
+export function adminNotificationLink(n: Pick<AdminNotification, 'type' | 'metadata'>): string {
+  const meta = (n.metadata ?? {}) as Record<string, unknown>;
+  if (typeof meta.link === 'string' && meta.link.startsWith('/admin')) return meta.link;
+  if (typeof meta.orderId === 'string') return `/admin/commandes/${meta.orderId}`;
+  switch (n.type) {
+    case 'NEW_ORDER':
+    case 'PAYMENT_RECEIVED':
+    case 'PAYMENT_FAILED':
+    case 'ORDER_STATUS':
+    case 'PAYMENT':
+      return '/admin/commandes';
+    case 'NEW_QUOTE':
+    case 'QUOTE_UPDATE':
+      return '/admin/devis';
+    case 'LOW_STOCK':
+    case 'OUT_OF_STOCK':
+      return '/admin/stock';
+    case 'DELIVERY_UPDATE':
+    case 'DELIVERY_FAILED':
+      return '/admin/livraisons';
+    case 'NEW_SUBSCRIPTION':
+    case 'SUBSCRIPTION_CANCELLED':
+    case 'SUBSCRIPTION':
+      return '/admin/abonnements';
+    default:
+      return '/admin/tableau-de-bord';
+  }
 }
 
 /**

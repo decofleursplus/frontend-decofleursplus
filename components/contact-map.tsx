@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import { MapPin, Navigation, ExternalLink, Copy, Check, Car } from 'lucide-react';
+import { SITE_CONFIG } from '@/lib/seo/config';
 
-export function ContactMap() {
+/** `address` vient des paramètres de la boutique ; le repère utilise les coordonnées de la configuration du site. */
+export function ContactMap({ address }: { address: string }) {
   const [copied, setCopied] = useState(false);
 
-  const address = 'DécoFleur Plus, Route de la Plage, Saly Portudal, Petite Côte, Sénégal';
-  const lat = 14.4423;
-  const lon = -16.9897;
+  const lat = SITE_CONFIG.geo.latitude;
+  const lon = SITE_CONFIG.geo.longitude;
 
   function copyAddress() {
     navigator.clipboard?.writeText(address);
@@ -16,7 +17,7 @@ export function ContactMap() {
     setTimeout(() => setCopied(false), 2500);
   }
 
-  const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('Decofleur Plus Saly Portudal Senegal')}`;
+  const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
   const wazeUrl = `https://waze.com/ul?ll=${lat},${lon}&navigate=yes`;
 
   // OpenStreetMap embed coordinates for Saly Portudal
@@ -53,9 +54,7 @@ export function ContactMap() {
             <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
             <span className="font-semibold text-xs text-[#1A341E]">DécoFleur Plus</span>
           </div>
-          <span className="text-[11px] text-gray-600 block mt-0.5">
-            Route de la Plage · Saly
-          </span>
+          <span className="text-[11px] text-gray-600 block mt-0.5">{address}</span>
         </div>
       </div>
 

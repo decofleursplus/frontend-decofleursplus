@@ -15,6 +15,10 @@ export interface GetAdminCustomersParams {
 export interface AdminCustomersResponse {
   customers: AdminCustomer[];
   total: number;
+  page: number;
+  totalPages: number;
+  /** Compteurs sur toute la base (indépendants des filtres) */
+  counts: { all: number; vip: number; entreprise: number; particulier: number; inactif: number };
 }
 
 // Map backend customer to AdminCustomer
@@ -28,7 +32,7 @@ export function transformAdminCustomer(raw: any): AdminCustomer {
   else if (rawSegment.includes('entreprise') || rawSegment.includes('b2b') || rawSegment.includes('pro')) segment = 'entreprise';
 
   const defaultAddr = Array.isArray(raw.addresses)
-    ? raw.addresses.find((a: any) => a.isDefault) || raw.addresses[0]
+    ? raw.addresses.find((a: { isDefault?: boolean }) => a.isDefault) || raw.addresses[0]
     : raw.address;
 
   const addressStr = typeof defaultAddr === 'string'
@@ -53,65 +57,42 @@ export function transformAdminCustomer(raw: any): AdminCustomer {
     loyaltyTier: raw.loyaltyTier,
     loyaltyPoints: raw.loyaltyPoints ? Number(raw.loyaltyPoints) : 0,
     notes: raw.notes || '',
+    internalRating: raw.internalRating ? Number(raw.internalRating) : undefined,
     recentOrders: Array.isArray(raw.recentOrders) ? raw.recentOrders.map(transformAdminOrder) : [],
   };
 }
 
 /**
- * Fetch customers list with CRM stats
+ * Liste paginée côté serveur (GET /admin/customers) : recherche, segment, statut, montant minimum et tri
+ * portent sur toute la base. Lève une ApiClientError en cas d'échec.
  */
-export async function getAdminCustomers(params?: GetAdminCustomersParams): Promise<AdminCustomersResponse> {
-  try {
-    const q = new URLSearchParams();
-    if (params?.search) q.set('search', params.search);
-    if (params?.segment && params.segment !== 'all') q.set('segment', params.segment);
-    if (params?.status && params.status !== 'all') q.set('status', params.status.toUpperCase());
-    if (params?.minSpent) q.set('minSpent', String(params.minSpent));
-    if (params?.sort) q.set('sort', params.sort);
-    if (params?.page) q.set('page', String(params.page));
-    if (params?.limit) q.set('limit', String(params.limit));
-
-    const queryStr = q.toString() ? `?${q.toString()}` : '';
+export async function getAdminCustomers(params: GetAdminCustomersParams = {}): Promise<AdminCustomersResponse> {
+  const res = await apiClient.get<{
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const res = await apiClient.get<any>(`/admin/customers${queryStr}`, {
-      useAdminToken: true,
-      cache: 'no-store',
-    });
-
-    if (res && typeof res === 'object') {
-      const dataObj = res.data ?? res;
-      if (Array.isArray(dataObj.items)) {
-        return {
-          customers: dataObj.items.map(transformAdminCustomer),
-          total: dataObj.total ?? dataObj.items.length,
-        };
-      }
-      if (Array.isArray(res.customers)) {
-        return {
-          customers: res.customers.map(transformAdminCustomer),
-          total: res.total ?? res.customers.length,
-        };
-      }
-      if (Array.isArray(res)) {
-        return {
-          customers: res.map(transformAdminCustomer),
-          total: res.length,
-        };
-      }
-      if (Array.isArray(res.data)) {
-        return {
-          customers: res.data.map(transformAdminCustomer),
-          total: res.total ?? res.data.length,
-        };
-      }
-    }
-  } catch (err) {
-    console.warn('[AdminCustomersAPI] Erreur de récupération des clients:', err);
-  }
-
+    items: any[];
+    total: number;
+    page: number;
+    totalPages: number;
+    counts?: AdminCustomersResponse['counts'];
+  }>('/admin/customers', {
+    useAdminToken: true,
+    cache: 'no-store',
+    params: {
+      search: params.search || undefined,
+      segment: params.segment && params.segment !== 'all' ? params.segment : undefined,
+      status: params.status && params.status !== 'all' ? params.status : undefined,
+      minSpent: params.minSpent || undefined,
+      sort: params.sort,
+      page: params.page ?? 1,
+      limit: params.limit ?? 25,
+    },
+  });
   return {
-    customers: [],
-    total: 0,
+    customers: (res.items ?? []).map(transformAdminCustomer),
+    total: res.total ?? 0,
+    page: res.page ?? 1,
+    totalPages: res.totalPages ?? 1,
+    counts: res.counts ?? { all: 0, vip: 0, entreprise: 0, particulier: 0, inactif: 0 },
   };
 }
 
@@ -143,15 +124,23 @@ export async function updateAdminCustomer(
   body: Partial<{
     name: string;
     phone: string;
-    address: string;
-    avatar: string;
-    segment: string;
-    status: string;
-  }>
+    address: string | null;
+    segment: 'PARTICULIER' | 'ENTREPRISE' | 'VIP';
+    loyaltyPoints: number;
+    isActive: boolean;
+    notes: string | null;
+    internalRating: number;
+  }>,
 ): Promise<AdminCustomer> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const res = await apiClient.patch<any>(`/admin/customers/${id}`, body, {
-    useAdminToken: true,
-  });
+  const res = await apiClient.patch<any>(`/admin/customers/${id}`, body, { useAdminToken: true });
   return transformAdminCustomer(res);
+}
+
+/** Envoie un email au client depuis le back-office (POST /admin/customers/:id/email). */
+export async function sendAdminCustomerEmail(
+  customerId: string,
+  body: { subject: string; message: string; sendCopy?: boolean },
+): Promise<void> {
+  await apiClient.post(`/admin/customers/${customerId}/email`, body, { useAdminToken: true });
 }

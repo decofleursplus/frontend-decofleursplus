@@ -1,9 +1,12 @@
 /**
  * Service d'authentification client DécoFleur Plus
+ *
+ * Inscription en deux temps : `registerUser` envoie un code à 6 chiffres par email,
+ * puis `verifyEmail` active le compte et ouvre la session.
  */
 
 import { apiClient } from './client';
-import { AuthResponseData, ApiUser } from './types';
+import { AuthResponseData, ApiUser, PendingVerificationData } from './types';
 import { setAuthToken, removeAuthToken } from './auth-token';
 
 export interface RegisterPayload {
@@ -16,35 +19,46 @@ export interface RegisterPayload {
 export interface LoginPayload {
   identifier: string; // Email ou numéro de téléphone
   password: string;
-}
-
-export interface GoogleAuthPayload {
-  credential?: string;
-  idToken?: string;
-  email?: string;
-  firstName?: string;
-  lastName?: string;
-  avatar?: string;
-}
-
-export interface ForgotPasswordPayload {
-  email: string;
+  /** false : la session se termine à la fermeture du navigateur */
+  remember?: boolean;
 }
 
 export interface ResetPasswordPayload {
-  token: string;
+  /** Email ou numéro de téléphone saisi lors de la demande */
+  identifier: string;
+  code: string;
   newPassword: string;
 }
 
+export interface ForgotPasswordResult {
+  message: string;
+  expiresInMinutes: number;
+  resendAvailableInSeconds: number;
+}
+
+/** Longueur minimale imposée par le backend */
+export const PASSWORD_MIN_LENGTH = 8;
+
 /**
- * Inscription d'un nouveau compte client
+ * Étape 1 de l'inscription : crée le compte (non vérifié) et envoie le code par email.
+ * Aucune session n'est ouverte à ce stade.
  */
-export async function registerUser(payload: RegisterPayload): Promise<AuthResponseData> {
-  const data = await apiClient.post<AuthResponseData>('/auth/register', {
+export async function registerUser(payload: RegisterPayload): Promise<PendingVerificationData> {
+  return apiClient.post<PendingVerificationData>('/auth/register', {
     name: payload.name.trim(),
-    email: payload.email.trim(),
+    email: payload.email.trim().toLowerCase(),
     phone: payload.phone.trim(),
     password: payload.password,
+  });
+}
+
+/**
+ * Étape 2 de l'inscription : valide le code reçu par email et ouvre la session.
+ */
+export async function verifyEmail(email: string, code: string): Promise<AuthResponseData> {
+  const data = await apiClient.post<AuthResponseData>('/auth/verify-email', {
+    email: email.trim().toLowerCase(),
+    code: code.trim(),
   });
 
   if (data?.token) {
@@ -55,7 +69,17 @@ export async function registerUser(payload: RegisterPayload): Promise<AuthRespon
 }
 
 /**
- * Connexion client avec email ou numéro de téléphone
+ * Renvoie un nouveau code de vérification (limité à une demande par minute).
+ */
+export async function resendVerificationCode(email: string): Promise<PendingVerificationData> {
+  return apiClient.post<PendingVerificationData>('/auth/resend-verification', {
+    email: email.trim().toLowerCase(),
+  });
+}
+
+/**
+ * Connexion client avec email ou numéro de téléphone.
+ * Lève une ApiClientError de code `EMAIL_NOT_VERIFIED` si le compte attend encore son code.
  */
 export async function loginUser(payload: LoginPayload): Promise<AuthResponseData> {
   const data = await apiClient.post<AuthResponseData>('/auth/login', {
@@ -64,17 +88,18 @@ export async function loginUser(payload: LoginPayload): Promise<AuthResponseData
   });
 
   if (data?.token) {
-    setAuthToken(data.token);
+    setAuthToken(data.token, { persistent: payload.remember !== false });
   }
 
   return data;
 }
 
 /**
- * Connexion / Inscription client via Google OAuth
+ * Connexion / inscription via Google : `credential` est le jeton d'identité
+ * renvoyé par Google Identity Services, vérifié côté serveur.
  */
-export async function loginWithGoogle(payload: GoogleAuthPayload): Promise<AuthResponseData> {
-  const data = await apiClient.post<AuthResponseData>('/auth/google', payload);
+export async function loginWithGoogle(credential: string): Promise<AuthResponseData> {
+  const data = await apiClient.post<AuthResponseData>('/auth/google', { credential });
 
   if (data?.token) {
     setAuthToken(data.token);
@@ -84,20 +109,46 @@ export async function loginWithGoogle(payload: GoogleAuthPayload): Promise<AuthR
 }
 
 /**
- * Demande de réinitialisation de mot de passe par email
+ * Connexion sans mot de passe — étape 1 : envoie un code à 6 chiffres sur l'email du compte
+ * (identifié par email ou téléphone). Réponse identique que le compte existe ou non.
  */
-export async function forgotPassword(payload: ForgotPasswordPayload): Promise<{ message: string }> {
-  return apiClient.post<{ message: string }>('/auth/forgot-password', {
-    email: payload.email.trim().toLowerCase(),
+export async function requestLoginCode(identifier: string): Promise<ForgotPasswordResult> {
+  return apiClient.post<ForgotPasswordResult>('/auth/login-code/request', {
+    identifier: identifier.trim(),
   });
 }
 
 /**
- * Réinitialisation effective du mot de passe avec le token reçu
+ * Connexion sans mot de passe — étape 2 : échange le code contre une session.
+ */
+export async function verifyLoginCode(identifier: string, code: string, remember = true): Promise<AuthResponseData> {
+  const data = await apiClient.post<AuthResponseData>('/auth/login-code/verify', {
+    identifier: identifier.trim(),
+    code: code.trim(),
+  });
+  if (data?.token) {
+    setAuthToken(data.token, { persistent: remember });
+  }
+  return data;
+}
+
+/**
+ * Mot de passe oublié : envoie un code à 6 chiffres sur l'email du compte
+ * (identifié par email ou numéro de téléphone).
+ */
+export async function forgotPassword(identifier: string): Promise<ForgotPasswordResult> {
+  return apiClient.post<ForgotPasswordResult>('/auth/forgot-password', {
+    identifier: identifier.trim(),
+  });
+}
+
+/**
+ * Définit un nouveau mot de passe à l'aide du code reçu par email.
  */
 export async function resetPassword(payload: ResetPasswordPayload): Promise<{ message: string }> {
   return apiClient.post<{ message: string }>('/auth/reset-password', {
-    token: payload.token.trim(),
+    identifier: payload.identifier.trim(),
+    code: payload.code.trim(),
     newPassword: payload.newPassword,
   });
 }
@@ -106,8 +157,7 @@ export async function resetPassword(payload: ResetPasswordPayload): Promise<{ me
  * Récupère le profil de l'utilisateur actuellement connecté via son token
  */
 export async function getCurrentUser(): Promise<ApiUser> {
-  const data = await apiClient.get<{ user: ApiUser }>('/auth/me');
-  return data.user;
+  return apiClient.get<ApiUser>('/auth/me');
 }
 
 /**

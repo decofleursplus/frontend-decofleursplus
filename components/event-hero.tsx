@@ -1,60 +1,27 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, Sparkles, Calendar, Clock, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Calendar, Clock } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/icons';
 import { HeroMockup } from '@/components/hero-mockup';
-import {
-  type SeasonalEvent,
-  getActiveSeasonalEvent,
-  initialSeasonalEvents,
-  standardBoutiqueEvent,
-} from '@/lib/events-data';
+import { useActiveEvent } from '@/lib/hooks/use-active-event';
+import { usePublicSettings } from '@/lib/hooks/use-public-settings';
+import { whatsappHref } from '@/lib/shop-contact';
 
-interface EventHeroProps {
-  initialEvent?: SeasonalEvent;
-}
+/** Hero de l'accueil : celui de l'événement saisonnier actif (back-office), sinon le hero standard. */
+export function EventHero() {
+  const { event } = useActiveEvent();
+  const { settings } = usePublicSettings();
 
-export function EventHero({ initialEvent }: EventHeroProps) {
-  const [event, setEvent] = useState<SeasonalEvent>(
-    initialEvent || standardBoutiqueEvent
-  );
-  const [isLoaded, setIsLoaded] = useState(false);
+  if (!event) return <HeroMockup />;
 
-  useEffect(() => {
-    // Initialiser avec l'événement actuellement actif
-    const current = getActiveSeasonalEvent();
-    setEvent(current);
-    setIsLoaded(true);
-
-    // Écouter les changements en provenance de l'admin ou du localStorage
-    const handleEventChange = () => {
-      const updated = getActiveSeasonalEvent();
-      setEvent(updated);
-    };
-
-    window.addEventListener('decofleur-event-changed', handleEventChange);
-    window.addEventListener('storage', handleEventChange);
-
-    return () => {
-      window.removeEventListener('decofleur-event-changed', handleEventChange);
-      window.removeEventListener('storage', handleEventChange);
-    };
-  }, []);
-
-  // Si aucun événement saisonnier particulier n'est actif, afficher le Hero officiel du Mockup
-  if (event.id === 'standard') {
-    return <HeroMockup />;
-  }
-
-  const whatsappUrl =
-    'https://wa.me/221779417860?text=' +
-    encodeURIComponent(
-      event.whatsappMessage ||
-        `Bonjour DécoFleur Plus, je souhaite des informations sur l'événement ${event.name}.`
-    );
+  const whatsappUrl = settings
+    ? whatsappHref(
+        settings.boutique.whatsappNumber,
+        event.whatsappMessage || `Bonjour, je souhaite des informations sur l'événement ${event.name}.`,
+      )
+    : '';
 
   const themeClass = `event-hero-theme-${event.themeColor || 'emerald'}`;
 
@@ -109,15 +76,17 @@ export function EventHero({ initialEvent }: EventHeroProps) {
               <ArrowRight size={17} />
             </Link>
 
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="button-pill-outline event-hero-whatsapp-btn"
-            >
-              <WhatsAppIcon size={18} />
-              <span>Commander sur WhatsApp</span>
-            </a>
+            {whatsappUrl && (
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="button-pill-outline event-hero-whatsapp-btn"
+              >
+                <WhatsAppIcon size={18} />
+                <span>Commander sur WhatsApp</span>
+              </a>
+            )}
           </div>
 
           {/* Reassurance Micro-banner */}

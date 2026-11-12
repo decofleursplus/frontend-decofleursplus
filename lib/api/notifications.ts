@@ -1,9 +1,8 @@
 /**
- * Service API Notifications Espace Client DécoFleur Plus
+ * Notifications in-app du client connecté (/notifications/mine*).
  */
-
 import { apiClient } from './client';
-import { PaginatedResponse, NotificationType, NotificationPriority } from './types';
+import { NotificationType, NotificationPriority } from './types';
 
 export interface CustomerNotification {
   id: string;
@@ -18,10 +17,13 @@ export interface CustomerNotification {
   readAt?: string | null;
 }
 
+export interface CustomerNotificationsPage {
+  notifications: CustomerNotification[];
+  pagination: { total: number; page: number; limit: number; totalPages: number };
+  unreadCount: number;
+}
+
 export interface NotificationPreferences {
-  id?: string;
-  userId?: string;
-  smsEnabled: boolean;
   whatsappEnabled: boolean;
   emailEnabled: boolean;
   orderUpdates: boolean;
@@ -30,78 +32,42 @@ export interface NotificationPreferences {
   loyaltyAlerts: boolean;
   blogNewArticles: boolean;
   subscriptionReminders: boolean;
-  updatedAt?: string;
 }
 
-export interface UpdateNotificationPreferencesPayload {
-  smsEnabled?: boolean;
-  whatsappEnabled?: boolean;
-  emailEnabled?: boolean;
-  orderUpdates?: boolean;
-  deliveryUpdates?: boolean;
-  promotions?: boolean;
-  loyaltyAlerts?: boolean;
-  blogNewArticles?: boolean;
-  subscriptionReminders?: boolean;
-}
-
-export interface ListCustomerNotificationsParams {
-  page?: number;
-  limit?: number;
-  unreadOnly?: boolean;
-  type?: NotificationType;
-}
-
-/**
- * Récupère les notifications du client connecté (avec pagination et filtres)
- */
-export async function getMyNotifications(
-  params?: ListCustomerNotificationsParams,
-): Promise<PaginatedResponse<CustomerNotification>> {
-  return apiClient.get<PaginatedResponse<CustomerNotification>>('/notifications/mine', {
-    params: {
-      page: params?.page,
-      limit: params?.limit,
-      unreadOnly: params?.unreadOnly,
-      type: params?.type,
-    },
+export async function getMyNotifications(params: { page?: number; limit?: number; unreadOnly?: boolean } = {}) {
+  return apiClient.get<CustomerNotificationsPage>('/notifications/mine', {
+    params: { page: params.page ?? 1, limit: params.limit ?? 20, unreadOnly: params.unreadOnly ? 'true' : undefined },
   });
 }
 
-/**
- * Récupère le nombre de notifications non lues du client
- */
 export async function getMyUnreadNotificationCount(): Promise<number> {
-  const data = await apiClient.get<{ count: number }>('/notifications/mine/unread-count');
-  return data?.count ?? 0;
+  return (await apiClient.get<{ unreadCount: number }>('/notifications/mine/unread-count')).unreadCount;
 }
 
-/**
- * Marque une notification client spécifique comme lue
- */
-export async function markMyNotificationAsRead(id: string): Promise<CustomerNotification> {
-  return apiClient.patch<CustomerNotification>(`/notifications/mine/${id}/read`);
+export async function markMyNotificationAsRead(id: string): Promise<void> {
+  await apiClient.patch(`/notifications/mine/${id}/read`);
 }
 
-/**
- * Marque toutes les notifications du client comme lues
- */
-export async function markAllMyNotificationsAsRead(): Promise<{ message: string; count?: number }> {
-  return apiClient.post<{ message: string; count?: number }>('/notifications/mine/read-all');
+export async function markAllMyNotificationsAsRead(): Promise<number> {
+  return (await apiClient.post<{ updatedCount: number }>('/notifications/mine/read-all')).updatedCount;
 }
 
-/**
- * Récupère les préférences de notification du client
- */
 export async function getMyNotificationPreferences(): Promise<NotificationPreferences> {
   return apiClient.get<NotificationPreferences>('/notifications/mine/preferences');
 }
 
-/**
- * Met à jour les préférences de notification du client
- */
 export async function updateMyNotificationPreferences(
-  payload: UpdateNotificationPreferencesPayload,
+  payload: Partial<NotificationPreferences>,
 ): Promise<NotificationPreferences> {
   return apiClient.put<NotificationPreferences>('/notifications/mine/preferences', payload);
+}
+
+/** Lien vers l'élément concerné par une notification (commande, devis, abonnement…). */
+export function notificationLink(n: Pick<CustomerNotification, 'metadata' | 'type'>): string | null {
+  const meta = n.metadata ?? {};
+  if (typeof meta.orderNumber === 'string') return `/compte/commandes/${encodeURIComponent(meta.orderNumber)}`;
+  if (typeof meta.quoteNumber === 'string') return '/compte/devis';
+  if (typeof meta.subscriptionNumber === 'string' || n.type === 'SUBSCRIPTION') return '/compte/abonnements';
+  if (n.type === 'LOYALTY') return '/compte/fidelite';
+  return null;
 }

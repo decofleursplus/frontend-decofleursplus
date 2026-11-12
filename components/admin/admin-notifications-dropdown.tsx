@@ -1,6 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
+import {
+  adminNotificationLink,
+  getAdminNotifications,
+  markAdminNotificationAsRead,
+  markAllAdminNotificationsAsRead,
+  type AdminNotification,
+} from '@/lib/api/admin/notifications';
 import Link from 'next/link';
 import {
   Bell,
@@ -14,74 +21,42 @@ import {
   Sparkles,
 } from 'lucide-react';
 
-export type AdminNotification = {
-  id: string;
-  type: 'NEW_ORDER' | 'LOW_STOCK' | 'NEW_QUOTE' | 'PAYMENT_RECEIVED' | 'DELIVERY_UPDATE';
-  title: string;
-  message: string;
-  isRead: boolean;
-  priority: 'NORMAL' | 'HIGH' | 'URGENT';
-  link: string;
-  time: string;
+const REFRESH_MS = 60_000;
+
+const timeAgo = (iso: string) => {
+  const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (minutes < 1) return 'À l’instant';
+  if (minutes < 60) return `Il y a ${minutes} min`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `Il y a ${hours} h`;
+  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 };
 
-const INITIAL_ADMIN_NOTIFICATIONS: AdminNotification[] = [
-  {
-    id: 'notif-1',
-    type: 'NEW_ORDER',
-    title: 'Nouvelle commande CMD-2026-0048',
-    message: 'Bouquet 50 Roses Rouges (45 000 FCFA) · Client: Aïda Fall (Dakar Almadies)',
-    isRead: false,
-    priority: 'HIGH',
-    link: '/admin/commandes',
-    time: 'Il y a 8 min',
-  },
-  {
-    id: 'notif-2',
-    type: 'LOW_STOCK',
-    title: 'Alerte Stock Bas : Roses d’Équateur',
-    message: 'Seuil critique atteint : reste 14 tiges en chambre froide à Saly.',
-    isRead: false,
-    priority: 'URGENT',
-    link: '/admin/stock',
-    time: 'Il y a 25 min',
-  },
-  {
-    id: 'notif-3',
-    type: 'NEW_QUOTE',
-    title: 'Nouveau Devis Mariage reçu',
-    message: 'Scénographie florale et arche sur plage à Somone · Budget 850 000 FCFA',
-    isRead: false,
-    priority: 'NORMAL',
-    link: '/admin/devis',
-    time: 'Il y a 1h',
-  },
-  {
-    id: 'notif-4',
-    type: 'PAYMENT_RECEIVED',
-    title: 'Paiement Wave validé (35 000 FCFA)',
-    message: 'Commande CMD-2026-0047 réglée avec succès via NabooPay.',
-    isRead: true,
-    priority: 'NORMAL',
-    link: '/admin/commandes',
-    time: 'Il y a 2h',
-  },
-  {
-    id: 'notif-5',
-    type: 'DELIVERY_UPDATE',
-    title: 'Navette Dakar en cours de distribution',
-    message: 'Chauffeur Moussa : 4 livraisons restantes sur le Plateau et Ngor.',
-    isRead: true,
-    priority: 'NORMAL',
-    link: '/admin/livraisons',
-    time: 'Il y a 3h',
-  },
-];
-
+/** Cloche du back-office : alertes réelles du membre connecté (actualisées chaque minute). */
 export function AdminNotificationsDropdown() {
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<AdminNotification[]>(INITIAL_ADMIN_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<AdminNotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loadError, setLoadError] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const refresh = useCallback(
+    () =>
+      getAdminNotifications({ limit: 10 })
+        .then((res) => {
+          setNotifications(res.notifications);
+          setUnreadCount(res.unreadCount);
+          setLoadError(false);
+        })
+        .catch(() => setLoadError(true)),
+    [],
+  );
+
+  useEffect(() => {
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), REFRESH_MS);
+    return () => window.clearInterval(timer);
+  }, [refresh]);
 
   // Close on outside click
   useEffect(() => {
@@ -98,15 +73,21 @@ export function AdminNotificationsDropdown() {
     };
   }, [isOpen]);
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
-
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+  const markAllAsRead = async () => {
+    try {
+      await markAllAdminNotificationsAsRead();
+      await refresh();
+    } catch {
+      setLoadError(true);
+    }
   };
 
-  const markOneAsRead = (id: string) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
+  const markOneAsRead = (notif: AdminNotification) => {
     setIsOpen(false);
+    if (notif.isRead) return;
+    markAdminNotificationAsRead(notif.id)
+      .then(() => refresh())
+      .catch(() => setLoadError(true));
   };
 
   const getIcon = (type: AdminNotification['type']) => {
@@ -114,6 +95,9 @@ export function AdminNotificationsDropdown() {
       case 'NEW_ORDER':
         return <ShoppingBag size={15} className="text-emerald-700" />;
       case 'LOW_STOCK':
+      case 'OUT_OF_STOCK':
+      case 'DELIVERY_FAILED':
+      case 'PAYMENT_FAILED':
         return <AlertTriangle size={15} className="text-amber-700" />;
       case 'NEW_QUOTE':
         return <FileText size={15} className="text-purple-700" />;
@@ -121,6 +105,8 @@ export function AdminNotificationsDropdown() {
         return <CreditCard size={15} className="text-blue-700" />;
       case 'DELIVERY_UPDATE':
         return <Truck size={15} className="text-indigo-700" />;
+      case 'QUOTE_UPDATE':
+        return <FileText size={15} className="text-purple-700" />;
       default:
         return <Sparkles size={15} className="text-neutral-700" />;
     }
@@ -139,7 +125,7 @@ export function AdminNotificationsDropdown() {
         <Bell size={18} />
         {unreadCount > 0 ? (
           <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-600 text-[9.5px] font-bold text-white ring-2 ring-white">
-            {unreadCount}
+            {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         ) : (
           <span className="admin-notif-dot opacity-30" />
@@ -163,7 +149,7 @@ export function AdminNotificationsDropdown() {
             {unreadCount > 0 && (
               <button
                 type="button"
-                onClick={markAllAsRead}
+                onClick={() => void markAllAsRead()}
                 className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-800 hover:text-emerald-950 transition-colors"
               >
                 <CheckCheck size={13} />
@@ -174,6 +160,11 @@ export function AdminNotificationsDropdown() {
 
           {/* List */}
           <div className="max-h-[380px] overflow-y-auto divide-y divide-neutral-100/80">
+            {loadError && (
+              <div role="alert" className="p-3 text-center text-[11px] text-red-700">
+                Notifications momentanément indisponibles.
+              </div>
+            )}
             {notifications.length === 0 ? (
               <div className="p-8 text-center text-xs text-neutral-400">
                 Aucune notification pour le moment.
@@ -182,8 +173,8 @@ export function AdminNotificationsDropdown() {
               notifications.map((notif) => (
                 <Link
                   key={notif.id}
-                  href={notif.link}
-                  onClick={() => markOneAsRead(notif.id)}
+                  href={adminNotificationLink(notif)}
+                  onClick={() => markOneAsRead(notif)}
                   className={`block p-3.5 px-4 hover:bg-neutral-50/90 transition-colors text-left ${
                     !notif.isRead ? 'bg-emerald-50/30' : ''
                   }`}
@@ -197,7 +188,7 @@ export function AdminNotificationsDropdown() {
                         <strong className="text-xs font-bold text-neutral-900 truncate">
                           {notif.title}
                         </strong>
-                        <span className="text-[10px] text-neutral-400 shrink-0">{notif.time}</span>
+                        <span className="text-[10px] text-neutral-400 shrink-0">{timeAgo(notif.createdAt)}</span>
                       </div>
                       <p className="text-[11.5px] text-neutral-600 line-clamp-2 mt-0.5 leading-relaxed">
                         {notif.message}
@@ -220,13 +211,7 @@ export function AdminNotificationsDropdown() {
 
           {/* Footer */}
           <div className="p-2.5 bg-neutral-50/70 border-t border-neutral-100 text-center">
-            <Link
-              href="/admin/commandes"
-              onClick={() => setIsOpen(false)}
-              className="text-[11px] font-semibold text-neutral-600 hover:text-[#173f22] transition-colors"
-            >
-              Accéder à toutes les commandes et alertes →
-            </Link>
+            <span className="text-[11px] text-neutral-500">Les 10 alertes les plus récentes</span>
           </div>
         </div>
       )}

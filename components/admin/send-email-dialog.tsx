@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -14,37 +14,34 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Mail, Send, ExternalLink, Loader2, Star, Sparkles } from 'lucide-react';
+import { Mail, Send, Loader2, Star, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import type { AdminCustomer } from '@/lib/admin/mock-data/types';
+import { sendAdminCustomerEmail } from '@/lib/api/admin/customers';
 
 interface SendEmailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  customer: AdminCustomer | { name: string; email: string; segment?: string } | null;
+  customer: AdminCustomer | { id: string; name: string; email: string; segment?: string } | null;
   defaultSubject?: string;
 }
 
-export function SendEmailDialog({
+/** Le formulaire repart de zéro à chaque ouverture (remontage par `key`). */
+export function SendEmailDialog(props: SendEmailDialogProps) {
+  if (!props.customer) return null;
+  return <SendEmailDialogInner key={props.open ? `ouvert-${props.customer.email}` : 'ferme'} {...props} customer={props.customer} />;
+}
+
+function SendEmailDialogInner({
   open,
   onOpenChange,
   customer,
   defaultSubject = '',
-}: SendEmailDialogProps) {
+}: SendEmailDialogProps & { customer: NonNullable<SendEmailDialogProps['customer']> }) {
   const [subject, setSubject] = useState(defaultSubject);
   const [message, setMessage] = useState('');
   const [sendCopy, setSendCopy] = useState(true);
   const [isSending, setIsSending] = useState(false);
-
-  useEffect(() => {
-    if (open) {
-      setSubject(defaultSubject);
-      setMessage('');
-      setIsSending(false);
-    }
-  }, [open, defaultSubject]);
-
-  if (!customer) return null;
 
   const getInitials = (name: string) => {
     return name
@@ -62,9 +59,9 @@ export function SendEmailDialog({
       body: `Bonjour ${customer.name},\n\nNous vous informons que votre commande chez Décofleur Plus est en cours de préparation par nos fleuristes.\n\nNous vous tiendrons informé dès que votre bouquet sera confié à notre livreur.\n\nCordialement,\nL'équipe Décofleur Plus`,
     },
     {
-      title: 'Avantage fidélité',
-      subject: `Décofleur Plus : Une attention particulière pour vous`,
-      body: `Bonjour ${customer.name},\n\nToute l'équipe Décofleur Plus vous remercie pour votre fidélité.\n\nÀ cette occasion, nous avons le plaisir de vous offrir une réduction exclusive de 10% sur votre prochain bouquet avec le code PRIVILEGE10.\n\nÀ très bientôt,\nL'équipe Décofleur Plus`,
+      title: 'Remerciement',
+      subject: `Décofleur Plus : Merci pour votre confiance`,
+      body: `Bonjour ${customer.name},\n\nToute l'équipe Décofleur Plus vous remercie pour votre fidélité. Nous serons ravis de vous accompagner pour vos prochaines occasions.\n\nÀ très bientôt,\nL'équipe Décofleur Plus`,
     },
     {
       title: 'Prise de contact',
@@ -90,20 +87,16 @@ export function SendEmailDialog({
     }
 
     setIsSending(true);
-
-    // Simulate sending delay
-    setTimeout(() => {
-      setIsSending(false);
-      toast.success('E-mail envoyé avec succès !', {
-        description: `Votre message a été transmis à ${customer.name} (${customer.email}).`,
-      });
+    try {
+      await sendAdminCustomerEmail(customer.id, { subject: subject.trim(), message: message.trim(), sendCopy });
+      toast.success('E-mail envoyé', { description: `Votre message a été transmis à ${customer.name} (${customer.email}).` });
       onOpenChange(false);
-    }, 700);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "L'e-mail n'a pas pu être envoyé.");
+    } finally {
+      setIsSending(false);
+    }
   };
-
-  const mailtoHref = `mailto:${customer.email}?subject=${encodeURIComponent(
-    subject
-  )}&body=${encodeURIComponent(message)}`;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

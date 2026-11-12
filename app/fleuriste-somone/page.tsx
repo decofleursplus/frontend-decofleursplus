@@ -2,12 +2,8 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
-  Truck,
   Clock,
   MapPin,
-  ShieldCheck,
-  CheckCircle2,
-  Phone,
   HelpCircle,
   ArrowRight,
   Sparkles,
@@ -19,8 +15,7 @@ import { constructMetadata } from '@/lib/seo/metadata';
 import { Breadcrumbs } from '@/components/seo/breadcrumbs';
 import { JsonLd } from '@/components/seo/json-ld';
 import { getLocalLandingSchema } from '@/lib/seo/schema';
-import { products } from '@/lib/products';
-import { ProductGrid } from '@/components/product-grid';
+import { LiveProductGrid, ZoneFeeSentence } from '@/components/storefront/live-data';
 
 export const metadata: Metadata = constructMetadata({
   title: 'Fleuriste Somone · Livraison de Fleurs & Décoration Événementielle | Décofleur Plus',
@@ -53,7 +48,6 @@ export default function FleuristeSomonePage() {
     { label: 'Fleuriste Somone' },
   ];
 
-  const somoneProducts = products.filter((p) => p.category === 'Mariages' || p.category === 'Bouquets').slice(0, 4);
 
   return (
     <div className="relative min-h-screen bg-white text-[#1c2e20] overflow-x-hidden">
@@ -112,7 +106,7 @@ export default function FleuristeSomonePage() {
               Livraison le jour même
             </h3>
             <p className="text-neutral-600 text-xs sm:text-sm leading-relaxed">
-              Toute commande passée avant 14h est acheminée à votre villa de la Somone dans l’après-midi. Forfait 3 000 FCFA (offert dès 50 000 FCFA).
+              Toute commande passée avant 14h est acheminée à votre villa de la Somone dans l’après-midi. <ZoneFeeSentence zoneSlug="somone-ngaparou" />.
             </p>
           </div>
 
@@ -156,7 +150,7 @@ export default function FleuristeSomonePage() {
               Voir tout le catalogue →
             </Link>
           </div>
-          <ProductGrid products={somoneProducts} />
+          <LiveProductGrid />
         </section>
 
         {/* FAQ Locale Somone */}

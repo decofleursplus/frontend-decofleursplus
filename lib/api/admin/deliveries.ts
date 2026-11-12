@@ -1,326 +1,221 @@
 import { apiClient } from '../client';
-import type {
-  AdminDelivery,
-  DeliveryDriver,
-  DeliveryStatus,
-} from '@/lib/admin/mock-data/types';
+import type { AdminDelivery, DeliveryDriver, DeliveryStatus } from '@/lib/admin/mock-data/types';
 
-export interface GetAdminDeliveriesParams {
-  page?: number;
-  limit?: number;
-  status?: string;
-  driverId?: string;
-  date?: string;
-  search?: string;
+/** Créneaux acceptés par le backend (identiques au tunnel de commande). */
+export const DELIVERY_TIME_SLOTS = ['9h-12h', '10h-14h', '14h-18h', '18h-20h'] as const;
+
+const VEHICLE_FROM_API: Record<string, DeliveryDriver['vehicle']> = { MOTO: 'Moto', SCOOTER: 'Scooter', VAN: 'Fourgonnette', CAR: 'Voiture' };
+const VEHICLE_TO_API: Record<DeliveryDriver['vehicle'], string> = { Moto: 'MOTO', Scooter: 'SCOOTER', Fourgonnette: 'VAN', Voiture: 'CAR' };
+
+const STATUS_FROM_API: Record<string, DeliveryStatus> = {
+  TO_DELIVER: 'a_livrer',
+  IN_PROGRESS: 'en_cours',
+  DELIVERED: 'livree',
+  FAILED: 'echec',
+  CANCELLED: 'echec',
+};
+const STATUS_TO_API: Record<DeliveryStatus, string> = { a_livrer: 'TO_DELIVER', en_cours: 'IN_PROGRESS', livree: 'DELIVERED', echec: 'FAILED' };
+
+interface ApiDelivery {
+  id: string;
+  deliveryNumber: string;
+  status: string;
+  scheduledDate: string | null;
+  timeSlot: string | null;
+  pickedUpAt: string | null;
+  deliveredAt: string | null;
+  failedAt: string | null;
+  failureReason: string | null;
+  recipientName: string | null;
+  notes: string | null;
+  createdAt: string;
+  order: {
+    id: string;
+    orderNumber: string;
+    userId: string | null;
+    orderStatus: string;
+    deliveryMode: string;
+    customerName: string;
+    customerPhone: string;
+    recipientName: string | null;
+    recipientPhone: string | null;
+    deliveryAddress: string | null;
+    deliveryZone: { id: string; name: string } | null;
+    deliveryFee: number;
+    itemsSummary: string;
+  };
+  driver: { id: string; name: string; phone: string; vehicle: string; vehiclePlate: string | null } | null;
+  events?: { id: string; type: string; note: string | null; createdAt: string; authorName: string | null }[];
+}
+
+interface ApiDriver {
+  id: string;
+  name: string;
+  phone: string;
+  vehicle: string;
+  vehiclePlate: string | null;
+  availability: string;
+  status: string;
+  rating: number;
+  isActive: boolean;
+  activeDeliveriesCount: number;
+}
+
+const formatTime = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : undefined;
+
+export function transformAdminDelivery(raw: ApiDelivery): AdminDelivery {
+  const status = STATUS_FROM_API[raw.status] ?? 'a_livrer';
+  const vehicle = raw.driver ? VEHICLE_FROM_API[raw.driver.vehicle] ?? raw.driver.vehicle : undefined;
+  return {
+    id: raw.id,
+    deliveryNumber: raw.deliveryNumber,
+    orderId: raw.order.id,
+    orderRef: raw.order.orderNumber,
+    orderStatus: raw.order.orderStatus,
+    customerId: raw.order.userId ?? '',
+    customerName: raw.order.recipientName || raw.order.customerName,
+    customerPhone: raw.order.recipientPhone || raw.order.customerPhone,
+    deliveryAddress: raw.order.deliveryAddress ?? '',
+    deliveryZone: raw.order.deliveryZone?.name ?? '',
+    deliveryMode: raw.order.deliveryMode === 'EXPRESS' ? 'Livraison express' : raw.order.deliveryMode === 'PICKUP' ? 'Retrait boutique' : 'Livraison standard',
+    driverId: raw.driver?.id,
+    driverName: raw.driver?.name,
+    driverPhone: raw.driver?.phone,
+    driverVehicle: raw.driver ? [vehicle, raw.driver.vehiclePlate].filter(Boolean).join(' · ') : undefined,
+    status,
+    scheduledDate: raw.scheduledDate ? new Date(raw.scheduledDate).toLocaleDateString('fr-FR') : 'Non planifiée',
+    timeSlot: raw.timeSlot ?? '',
+    deliveredAt: formatTime(raw.deliveredAt),
+    recipientName: raw.recipientName ?? undefined,
+    deliveryFee: raw.order.deliveryFee,
+    itemsSummary: raw.order.itemsSummary,
+    notes: raw.notes ?? '',
+    failureReason: raw.failureReason ?? undefined,
+    events: raw.events,
+    trackingSteps: [
+      { step: 'preparation', label: 'Commande préparée', completed: true, time: formatTime(raw.createdAt) },
+      { step: 'prise_en_charge', label: raw.driver ? `Livreur : ${raw.driver.name}` : 'Livreur à assigner', completed: Boolean(raw.driver) },
+      { step: 'en_acheminement', label: 'En cours d’acheminement', completed: Boolean(raw.pickedUpAt), time: formatTime(raw.pickedUpAt) },
+      {
+        step: 'livre',
+        label: raw.recipientName ? `Remis à ${raw.recipientName}` : 'Livré au destinataire',
+        completed: raw.status === 'DELIVERED',
+        time: formatTime(raw.deliveredAt),
+      },
+    ],
+  };
+}
+
+export function transformDeliveryDriver(raw: ApiDriver): DeliveryDriver {
+  return {
+    id: raw.id,
+    name: raw.name,
+    phone: raw.phone,
+    vehicle: VEHICLE_FROM_API[raw.vehicle] ?? 'Moto',
+    vehiclePlate: raw.vehiclePlate ?? '',
+    status: !raw.isActive || raw.availability === 'UNAVAILABLE' ? 'indisponible' : raw.activeDeliveriesCount > 0 ? 'en_course' : 'disponible',
+    activeDeliveriesCount: raw.activeDeliveriesCount,
+    rating: raw.rating,
+    avatar: raw.name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase(),
+  };
 }
 
 export interface AdminDeliveriesResponse {
   deliveries: AdminDelivery[];
   total: number;
-  counts?: {
-    all: number;
-    a_livrer: number;
-    en_cours: number;
-    livree: number;
-    echec: number;
-  };
+  counts: Record<DeliveryStatus, number>;
 }
 
-// Map backend delivery status to frontend DeliveryStatus
-export function mapBackendDeliveryStatus(status: string): DeliveryStatus {
-  const s = (status || '').toUpperCase();
-  switch (s) {
-    case 'PENDING':
-    case 'ASSIGNED':
-    case 'A_LIVRER':
-      return 'a_livrer';
-    case 'PICKED_UP':
-    case 'IN_TRANSIT':
-    case 'IN_PROGRESS':
-    case 'EN_COURS':
-      return 'en_cours';
-    case 'DELIVERED':
-    case 'LIVREE':
-      return 'livree';
-    case 'FAILED':
-    case 'CANCELLED':
-    case 'ECHEC':
-      return 'echec';
-    default:
-      return (status as DeliveryStatus) || 'a_livrer';
-  }
-}
-
-// Map frontend DeliveryStatus to backend status enum
-export function mapFrontendToBackendDeliveryStatus(status: DeliveryStatus | string): string {
-  switch (status) {
-    case 'a_livrer':
-      return 'ASSIGNED';
-    case 'en_cours':
-      return 'IN_TRANSIT';
-    case 'livree':
-      return 'DELIVERED';
-    case 'echec':
-      return 'FAILED';
-    default:
-      return status.toUpperCase();
-  }
-}
-
-// Transform raw backend delivery to AdminDelivery
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function transformAdminDelivery(raw: any): AdminDelivery {
-  const customerName = raw.order?.customer
-    ? `${raw.order.customer.firstName || ''} ${raw.order.customer.lastName || ''}`.trim() || raw.customerName || 'Client'
-    : raw.customerName || 'Client DécoFleur';
-
-  const customerPhone = raw.order?.customer?.phone || raw.order?.shippingAddress?.phone || raw.customerPhone || '';
-  
-  let deliveryAddress = raw.deliveryAddress || '';
-  if (!deliveryAddress && raw.order?.shippingAddress) {
-    if (typeof raw.order.shippingAddress === 'string') {
-      deliveryAddress = raw.order.shippingAddress;
-    } else {
-      deliveryAddress = [
-        raw.order.shippingAddress.address,
-        raw.order.shippingAddress.city,
-        raw.order.shippingAddress.zone,
-      ].filter(Boolean).join(', ');
-    }
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const itemsSummary = raw.itemsSummary || (Array.isArray(raw.order?.items)
-    ? raw.order.items.map((it: any) => `${it.quantity}x ${it.productName || it.product?.name || 'Produit'}`).join(', ')
-    : 'Articles floraux');
-
+/** Livraisons (100 plus récentes par défaut) avec compteurs par statut calculés par le serveur. */
+export async function getAdminDeliveries(params: { status?: DeliveryStatus; search?: string; limit?: number } = {}): Promise<AdminDeliveriesResponse> {
+  const res = await apiClient.get<{ items: ApiDelivery[]; total: number; counts: Record<string, number> }>('/admin/deliveries', {
+    useAdminToken: true,
+    cache: 'no-store',
+    params: { limit: params.limit ?? 100, status: params.status ? STATUS_TO_API[params.status] : undefined, search: params.search || undefined },
+  });
+  const c = res.counts ?? {};
   return {
-    id: raw.id,
-    orderId: raw.orderId || raw.order?.id || '',
-    orderRef: raw.order?.orderNumber || raw.orderRef || `#${raw.orderId || raw.id}`,
-    customerId: raw.customerId || raw.order?.customerId || '',
-    customerName,
-    customerPhone,
-    deliveryAddress: deliveryAddress || 'Adresse non spécifiée',
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    deliveryZone: (raw.deliveryZone || raw.order?.deliveryZone?.name || 'Saly') as any,
-    deliveryMode: raw.deliveryMode || (raw.order?.isExpress ? 'Livraison express' : 'Livraison standard'),
-    driverId: raw.driverId || raw.driver?.id,
-    driverName: raw.driver?.name || raw.driverName,
-    driverPhone: raw.driver?.phone || raw.driverPhone,
-    driverVehicle: raw.driver ? `${raw.driver.vehicle} (${raw.driver.vehiclePlate || ''})`.trim() : raw.driverVehicle,
-    status: mapBackendDeliveryStatus(raw.status),
-    scheduledDate: raw.scheduledDate ? raw.scheduledDate.split('T')[0] : (raw.createdAt ? raw.createdAt.split('T')[0] : 'Aujourd’hui'),
-    timeSlot: raw.timeSlot || raw.order?.deliverySlot || 'Journée',
-    deliveredAt: raw.deliveredAt,
-    recipientName: raw.recipientName,
-    deliveryFee: Number(raw.deliveryFee ?? raw.order?.deliveryFee ?? 0),
-    itemsSummary,
-    notes: raw.notes || raw.order?.adminNotes || '',
-    trackingSteps: raw.trackingSteps || [
-      { step: 'preparation', label: 'Commande préparée', completed: true },
-      { step: 'prise_en_charge', label: 'Prise en charge livreur', completed: raw.status !== 'PENDING' },
-      { step: 'en_acheminement', label: 'En cours d’acheminement', completed: raw.status === 'IN_TRANSIT' || raw.status === 'DELIVERED' },
-      { step: 'livre', label: 'Livré au destinataire', completed: raw.status === 'DELIVERED' },
-    ],
+    deliveries: res.items.map(transformAdminDelivery),
+    total: res.total,
+    counts: {
+      a_livrer: c.TO_DELIVER ?? 0,
+      en_cours: c.IN_PROGRESS ?? 0,
+      livree: c.DELIVERED ?? 0,
+      echec: (c.FAILED ?? 0) + (c.CANCELLED ?? 0),
+    },
   };
 }
 
-// Transform raw backend driver to DeliveryDriver
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function transformDeliveryDriver(raw: any): DeliveryDriver {
-  let status: 'disponible' | 'en_course' | 'indisponible' = 'disponible';
-  const rawStatus = (raw.availability || raw.status || '').toUpperCase();
-  if (rawStatus === 'BUSY' || rawStatus === 'EN_COURSE') {
-    status = 'en_course';
-  } else if (rawStatus === 'OFFLINE' || rawStatus === 'INACTIVE' || rawStatus === 'INDISPONIBLE') {
-    status = 'indisponible';
-  }
-
-  return {
-    id: raw.id,
-    name: raw.name,
-    phone: raw.phone,
-    vehicle: raw.vehicle || 'Moto',
-    vehiclePlate: raw.vehiclePlate || '',
-    status,
-    activeDeliveriesCount: Number(raw.activeDeliveriesCount ?? raw._count?.deliveries ?? 0),
-    rating: Number(raw.rating ?? 5.0),
-    avatar: raw.name ? raw.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : 'DL',
-  };
-}
-
-/**
- * Fetch deliveries list with optional filter params and mock fallback
- */
-export async function getAdminDeliveries(params?: GetAdminDeliveriesParams): Promise<AdminDeliveriesResponse> {
-  try {
-    const q = new URLSearchParams();
-    if (params?.page) q.set('page', String(params.page));
-    if (params?.limit) q.set('limit', String(params.limit));
-    if (params?.status && params.status !== 'all') {
-      q.set('status', mapFrontendToBackendDeliveryStatus(params.status));
-    }
-    if (params?.driverId && params.driverId !== 'all') q.set('driverId', params.driverId);
-    if (params?.date) q.set('date', params.date);
-    if (params?.search) q.set('search', params.search);
-
-    const queryStr = q.toString() ? `?${q.toString()}` : '';
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const res = await apiClient.get<any>(`/admin/deliveries${queryStr}`, {
-      useAdminToken: true,
-      cache: 'no-store',
-    });
-
-    if (res && typeof res === 'object') {
-      const dataObj = res.data ?? res;
-      if (Array.isArray(dataObj.items)) {
-        return {
-          deliveries: dataObj.items.map(transformAdminDelivery),
-          total: dataObj.total ?? dataObj.items.length,
-          counts: dataObj.counts ?? res.counts,
-        };
-      }
-      if (Array.isArray(res.deliveries)) {
-        return {
-          deliveries: res.deliveries.map(transformAdminDelivery),
-          total: res.total ?? res.deliveries.length,
-          counts: res.counts,
-        };
-      }
-      if (Array.isArray(res)) {
-        return {
-          deliveries: res.map(transformAdminDelivery),
-          total: res.length,
-        };
-      }
-      if (Array.isArray(res.data)) {
-        return {
-          deliveries: res.data.map(transformAdminDelivery),
-          total: res.total ?? res.data.length,
-        };
-      }
-    }
-  } catch (err) {
-    console.warn('[AdminDeliveriesAPI] Erreur de récupération des livraisons:', err);
-  }
-
-  return {
-    deliveries: [],
-    total: 0,
-  };
-}
-
-/**
- * Assign a driver to a delivery
- */
 export async function assignDeliveryDriver(
   id: string,
-  body: { driverId: string; timeSlot?: string; scheduledDate?: string; note?: string }
+  body: { driverId: string; timeSlot?: string; scheduledDate?: string; note?: string },
 ): Promise<AdminDelivery> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const res = await apiClient.post<any>(`/admin/deliveries/${id}/assign`, body, {
-    useAdminToken: true,
-  });
-  return transformAdminDelivery(res);
+  return transformAdminDelivery(await apiClient.post<ApiDelivery>(`/admin/deliveries/${id}/assign`, body, { useAdminToken: true }));
 }
 
-/**
- * Mark delivery as completed
- */
-export async function completeAdminDelivery(
-  id: string,
-  body: { recipientName?: string; notes?: string }
-): Promise<AdminDelivery> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const res = await apiClient.post<any>(`/admin/deliveries/${id}/complete`, body, {
-    useAdminToken: true,
-  });
-  return transformAdminDelivery(res);
+/** Départ en livraison (la commande doit être « prête » et un livreur assigné). */
+export async function startAdminDelivery(id: string): Promise<AdminDelivery> {
+  return transformAdminDelivery(await apiClient.post<ApiDelivery>(`/admin/deliveries/${id}/start`, undefined, { useAdminToken: true }));
 }
 
-/**
- * Mark delivery as failed
- */
+export async function completeAdminDelivery(id: string, body: { recipientName: string; notes?: string }): Promise<AdminDelivery> {
+  return transformAdminDelivery(await apiClient.post<ApiDelivery>(`/admin/deliveries/${id}/complete`, body, { useAdminToken: true }));
+}
+
 export async function failAdminDelivery(id: string, body: { reason: string }): Promise<AdminDelivery> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const res = await apiClient.post<any>(`/admin/deliveries/${id}/fail`, body, {
-    useAdminToken: true,
-  });
-  return transformAdminDelivery(res);
+  return transformAdminDelivery(await apiClient.post<ApiDelivery>(`/admin/deliveries/${id}/fail`, body, { useAdminToken: true }));
 }
 
-/**
- * Fetch all delivery drivers
- */
 export async function getAdminDrivers(includeInactive = false): Promise<DeliveryDriver[]> {
-  try {
-    const q = includeInactive ? '?includeInactive=true' : '';
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const res = await apiClient.get<any>(`/admin/drivers${q}`, {
-      useAdminToken: true,
-      cache: 'no-store',
-    });
-
-    if (Array.isArray(res)) {
-      return res.map(transformDeliveryDriver);
-    }
-    if (res && Array.isArray(res.drivers)) {
-      return res.drivers.map(transformDeliveryDriver);
-    }
-    if (res && Array.isArray(res.data)) {
-      return res.data.map(transformDeliveryDriver);
-    }
-  } catch (err) {
-    console.warn('[AdminDriversAPI] Erreur de récupération des livreurs:', err);
-  }
-
-  return [];
+  const res = await apiClient.get<ApiDriver[]>('/admin/drivers', {
+    useAdminToken: true,
+    cache: 'no-store',
+    params: { includeInactive: includeInactive ? 'true' : undefined },
+  });
+  return res.map(transformDeliveryDriver);
 }
 
-/**
- * Create a new driver
- */
 export async function createAdminDriver(body: {
   name: string;
   phone: string;
-  vehicle: string;
+  vehicle: DeliveryDriver['vehicle'];
   vehiclePlate?: string;
-  availability?: string;
+  available?: boolean;
 }): Promise<DeliveryDriver> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const res = await apiClient.post<any>('/admin/drivers', body, {
-    useAdminToken: true,
-  });
+  const res = await apiClient.post<ApiDriver>(
+    '/admin/drivers',
+    {
+      name: body.name,
+      phone: body.phone,
+      vehicle: VEHICLE_TO_API[body.vehicle],
+      vehiclePlate: body.vehiclePlate || null,
+      availability: body.available === false ? 'UNAVAILABLE' : 'AVAILABLE',
+    },
+    { useAdminToken: true },
+  );
   return transformDeliveryDriver(res);
 }
 
-/**
- * Update a driver
- */
 export async function updateAdminDriver(
   id: string,
-  body: Partial<{
-    name: string;
-    phone: string;
-    vehicle: string;
-    vehiclePlate?: string;
-    availability?: string;
-  }>
+  body: Partial<{ name: string; phone: string; vehicle: DeliveryDriver['vehicle']; vehiclePlate: string | null; available: boolean; isActive: boolean }>,
 ): Promise<DeliveryDriver> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const res = await apiClient.patch<any>(`/admin/drivers/${id}`, body, {
-    useAdminToken: true,
-  });
-  return transformDeliveryDriver(res);
+  const payload: Record<string, unknown> = {};
+  if (body.name !== undefined) payload.name = body.name;
+  if (body.phone !== undefined) payload.phone = body.phone;
+  if (body.vehicle !== undefined) payload.vehicle = VEHICLE_TO_API[body.vehicle];
+  if (body.vehiclePlate !== undefined) payload.vehiclePlate = body.vehiclePlate;
+  if (body.available !== undefined) payload.availability = body.available ? 'AVAILABLE' : 'UNAVAILABLE';
+  if (body.isActive !== undefined) payload.isActive = body.isActive;
+  return transformDeliveryDriver(await apiClient.patch<ApiDriver>(`/admin/drivers/${id}`, payload, { useAdminToken: true }));
 }
 
-/**
- * Delete a driver
- */
-export async function deleteAdminDriver(id: string): Promise<boolean> {
-  await apiClient.delete(`/admin/drivers/${id}`, {
-    useAdminToken: true,
-  });
-  return true;
+export async function deleteAdminDriver(id: string): Promise<void> {
+  await apiClient.delete(`/admin/drivers/${id}`, { useAdminToken: true });
 }

@@ -24,6 +24,10 @@ import { useCart } from '@/components/cart-provider';
 import { useAuth } from '@/components/auth-provider';
 import { BrandLogo } from '@/components/brand-logo';
 import { SITE_CONFIG } from '@/lib/seo/config';
+import { HeaderNotificationBell } from '@/components/header-notification-bell';
+import { usePublicSettings } from '@/lib/hooks/use-public-settings';
+import { useStoreCategories } from '@/lib/hooks/use-store-categories';
+import { telHref } from '@/lib/shop-contact';
 
 export function SiteHeader() {
   const { count, favorites } = useCart();
@@ -38,6 +42,15 @@ export function SiteHeader() {
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const menuCloseRef = useRef<HTMLButtonElement>(null);
+  const { settings } = usePublicSettings();
+  const categories = useStoreCategories();
+  // Coordonnées et réseaux gérés dans Paramètres › Boutique / SEO
+  const shopPhone = settings?.boutique.phoneDakar ?? SITE_CONFIG.phoneDakar;
+  const socialLinks = {
+    facebook: settings ? settings.social.facebookUrl : SITE_CONFIG.social.facebook,
+    instagram: settings ? settings.social.instagramUrl : SITE_CONFIG.social.instagram,
+    tiktok: settings ? settings.social.tiktokUrl : SITE_CONFIG.social.tiktok,
+  };
 
   const toggleSection = (section: string) => {
     setExpandedSections((prev) => ({
@@ -111,8 +124,7 @@ export function SiteHeader() {
       return (
         pathname.startsWith('/boutique') ||
         pathname.startsWith('/produits/') ||
-        pathname.startsWith('/categories/') ||
-        ['/bouquets', '/roses', '/plantes', '/paniers-de-fruits', '/cadeaux', '/bougies', '/vases'].includes(pathname)
+        pathname.startsWith('/categories/')
       );
     }
     if (href === '/evenements') {
@@ -148,19 +160,25 @@ export function SiteHeader() {
             <span><ShieldCheck size={14} /> Paiement sécurisé</span>
           </div>
           <div className="topbar-right">
-            <a className="topbar-phone" href="tel:+221779417860">
-              <Phone size={13} /> +221 77 941 78 60
+            <a className="topbar-phone" href={telHref(shopPhone)}>
+              <Phone size={13} /> {shopPhone}
             </a>
             <div className="topbar-socials">
-              <a href={SITE_CONFIG.social.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook Déco Fleurs Plus">
-                <FacebookIcon size={14} />
-              </a>
-              <a href={SITE_CONFIG.social.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram Déco Fleurs Plus">
-                <InstagramIcon size={14} />
-              </a>
-              <a href={SITE_CONFIG.social.tiktok} target="_blank" rel="noopener noreferrer" aria-label="TikTok Déco Fleurs Plus">
-                <TikTokIcon size={14} />
-              </a>
+              {socialLinks.facebook && (
+                <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook Déco Fleurs Plus">
+                  <FacebookIcon size={14} />
+                </a>
+              )}
+              {socialLinks.instagram && (
+                <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram Déco Fleurs Plus">
+                  <InstagramIcon size={14} />
+                </a>
+              )}
+              {socialLinks.tiktok && (
+                <a href={socialLinks.tiktok} target="_blank" rel="noopener noreferrer" aria-label="TikTok Déco Fleurs Plus">
+                  <TikTokIcon size={14} />
+                </a>
+              )}
             </div>
             {isAuthenticated ? (
               <Link href="/compte" className="topbar-account" title={`Connecté en tant que ${user?.name}`}>
@@ -227,6 +245,7 @@ export function SiteHeader() {
               <span className="action-label-text">Favoris</span>
             </Link>
           )}
+          {isAuthenticated && !isAuthRoute && <HeaderNotificationBell />}
           <Link
             href={isAuthenticated ? '/compte' : '/connexion'}
             className="action-icon-link"
@@ -261,6 +280,7 @@ export function SiteHeader() {
             >
               <Search size={22} />
             </button>
+            {isAuthenticated && <HeaderNotificationBell variant="mobile" />}
             <Link href="/panier" className="mobile-header-btn mobile-cart-btn" aria-label="Mon panier">
               <ShoppingCart size={22} />
               <span className="mobile-cart-badge">{count}</span>
@@ -313,13 +333,11 @@ export function SiteHeader() {
                 onMouseLeave={handleDropdownLeave}
               >
                 <Link href="/boutique" className="dropdown-item" onClick={closeDropdownInstantly}>Tous les produits</Link>
-                <Link href="/categories/bouquets" className="dropdown-item" onClick={closeDropdownInstantly}>Bouquets élégants</Link>
-                <Link href="/categories/roses" className="dropdown-item" onClick={closeDropdownInstantly}>Roses fraîches</Link>
-                <Link href="/categories/plantes" className="dropdown-item" onClick={closeDropdownInstantly}>Plantes d’intérieur</Link>
-                <Link href="/categories/paniers-de-fruits" className="dropdown-item" onClick={closeDropdownInstantly}>Paniers de fruits</Link>
-                <Link href="/categories/cadeaux" className="dropdown-item" onClick={closeDropdownInstantly}>Coffrets cadeaux</Link>
-                <Link href="/categories/bougies" className="dropdown-item" onClick={closeDropdownInstantly}>Bougies & senteurs</Link>
-                <Link href="/categories/vases" className="dropdown-item" onClick={closeDropdownInstantly}>Vases & contenants</Link>
+                {(categories ?? []).map((c) => (
+                  <Link key={c.id} href={`/categories/${c.slug}`} className="dropdown-item" onClick={closeDropdownInstantly}>
+                    {c.name}
+                  </Link>
+                ))}
               </div>
             )}
           </div>
@@ -361,7 +379,7 @@ export function SiteHeader() {
               href="/paysagisme"
               className={`nav-link ${isActive('/paysagisme') ? 'active' : ''}`}
             >
-              Paysagisme <span className="ml-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">À venir</span> <ChevronDown size={14} className="dropdown-arrow" />
+              Paysagisme <ChevronDown size={14} className="dropdown-arrow" />
             </Link>
             {openDropdown === 'paysagisme' && (
               <div
@@ -371,15 +389,12 @@ export function SiteHeader() {
               >
                 <Link href="/paysagisme" className="dropdown-item flex items-center justify-between" onClick={closeDropdownInstantly}>
                   <span>Paysagisme &amp; Aménagement</span>
-                  <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">À venir</span>
                 </Link>
                 <Link href="/paysagisme/prestations" className="dropdown-item flex items-center justify-between" onClick={closeDropdownInstantly}>
                   <span>Nos prestations</span>
-                  <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">À venir</span>
                 </Link>
                 <Link href="/paysagisme/realisations" className="dropdown-item flex items-center justify-between" onClick={closeDropdownInstantly}>
                   <span>Galerie des réalisations</span>
-                  <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">À venir</span>
                 </Link>
               </div>
             )}
@@ -521,13 +536,11 @@ export function SiteHeader() {
                 {expandedSections['produits'] && (
                   <div className="drawer-sublinks">
                     <Link href="/boutique" onClick={() => setMobileMenuOpen(false)}>Tous les produits</Link>
-                    <Link href="/categories/bouquets" onClick={() => setMobileMenuOpen(false)}>Bouquets élégants</Link>
-                    <Link href="/categories/roses" onClick={() => setMobileMenuOpen(false)}>Roses fraîches</Link>
-                    <Link href="/categories/plantes" onClick={() => setMobileMenuOpen(false)}>Plantes d’intérieur</Link>
-                    <Link href="/categories/paniers-de-fruits" onClick={() => setMobileMenuOpen(false)}>Paniers de fruits</Link>
-                    <Link href="/categories/cadeaux" onClick={() => setMobileMenuOpen(false)}>Coffrets cadeaux</Link>
-                    <Link href="/categories/bougies" onClick={() => setMobileMenuOpen(false)}>Bougies & senteurs</Link>
-                    <Link href="/categories/vases" onClick={() => setMobileMenuOpen(false)}>Vases & contenants</Link>
+                    {(categories ?? []).map((c) => (
+                      <Link key={c.id} href={`/categories/${c.slug}`} onClick={() => setMobileMenuOpen(false)}>
+                        {c.name}
+                      </Link>
+                    ))}
                   </div>
                 )}
               </div>
@@ -569,7 +582,6 @@ export function SiteHeader() {
                 >
                   <span className="inline-flex items-center gap-1.5">
                     <span>Paysagisme &amp; Aménagement</span>
-                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">À venir</span>
                   </span>
                   <ChevronDown
                     size={16}
@@ -582,15 +594,12 @@ export function SiteHeader() {
                   <div className="drawer-sublinks">
                     <Link href="/paysagisme" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-between">
                       <span>Paysagisme &amp; Aménagement</span>
-                      <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">À venir</span>
                     </Link>
                     <Link href="/paysagisme/prestations" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-between">
                       <span>Nos prestations</span>
-                      <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">À venir</span>
                     </Link>
                     <Link href="/paysagisme/realisations" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-between">
                       <span>Galerie réalisations</span>
-                      <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">À venir</span>
                     </Link>
                   </div>
                 )}
@@ -648,13 +657,13 @@ export function SiteHeader() {
             </nav>
 
             <div className="mobile-drawer-footer">
-              <a href="tel:+221779417860" className="drawer-phone">
-                <Phone size={16} /> +221 77 941 78 60
+              <a href={telHref(shopPhone)} className="drawer-phone">
+                <Phone size={16} /> {shopPhone}
               </a>
               <div className="drawer-socials">
-                <a href={SITE_CONFIG.social.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook Déco Fleurs Plus"><FacebookIcon size={18} /></a>
-                <a href={SITE_CONFIG.social.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram Déco Fleurs Plus"><InstagramIcon size={18} /></a>
-                <a href={SITE_CONFIG.social.tiktok} target="_blank" rel="noopener noreferrer" aria-label="TikTok Déco Fleurs Plus"><TikTokIcon size={18} /></a>
+                {socialLinks.facebook && <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook Déco Fleurs Plus"><FacebookIcon size={18} /></a>}
+                {socialLinks.instagram && <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram Déco Fleurs Plus"><InstagramIcon size={18} /></a>}
+                {socialLinks.tiktok && <a href={socialLinks.tiktok} target="_blank" rel="noopener noreferrer" aria-label="TikTok Déco Fleurs Plus"><TikTokIcon size={18} /></a>}
               </div>
             </div>
           </div>

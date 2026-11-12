@@ -11,11 +11,9 @@ import {
   Calendar,
   Eye,
   Heart,
-  ShoppingBag,
   BookOpen,
   Copy,
   Sparkles,
-  ArrowRight,
   ShieldCheck,
   Tag,
   Edit3,
@@ -37,9 +35,8 @@ export function ArticlePreviewView({ article }: ArticlePreviewViewProps) {
     name: article.authorName || 'Artisan Fleuriste',
     avatar: article.authorAvatar || 'FD',
     role: article.authorRole || 'Artisan Fleuriste',
-    bio: (article as any).authorBio || "Expert en compositions végétales et sélection florale d'exception chez Décofleur Plus Saly.",
+    bio: article.authorBio || "Expert en compositions végétales et sélection florale d'exception chez Décofleur Plus Saly.",
   };
-  const relatedProducts: any[] = [];
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(`https://decofleurplus.com/blog/${article.slug}`);
@@ -213,7 +210,7 @@ export function ArticlePreviewView({ article }: ArticlePreviewViewProps) {
               Visualisation en situation réelle : Expérience visiteur
             </span>
             <p className="text-[11px] text-[#a0a6a0]">
-              Mise en page, typographies Georgia, signatures d'artisans et produits associés exactement comme sur le site public.
+              Mise en page, typographies Georgia, signatures d’artisans et produits associés exactement comme sur le site public.
             </p>
           </div>
         </div>
@@ -357,48 +354,6 @@ export function ArticlePreviewView({ article }: ArticlePreviewViewProps) {
           </div>
         </div>
 
-        {/* Cross-Selling: Related Floral Creations */}
-        {relatedProducts.length > 0 && (
-          <div className="pt-8 border-t-2 border-[#f0eee8] space-y-6">
-            <div>
-              <h3 className="text-lg md:text-xl font-serif font-bold text-[#1e2a1f] flex items-center gap-2.5">
-                <ShoppingBag size={20} className="text-[#24582d]" />
-                Créations florales associées à cet article
-              </h3>
-              <p className="text-xs text-[#777] mt-1">
-                Compositions artisanales disponibles en livraison express sur Saly, Somone, Ngaparou et Dakar
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {relatedProducts.map((prod) => (
-                <div
-                  key={prod!.id}
-                  className="flex items-center gap-4 p-4 rounded-2xl border border-[#ece8e1] bg-white hover:border-[#24582d] hover:shadow-md transition-all group"
-                >
-                  <div className="w-18 h-18 rounded-xl bg-[#f9f8f4] border border-[#e7e4dd] overflow-hidden shrink-0">
-                    <img
-                      src={prod!.image || '/images/bouquet-detail.jpg'}
-                      alt={prod!.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <span className="block text-sm font-semibold text-[#1e2a1f] truncate group-hover:text-[#24582d] transition-colors">
-                      {prod!.name}
-                    </span>
-                    <span className="block text-sm text-[#24582d] font-bold">
-                      {prod!.price.toLocaleString('fr-FR')} FCFA
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-[11px] text-[#24582d] font-semibold pt-1">
-                      Commander en boutique <ArrowRight size={11} />
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </article>
 
       {/* Bottom Navigation Toolbar */}

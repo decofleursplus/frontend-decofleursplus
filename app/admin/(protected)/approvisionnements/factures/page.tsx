@@ -1,722 +1,482 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import {
-  Receipt,
-  Plus,
-  Search,
-  CheckCircle2,
-  AlertTriangle,
-  Clock,
-  XCircle,
-  Eye,
-  X,
-  Building2,
-  Calendar,
-  CreditCard,
-  Download,
-  ShoppingBag,
-  ReceiptText,
-  FileText,
-  Phone,
-  Mail,
-  User,
-  Save,
-  Check,
-} from 'lucide-react';
+import { ArrowLeft, Plus, Search, Receipt, Loader2, CheckCircle2, RefreshCw, Wallet, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
-import { initialSuppliers } from '@/lib/admin/mock-data/suppliers';
-import { SupplierInvoice, SupplierInvoiceStatus } from '@/lib/admin/mock-data/types';
+import { AdminPagination } from '@/components/admin/admin-pagination';
+import type { Supplier, SupplierInvoice, SupplierInvoiceStatus, SupplierOrder } from '@/lib/admin/mock-data/types';
+import {
+  createSupplierInvoice,
+  getSupplierInvoices,
+  getSupplierOrders,
+  getSuppliers,
+  paySupplierInvoice,
+  updateSupplierInvoice,
+} from '@/lib/api/admin/procurement';
+import { INVOICE_STATUS_LABELS, INVOICE_STATUS_STYLES, formatDay, formatFcfa } from '@/lib/admin/procurement-labels';
 
-export default function AdminFacturesPage() {
-  const [invoices, setInvoices] = useState<SupplierInvoice[]>([]);
-  const [statusFilter, setStatusFilter] = useState<'all' | SupplierInvoiceStatus>('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [supplierFilter, setSupplierFilter] = useState<string>('all');
+const inputClass =
+  'w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs transition-colors';
+const FILTERS: ('all' | SupplierInvoiceStatus)[] = ['all', 'a_verifier', 'a_payer', 'en_retard', 'payee', 'contestee', 'annulee'];
+const EDITABLE_STATUSES: Exclude<SupplierInvoiceStatus, 'en_retard'>[] = ['a_verifier', 'a_payer', 'payee', 'contestee', 'annulee'];
+const today = () => new Date().toISOString().slice(0, 10);
+const plusDays = (iso: string, days: number) => {
+  const d = new Date(`${iso}T12:00:00`);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+};
 
-  // Side Drawer : Ajouter une facture
-  const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
-  const [newInvoiceNumber, setNewInvoiceNumber] = useState('');
-  const [selectedSupplierId, setSelectedSupplierId] = useState(initialSuppliers[0]?.id || '');
-  const [newDate, setNewDate] = useState(() =>
-    new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
-  );
-  const [newDueDate, setNewDueDate] = useState('');
-  const [newAmount, setNewAmount] = useState('');
-  const [newStatus, setNewStatus] = useState<SupplierInvoiceStatus>('a_payer');
-  const [newNotes, setNewNotes] = useState('');
+/** Factures fournisseurs : saisie, contrôle, échéances et règlements. */
+export default function AdminFacturesFournisseursPage() {
+  const [invoices, setInvoices] = useState<SupplierInvoice[] | null>(null);
+  const [counts, setCounts] = useState<Record<SupplierInvoiceStatus, number> | null>(null);
+  const [totals, setTotals] = useState<{ toPay: number; paid: number } | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilterRaw] = useState<'all' | SupplierInvoiceStatus>('all');
+  const [supplierFilter, setSupplierFilterRaw] = useState('all');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  // Tout changement de filtre revient à la première page
+  const setStatusFilter = (v: 'all' | SupplierInvoiceStatus) => {
+    setStatusFilterRaw(v);
+    setPage(1);
+  };
+  const setSupplierFilter = (v: string) => {
+    setSupplierFilterRaw(v);
+    setPage(1);
+  };
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 
-  // Side Drawer : Détails de la facture
-  const [selectedInvoice, setSelectedInvoice] = useState<SupplierInvoice | null>(null);
-  const [detailStatus, setDetailStatus] = useState<SupplierInvoiceStatus>('a_payer');
+  // Ajout
+  const [addOpen, setAddOpen] = useState(false);
+  const [form, setForm] = useState({ invoiceNumber: '', supplierId: '', orderId: '', invoiceDate: today(), dueDate: plusDays(today(), 30), amount: '', status: 'a_payer' as Exclude<SupplierInvoiceStatus, 'en_retard'>, notes: '' });
+  const [supplierOrders, setSupplierOrders] = useState<SupplierOrder[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  // Détail
+  const [selected, setSelected] = useState<SupplierInvoice | null>(null);
+  const [detailStatus, setDetailStatus] = useState<Exclude<SupplierInvoiceStatus, 'en_retard'>>('a_payer');
   const [detailNotes, setDetailNotes] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('Virement');
 
-  const filteredInvoices = invoices.filter((inv) => {
-    const matchesStatus = statusFilter === 'all' || inv.status === statusFilter;
-    const matchesSupplier = supplierFilter === 'all' || inv.supplierId === supplierFilter;
-    const matchesSearch =
-      inv.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      inv.supplierName.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesStatus && matchesSupplier && matchesSearch;
-  });
+  const load = useCallback(
+    () =>
+      getSupplierInvoices({
+        status: statusFilter === 'all' ? undefined : statusFilter,
+        supplierId: supplierFilter === 'all' ? undefined : supplierFilter,
+        search,
+        page,
+        limit: pageSize,
+      })
+        .then((res) => {
+          setInvoices(res.items);
+          setCounts(res.counts);
+          setTotals(res.totals);
+          setTotal(res.total);
+          setTotalPages(res.totalPages);
+          setLoadError(null);
+        })
+        .catch((err) => setLoadError(err instanceof Error ? err.message : 'Impossible de charger les factures.')),
+    [statusFilter, supplierFilter, search, page, pageSize],
+  );
 
-  const handleAddInvoice = (e: React.FormEvent) => {
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setSearch(searchInput.trim());
+      setPage(1);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
+
+  useEffect(() => {
+    getSuppliers()
+      .then(setSuppliers)
+      .catch((err) => toast.error(err instanceof Error ? err.message : 'Fournisseurs indisponibles.'));
+  }, []);
+
+  const pickSupplier = (supplierId: string) => {
+    setForm((f) => ({ ...f, supplierId, orderId: '' }));
+    setSupplierOrders([]);
+    if (!supplierId) return;
+    getSupplierOrders({ supplierId, limit: 100 })
+      .then((res) => setSupplierOrders(res.items.filter((o) => o.status !== 'annulee')))
+      .catch(() => setSupplierOrders([]));
+  };
+
+  const pickOrder = (orderId: string) => {
+    const order = supplierOrders.find((o) => o.id === orderId);
+    setForm((f) => ({ ...f, orderId, ...(order && !f.amount ? { amount: String(order.total) } : {}) }));
+  };
+
+  const addInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newInvoiceNumber.trim()) {
-      toast.error('Veuillez renseigner un numéro de facture.');
-      return;
-    }
-    const parsedAmount = Number(newAmount) || 0;
-    if (parsedAmount <= 0) {
-      toast.error('Veuillez renseigner un montant valide.');
-      return;
-    }
-
-    const sup = initialSuppliers.find((s) => s.id === selectedSupplierId) || {
-      id: 'sup-default',
-      name: 'Fournisseur Général',
-    };
-    const created: SupplierInvoice = {
-      id: newInvoiceNumber.trim(),
-      supplierId: sup.id,
-      supplierName: sup.name,
-      date: newDate,
-      dueDate: newDueDate || '30 jours',
-      amount: parsedAmount,
-      status: newStatus,
-      notes: newNotes.trim() || 'Facture enregistrée manuellement.',
-    };
-
-    setInvoices([created, ...invoices]);
-    setIsAddDrawerOpen(false);
-    toast.success(`Facture « ${created.id} » créée avec succès pour ${created.supplierName} !`);
-
-    // Reset du formulaire
-    setNewInvoiceNumber('');
-    setNewAmount('');
-    setNewNotes('');
-  };
-
-  const handleOpenDetails = (inv: SupplierInvoice) => {
-    setSelectedInvoice(inv);
-    setDetailStatus(inv.status);
-    setDetailNotes(inv.notes || '');
-  };
-
-  const handleSaveInvoiceDetails = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedInvoice) return;
-
-    setInvoices((prev) =>
-      prev.map((i) =>
-        i.id === selectedInvoice.id
-          ? { ...i, status: detailStatus, notes: detailNotes }
-          : i
-      )
-    );
-    toast.success(`Facture ${selectedInvoice.id} mise à jour avec succès.`);
-    setSelectedInvoice(null);
-  };
-
-  const handleMarkAsPaid = () => {
-    if (!selectedInvoice) return;
-    setDetailStatus('payee');
-    setInvoices((prev) =>
-      prev.map((i) =>
-        i.id === selectedInvoice.id
-          ? { ...i, status: 'payee', notes: detailNotes || 'Facture acquittée intégralement.' }
-          : i
-      )
-    );
-    toast.success(`Facture ${selectedInvoice.id} marquée comme payée !`);
-    setSelectedInvoice((prev) => (prev ? { ...prev, status: 'payee' } : null));
-  };
-
-  const getStatusBadge = (status: SupplierInvoiceStatus) => {
-    switch (status) {
-      case 'payee':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <CheckCircle2 size={12} /> Payée
-          </span>
-        );
-      case 'a_payer':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-            <Clock size={12} /> À payer
-          </span>
-        );
-      case 'en_retard':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-200">
-            <AlertTriangle size={12} /> En retard
-          </span>
-        );
-      case 'a_verifier':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-50 text-yellow-800 border border-yellow-200">
-            <AlertTriangle size={12} /> À vérifier
-          </span>
-        );
-      case 'contestee':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
-            <XCircle size={12} /> Contestée
-          </span>
-        );
-      default:
-        return null;
+    if (!form.invoiceNumber.trim()) return toast.error('Renseignez le numéro de la facture.');
+    if (!form.supplierId) return toast.error('Choisissez le fournisseur.');
+    if (!(Number(form.amount) > 0)) return toast.error('Renseignez un montant valide.');
+    setSaving(true);
+    try {
+      const created = await createSupplierInvoice({
+        invoiceNumber: form.invoiceNumber.trim(),
+        supplierId: form.supplierId,
+        orderId: form.orderId || null,
+        invoiceDate: form.invoiceDate,
+        dueDate: form.dueDate,
+        amount: Number(form.amount),
+        status: form.status,
+        notes: form.notes.trim() || null,
+      });
+      toast.success(`Facture ${created.invoiceNumber} enregistrée pour ${created.supplierName}.`);
+      setAddOpen(false);
+      setForm((f) => ({ ...f, invoiceNumber: '', orderId: '', amount: '', notes: '' }));
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Enregistrement impossible.');
+    } finally {
+      setSaving(false);
     }
   };
 
-  // Récupérer le fournisseur lié à la facture sélectionnée
-  const currentSupplier = selectedInvoice
-    ? initialSuppliers.find((s) => s.id === selectedInvoice.supplierId)
-    : null;
+  const openDetail = (inv: SupplierInvoice) => {
+    setSelected(inv);
+    setDetailStatus(inv.status === 'en_retard' ? 'a_payer' : inv.status);
+    setDetailNotes(inv.notes ?? '');
+  };
+
+  const saveDetail = async () => {
+    if (!selected) return;
+    setSaving(true);
+    try {
+      await updateSupplierInvoice(selected.id, { status: detailStatus, notes: detailNotes.trim() || null });
+      toast.success(`Facture ${selected.invoiceNumber} mise à jour.`);
+      setSelected(null);
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Mise à jour impossible.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const markPaid = async () => {
+    if (!selected) return;
+    setSaving(true);
+    try {
+      await paySupplierInvoice(selected.id, paymentMethod);
+      toast.success(`Facture ${selected.invoiceNumber} marquée comme payée.`);
+      setSelected(null);
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Paiement impossible.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const allCount = counts ? counts.a_verifier + counts.a_payer + counts.payee + counts.contestee + counts.annulee : 0;
+  const list = invoices ?? [];
 
   return (
     <div className="space-y-6">
-      {/* ── En-tête (Maquette Écran 10) ── */}
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <Link href="/admin/approvisionnements" className="hover:text-foreground flex items-center gap-1 font-medium">
+          <ArrowLeft size={14} /> Commandes fournisseurs
+        </Link>
+      </div>
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#173f22]">
-              Factures fournisseurs
-            </h1>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
-              À venir
-            </span>
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#173f22]">Factures fournisseurs</h1>
+          <p className="text-sm text-muted-foreground mt-1">Suivez vos factures, échéances et règlements fournisseurs.</p>
+        </div>
+        <div className="flex gap-2">
+          <button type="button" onClick={() => void load()} className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-border bg-white text-xs font-semibold hover:bg-muted">
+            <RefreshCw size={14} /> Actualiser
+          </button>
+          <button type="button" onClick={() => setAddOpen(true)} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b5355e] text-white text-sm font-semibold shadow-sm">
+            <Plus size={18} /> Ajouter une facture
+          </button>
+        </div>
+      </div>
+
+      {totals && counts && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="bg-white rounded-2xl border border-border p-4">
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground"><Wallet size={14} /> Reste à payer</span>
+            <strong className="text-xl text-[#c8436e]">{formatFcfa(totals.toPay)}</strong>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Suivez vos factures, échéances et règlements fournisseurs.
-          </p>
+          <div className="bg-white rounded-2xl border border-border p-4">
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground"><AlertTriangle size={14} /> Factures en retard</span>
+            <strong className="text-xl text-red-600">{counts.en_retard}</strong>
+          </div>
+          <div className="bg-white rounded-2xl border border-border p-4">
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground"><CheckCircle2 size={14} /> Déjà réglé</span>
+            <strong className="text-xl text-emerald-700">{formatFcfa(totals.paid)}</strong>
+          </div>
         </div>
+      )}
 
-        <button
-          type="button"
-          disabled
-          aria-disabled="true"
-          title="Module en attente d'implémentation backend"
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] text-white text-sm font-semibold shadow-sm transition-colors w-full sm:w-auto opacity-50 cursor-not-allowed"
-        >
-          <Plus size={18} /> Ajouter une facture (À venir)
-        </button>
-      </div>
-
-      {/* ── Bannière Information Backend ── */}
-      <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 flex items-start gap-3.5 text-amber-900 text-xs">
-        <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-        <div className="space-y-1">
-          <p className="font-semibold text-sm text-amber-950">Module Factures Fournisseurs en attente d&apos;implémentation backend</p>
-          <p className="text-amber-800 leading-relaxed">
-            Les contrats et spécifications REST complètes pour ce module ont été formalisés dans <code className="px-1.5 py-0.5 bg-amber-100/90 rounded text-[11px] font-mono font-medium">docs/endpoints_feedback.md</code>. Aucune facture factice n&apos;est affichée par défaut.
-          </p>
-        </div>
-      </div>
-
-      {/* ── Sous-navigation du Module Approvisionnements ── */}
-      <div className="flex items-center gap-2 border-b border-border pb-3 overflow-x-auto scrollbar-none">
-        <Link
-          href="/admin/approvisionnements"
-          className="px-4 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex items-center gap-2 shrink-0"
-        >
-          <ShoppingBag size={16} />
-          Bons de commande
-        </Link>
-        <span className="px-4 py-2 rounded-lg text-sm font-semibold bg-[#193e23] text-white shadow-xs flex items-center gap-2 shrink-0">
-          <Receipt size={16} />
-          Factures fournisseurs ({invoices.length})
-        </span>
-      </div>
-
-      {/* ── Onglets de Statut avec Compteurs Dynamiques ── */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-border scrollbar-none">
-        <button
-          type="button"
-          onClick={() => setStatusFilter('all')}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 cursor-pointer ${
-            statusFilter === 'all' ? 'bg-[#193e23] text-white' : 'text-muted-foreground hover:bg-muted'
-          }`}
-        >
-          Toutes ({invoices.length})
-        </button>
-        <button
-          type="button"
-          onClick={() => setStatusFilter('a_payer')}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 cursor-pointer ${
-            statusFilter === 'a_payer' ? 'bg-[#193e23] text-white' : 'text-muted-foreground hover:bg-muted'
-          }`}
-        >
-          À payer ({invoices.filter((i) => i.status === 'a_payer').length})
-        </button>
-        <button
-          type="button"
-          onClick={() => setStatusFilter('payee')}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 cursor-pointer ${
-            statusFilter === 'payee' ? 'bg-[#193e23] text-white' : 'text-muted-foreground hover:bg-muted'
-          }`}
-        >
-          Payées ({invoices.filter((i) => i.status === 'payee').length})
-        </button>
-        <button
-          type="button"
-          onClick={() => setStatusFilter('en_retard')}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 cursor-pointer ${
-            statusFilter === 'en_retard' ? 'bg-[#193e23] text-white' : 'text-muted-foreground hover:bg-muted'
-          }`}
-        >
-          En retard ({invoices.filter((i) => i.status === 'en_retard').length})
-        </button>
-        <button
-          type="button"
-          onClick={() => setStatusFilter('contestee')}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 cursor-pointer ${
-            statusFilter === 'contestee' ? 'bg-[#193e23] text-white' : 'text-muted-foreground hover:bg-muted'
-          }`}
-        >
-          Contestées ({invoices.filter((i) => i.status === 'contestee').length})
-        </button>
-      </div>
-
-      {/* ── Recherche & Filtres ── */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white p-3.5 rounded-2xl border border-border shadow-xs">
-        <div className="flex items-center gap-3 flex-1">
-          <Search size={18} className="text-muted-foreground shrink-0" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Rechercher par n° de facture ou nom de fournisseur..."
-            className="w-full text-sm bg-transparent outline-none placeholder:text-muted-foreground"
-          />
-        </div>
-
-        <div className="flex items-center gap-2">
-          <select
-            value={supplierFilter}
-            onChange={(e) => setSupplierFilter(e.target.value)}
-            className="w-full sm:w-auto px-3 py-2 rounded-xl bg-muted/40 border border-border text-xs font-medium outline-none cursor-pointer"
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {FILTERS.map((f) => (
+          <button
+            key={f}
+            type="button"
+            onClick={() => setStatusFilter(f)}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold border shrink-0 ${
+              statusFilter === f ? 'bg-[#193e23] text-white border-[#193e23]' : 'bg-white border-border text-muted-foreground hover:bg-muted'
+            }`}
           >
-            <option value="all">Tous les fournisseurs</option>
-            {initialSuppliers.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
+            {f === 'all' ? 'Toutes' : INVOICE_STATUS_LABELS[f]} ({f === 'all' ? allCount : counts?.[f] ?? 0})
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3 bg-white p-3.5 rounded-2xl border border-border">
+        <label className="flex items-center gap-3 flex-1 bg-muted/30 px-3 py-2 rounded-xl border border-border">
+          <Search size={16} className="text-muted-foreground" />
+          <input
+            type="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="N° de facture ou fournisseur…"
+            aria-label="Rechercher une facture"
+            className="w-full text-xs bg-transparent outline-none"
+          />
+        </label>
+        <select value={supplierFilter} onChange={(e) => setSupplierFilter(e.target.value)} aria-label="Filtrer par fournisseur" className="px-3 py-2 rounded-xl bg-muted/40 border border-border text-xs">
+          <option value="all">Tous les fournisseurs</option>
+          {suppliers.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {loadError && (
+        <div role="alert" className="flex items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-xs text-red-800">
+          <span>{loadError}</span>
+          <button type="button" onClick={() => void load()} className="underline font-semibold">
+            Réessayer
+          </button>
         </div>
-      </div>
+      )}
 
-      {/* ── Liste Mobile (lg:hidden) ── */}
-      <div className="lg:hidden space-y-3">
-        {filteredInvoices.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-border p-8 text-center text-muted-foreground text-sm">
-            Aucune facture ne correspond aux critères sélectionnés.
-          </div>
-        ) : (
-          filteredInvoices.map((inv) => (
-            <div key={inv.id} className="bg-white rounded-2xl border border-border p-4 shadow-xs space-y-3">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <span className="font-mono font-bold text-sm text-[#173f22] block">
-                    {inv.id}
-                  </span>
-                  <span className="font-semibold text-foreground text-xs">
-                    {inv.supplierName}
-                  </span>
-                </div>
-                <div className="shrink-0">
-                  {getStatusBadge(inv.status)}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 bg-[#faf8f5] p-3 rounded-xl border border-border/60 text-xs">
-                <div>
-                  <span className="text-muted-foreground block text-[11px]">Émission</span>
-                  <span className="text-foreground font-medium">{inv.date}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground block text-[11px]">Échéance</span>
-                  <span className="text-foreground font-medium">{inv.dueDate}</span>
-                </div>
-                <div className="col-span-2 pt-2 border-t border-border/40 flex items-center justify-between">
-                  <span className="text-muted-foreground text-[11px]">Montant TTC</span>
-                  <span className="font-bold text-[#c8436e] text-sm">
-                    {inv.amount.toLocaleString('fr-FR')} FCFA
-                  </span>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => handleOpenDetails(inv)}
-                className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl border border-border text-xs font-semibold text-[#173f22] bg-white hover:bg-muted/60 transition-all cursor-pointer shadow-2xs"
-              >
-                <Eye size={14} /> Consulter la facture & détails
-              </button>
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* ── Tableau des Factures Desktop (hidden lg:block) ── */}
-      <div className="hidden lg:block bg-white rounded-2xl border border-border overflow-hidden shadow-xs">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+      {invoices === null && !loadError ? (
+        <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" /> Chargement des factures…
+        </div>
+      ) : list.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-border p-10 text-center text-xs text-muted-foreground">
+          <Receipt className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+          Aucune facture{statusFilter !== 'all' || search || supplierFilter !== 'all' ? ' pour ces critères' : ' enregistrée'}.
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-border overflow-x-auto">
+          <table className="w-full text-left text-sm min-w-[720px]">
             <thead className="bg-[#faf8f5] text-xs font-semibold text-[#526655] border-b border-border">
               <tr>
-                <th className="py-3.5 px-5">N° facture</th>
+                <th className="py-3.5 px-5">Facture</th>
                 <th className="py-3.5 px-5">Fournisseur</th>
-                <th className="py-3.5 px-5">Date d&apos;émission</th>
+                <th className="py-3.5 px-5">Émise le</th>
                 <th className="py-3.5 px-5">Échéance</th>
-                <th className="py-3.5 px-5 text-right">Montant TTC</th>
+                <th className="py-3.5 px-5 text-right">Montant</th>
                 <th className="py-3.5 px-5">Statut</th>
-                <th className="py-3.5 px-5 text-right">Actions</th>
+                <th className="py-3.5 px-5" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-border text-xs sm:text-sm">
-              {filteredInvoices.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-10 text-center text-muted-foreground">
-                    Aucune facture ne correspond aux critères sélectionnés.
+            <tbody className="divide-y divide-border text-xs">
+              {list.map((inv) => (
+                <tr key={inv.id} className="hover:bg-muted/30">
+                  <td className="py-3.5 px-5 font-mono font-semibold">
+                    {inv.invoiceNumber}
+                    {inv.orderNumber && <span className="block font-sans font-normal text-[11px] text-muted-foreground">Commande {inv.orderNumber}</span>}
+                  </td>
+                  <td className="py-3.5 px-5">{inv.supplierName}</td>
+                  <td className="py-3.5 px-5">{formatDay(inv.date)}</td>
+                  <td className={`py-3.5 px-5 ${inv.status === 'en_retard' ? 'text-red-600 font-semibold' : ''}`}>{formatDay(inv.dueDate)}</td>
+                  <td className="py-3.5 px-5 text-right font-semibold">{formatFcfa(inv.amount)}</td>
+                  <td className="py-3.5 px-5">
+                    <span className={`px-2 py-0.5 rounded-full border text-[11px] font-semibold ${INVOICE_STATUS_STYLES[inv.status]}`}>{INVOICE_STATUS_LABELS[inv.status]}</span>
+                  </td>
+                  <td className="py-3.5 px-5 text-right">
+                    <button type="button" onClick={() => openDetail(inv)} className="px-3 py-1.5 rounded-lg border border-border font-semibold hover:bg-muted">
+                      Gérer
+                    </button>
                   </td>
                 </tr>
-              ) : (
-                filteredInvoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-muted/40 transition-colors">
-                    <td className="py-4 px-5 font-mono font-bold text-[#173f22]">
-                      {inv.id}
-                    </td>
-                    <td className="py-4 px-5 font-semibold text-foreground">
-                      {inv.supplierName}
-                    </td>
-                    <td className="py-4 px-5 text-muted-foreground">
-                      {inv.date}
-                    </td>
-                    <td className="py-4 px-5 text-muted-foreground">
-                      {inv.dueDate}
-                    </td>
-                    <td className="py-4 px-5 text-right font-bold text-[#c8436e]">
-                      {inv.amount.toLocaleString('fr-FR')} FCFA
-                    </td>
-                    <td className="py-4 px-5">
-                      {getStatusBadge(inv.status)}
-                    </td>
-                    <td className="py-4 px-5 text-right">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenDetails(inv)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-semibold text-[#173f22] bg-white hover:bg-muted/60 hover:border-[#173f22]/30 transition-all cursor-pointer shadow-2xs"
-                      >
-                        <Eye size={13} />
-                        Détails
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
         </div>
-      </div>
+      )}
 
-      {/* ── Side Drawer 1 : Ajouter une facture ── */}
+      {list.length > 0 && (
+        <AdminPagination
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
+          itemLabel="factures"
+        />
+      )}
+
       <AdminDrawer
-        isOpen={isAddDrawerOpen}
-        onClose={() => setIsAddDrawerOpen(false)}
-        size="lg"
+        isOpen={addOpen}
+        onClose={() => setAddOpen(false)}
         title="Ajouter une facture fournisseur"
-        subtitle="Enregistrez une nouvelle facture reçue d'un partenaire"
-        icon={<Receipt size={22} />}
+        size="lg"
         footer={
-          <>
-            <button
-              type="button"
-              onClick={() => setIsAddDrawerOpen(false)}
-              className="px-4 py-2.5 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
-            >
+          <div className="flex justify-end gap-2.5 w-full">
+            <button type="button" onClick={() => setAddOpen(false)} className="px-4 py-2.5 rounded-xl border border-border font-semibold text-xs">
               Annuler
             </button>
             <button
               type="submit"
               form="add-invoice-form"
-              disabled
-              aria-disabled="true"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] text-white text-xs font-semibold shadow-sm transition-colors opacity-50 cursor-not-allowed"
+              disabled={saving}
+              className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-[#c8436e] text-white font-semibold text-xs disabled:opacity-60"
             >
-              <Plus size={16} /> Enregistrer la facture (À venir)
+              {saving && <Loader2 size={14} className="animate-spin" />} Enregistrer la facture
             </button>
-          </>
+          </div>
         }
       >
-        <form id="add-invoice-form" onSubmit={handleAddInvoice} className="space-y-4 text-xs">
+        <form id="add-invoice-form" onSubmit={addInvoice} className="space-y-4 text-xs" noValidate>
+          <label className="block">
+            <span className="block font-semibold mb-1">Numéro de la facture *</span>
+            <input value={form.invoiceNumber} onChange={(e) => setForm((f) => ({ ...f, invoiceNumber: e.target.value }))} placeholder="Ex : F-2026-118" className={inputClass} />
+          </label>
+          <label className="block">
+            <span className="block font-semibold mb-1">Fournisseur *</span>
+            <select value={form.supplierId} onChange={(e) => pickSupplier(e.target.value)} className={inputClass}>
+              <option value="">Choisir…</option>
+              {suppliers.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="block font-semibold mb-1">Commande liée (facultatif)</span>
+            <select value={form.orderId} onChange={(e) => pickOrder(e.target.value)} disabled={!form.supplierId} className={inputClass}>
+              <option value="">Aucune</option>
+              {supplierOrders.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.orderNumber} — {formatFcfa(o.total)}
+                </option>
+              ))}
+            </select>
+          </label>
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-foreground mb-1">
-                N° de facture <span className="text-[#c8436e]">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={newInvoiceNumber}
-                onChange={(e) => setNewInvoiceNumber(e.target.value)}
-                placeholder="Ex : FAC-2024-0087"
-                className="w-full text-xs font-mono p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-forest-green focus:ring-1 focus:ring-forest-green outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-foreground mb-1">
-                Fournisseur <span className="text-[#c8436e]">*</span>
-              </label>
-              <select
-                value={selectedSupplierId}
-                onChange={(e) => setSelectedSupplierId(e.target.value)}
-                className="w-full text-xs p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-forest-green focus:ring-1 focus:ring-forest-green outline-none cursor-pointer"
-              >
-                {initialSuppliers.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
+            <label className="block">
+              <span className="block font-semibold mb-1">Date de facture *</span>
+              <input type="date" value={form.invoiceDate} onChange={(e) => setForm((f) => ({ ...f, invoiceDate: e.target.value }))} className={inputClass} />
+            </label>
+            <label className="block">
+              <span className="block font-semibold mb-1">Échéance *</span>
+              <input type="date" value={form.dueDate} onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))} className={inputClass} />
+            </label>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block">
+              <span className="block font-semibold mb-1">Montant TTC (FCFA) *</span>
+              <input type="number" min={0} value={form.amount} onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))} className={inputClass} />
+            </label>
+            <label className="block">
+              <span className="block font-semibold mb-1">Statut</span>
+              <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as typeof f.status }))} className={inputClass}>
+                {EDITABLE_STATUSES.filter((s) => s !== 'annulee').map((s) => (
+                  <option key={s} value={s}>
+                    {INVOICE_STATUS_LABELS[s]}
                   </option>
                 ))}
               </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-foreground mb-1">
-                Date d&apos;émission <span className="text-[#c8436e]">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={newDate}
-                onChange={(e) => setNewDate(e.target.value)}
-                placeholder="Ex : 14 mars 2024"
-                className="w-full text-xs p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-forest-green focus:ring-1 focus:ring-forest-green outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-foreground mb-1">
-                Date d&apos;échéance <span className="text-[#c8436e]">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={newDueDate}
-                onChange={(e) => setNewDueDate(e.target.value)}
-                placeholder="Ex : 14 avril 2024"
-                className="w-full text-xs p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-forest-green focus:ring-1 focus:ring-forest-green outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-foreground mb-1">
-                Montant TTC (FCFA) <span className="text-[#c8436e]">*</span>
-              </label>
-              <input
-                type="number"
-                required
-                min={0}
-                value={newAmount}
-                onChange={(e) => setNewAmount(e.target.value)}
-                placeholder="Ex : 125000"
-                className="w-full text-xs font-semibold p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-forest-green focus:ring-1 focus:ring-forest-green outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-foreground mb-1">
-                Statut initial
-              </label>
-              <select
-                value={newStatus}
-                onChange={(e) => setNewStatus(e.target.value as SupplierInvoiceStatus)}
-                className="w-full text-xs p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-forest-green focus:ring-1 focus:ring-forest-green outline-none cursor-pointer"
-              >
-                <option value="a_payer">À payer</option>
-                <option value="payee">Payée</option>
-                <option value="en_retard">En retard</option>
-                <option value="a_verifier">À vérifier</option>
-                <option value="contestee">Contestée</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-foreground mb-1">
-              Notes ou instructions de règlement
             </label>
-            <textarea
-              rows={3}
-              value={newNotes}
-              onChange={(e) => setNewNotes(e.target.value)}
-              placeholder="Précisez les conditions de paiement (ex : virement Wave Pro, chèque, à réception)..."
-              className="w-full text-xs p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-forest-green focus:ring-1 focus:ring-forest-green outline-none resize-none leading-relaxed"
-            />
           </div>
+          <label className="block">
+            <span className="block font-semibold mb-1">Notes</span>
+            <textarea rows={2} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} className={inputClass} />
+          </label>
         </form>
       </AdminDrawer>
 
-      {/* ── Side Drawer 2 : Détails de la facture ── */}
-      {selectedInvoice && (
+      {selected && (
         <AdminDrawer
-          isOpen={!!selectedInvoice}
-          onClose={() => setSelectedInvoice(null)}
-          size="xl"
-          title={`Facture ${selectedInvoice.id}`}
-          subtitle={`${selectedInvoice.supplierName} · Émise le ${selectedInvoice.date}`}
-          icon={<ReceiptText size={22} />}
-          headerExtra={getStatusBadge(detailStatus)}
+          isOpen
+          onClose={() => setSelected(null)}
+          title={`Facture ${selected.invoiceNumber}`}
+          subtitle={`${selected.supplierName} · émise le ${formatDay(selected.date)} · échéance ${formatDay(selected.dueDate)}`}
+          size="md"
           footer={
-            <>
-              <button
-                type="button"
-                onClick={() => setSelectedInvoice(null)}
-                className="px-4 py-2.5 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
-              >
-                Fermer
+            <div className="flex flex-wrap justify-end gap-2.5 w-full">
+              <button type="button" onClick={() => void saveDetail()} disabled={saving} className="px-4 py-2.5 rounded-xl border border-border font-semibold text-xs disabled:opacity-60">
+                Enregistrer
               </button>
-              <button
-                type="submit"
-                form="invoice-details-form"
-                disabled
-                aria-disabled="true"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#173f22] text-white text-xs font-semibold shadow-xs transition-colors opacity-50 cursor-not-allowed"
-              >
-                <Save size={16} /> Enregistrer les modifications (À venir)
-              </button>
-            </>
-          }
-        >
-          <form id="invoice-details-form" onSubmit={handleSaveInvoiceDetails} className="space-y-5 text-xs">
-            {/* Bloc Montant & Actions rapides de paiement */}
-            <div className="p-4 rounded-2xl bg-[#faf8f5] border border-border space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">Montant total dû :</span>
-                <span className="text-xl font-bold text-[#c8436e]">
-                  {selectedInvoice.amount.toLocaleString('fr-FR')} FCFA
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 text-xs pt-2 border-t border-border/60">
-                <div>
-                  <span className="text-muted-foreground block text-[11px]">Date d&apos;émission</span>
-                  <span className="font-semibold text-foreground">{selectedInvoice.date}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground block text-[11px]">Date d&apos;échéance</span>
-                  <span className="font-semibold text-foreground">{selectedInvoice.dueDate}</span>
-                </div>
-              </div>
-
-              {detailStatus !== 'payee' && (
+              {selected.status !== 'payee' && selected.status !== 'annulee' && (
                 <button
                   type="button"
-                  disabled
-                  aria-disabled="true"
-                  className="w-full mt-2 py-2 px-3 rounded-xl bg-emerald-600 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors opacity-50 cursor-not-allowed shadow-2xs"
+                  onClick={() => void markPaid()}
+                  disabled={saving}
+                  className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#193e23] text-white font-semibold text-xs disabled:opacity-60"
                 >
-                  <Check size={14} /> Marquer la facture comme payée (À venir)
+                  <CheckCircle2 size={14} /> Marquer comme payée
                 </button>
               )}
             </div>
-
-            {/* Bloc Modification du Statut */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-foreground">
-                Statut de la facture
-              </label>
-              <select
-                value={detailStatus}
-                onChange={(e) => setDetailStatus(e.target.value as SupplierInvoiceStatus)}
-                className="w-full text-xs p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-forest-green focus:ring-1 focus:ring-forest-green outline-none cursor-pointer"
-              >
-                <option value="a_payer">À payer (en attente de règlement)</option>
-                <option value="payee">Payée (acquittée)</option>
-                <option value="en_retard">En retard (échéance dépassée)</option>
-                <option value="a_verifier">À vérifier (incohérence / litige mineur)</option>
-                <option value="contestee">Contestée (marchandise non reçue ou prix erroné)</option>
-              </select>
-            </div>
-
-            {/* Bloc Informations Fournisseur */}
-            <div className="p-4 rounded-2xl border border-border space-y-2.5">
-              <h4 className="text-xs font-bold text-[#173f22] flex items-center gap-1.5">
-                <Building2 size={14} className="text-[#c8436e]" />
-                Partenaire fournisseur
-              </h4>
-              <div className="text-xs space-y-1 text-muted-foreground">
-                <p className="font-semibold text-foreground">{selectedInvoice.supplierName}</p>
-                {currentSupplier && (
-                  <>
-                    <div className="flex items-center gap-2 pt-1 text-xs">
-                      <User size={13} className="text-muted-foreground shrink-0" />
-                      <span>{currentSupplier.contactPerson}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs">
-                      <Phone size={13} className="text-muted-foreground shrink-0" />
-                      <span>{currentSupplier.phone}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs">
-                      <Mail size={13} className="text-muted-foreground shrink-0" />
-                      <span>{currentSupplier.email}</span>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {selectedInvoice.orderId && (
-                <div className="pt-2 border-t border-border/60 flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Commande associée :</span>
-                  <Link
-                    href={`/admin/approvisionnements/reception/${selectedInvoice.orderId}`}
-                    className="font-mono font-bold text-forest-green hover:underline flex items-center gap-1"
-                  >
-                    {selectedInvoice.orderId}
-                  </Link>
-                </div>
+          }
+        >
+          <div className="space-y-4 text-xs">
+            <div className="rounded-xl bg-[#faf8f5] border border-border p-4">
+              <span className="text-muted-foreground">Montant</span>
+              <strong className="block text-xl text-[#173f22]">{formatFcfa(selected.amount)}</strong>
+              {selected.paidAt && (
+                <span className="block mt-1 text-emerald-700">
+                  Payée le {formatDay(selected.paidAt)}
+                  {selected.paymentMethod ? ` (${selected.paymentMethod})` : ''}
+                </span>
               )}
             </div>
-
-            {/* Bloc Notes & Modalités de règlement */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-foreground">
-                Notes internes &amp; Références de paiement
+            <label className="block">
+              <span className="block font-semibold mb-1">Statut</span>
+              <select value={detailStatus} onChange={(e) => setDetailStatus(e.target.value as typeof detailStatus)} className={inputClass}>
+                {EDITABLE_STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {INVOICE_STATUS_LABELS[s]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {selected.status !== 'payee' && (
+              <label className="block">
+                <span className="block font-semibold mb-1">Moyen de règlement (pour « Marquer comme payée »)</span>
+                <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className={inputClass}>
+                  {['Virement', 'Wave', 'Orange Money', 'Chèque', 'Espèces'].map((m) => (
+                    <option key={m}>{m}</option>
+                  ))}
+                </select>
               </label>
-              <textarea
-                rows={3}
-                value={detailNotes}
-                onChange={(e) => setDetailNotes(e.target.value)}
-                placeholder="Ajoutez des détails sur la transaction (ex: Réf virement Wave #WV-98234, chèque remis en main propre...)"
-                className="w-full text-xs p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-forest-green focus:ring-1 focus:ring-forest-green outline-none resize-none leading-relaxed"
-              />
-            </div>
-
-            {/* Bloc Téléchargement / Export */}
-            <div className="p-3.5 rounded-xl bg-muted/40 border border-border flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <FileText size={18} className="text-[#173f22]" />
-                <div>
-                  <p className="text-xs font-semibold text-foreground">Bordereau comptable</p>
-                  <p className="text-[11px] text-muted-foreground">Format PDF certifié Décofleur Plus</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => toast.info(`Téléchargement de la facture ${selectedInvoice.id} en cours...`)}
-                className="px-3 py-1.5 rounded-lg border border-border bg-white hover:bg-muted text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <Download size={13} /> PDF
-              </button>
-            </div>
-          </form>
+            )}
+            <label className="block">
+              <span className="block font-semibold mb-1">Notes</span>
+              <textarea rows={3} value={detailNotes} onChange={(e) => setDetailNotes(e.target.value)} className={inputClass} />
+            </label>
+          </div>
         </AdminDrawer>
       )}
     </div>

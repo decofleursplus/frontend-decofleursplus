@@ -6,12 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
   CircleAlert,
   RotateCw,
-  ExternalLink,
   Loader2,
-  Calendar,
-  MapPin,
-  CreditCard,
-  ShoppingBag,
   ArrowLeft,
   XCircle,
 } from 'lucide-react';
@@ -20,16 +15,18 @@ import { SiteFooter } from '@/components/site-footer';
 import { getMyOrder, cancelMyOrder, CustomerOrder } from '@/lib/api/orders';
 import { payOrder } from '@/lib/api/payment';
 import { useAuth } from '@/components/auth-provider';
-import { formatPrice } from '@/lib/products';
+import { formatPrice, PRODUCT_PLACEHOLDER_IMAGE } from '@/lib/products';
+import { buildLineId, useCart } from '@/components/cart-provider';
 
 function PaymentFailedContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderNumber = searchParams.get('orderNumber');
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { replace } = useCart();
 
   const [order, setOrder] = useState<CustomerOrder | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(orderNumber));
   const [retrying, setRetrying] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [actionError, setActionError] = useState('');
@@ -47,14 +44,10 @@ function PaymentFailedContent() {
 
   useEffect(() => {
     if (orderNumber && isAuthenticated) {
-      setLoading(true);
       getMyOrder(orderNumber)
-        .then((data) => {
-          if (data) setOrder(data);
-        })
+        .then(setOrder)
+        .catch((err) => setActionError(err instanceof Error ? err.message : 'Impossible de charger la commande.'))
         .finally(() => setLoading(false));
-    } else if (!orderNumber) {
-      setLoading(false);
     }
   }, [orderNumber, isAuthenticated]);
 
@@ -62,17 +55,17 @@ function PaymentFailedContent() {
     if (!order) return;
     setRetrying(true);
     setActionError('');
-    const res = await payOrder(order.orderNumber);
-    setRetrying(false);
-
-    if (res.success && res.data?.checkoutUrl) {
-      window.location.href = res.data.checkoutUrl;
-    } else {
-      setActionError(
-        res.error ||
-          'Impossible de générer une nouvelle session NabooPay. Veuillez contacter notre assistance.'
-      );
+    try {
+      const session = await payOrder(order.orderNumber);
+      if (session.checkoutUrl) {
+        window.location.href = session.checkoutUrl;
+        return;
+      }
+      setActionError('Le service de paiement n’a pas renvoyé de lien. Réessayez dans un instant.');
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Impossible de relancer le paiement.');
     }
+    setRetrying(false);
   }
 
   async function handleCancelOrder() {
@@ -87,18 +80,31 @@ function PaymentFailedContent() {
 
     setCancelling(true);
     setActionError('');
-    const ok = await cancelMyOrder(
-      order.orderNumber,
-      'Annulation suite à paiement non abouti'
-    );
-    setCancelling(false);
-
-    if (ok) {
-      router.push('/commande');
-    } else {
-      setActionError(
-        'Impossible d’annuler cette commande. Veuillez contacter la boutique.'
+    try {
+      await cancelMyOrder(order.orderNumber, 'Annulation suite à paiement non abouti');
+      // Les articles sont remis dans le panier pour pouvoir recommencer
+      replace(
+        order.items
+          .filter((it) => it.variantId)
+          .map((it) => ({
+            lineId: buildLineId(it.variantId!, { giftWrap: it.giftWrap, cardMessage: it.cardMessage ?? '' }),
+            productId: it.productId,
+            slug: '',
+            name: it.productName,
+            image: it.image || PRODUCT_PLACEHOLDER_IMAGE,
+            variantId: it.variantId!,
+            variantName: it.variantName ?? '',
+            unitPrice: it.unitPrice,
+            quantity: it.quantity,
+            maxQuantity: 100,
+            giftWrap: it.giftWrap,
+            cardMessage: it.cardMessage ?? '',
+          })),
       );
+      router.push('/panier');
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Impossible d’annuler cette commande.');
+      setCancelling(false);
     }
   }
 
@@ -143,7 +149,7 @@ function PaymentFailedContent() {
 
           <p className="text-sm text-neutral-600 mb-4 leading-relaxed">
             La transaction auprès de votre opérateur (
-            <strong>{paymentLabels[order.paymentMethod] || 'NabooPay'}</strong>) n’a pas été finalisée ou a été annulée. Rassurez-vous, votre commande est réservée afin de vous éviter de refaire votre panier.
+            <strong>{paymentLabels[order.paymentMethod] || 'NabooPay'}</strong>) n’a pas été finalisée ou a été annulée. Votre commande reste enregistrée : vous pouvez relancer le paiement, ou l’annuler pour retrouver vos articles dans le panier.
           </p>
 
           {actionError && (

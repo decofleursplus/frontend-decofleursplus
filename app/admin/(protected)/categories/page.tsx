@@ -48,6 +48,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { SubcategoriesDialog } from '@/components/admin/subcategories-dialog';
 
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<AdminCategory[]>([]);
@@ -74,8 +75,15 @@ export default function AdminCategoriesPage() {
   }
 
   useEffect(() => {
-    loadCategories();
+    getAdminCategories()
+      .then(setCategories)
+      .catch((err: unknown) => toast.error(err instanceof Error ? err.message : 'Erreur lors du chargement des catégories'))
+      .finally(() => setLoading(false));
   }, []);
+
+  /** Recharge après une modification (compteurs et sous-catégories à jour). */
+  const reloadCategories = () => getAdminCategories().then(setCategories);
+  const [subcategoriesFor, setSubcategoriesFor] = useState<AdminCategory | null>(null);
 
   // Create / Edit modal state
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
@@ -133,23 +141,23 @@ export default function AdminCategoriesPage() {
     try {
       if (editingCategory) {
         // Update API
-        const updated = await updateAdminCategory(editingCategory.id, {
+        await updateAdminCategory(editingCategory.id, {
           name: formName.trim(),
           description: formDescription.trim(),
-          imageUrl: formImage.trim() || undefined,
+          imageUrl: formImage.trim() || null,
+          isActive: formStatus === 'actif',
         });
-        setCategories((prev) =>
-          prev.map((cat) => (cat.id === editingCategory.id ? { ...cat, ...updated, status: formStatus } : cat))
-        );
+        await reloadCategories();
         toast.success('Catégorie mise à jour avec succès');
       } else {
         // Create API
-        const created = await createAdminCategory({
+        await createAdminCategory({
           name: formName.trim(),
           description: formDescription.trim(),
-          imageUrl: formImage.trim() || undefined,
+          imageUrl: formImage.trim() || null,
+          isActive: formStatus === 'actif',
         });
-        setCategories((prev) => [{ ...created, status: formStatus }, ...prev]);
+        await reloadCategories();
         toast.success('Catégorie créée avec succès');
       }
       setIsFormDialogOpen(false);
@@ -171,13 +179,16 @@ export default function AdminCategoriesPage() {
 
   // Toggle status
   const handleToggleStatus = async (category: AdminCategory) => {
-    const newStatus = category.status === 'actif' ? 'inactif' : 'actif';
-    setCategories((prev) =>
-      prev.map((cat) => (cat.id === category.id ? { ...cat, status: newStatus } : cat))
-    );
-    toast.success(
-      `Statut mis à jour : "${category.name}" est désormais ${newStatus === 'actif' ? 'active' : 'inactive'}.`
-    );
+    const activate = category.status !== 'actif';
+    try {
+      await updateAdminCategory(category.id, { isActive: activate });
+      await reloadCategories();
+      toast.success(
+        activate ? `« ${category.name} » est de nouveau visible en boutique.` : `« ${category.name} » et ses produits sont masqués de la boutique.`,
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Changement de statut impossible.');
+    }
   };
 
   // Confirm delete
@@ -186,7 +197,7 @@ export default function AdminCategoriesPage() {
 
     try {
       await deleteAdminCategory(categoryToDelete.id);
-      setCategories((prev) => prev.filter((cat) => cat.id !== categoryToDelete.id));
+      await reloadCategories();
       toast.success(`La catégorie "${categoryToDelete.name}" a été supprimée.`);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Impossible de supprimer la catégorie.');
@@ -340,7 +351,7 @@ export default function AdminCategoriesPage() {
                 </TableCell>
                 <TableCell className="text-center">
                   <Link
-                    href={`/admin/produits?categorie=${encodeURIComponent(category.name)}`}
+                    href={`/admin/produits?categorie=${encodeURIComponent(category.slug ?? '')}`}
                     className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#faf8f4] text-[#1e2a1f] border border-[#e7e4dd] hover:bg-[#edf8ef] hover:text-[#24582d] hover:border-[#b0c8a8] transition-colors"
                     title={`Voir les produits de la catégorie ${category.name}`}
                   >
@@ -385,12 +396,19 @@ export default function AdminCategoriesPage() {
                           className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef] transition-colors whitespace-nowrap"
                           render={
                             <Link
-                              href={`/admin/produits?categorie=${encodeURIComponent(category.name)}`}
+                              href={`/admin/produits?categorie=${encodeURIComponent(category.slug ?? '')}`}
                             />
                           }
                         >
                           <ExternalLink className="mr-2.5 h-4 w-4 text-gray-500" />
                           Voir les produits
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef] transition-colors whitespace-nowrap"
+                          onClick={() => setSubcategoriesFor(category)}
+                        >
+                          <FolderTree className="mr-2.5 h-4 w-4 text-gray-500" />
+                          Sous-catégories ({category.subCategories?.length ?? 0})
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef] transition-colors whitespace-nowrap"
@@ -529,7 +547,7 @@ export default function AdminCategoriesPage() {
             {/* Metrics & Actions */}
             <div className="flex items-center justify-between gap-2 pt-1 border-t border-[#f0eee8]">
               <Link
-                href={`/admin/produits?categorie=${encodeURIComponent(category.name)}`}
+                href={`/admin/produits?categorie=${encodeURIComponent(category.slug ?? '')}`}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#edf8ef] text-[#24582d] border border-[#b0c8a8]/40 hover:bg-[#d8eedb] transition-colors"
               >
                 <PackageCheck className="h-3.5 w-3.5" />
@@ -697,9 +715,11 @@ export default function AdminCategoriesPage() {
               <Button
                 type="submit"
                 variant="cta"
-                className="w-full sm:w-auto bg-[#c1647a] hover:bg-[#a9576a] !text-white font-medium"
+                disabled={saving}
+                className="w-full sm:w-auto bg-[#c1647a] hover:bg-[#a9576a] !text-white font-medium gap-2"
               >
-                {editingCategory ? 'Enregistrer les modifications' : 'Créer la catégorie'}
+                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                {saving ? 'Enregistrement…' : editingCategory ? 'Enregistrer les modifications' : 'Créer la catégorie'}
               </Button>
             </DialogFooter>
           </form>
@@ -720,17 +740,16 @@ export default function AdminCategoriesPage() {
               </DialogTitle>
             </div>
             <DialogDescription className="text-sm text-gray-600 pt-2 space-y-3">
-              <p>
+              <span className="block">
                 Êtes-vous certain de vouloir supprimer la catégorie{' '}
                 <strong className="text-gray-900">« {categoryToDelete?.name} »</strong> ? Cette action est irréversible.
-              </p>
-              {categoryToDelete && categoryToDelete.productCount > 0 && (
-                <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800">
-                  <span className="font-semibold block mb-0.5">⚠️ Impact sur les produits :</span>
-                  Cette catégorie regroupe actuellement{' '}
-                  <strong>{categoryToDelete.productCount} produit(s)</strong>. Si vous confirmez,
-                  ces articles resteront dans le catalogue mais ne seront plus classés dans cette catégorie.
-                </div>
+              </span>
+              {categoryToDelete && (categoryToDelete.totalProductCount ?? categoryToDelete.productCount) > 0 && (
+                <span className="block p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800">
+                  <span className="font-semibold block mb-0.5">Catégorie non vide</span>
+                  Elle contient <strong>{categoryToDelete.totalProductCount ?? categoryToDelete.productCount} produit(s)</strong> (masqués compris) : la
+                  suppression sera refusée tant qu’ils n’auront pas été déplacés vers une autre catégorie. Vous pouvez plutôt la désactiver.
+                </span>
               )}
             </DialogDescription>
           </DialogHeader>
@@ -756,6 +775,13 @@ export default function AdminCategoriesPage() {
         </DialogContent>
       </Dialog>
 
+      {subcategoriesFor && (
+        <SubcategoriesDialog
+          category={categories.find((c) => c.id === subcategoriesFor.id) ?? subcategoriesFor}
+          onClose={() => setSubcategoriesFor(null)}
+          onChanged={reloadCategories}
+        />
+      )}
     </div>
   );
 }

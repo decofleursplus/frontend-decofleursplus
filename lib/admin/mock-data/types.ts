@@ -8,7 +8,8 @@ export type OrderStatus =
   | 'annulee'
   | 'remboursee';
 
-export type ProductStatus = 'actif' | 'inactif' | 'rupture';
+/** Statut catalogue d'un produit (le niveau de stock est une information distincte). */
+export type ProductStatus = 'ACTIVE' | 'PROMO' | 'ON_QUOTE' | 'HIDDEN';
 
 export type CustomerSegment = 'particulier' | 'entreprise' | 'vip';
 
@@ -92,6 +93,7 @@ export type AdminCustomer = {
   loyaltyTier?: string;
   loyaltyPoints?: number;
   notes?: string;
+  internalRating?: number;
   recentOrders?: AdminOrder[];
 };
 
@@ -100,9 +102,13 @@ export type AdminCategory = {
   name: string;
   slug?: string;
   description: string;
+  /** Produits visibles en boutique */
   productCount: number;
+  /** Tous les produits (masqués compris) : bloque la suppression */
+  totalProductCount?: number;
   status: 'actif' | 'inactif';
   imageUrl?: string;
+  subCategories?: { id: string; name: string; slug: string; description?: string | null }[];
 };
 
 export type KpiData = {
@@ -151,14 +157,21 @@ export type DeliveryTrackingStep = {
 
 export type AdminDelivery = {
   id: string;
+  /** Numéro lisible (LIV-2026-0001) */
+  deliveryNumber: string;
   orderId: string;
   orderRef: string;
+  /** Statut de la commande (READY requis pour démarrer la course) */
+  orderStatus: string;
   customerId: string;
   customerName: string;
   customerPhone: string;
   deliveryAddress: string;
-  deliveryZone: 'Saly' | 'Mbour' | 'Somone' | 'Ngaparou' | 'Dakar' | 'Autre';
+  /** Nom de la zone de livraison (back-office), vide si aucune */
+  deliveryZone: string;
   deliveryMode: 'Livraison express' | 'Livraison standard' | 'Retrait boutique';
+  failureReason?: string;
+  events?: { id: string; type: string; note: string | null; createdAt: string; authorName: string | null }[];
   driverId?: string;
   driverName?: string;
   driverPhone?: string;
@@ -203,6 +216,7 @@ export type AdminPromotion = {
   name: string;
   targetType: PromotionTargetType;
   targetNames: string[];
+  targetIds?: string[];
   discountPercentage: number;
   startDate: string;
   endDate: string;
@@ -212,7 +226,7 @@ export type AdminPromotion = {
   revenueGenerated: number;
 };
 
-export type CampaignChannel = 'whatsapp' | 'sms' | 'email';
+export type CampaignChannel = 'whatsapp' | 'email';
 export type CampaignStatus = 'envoyee' | 'programmee' | 'brouillon';
 
 export type AdminCampaign = {
@@ -251,6 +265,7 @@ export type AdminAbandonedCart = {
   lastReminderAt?: string;
   recoveryChannel?: 'whatsapp' | 'email';
   recoveredAt?: string;
+  recoveryCouponCode?: string | null;
 };
 
 export type CartRecoverySettings = {
@@ -260,6 +275,21 @@ export type CartRecoverySettings = {
   includeDiscount: boolean;
   discountCode: string;
   discountValue: string;
+  /** Dernier passage de la relance automatique (lecture seule) */
+  lastAutoRunAt?: string | null;
+  /** Emails envoyés lors de ce passage (lecture seule) */
+  lastAutoRunSent?: number;
+};
+
+/** Bilan d'un passage de la relance automatique. */
+export type CartReminderRunResult = {
+  ranAt: string;
+  enabled: boolean;
+  sentFirst: number;
+  sentSecond: number;
+  skipped: number;
+  failed: number;
+  couponCode: string | null;
 };
 
 /* ── Blog & Contenu Types ────────────────────────────── */
@@ -277,6 +307,7 @@ export type BlogArticle = {
   authorName: string;
   authorAvatar?: string;
   authorRole?: string;
+  authorBio?: string;
   coverImage: string;
   coverImageCaption?: string;
   excerpt: string;
@@ -381,7 +412,7 @@ export type TopSellingProduct = {
   quantitySold: number;
   revenue: number;
   averagePrice: number;
-  marginRate: number;
+  marginRate: number | null;
 };
 
 export type PaymentMethodBreakdown = {
@@ -521,7 +552,6 @@ export type DeliveryZoneSettings = {
 
 export type NotificationSettings = {
   whatsappEnabled: boolean;
-  smsEnabled: boolean;
   emailEnabled: boolean;
   onNewOrder: boolean;
   onDriverAssigned: boolean;
@@ -559,6 +589,7 @@ export type Supplier = {
   notes?: string;
   totalOrders?: number;
   totalSpent?: number;
+  createdAt?: string;
 };
 
 export type SupplierOrderStatus =
@@ -572,6 +603,8 @@ export type SupplierOrderStatus =
 
 export type SupplierOrderItem = {
   id: string;
+  /** Variante du catalogue : la quantité reçue entre en stock */
+  variantId?: string | null;
   productId?: string;
   name: string;
   orderedQty: number;
@@ -582,7 +615,9 @@ export type SupplierOrderItem = {
 };
 
 export type SupplierOrder = {
-  id: string; // CF-2024-0012
+  id: string;
+  /** Numéro lisible : CF-2026-0001 */
+  orderNumber: string;
   supplierId: string;
   supplierName: string;
   date: string;
@@ -593,6 +628,7 @@ export type SupplierOrder = {
   total: number;
   status: SupplierOrderStatus;
   notes?: string;
+  receivedAt?: string | null;
 };
 
 export type SupplierInvoiceStatus =
@@ -604,10 +640,15 @@ export type SupplierInvoiceStatus =
   | 'annulee';
 
 export type SupplierInvoice = {
-  id: string; // FAC-2024-0045
+  id: string;
+  /** Numéro de la facture du fournisseur */
+  invoiceNumber: string;
   supplierId: string;
   supplierName: string;
   orderId?: string;
+  orderNumber?: string;
+  paidAt?: string | null;
+  paymentMethod?: string | null;
   date: string;
   dueDate: string;
   amount: number;
@@ -618,6 +659,9 @@ export type SupplierInvoice = {
 /* ── Paysagisme & Aménagement Vert (Module B) ── */
 export type LandscapePrestation = {
   id: string;
+  slug?: string;
+  isActive?: boolean;
+  sortOrder?: number;
   title: string;
   subtitle: string;
   description: string;
@@ -644,6 +688,9 @@ export type LandscapeProject = {
   image: string;
   featured?: boolean;
   tags: string[];
+  slug?: string;
+  isPublished?: boolean;
+  likesCount?: number;
 };
 
 /* ── Demandes de Devis (Module C) ── */
@@ -676,49 +723,7 @@ export type LandscapeQuote = {
   notes?: string;
   quoteAmount?: number;
   quoteItems?: { description: string; qty: number; unitPrice: number; total: number }[];
-};
-
-/* ── Location Événementielle (Module D) ── */
-export type RentalEquipmentCategory =
-  | 'mobilier'
-  | 'vaisselle'
-  | 'decoration'
-  | 'accessoires';
-
-export type RentalEquipment = {
-  id: string;
-  name: string;
-  category: RentalEquipmentCategory;
-  categoryLabel: string;
-  pricePerDay: number;
-  deposit: number; // caution
-  totalStock: number;
-  availableStock: number;
-  image: string;
-  description: string;
-  dimensions?: string;
-  status: 'disponible' | 'stock_faible' | 'indisponible';
-};
-
-export type RentalReservationStatus =
-  | 'en_attente'
-  | 'confirmee'
-  | 'en_cours'
-  | 'terminee'
-  | 'annulee';
-
-export type RentalReservation = {
-  id: string; // RL-2024-0032
-  clientName: string;
-  clientEmail: string;
-  clientPhone: string;
-  equipmentId: string;
-  equipmentName: string;
-  quantity: number;
-  startDate: string; // 2024-03-15
-  endDate: string; // 2024-03-17
-  totalRental: number;
-  deposit: number;
-  status: RentalReservationStatus;
-  notes?: string;
+  /** Valeurs brutes éditables par l'équipe */
+  estimatedGuests?: number | null;
+  budgetRange?: string | null;
 };

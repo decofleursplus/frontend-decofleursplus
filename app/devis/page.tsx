@@ -22,7 +22,7 @@ export const metadata: Metadata = constructMetadata({
 function DevisContent({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string; prestation?: string }>;
+  searchParams: Promise<{ type?: string; prestation?: string; produit?: string; inspiration?: string }>;
 }) {
   return (
     <Suspense fallback={<div className="text-center py-12 text-sm text-gray-500">Chargement du formulaire...</div>}>
@@ -34,7 +34,7 @@ function DevisContent({
 async function DevisResolver({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string; prestation?: string }>;
+  searchParams: Promise<{ type?: string; prestation?: string; produit?: string; inspiration?: string }>;
 }) {
   const params = await searchParams;
   const initialType: DevisServiceType = params.type === 'paysagisme' ? 'paysagisme' : 'evenements';
@@ -44,12 +44,14 @@ async function DevisResolver({
     <SharedDevisForm
       initialServiceType={initialType}
       initialPrestation={initialPrestation}
+      initialProduct={params.produit ?? ''}
+      initialInspiration={params.inspiration ?? ''}
     />
   );
 }
 
 export default async function DevisPage(props: {
-  searchParams: Promise<{ type?: string; prestation?: string }>;
+  searchParams: Promise<{ type?: string; prestation?: string; produit?: string; inspiration?: string }>;
 }) {
   return (
     <div className="relative min-h-screen bg-white text-[#1c2e20] flex flex-col justify-between overflow-x-hidden">

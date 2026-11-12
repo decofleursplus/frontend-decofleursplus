@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { BlogAuthor } from '@/lib/admin/mock-data/types';
 import {
   Dialog,
@@ -20,35 +20,27 @@ interface AuthorProfileDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   author?: BlogAuthor | null;
-  onSave: (author: BlogAuthor) => void;
+  /** Résout à true si l'API a enregistré l'auteur (la fenêtre se ferme alors). */
+  onSave: (author: BlogAuthor) => Promise<boolean>;
 }
 
-export function AuthorProfileDialog({
+/** Le formulaire est remonté (key) à chaque ouverture : il repart toujours de l'auteur édité. */
+export function AuthorProfileDialog(props: AuthorProfileDialogProps) {
+  return <AuthorProfileForm key={props.isOpen ? `ouvert-${props.author?.id ?? 'nouveau'}` : 'ferme'} {...props} />;
+}
+
+function AuthorProfileForm({
   isOpen,
   onOpenChange,
   author,
   onSave,
 }: AuthorProfileDialogProps) {
-  const [name, setName] = useState('');
-  const [role, setRole] = useState('');
-  const [bio, setBio] = useState('');
-  const [avatar, setAvatar] = useState('FD');
+  const [name, setName] = useState(author?.name ?? '');
+  const [role, setRole] = useState(author ? author.role : 'Artisan Fleuriste');
+  const [bio, setBio] = useState(author?.bio ?? '');
+  const [avatar, setAvatar] = useState(author ? author.avatar || 'FD' : 'AF');
 
-  useEffect(() => {
-    if (author) {
-      setName(author.name);
-      setRole(author.role);
-      setBio(author.bio);
-      setAvatar(author.avatar || 'FD');
-    } else {
-      setName('');
-      setRole('Artisan Fleuriste');
-      setBio('');
-      setAvatar('AF');
-    }
-  }, [author, isOpen]);
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       toast.error("Veuillez renseigner le nom de l'auteur.");
@@ -71,7 +63,7 @@ export function AuthorProfileDialog({
       articlesCount: author ? author.articlesCount : 0,
     };
 
-    onSave(savedAuthor);
+    if (!(await onSave(savedAuthor))) return;
     onOpenChange(false);
     toast.success(
       author
@@ -107,7 +99,7 @@ export function AuthorProfileDialog({
               </div>
               <div className="flex-1">
                 <Label htmlFor="author-avatar" className="text-xs font-semibold text-[#444]">
-                  Initiales de l'avatar
+                  Initiales de l’avatar
                 </Label>
                 <Input
                   id="author-avatar"
