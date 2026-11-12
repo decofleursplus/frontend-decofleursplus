@@ -1,1297 +1,441 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
-import Link from 'next/link';
+import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
-import type { AdminProduct, StockMovement, StockMovementType } from '@/lib/admin/mock-data/types';
-import { getAdminProducts } from '@/lib/api/admin/products';
-import { getStockMovements, recordStockMovement } from '@/lib/api/admin/stock';
-import { ApiClientError } from '@/lib/api/client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from '@/components/ui/sheet';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  Search,
-  SlidersHorizontal,
-  ExternalLink,
-  X,
-  Package,
-  TrendingUp,
-  TrendingDown,
-  RefreshCw,
-  AlertCircle,
-  History,
-  Layers,
-  CheckCircle2,
-  Maximize2,
-  FileText,
-  Loader2,
-} from 'lucide-react';
+import Link from 'next/link';
+import { Package, Search, Loader2, RefreshCw, ChevronLeft, ChevronRight, History, AlertTriangle, SlidersHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  adjustVariantStock,
+  getInventory,
+  getMovements,
+  setVariantAlertThreshold,
+  type InventoryPage,
+  type InventoryRow,
+  type StockMovementRow,
+} from '@/lib/api/admin/inventory';
 
+const MOVEMENT_LABELS: Record<StockMovementRow['type'], { label: string; style: string }> = {
+  ENTRY: { label: 'Entrée', style: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
+  EXIT: { label: 'Sortie', style: 'bg-red-50 text-red-700 border-red-200' },
+  ADJUSTMENT: { label: 'Inventaire', style: 'bg-sky-50 text-sky-800 border-sky-200' },
+};
+const REASONS: Record<StockMovementRow['type'], string[]> = {
+  ENTRY: ['Réassort fournisseur', 'Retour client', 'Production atelier'],
+  EXIT: ['Fleurs fanées / perte', 'Casse', 'Usage atelier / événement'],
+  ADJUSTMENT: ['Inventaire physique', 'Correction de saisie'],
+};
+const errorText = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback);
+
+function Pager({ page, totalPages, onChange }: { page: number; totalPages: number; onChange: (p: number) => void }) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="flex items-center justify-end gap-2 text-xs text-gray-600">
+      <span>
+        Page {page} / {totalPages}
+      </span>
+      <button type="button" disabled={page <= 1} onClick={() => onChange(page - 1)} className="p-1.5 rounded-md border border-[#e7e4dd] bg-white disabled:opacity-40" aria-label="Page précédente">
+        <ChevronLeft className="h-4 w-4" />
+      </button>
+      <button type="button" disabled={page >= totalPages} onClick={() => onChange(page + 1)} className="p-1.5 rounded-md border border-[#e7e4dd] bg-white disabled:opacity-40" aria-label="Page suivante">
+        <ChevronRight className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+/** Stock par variante : niveaux, seuils d'alerte, ajustements tracés et historique des mouvements. */
 export default function AdminStockPage() {
-  const [products, setProducts] = useState<AdminProduct[]>([]);
-  const [movements, setMovements] = useState<StockMovement[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [isSubmittingAdjust, setIsSubmittingAdjust] = useState(false);
+  const [tab, setTab] = useState<'etat' | 'historique'>('etat');
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="admin-page-title text-[#1e2a1f] font-bold">Gestion du stock</h1>
+        <p className="admin-page-subtitle text-gray-500 mt-1">Niveaux par variante, seuils d’alerte, ajustements et historique des mouvements.</p>
+      </div>
+      <div className="flex gap-2">
+        {(['etat', 'historique'] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setTab(t)}
+            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold border ${tab === t ? 'bg-[#24582d] text-white border-[#24582d]' : 'bg-white border-[#e7e4dd]'}`}
+          >
+            {t === 'etat' ? <Package className="h-3.5 w-3.5" /> : <History className="h-3.5 w-3.5" />}
+            {t === 'etat' ? 'État du stock' : 'Historique des mouvements'}
+          </button>
+        ))}
+      </div>
+      {tab === 'etat' ? <InventoryTab /> : <MovementsTab />}
+    </div>
+  );
+}
 
-  async function loadStockData(isRefresh = false) {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
+function InventoryTab() {
+  const [data, setData] = useState<InventoryPage | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [status, setStatus] = useState<'all' | 'low' | 'out'>('all');
+  const [sort, setSort] = useState<'priority' | 'stock_asc' | 'stock_desc' | 'name'>('priority');
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [adjusting, setAdjusting] = useState<InventoryRow | null>(null);
 
-    try {
-      const [prodsRes, mvtsRes] = await Promise.all([
-        getAdminProducts({ limit: 100 }),
-        getStockMovements({ limit: 50 }),
-      ]);
-      setProducts(prodsRes?.items || []);
-      setMovements(mvtsRes || []);
-    } catch {
-      toast.error('Erreur lors du chargement des données de stock');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }
+  const load = useCallback(
+    () =>
+      getInventory({ page, status: status === 'all' ? undefined : status, search, sort })
+        .then((res) => {
+          setData(res);
+          setLoadError(null);
+        })
+        .catch((err) => setLoadError(errorText(err, 'Stock indisponible.'))),
+    [page, status, search, sort],
+  );
 
   useEffect(() => {
-    loadStockData();
-  }, []);
+    void load();
+  }, [load]);
 
-  // State for viewing full movement reason modal
-  const [selectedMovementForReason, setSelectedMovementForReason] = useState<StockMovement | null>(null);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setSearch(searchInput.trim());
+      setPage(1);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
 
-  // Main page tab: 'etat-stock' | 'historique'
-  const [mainTab, setMainTab] = useState<'etat-stock' | 'historique'>('etat-stock');
-
-  // Filters for 'etat-stock'
-  const [stockStatusFilter, setStockStatusFilter] = useState<'all' | 'low' | 'out'>('all');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortOption, setSortOption] = useState<'priority' | 'stock_asc' | 'stock_desc' | 'name_asc'>('priority');
-
-  // Filters for 'historique'
-  const [historySearchQuery, setHistorySearchQuery] = useState('');
-  const [historyTypeFilter, setHistoryTypeFilter] = useState<'all' | StockMovementType>('all');
-
-  // Adjustment Modal state
-  const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<AdminProduct | null>(null);
-  const [adjustType, setAdjustType] = useState<StockMovementType>('entree');
-  const [adjustQuantity, setAdjustQuantity] = useState<number>(1);
-  const [adjustReason, setAdjustReason] = useState<string>('Réassort arrivage fleurs fraîches');
-  const [customNote, setCustomNote] = useState<string>('');
-  const [newMinStock, setNewMinStock] = useState<number>(5);
-
-  // Derived counts for tabs
-  const { totalCount, lowStockCount, outOfStockCount } = useMemo(() => {
-    let low = 0;
-    let out = 0;
-    products.forEach((p) => {
-      const min = p.minStock ?? 5;
-      if (p.stock === 0) {
-        out++;
-      } else if (p.stock <= min) {
-        low++;
-      }
-    });
-    return {
-      totalCount: products.length,
-      lowStockCount: low,
-      outOfStockCount: out,
-    };
-  }, [products]);
-
-  // Unique categories list
-  const categoriesList = useMemo(() => {
-    return Array.from(new Set(products.map((p) => p.category)));
-  }, [products]);
-
-  // Filtered & sorted products for 'etat-stock'
-  const filteredProducts = useMemo(() => {
-    return products
-      .filter((p) => {
-        const min = p.minStock ?? 5;
-        // Search query
-        const matchesSearch =
-          searchQuery.trim() === '' ||
-          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.sku.toLowerCase().includes(searchQuery.toLowerCase());
-
-        // Category filter
-        const matchesCategory = categoryFilter === 'all' || p.category === categoryFilter;
-
-        // Status tab filter
-        let matchesStatus = true;
-        if (stockStatusFilter === 'low') {
-          matchesStatus = p.stock > 0 && p.stock <= min;
-        } else if (stockStatusFilter === 'out') {
-          matchesStatus = p.stock === 0;
-        }
-
-        return matchesSearch && matchesCategory && matchesStatus;
-      })
-      .sort((a, b) => {
-        const minA = a.minStock ?? 5;
-        const minB = b.minStock ?? 5;
-
-        if (sortOption === 'priority') {
-          // Priority: Out of stock (0) first, then Low stock (<= min), then normal
-          const getPriorityScore = (stock: number, min: number) => {
-            if (stock === 0) return 0;
-            if (stock <= min) return 1;
-            return 2;
-          };
-          const scoreA = getPriorityScore(a.stock, minA);
-          const scoreB = getPriorityScore(b.stock, minB);
-          if (scoreA !== scoreB) return scoreA - scoreB;
-          return a.stock - b.stock;
-        }
-
-        if (sortOption === 'stock_asc') return a.stock - b.stock;
-        if (sortOption === 'stock_desc') return b.stock - a.stock;
-        if (sortOption === 'name_asc') return a.name.localeCompare(b.name);
-        return 0;
-      });
-  }, [products, searchQuery, categoryFilter, stockStatusFilter, sortOption]);
-
-  // Filtered movements for 'historique'
-  const filteredMovements = useMemo(() => {
-    return movements.filter((m) => {
-      const matchesSearch =
-        historySearchQuery.trim() === '' ||
-        m.productName.toLowerCase().includes(historySearchQuery.toLowerCase()) ||
-        m.productSku.toLowerCase().includes(historySearchQuery.toLowerCase()) ||
-        m.reason.toLowerCase().includes(historySearchQuery.toLowerCase());
-
-      const matchesType = historyTypeFilter === 'all' || m.type === historyTypeFilter;
-      return matchesSearch && matchesType;
-    });
-  }, [movements, historySearchQuery, historyTypeFilter]);
-
-  // Open adjustment modal
-  const handleOpenAdjustModal = (product: AdminProduct) => {
-    setSelectedProduct(product);
-    setAdjustType('entree');
-    setAdjustQuantity(5);
-    setAdjustReason('Réassort arrivage fleurs fraîches');
-    setCustomNote('');
-    setNewMinStock(product.minStock ?? 5);
-    setIsAdjustModalOpen(true);
-  };
-
-  // Preview new stock calculation
-  const calculatedNewStock = useMemo(() => {
-    if (!selectedProduct) return 0;
-    const current = selectedProduct.stock;
-    const qty = Math.max(0, adjustQuantity);
-
-    if (adjustType === 'entree') {
-      return current + qty;
-    }
-    if (adjustType === 'sortie') {
-      return Math.max(0, current - qty);
-    }
-    if (adjustType === 'ajustement') {
-      return qty;
-    }
-    return current;
-  }, [selectedProduct, adjustType, adjustQuantity]);
-
-  // Save stock adjustment
-  const handleSaveAdjustment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedProduct) return;
-
-    const previousStock = selectedProduct.stock;
-    const finalStock = calculatedNewStock;
-    const finalReason = customNote.trim() ? `${adjustReason} (${customNote.trim()})` : adjustReason;
-    const targetVariantId = selectedProduct.variantId || selectedProduct.id;
-
-    const typeMapping: Record<StockMovementType, 'ENTRY' | 'EXIT' | 'ADJUSTMENT'> = {
-      entree: 'ENTRY',
-      sortie: 'EXIT',
-      ajustement: 'ADJUSTMENT',
-    };
-
-    const adjustmentQuantity =
-      adjustType === 'ajustement'
-        ? finalStock
-        : Math.max(1, adjustQuantity);
-
-    setIsSubmittingAdjust(true);
+  const saveThreshold = async (row: InventoryRow, value: string) => {
+    const n = Math.round(Number(value));
+    if (!Number.isFinite(n) || n < 0 || n === row.variant.minStockAlert) return;
     try {
-      await recordStockMovement(targetVariantId, {
-        type: typeMapping[adjustType] || 'ADJUSTMENT',
-        quantity: adjustmentQuantity,
-        reason: finalReason,
-      });
-
-      toast.success(`Stock mis à jour pour « ${selectedProduct.name} »`, {
-        description: `Nouveau stock effectif : ${finalStock} unités.`,
-      });
-
-      await loadStockData(true);
-      setIsAdjustModalOpen(false);
-    } catch (err: unknown) {
-      if (err instanceof ApiClientError && err.details && err.details.length > 0) {
-        toast.error(`Erreur de validation : ${err.details.map((d) => d.message).join(', ')}`);
-      } else if (err instanceof Error) {
-        toast.error(err.message);
-      } else {
-        toast.error('Impossible d’enregistrer le mouvement de stock sur le serveur.');
-      }
-    } finally {
-      setIsSubmittingAdjust(false);
+      await setVariantAlertThreshold(row.variant.id, n);
+      toast.success(`Seuil d’alerte de « ${row.product.name} — ${row.variant.name} » : ${n}.`);
+      await load();
+    } catch (err) {
+      toast.error(errorText(err, 'Seuil non enregistré.'));
     }
-  };
-
-  // Status badge helper
-  const getStockStatusBadge = (stock: number, minStock: number = 5) => {
-    if (stock === 0) {
-      return (
-        <Badge className="bg-[#ffe5e5] text-[#cc0000] hover:bg-[#ffe5e5]/80 shadow-none border-none font-medium">
-          Rupture
-        </Badge>
-      );
-    }
-    if (stock <= minStock) {
-      return (
-        <Badge className="bg-[#fff8cc] text-[#9a7b00] hover:bg-[#fff8cc]/80 shadow-none border-none font-medium">
-          Stock faible
-        </Badge>
-      );
-    }
-    return (
-      <Badge className="bg-[#dcfce7] text-[#166534] hover:bg-[#dcfce7]/80 shadow-none border-none font-medium">
-        En stock
-      </Badge>
-    );
-  };
-
-  // Movement type badge helper
-  const getMovementTypeBadge = (type: StockMovementType) => {
-    switch (type) {
-      case 'entree':
-        return (
-          <Badge className="bg-[#dcfce7] text-[#166534] border-none font-medium gap-1">
-            <TrendingUp className="h-3 w-3" />
-            Entrée
-          </Badge>
-        );
-      case 'sortie':
-        return (
-          <Badge className="bg-[#ffe5e5] text-[#cc0000] border-none font-medium gap-1">
-            <TrendingDown className="h-3 w-3" />
-            Sortie
-          </Badge>
-        );
-      case 'ajustement':
-        return (
-          <Badge className="bg-[#e5eaff] text-[#3d5a99] border-none font-medium gap-1">
-            <RefreshCw className="h-3 w-3" />
-            Ajustement
-          </Badge>
-        );
-    }
-  };
-
-  // Format date helper
-  const formatDate = (isoString: string) => {
-    return new Date(isoString).toLocaleDateString('fr-FR', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="admin-page-header flex items-center justify-between">
-        <div>
-          <h1 className="admin-page-title text-[#1e2a1f] font-bold">Gestion du stock</h1>
-          <p className="admin-page-subtitle text-gray-500 mt-1">
-            Suivez vos niveaux d&apos;inventaire, anticipez les réapprovisionnements et suivez les mouvements.
-          </p>
+    <div className="space-y-4">
+      <div className="flex flex-col md:flex-row gap-3">
+        <div className="flex gap-2">
+          {(
+            [
+              ['all', 'Toutes'],
+              ['low', 'Stock faible'],
+              ['out', 'Ruptures'],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => {
+                setStatus(value);
+                setPage(1);
+              }}
+              className={`px-3 py-2 rounded-xl text-xs font-semibold border ${status === value ? 'bg-[#c1647a] text-white border-[#c1647a]' : 'bg-white border-[#e7e4dd]'}`}
+            >
+              {label} ({data ? data.counts[value] : 0})
+            </button>
+          ))}
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => loadStockData(true)}
-          disabled={loading || refreshing}
-          className="h-10 text-xs text-gray-700 bg-white border-[#e7e4dd] hover:bg-gray-50"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? 'animate-spin text-[#c1647a]' : ''}`} />
-          Actualiser
-        </Button>
-      </div>
-
-      {/* Main Top Navigation Tabs */}
-      <div className="flex border-b border-[#e7e4dd] gap-2 overflow-x-auto no-scrollbar">
-        <button
-          onClick={() => setMainTab('etat-stock')}
-          className={`flex items-center gap-2 pb-3 px-4 text-sm font-semibold transition-all border-b-2 -mb-[1px] shrink-0 ${
-            mainTab === 'etat-stock'
-              ? 'border-[#24582d] text-[#24582d]'
-              : 'border-transparent text-gray-500 hover:text-gray-900'
-          }`}
-        >
-          <Layers className="h-4 w-4" />
-          <span>État du stock</span>
-        </button>
-        <button
-          onClick={() => setMainTab('historique')}
-          className={`flex items-center gap-2 pb-3 px-4 text-sm font-semibold transition-all border-b-2 -mb-[1px] shrink-0 ${
-            mainTab === 'historique'
-              ? 'border-[#24582d] text-[#24582d]'
-              : 'border-transparent text-gray-500 hover:text-gray-900'
-          }`}
-        >
-          <History className="h-4 w-4" />
-          <span>Historique des mouvements</span>
-          <span className="ml-1 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">
-            {movements.length}
-          </span>
+        <label className="flex items-center gap-2 flex-1 px-3 rounded-xl border border-[#e7e4dd] bg-white">
+          <Search className="h-4 w-4 text-gray-400" />
+          <input type="search" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Produit, variante ou SKU…" aria-label="Rechercher dans le stock" className="w-full h-10 text-xs outline-none" />
+        </label>
+        <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} aria-label="Trier" className="h-10 px-3 rounded-xl border border-[#e7e4dd] bg-white text-xs">
+          <option value="priority">Priorité (ruptures d’abord)</option>
+          <option value="stock_asc">Stock croissant</option>
+          <option value="stock_desc">Stock décroissant</option>
+          <option value="name">Nom</option>
+        </select>
+        <button type="button" onClick={() => void load()} className="inline-flex items-center gap-1.5 h-10 px-3 rounded-xl border border-[#e7e4dd] bg-white text-xs font-semibold">
+          <RefreshCw className="h-3.5 w-3.5" /> Actualiser
         </button>
       </div>
 
-      {mainTab === 'etat-stock' ? (
-        <div className="space-y-5">
-          {/* Status Sub-Pills (Mockup 10 style: Tous, Stock faible, Rupture) */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar flex-nowrap sm:flex-wrap">
-            <button
-              type="button"
-              onClick={() => setStockStatusFilter('all')}
-              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 shrink-0 ${
-                stockStatusFilter === 'all'
-                  ? 'bg-[#c1647a] text-white! shadow-xs'
-                  : 'bg-white text-gray-700 border border-[#e7e4dd] hover:bg-[#faf8f4]'
-              }`}
-              style={stockStatusFilter === 'all' ? { backgroundColor: '#c1647a', color: '#ffffff' } : undefined}
-            >
-              <span style={stockStatusFilter === 'all' ? { color: '#ffffff' } : undefined}>
-                Tous
-              </span>
-              <span
-                className={`px-1.5 py-0.5 rounded-md text-[11px] font-bold ${
-                  stockStatusFilter === 'all'
-                    ? 'bg-white/25 text-white!'
-                    : 'bg-gray-100 text-gray-600'
-                }`}
-                style={
-                  stockStatusFilter === 'all'
-                    ? { backgroundColor: 'rgba(255, 255, 255, 0.25)', color: '#ffffff' }
-                    : undefined
-                }
-              >
-                {totalCount}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setStockStatusFilter('low')}
-              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 shrink-0 ${
-                stockStatusFilter === 'low'
-                  ? 'bg-[#c1647a] text-white! shadow-xs'
-                  : 'bg-white text-gray-700 border border-[#e7e4dd] hover:bg-[#faf8f4]'
-              }`}
-              style={stockStatusFilter === 'low' ? { backgroundColor: '#c1647a', color: '#ffffff' } : undefined}
-            >
-              <span
-                className="flex items-center gap-1.5"
-                style={stockStatusFilter === 'low' ? { color: '#ffffff' } : undefined}
-              >
-                <AlertCircle
-                  className="h-3.5 w-3.5"
-                  color={stockStatusFilter === 'low' ? '#ffffff' : '#f59e0b'}
-                />
-                Stock faible
-              </span>
-              <span
-                className={`px-1.5 py-0.5 rounded-md text-[11px] font-bold ${
-                  stockStatusFilter === 'low'
-                    ? 'bg-white/25 text-white!'
-                    : 'bg-[#fff8cc] text-[#9a7b00]'
-                }`}
-                style={
-                  stockStatusFilter === 'low'
-                    ? { backgroundColor: 'rgba(255, 255, 255, 0.25)', color: '#ffffff' }
-                    : undefined
-                }
-              >
-                {lowStockCount}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setStockStatusFilter('out')}
-              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 shrink-0 ${
-                stockStatusFilter === 'out'
-                  ? 'bg-[#c1647a] text-white! shadow-xs'
-                  : 'bg-white text-gray-700 border border-[#e7e4dd] hover:bg-[#faf8f4]'
-              }`}
-              style={stockStatusFilter === 'out' ? { backgroundColor: '#c1647a', color: '#ffffff' } : undefined}
-            >
-              <span
-                className="flex items-center gap-1.5"
-                style={stockStatusFilter === 'out' ? { color: '#ffffff' } : undefined}
-              >
-                <AlertCircle
-                  className="h-3.5 w-3.5"
-                  color={stockStatusFilter === 'out' ? '#ffffff' : '#ef4444'}
-                />
-                Rupture
-              </span>
-              <span
-                className={`px-1.5 py-0.5 rounded-md text-[11px] font-bold ${
-                  stockStatusFilter === 'out'
-                    ? 'bg-white/25 text-white!'
-                    : 'bg-[#ffe5e5] text-[#cc0000]'
-                }`}
-                style={
-                  stockStatusFilter === 'out'
-                    ? { backgroundColor: 'rgba(255, 255, 255, 0.25)', color: '#ffffff' }
-                    : undefined
-                }
-              >
-                {outOfStockCount}
-              </span>
-            </button>
-          </div>
-
-
-          {/* Search & Filters Bar */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-xl border border-[#e7e4dd]">
-            <div className="relative w-full sm:w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Rechercher par nom ou référence..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 border-[#e7e4dd] focus-visible:ring-[#24582d]/20 text-xs sm:text-sm h-10"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-
-            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
-              {/* Category selector */}
-              <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
-                <span className="text-xs text-gray-500 font-medium hidden sm:inline">Catégorie :</span>
-                <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="w-full sm:w-auto h-9 rounded-lg border border-[#e7e4dd] bg-white px-2.5 sm:px-3 text-xs text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#24582d]"
-                >
-                  <option value="all">Toutes les catégories</option>
-                  {categoriesList.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Sorting selector */}
-              <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
-                <span className="text-xs text-gray-500 font-medium hidden sm:inline">Trier par :</span>
-                <select
-                  value={sortOption}
-                  onChange={(e) =>
-                    setSortOption(
-                      e.target.value as 'priority' | 'stock_asc' | 'stock_desc' | 'name_asc'
-                    )
-                  }
-                  className="w-full sm:w-auto h-9 rounded-lg border border-[#e7e4dd] bg-white px-2.5 sm:px-3 text-xs text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#24582d]"
-                >
-                  <option value="priority">Priorité alertes</option>
-                  <option value="stock_asc">Stock croissant</option>
-                  <option value="stock_desc">Stock décroissant</option>
-                  <option value="name_asc">Nom (A-Z)</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Stock Table (Desktop) */}
-          <div className="hidden lg:block bg-white rounded-xl border border-[#e7e4dd] overflow-hidden shadow-xs">
-            <Table>
-              <TableHeader className="bg-[#faf8f4]">
-                <TableRow>
-                  <TableHead className="font-semibold text-gray-600 py-3.5">Produit</TableHead>
-                  <TableHead className="font-semibold text-gray-600 py-3.5 text-center w-[140px]">
-                    Stock actuel
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-600 py-3.5 text-center w-[140px]">
-                    Stock minimum
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-600 py-3.5 w-[140px]">Statut</TableHead>
-                  <TableHead className="font-semibold text-gray-600 py-3.5 text-right w-[120px]">
-                    Actions
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredProducts.map((product) => {
-                  const min = product.minStock ?? 5;
-                  const isOutOfStock = product.stock === 0;
-                  const isLowStock = product.stock > 0 && product.stock <= min;
-
-                  return (
-                    <TableRow key={product.id} className="hover:bg-[#faf8f4]/60 transition-colors">
-                      {/* Product cell with image and ref */}
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="relative h-11 w-11 rounded-lg overflow-hidden bg-gray-100 shrink-0 border border-[#e7e4dd]">
-                            <Image
-                              src={product.image}
-                              alt={product.name}
-                              fill
-                              sizes="44px"
-                              className="object-cover"
-                            />
-                          </div>
-                          <div>
-                            <span className="font-semibold text-[#1e2a1f] block leading-snug">
-                              {product.name}
-                            </span>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <span className="text-xs text-gray-500">{product.category}</span>
-                              <span className="text-[11px] font-mono text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-200">
-                                {product.sku}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </TableCell>
-
-                      {/* Current Stock */}
-                      <TableCell className="text-center">
-                        <span
-                          className={`font-bold text-sm px-2.5 py-1 rounded-lg ${
-                            isOutOfStock
-                              ? 'bg-red-50 text-red-600 font-mono'
-                              : isLowStock
-                              ? 'bg-amber-50 text-amber-700 font-mono'
-                              : 'text-gray-900 font-mono'
-                          }`}
-                        >
-                          {product.stock}
-                        </span>
-                      </TableCell>
-
-                      {/* Minimum Stock threshold */}
-                      <TableCell className="text-center font-mono text-xs text-gray-500">
-                        {min}
-                      </TableCell>
-
-                      {/* Status */}
-                      <TableCell>{getStockStatusBadge(product.stock, min)}</TableCell>
-
-                      {/* Actions */}
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleOpenAdjustModal(product)}
-                            className="h-8 px-2.5 text-xs border-[#e7e4dd] text-[#24582d] hover:bg-[#edf8ef] hover:border-[#b0c8a8] font-medium"
-                            title="Ajuster le stock"
-                          >
-                            <SlidersHorizontal className="h-3.5 w-3.5 mr-1" />
-                            Ajuster
-                          </Button>
-                          <Link
-                            href={`/admin/produits/${product.id}`}
-                            className="h-8 w-8 inline-flex items-center justify-center rounded-lg border border-[#e7e4dd] text-gray-500 hover:text-[#24582d] hover:bg-[#faf8f4] transition-colors"
-                            title="Voir la fiche produit"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </Link>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-44 text-center text-gray-500">
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <Loader2 className="h-7 w-7 text-[#c1647a] animate-spin" />
-                        <p className="font-medium text-gray-600 text-sm">Chargement des données de stock...</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : filteredProducts.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-44 text-center text-gray-500">
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <Package className="h-8 w-8 text-gray-300" />
-                        <p className="font-medium text-gray-700">Aucun produit ne correspond à ces critères.</p>
-                        <p className="text-xs text-gray-400">
-                          Modifiez votre recherche ou réinitialisez les filtres.
-                        </p>
-                        {(searchQuery || categoryFilter !== 'all' || stockStatusFilter !== 'all') && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setSearchQuery('');
-                              setCategoryFilter('all');
-                              setStockStatusFilter('all');
-                            }}
-                            className="mt-2 text-xs border-[#e7e4dd]"
-                          >
-                            Réinitialiser les filtres
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : null}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Stock Mobile Card View */}
-          <div className="lg:hidden space-y-3">
-            {loading ? (
-              <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-gray-500 space-y-2">
-                <Loader2 className="h-7 w-7 text-[#c1647a] animate-spin mx-auto" />
-                <p className="text-xs font-medium">Chargement des données de stock...</p>
-              </div>
-            ) : filteredProducts.length === 0 ? (
-              <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-gray-500 space-y-2">
-                <Package className="h-8 w-8 text-gray-300 mx-auto" />
-                <p className="text-xs font-medium">Aucun produit ne correspond à ces critères.</p>
-                {(searchQuery || categoryFilter !== 'all' || stockStatusFilter !== 'all') && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSearchQuery('');
-                      setCategoryFilter('all');
-                      setStockStatusFilter('all');
-                    }}
-                    className="mt-2 text-xs border-[#e7e4dd]"
-                  >
-                    Réinitialiser les filtres
-                  </Button>
-                )}
-              </div>
-            ) : (
-              filteredProducts.map((product) => {
-                const min = product.minStock ?? 5;
-                const isOutOfStock = product.stock === 0;
-                const isLowStock = product.stock > 0 && product.stock <= min;
-
-                return (
-                  <div
-                    key={product.id}
-                    className="bg-white border border-[#e7e4dd] rounded-xl p-3.5 space-y-3 shadow-xs"
-                  >
-                    {/* Top Row: Thumbnail + Name + Status Badge */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="relative h-12 w-12 rounded-lg overflow-hidden bg-gray-100 shrink-0 border border-[#e7e4dd]">
-                          <Image
-                            src={product.image}
-                            alt={product.name}
-                            fill
-                            sizes="48px"
-                            className="object-cover"
-                          />
-                        </div>
-                        <div className="min-w-0">
-                          <h4 className="font-semibold text-sm text-[#1e2a1f] truncate">
-                            {product.name}
-                          </h4>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-xs text-gray-500">{product.category}</span>
-                            <span className="text-[10px] font-mono text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-200">
-                              {product.sku}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="shrink-0">{getStockStatusBadge(product.stock, min)}</div>
-                    </div>
-
-                    {/* Stock Metrics Box */}
-                    <div className="bg-[#faf8f4] rounded-lg p-2.5 flex items-center justify-between">
-                      <div>
-                        <span className="text-[10px] text-gray-400 block font-medium">Stock disponible</span>
-                        <div className="flex items-baseline gap-1 mt-0.5">
-                          <span
-                            className={`text-lg font-bold font-mono ${
-                              isOutOfStock
-                                ? 'text-red-600'
-                                : isLowStock
-                                ? 'text-amber-600'
-                                : 'text-[#166534]'
-                            }`}
-                          >
-                            {product.stock}
-                          </span>
-                          <span className="text-xs text-gray-400">unités</span>
-                        </div>
-                      </div>
-
-                      <div className="text-right">
-                        <span className="text-[10px] text-gray-400 block font-medium">Seuil d&apos;alerte min</span>
-                        <span className="text-xs font-semibold font-mono text-gray-700 mt-0.5 block">
-                          {min} unités
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Action buttons */}
-                    <div className="flex items-center gap-2 pt-1 border-t border-[#f0ede6]">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleOpenAdjustModal(product)}
-                        className="flex-1 h-8 text-xs border-[#e7e4dd] text-[#24582d] hover:bg-[#edf8ef] hover:border-[#b0c8a8] font-semibold gap-1.5"
-                      >
-                        <SlidersHorizontal className="h-3.5 w-3.5" />
-                        Ajuster le stock
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        render={<Link href={`/admin/produits/${product.id}`} />}
-                        className="h-8 px-2.5 text-xs border-[#e7e4dd] text-gray-600 hover:bg-[#faf8f4]"
-                        title="Fiche produit"
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+      {loadError && (
+        <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-800">
+          {loadError}
         </div>
+      )}
+      {data === null && !loadError ? (
+        <div className="flex items-center justify-center gap-2 py-16 text-sm text-gray-500">
+          <Loader2 className="h-5 w-5 animate-spin" /> Chargement du stock…
+        </div>
+      ) : (data?.items ?? []).length === 0 ? (
+        <div className="bg-white rounded-2xl border border-[#e7e4dd] p-10 text-center text-xs text-gray-500">Aucune variante pour ces critères.</div>
       ) : (
-        /* Tab: Historique des mouvements */
-        <div className="space-y-5">
-          {/* Movement search & filter */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-xl border border-[#e7e4dd]">
-            <div className="relative flex-1 sm:w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Rechercher par produit, motif..."
-                value={historySearchQuery}
-                onChange={(e) => setHistorySearchQuery(e.target.value)}
-                className="pl-9 border-[#e7e4dd] focus-visible:ring-[#24582d]/20 text-xs sm:text-sm h-10"
-              />
-              {historySearchQuery && (
-                <button
-                  onClick={() => setHistorySearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-              <span className="text-xs text-gray-500 font-medium">Type :</span>
-              <select
-                value={historyTypeFilter}
-                onChange={(e) =>
-                  setHistoryTypeFilter(e.target.value as 'all' | StockMovementType)
-                }
-                className="h-9 rounded-lg border border-[#e7e4dd] bg-white px-3 text-xs text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#24582d]"
-              >
-                <option value="all">Tous les types</option>
-                <option value="entree">Entrées (+)</option>
-                <option value="sortie">Sorties (-)</option>
-                <option value="ajustement">Ajustements</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Movements Table (Desktop) */}
-          <div className="hidden lg:block bg-white rounded-xl border border-[#e7e4dd] overflow-hidden shadow-xs">
-            <Table>
-              <TableHeader className="bg-[#faf8f4]">
-                <TableRow>
-                  <TableHead className="font-semibold text-gray-600 py-3.5">Date</TableHead>
-                  <TableHead className="font-semibold text-gray-600 py-3.5">Produit</TableHead>
-                  <TableHead className="font-semibold text-gray-600 py-3.5">Type</TableHead>
-                  <TableHead className="font-semibold text-gray-600 py-3.5 text-center">
-                    Quantité
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-600 py-3.5 w-[220px]">
-                    Motif
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-600 py-3.5 text-right">
-                    Auteur
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-40 text-center text-gray-500">
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <Loader2 className="h-6 w-6 animate-spin text-[#24582d]" />
-                        <p className="text-xs text-gray-500">Chargement de l'historique des mouvements...</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : filteredMovements.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-40 text-center text-gray-500">
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <History className="h-8 w-8 text-gray-300" />
-                        <p className="font-medium text-gray-700">Aucun mouvement enregistré.</p>
-                        <p className="text-xs text-gray-400">
-                          Les ajustements de stock apparaîtront automatiquement dans ce journal.
-                        </p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredMovements.map((m) => (
-                    <TableRow key={m.id} className="hover:bg-[#faf8f4]/60 transition-colors">
-                      <TableCell className="text-xs text-gray-600 whitespace-nowrap">
-                        {formatDate(m.date)}
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-semibold text-[#1e2a1f] block text-sm">
-                          {m.productName}
-                        </span>
-                        <span className="text-[11px] font-mono text-gray-400">{m.productSku}</span>
-                      </TableCell>
-                      <TableCell>{getMovementTypeBadge(m.type)}</TableCell>
-                      <TableCell className="text-center font-mono font-bold text-sm">
-                        {m.type === 'entree' ? (
-                          <span className="text-[#166534]">+{m.quantity}</span>
-                        ) : m.type === 'sortie' ? (
-                          <span className="text-[#cc0000]">-{m.quantity}</span>
-                        ) : (
-                          <span className="text-[#3d5a99]">{m.quantity}</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="max-w-[200px]">
-                        <div className="flex items-center justify-between gap-1.5">
-                          <span className="text-xs text-gray-700 truncate block" title={m.reason}>
-                            {m.reason}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedMovementForReason(m)}
-                            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-gray-400 hover:text-[#24582d] hover:bg-[#edf8ef] transition-colors"
-                            title="Afficher le motif complet"
-                          >
-                            <Maximize2 className="h-3 w-3" />
-                          </button>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right text-xs text-gray-500">{m.author}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Movement Mobile Cards */}
-          <div className="lg:hidden space-y-3">
-            {loading ? (
-              <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-gray-500 flex flex-col items-center justify-center gap-2">
-                <Loader2 className="h-6 w-6 animate-spin text-[#24582d]" />
-                <p className="text-xs text-gray-500">Chargement de l'historique...</p>
-              </div>
-            ) : filteredMovements.length === 0 ? (
-              <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-gray-500 space-y-2">
-                <History className="h-8 w-8 text-gray-300 mx-auto" />
-                <p className="font-medium text-gray-700 text-xs">Aucun mouvement enregistré.</p>
-              </div>
-            ) : (
-              filteredMovements.map((m) => (
-                <div
-                  key={m.id}
-                  className="bg-white border border-[#e7e4dd] rounded-xl p-3.5 space-y-2.5 shadow-xs"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <span className="font-semibold text-sm text-[#1e2a1f] block">
-                        {m.productName}
+        <div className="bg-white rounded-2xl border border-[#e7e4dd] overflow-x-auto">
+          <table className="w-full text-left text-xs min-w-[760px]">
+            <thead className="bg-[#faf8f4] border-b border-[#e7e4dd] font-bold">
+              <tr>
+                <th className="px-4 py-3">Produit</th>
+                <th className="px-4 py-3">Variante / SKU</th>
+                <th className="px-4 py-3 text-right">Stock</th>
+                <th className="px-4 py-3">Seuil d’alerte</th>
+                <th className="px-4 py-3">État</th>
+                <th className="px-4 py-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#f0ede6]">
+              {(data?.items ?? []).map((row) => (
+                <tr key={row.variant.id}>
+                  <td className="px-4 py-3">
+                    <Link href={`/admin/produits/${row.product.id}`} className="flex items-center gap-2 font-semibold hover:text-[#c1647a]">
+                      <span className="relative h-9 w-9 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                        {row.product.featuredImage && <Image src={row.product.featuredImage} alt="" fill sizes="36px" className="object-cover" />}
                       </span>
-                      <span className="text-[10px] font-mono text-gray-400">{m.productSku}</span>
-                    </div>
-                    <div className="shrink-0">{getMovementTypeBadge(m.type)}</div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs bg-[#faf8f4] p-2 rounded-lg">
-                    <span className="text-gray-500">{formatDate(m.date)}</span>
-                    <span
-                      className={`font-mono font-bold text-sm ${
-                        m.type === 'entree'
-                          ? 'text-[#166534]'
-                          : m.type === 'sortie'
-                          ? 'text-[#cc0000]'
-                          : 'text-[#3d5a99]'
-                      }`}
-                    >
-                      {m.type === 'entree' ? `+${m.quantity}` : m.type === 'sortie' ? `-${m.quantity}` : m.quantity} unités
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs text-gray-600 pt-1 border-t border-[#f0ede6]">
-                    <span className="text-[11px] truncate max-w-[220px]" title={m.reason}>
-                      {m.reason}
-                    </span>
+                      <span>
+                        {row.product.name}
+                        <span className="block font-normal text-gray-400">{row.product.category?.name}</span>
+                      </span>
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3">
+                    {row.variant.name}
+                    <span className="block text-gray-400 font-mono">{row.variant.sku}</span>
+                  </td>
+                  <td className="px-4 py-3 text-right text-sm font-bold">{row.variant.stockQuantity}</td>
+                  <td className="px-4 py-3">
+                    <input
+                      type="number"
+                      min={0}
+                      defaultValue={row.variant.minStockAlert}
+                      key={`${row.variant.id}-${row.variant.minStockAlert}`}
+                      onBlur={(e) => void saveThreshold(row, e.target.value)}
+                      aria-label={`Seuil d’alerte de ${row.product.name} ${row.variant.name}`}
+                      className="w-20 h-8 rounded-md border border-[#e7e4dd] px-2"
+                    />
+                  </td>
+                  <td className="px-4 py-3">
+                    {row.isOutOfStock ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border bg-red-50 text-red-700 border-red-200 font-semibold">
+                        <AlertTriangle className="h-3 w-3" /> Rupture
+                      </span>
+                    ) : row.isLowStock ? (
+                      <span className="px-2 py-0.5 rounded-full border bg-amber-50 text-amber-800 border-amber-200 font-semibold">Stock faible</span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-800 border-emerald-200 font-semibold">OK</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-right">
                     <button
                       type="button"
-                      onClick={() => setSelectedMovementForReason(m)}
-                      className="text-[#24582d] hover:underline text-[11px] font-medium shrink-0 ml-1"
+                      onClick={() => setAdjusting(row)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#24582d] text-white font-semibold"
+                      aria-label={`Ajuster le stock de ${row.product.name} ${row.variant.name}`}
                     >
-                      Détail
+                      <SlidersHorizontal className="h-3.5 w-3.5" /> Ajuster
                     </button>
-                  </div>
-                </div>
-              ))
-            )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="px-4 py-3 border-t border-[#e7e4dd] bg-[#faf8f4]">
+            <Pager page={page} totalPages={data?.totalPages ?? 1} onChange={setPage} />
           </div>
         </div>
       )}
+      {adjusting && <AdjustDialog row={adjusting} onClose={() => setAdjusting(null)} onDone={() => void load()} />}
+    </div>
+  );
+}
 
-      {/* Drawer (Sheet): Ajuster le stock */}
-      <Sheet open={isAdjustModalOpen} onOpenChange={setIsAdjustModalOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-md flex flex-col p-0">
-          <SheetHeader>
-            <div className="flex items-center gap-2 text-[#24582d]">
-              <SlidersHorizontal className="h-5 w-5" />
-              <SheetTitle className="text-lg font-bold text-[#1e2a1f]">
-                Ajuster le stock
-              </SheetTitle>
-            </div>
-            <SheetDescription className="text-xs text-gray-500">
-              Modifiez le stock et enregistrez le motif pour conserver une traçabilité précise.
-            </SheetDescription>
-          </SheetHeader>
+function AdjustDialog({ row, onClose, onDone }: { row: InventoryRow; onClose: () => void; onDone: () => void }) {
+  const [type, setType] = useState<StockMovementRow['type']>('ENTRY');
+  const [quantity, setQuantity] = useState('1');
+  const [reason, setReason] = useState(REASONS.ENTRY[0]);
+  const [note, setNote] = useState('');
+  const [saving, setSaving] = useState(false);
+  const current = row.variant.stockQuantity;
+  const qty = Math.max(0, Math.round(Number(quantity) || 0));
+  const next = type === 'ENTRY' ? current + qty : type === 'EXIT' ? current - qty : qty;
 
-          {selectedProduct && (
-            <form onSubmit={handleSaveAdjustment} className="flex-1 flex flex-col min-h-0">
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {/* Product recap box */}
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-[#faf8f4] border border-[#e7e4dd]">
-                  <div className="relative h-12 w-12 rounded-lg overflow-hidden bg-gray-100 shrink-0 border border-[#e7e4dd]">
-                    <Image
-                      src={selectedProduct.image}
-                      alt={selectedProduct.name}
-                      fill
-                      sizes="48px"
-                      className="object-cover"
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="font-semibold text-sm text-[#1e2a1f] truncate">
-                      {selectedProduct.name}
-                    </h4>
-                    <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
-                      <span>{selectedProduct.sku}</span>
-                      <span>•</span>
-                      <span>
-                        Stock actuel :{' '}
-                        <strong className="text-gray-900 font-mono">{selectedProduct.stock}</strong>
-                      </span>
-                    </div>
-                  </div>
-                </div>
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (type !== 'ADJUSTMENT' && qty <= 0) return toast.error('Indiquez une quantité supérieure à 0.');
+    if (next < 0) return toast.error('Le stock ne peut pas devenir négatif.');
+    setSaving(true);
+    try {
+      await adjustVariantStock(row.variant.id, { type, quantity: qty, reason: note.trim() ? `${reason} — ${note.trim()}` : reason });
+      toast.success(`Stock de « ${row.product.name} — ${row.variant.name} » : ${current} → ${next}.`);
+      onDone();
+      onClose();
+    } catch (err) {
+      toast.error(errorText(err, 'Mouvement non enregistré.'));
+    } finally {
+      setSaving(false);
+    }
+  };
 
-                {/* Type of operation selector */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-gray-700">
-                    Type d&apos;opération <span className="text-red-500">*</span>
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAdjustType('entree');
-                        setAdjustReason('Réassort arrivage fleurs fraîches');
-                      }}
-                      className={`py-2 px-2 text-xs rounded-lg font-medium border text-center transition-all ${
-                        adjustType === 'entree'
-                          ? 'border-[#24582d] bg-[#edf8ef] text-[#24582d] ring-1 ring-[#24582d]'
-                          : 'border-[#e7e4dd] bg-white text-gray-600 hover:bg-[#faf8f4]'
-                      }`}
-                    >
-                      + Entrée
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAdjustType('sortie');
-                        setAdjustReason('Perte / Fleur abîmée ou fanée');
-                      }}
-                      className={`py-2 px-2 text-xs rounded-lg font-medium border text-center transition-all ${
-                        adjustType === 'sortie'
-                          ? 'border-red-600 bg-red-50 text-red-700 ring-1 ring-red-600'
-                          : 'border-[#e7e4dd] bg-white text-gray-600 hover:bg-[#faf8f4]'
-                      }`}
-                    >
-                      - Sortie
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAdjustType('ajustement');
-                        setAdjustReason('Correction après inventaire physique');
-                      }}
-                      className={`py-2 px-2 text-xs rounded-lg font-medium border text-center transition-all ${
-                        adjustType === 'ajustement'
-                          ? 'border-[#3d5a99] bg-blue-50 text-[#3d5a99] ring-1 ring-[#3d5a99]'
-                          : 'border-[#e7e4dd] bg-white text-gray-600 hover:bg-[#faf8f4]'
-                      }`}
-                    >
-                      = Inventaire
-                    </button>
-                  </div>
-                </div>
-
-                {/* Quantity input & Real-time preview */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-gray-700">
-                      {adjustType === 'ajustement' ? 'Nouveau stock total' : 'Quantité à modifier'}{' '}
-                      <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      type="number"
-                      min={adjustType === 'ajustement' ? 0 : 1}
-                      value={adjustQuantity}
-                      onChange={(e) => setAdjustQuantity(parseInt(e.target.value) || 0)}
-                      required
-                      className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20 font-mono text-sm"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-gray-700">
-                      Seuil stock minimum
-                    </label>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={newMinStock}
-                      onChange={(e) => setNewMinStock(parseInt(e.target.value) || 0)}
-                      required
-                      className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20 font-mono text-sm"
-                    />
-                  </div>
-                </div>
-
-                {/* Calculation Preview Banner */}
-                <div className="p-3 rounded-xl bg-[#edf8ef] border border-[#b0c8a8] flex items-center justify-between text-xs">
-                  <span className="text-gray-700 font-medium">Évolution estimée du stock :</span>
-                  <div className="flex items-center gap-1.5 font-mono text-sm">
-                    <span className="text-gray-500">{selectedProduct.stock}</span>
-                    <span className="text-gray-400">→</span>
-                    <strong className="text-[#24582d] font-bold">{calculatedNewStock} unités</strong>
-                  </div>
-                </div>
-
-                {/* Reason selector */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-gray-700">Motif du mouvement</label>
-                  <select
-                    value={adjustReason}
-                    onChange={(e) => setAdjustReason(e.target.value)}
-                    className="w-full rounded-lg border border-[#e7e4dd] bg-white p-2.5 text-xs text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#24582d]"
-                  >
-                    {adjustType === 'entree' && (
-                      <>
-                        <option value="Réassort arrivage fleurs fraîches">
-                          Réassort arrivage fleurs fraîches
-                        </option>
-                        <option value="Réassort plantes & accessoires">
-                          Réassort plantes & accessoires
-                        </option>
-                        <option value="Retour client non livré / annulé">
-                          Retour client non livré / annulé
-                        </option>
-                      </>
-                    )}
-                    {adjustType === 'sortie' && (
-                      <>
-                        <option value="Perte / Fleur abîmée ou fanée">
-                          Perte / Fleur abîmée ou fanée
-                        </option>
-                        <option value="Vente directe en boutique physique (Saly)">
-                          Vente directe en boutique physique (Saly)
-                        </option>
-                        <option value="Casse vase ou article décoratif">
-                          Casse vase ou article décoratif
-                        </option>
-                        <option value="Utilisation pour atelier / événement">
-                          Utilisation pour atelier / événement
-                        </option>
-                      </>
-                    )}
-                    {adjustType === 'ajustement' && (
-                      <>
-                        <option value="Correction après inventaire physique">
-                          Correction après inventaire physique
-                        </option>
-                        <option value="Régularisation administrative">
-                          Régularisation administrative
-                        </option>
-                      </>
-                    )}
-                    <option value="Autre motif">Autre motif</option>
-                  </select>
-                </div>
-
-                {/* Note additionnelle */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-gray-700">
-                    Note complémentaire (optionnel)
-                  </label>
-                  <Input
-                    placeholder="Ex : Arrivage fournisseur Dakar, fleurs flétries..."
-                    value={customNote}
-                    onChange={(e) => setCustomNote(e.target.value)}
-                    className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20 text-xs"
-                  />
-                </div>
-              </div>
-
-              {/* Drawer Footer */}
-              <SheetFooter className="gap-2 p-6 border-t border-[#f0eee8] bg-[#faf8f4] mt-auto">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsAdjustModalOpen(false)}
-                  className="flex-1 border-[#e7e4dd] text-gray-600 hover:bg-gray-100"
-                >
-                  Annuler
-                </Button>
-                <Button
-                  type="submit"
-                  variant="cta"
-                  className="flex-1 bg-[#c1647a] hover:bg-[#a9576a] !text-white font-medium gap-1.5"
-                >
-                  <CheckCircle2 className="h-4 w-4" />
-                  Enregistrer l&apos;ajustement
-                </Button>
-              </SheetFooter>
-            </form>
-          )}
-        </SheetContent>
-      </Sheet>
-
-      {/* Modal Dialog: Détail complet du motif */}
-      <Dialog
-        open={!!selectedMovementForReason}
-        onOpenChange={(open) => !open && setSelectedMovementForReason(null)}
-      >
-        <DialogContent className="sm:max-w-md bg-white border border-[#e7e4dd] p-6 rounded-2xl shadow-xl">
-          <DialogHeader>
-            <div className="flex items-center gap-2 text-[#24582d]">
-              <FileText className="h-5 w-5" />
-              <DialogTitle className="text-lg font-bold text-[#1e2a1f]">
-                Motif du mouvement
-              </DialogTitle>
-            </div>
-            <DialogDescription className="text-xs text-gray-500">
-              Détail et justification du mouvement de stock enregistré.
-            </DialogDescription>
-          </DialogHeader>
-
-          {selectedMovementForReason && (
-            <div className="space-y-4 pt-2">
-              <div className="p-3.5 rounded-xl bg-[#faf8f4] border border-[#e7e4dd] space-y-2 text-xs">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-500">Produit :</span>
-                  <strong className="text-gray-900 font-semibold">
-                    {selectedMovementForReason.productName} ({selectedMovementForReason.productSku})
-                  </strong>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-500">Date :</span>
-                  <span className="text-gray-700 font-mono">
-                    {formatDate(selectedMovementForReason.date)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-500">Type & Quantité :</span>
-                  <span className="font-mono font-bold">
-                    {selectedMovementForReason.type === 'entree' ? (
-                      <span className="text-[#166534]">+{selectedMovementForReason.quantity} (Entrée)</span>
-                    ) : selectedMovementForReason.type === 'sortie' ? (
-                      <span className="text-[#cc0000]">-{selectedMovementForReason.quantity} (Sortie)</span>
-                    ) : (
-                      <span className="text-[#3d5a99]">{selectedMovementForReason.quantity} (Ajustement)</span>
-                    )}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-500">Auteur :</span>
-                  <span className="text-gray-700 font-medium">
-                    {selectedMovementForReason.author}
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider block">
-                  Texte intégral du motif
-                </label>
-                <div className="p-3.5 rounded-xl bg-white border border-[#e7e4dd] text-sm text-gray-800 leading-relaxed whitespace-pre-wrap break-words">
-                  {selectedMovementForReason.reason}
-                </div>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter className="pt-4">
-            <Button
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Ajuster le stock">
+      <form onSubmit={save} className="bg-white rounded-2xl w-full max-w-md p-5 space-y-4 text-xs shadow-2xl">
+        <div>
+          <h2 className="text-base font-bold">Ajuster le stock</h2>
+          <p className="text-gray-500">
+            {row.product.name} — {row.variant.name} · stock actuel : <strong>{current}</strong>
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {(Object.keys(MOVEMENT_LABELS) as StockMovementRow['type'][]).map((t) => (
+            <button
+              key={t}
               type="button"
-              variant="outline"
-              onClick={() => setSelectedMovementForReason(null)}
-              className="w-full border-[#e7e4dd] text-gray-700 hover:bg-gray-100"
+              onClick={() => {
+                setType(t);
+                setReason(REASONS[t][0]);
+                if (t === 'ADJUSTMENT') setQuantity(String(current));
+              }}
+              aria-pressed={type === t}
+              className={`py-2 rounded-lg border font-semibold ${type === t ? 'border-[#24582d] bg-[#edf8ef]' : 'border-[#e7e4dd]'}`}
             >
-              Fermer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              {MOVEMENT_LABELS[t].label}
+            </button>
+          ))}
+        </div>
+        <label className="block font-semibold">
+          {type === 'ADJUSTMENT' ? 'Quantité comptée' : 'Quantité'}
+          <input type="number" min={0} value={quantity} onChange={(e) => setQuantity(e.target.value)} className="mt-1 w-full h-10 rounded-lg border border-[#e7e4dd] px-3" />
+        </label>
+        <label className="block font-semibold">
+          Motif
+          <select value={reason} onChange={(e) => setReason(e.target.value)} className="mt-1 w-full h-10 rounded-lg border border-[#e7e4dd] px-3 bg-white">
+            {REASONS[type].map((r) => (
+              <option key={r}>{r}</option>
+            ))}
+          </select>
+        </label>
+        <label className="block font-semibold">
+          Précision (facultatif)
+          <input value={note} onChange={(e) => setNote(e.target.value)} className="mt-1 w-full h-10 rounded-lg border border-[#e7e4dd] px-3" />
+        </label>
+        <p className={`rounded-lg p-2 ${next < 0 ? 'bg-red-50 text-red-700' : 'bg-[#faf8f4]'}`}>
+          Nouveau stock : <strong>{next}</strong>
+        </p>
+        <div className="flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border border-[#e7e4dd] font-semibold">
+            Annuler
+          </button>
+          <button type="submit" disabled={saving} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#24582d] text-white font-semibold disabled:opacity-60">
+            {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Enregistrer le mouvement
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function MovementsTab() {
+  const [data, setData] = useState<Awaited<ReturnType<typeof getMovements>> | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [type, setType] = useState<'all' | StockMovementRow['type']>('all');
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+
+  const load = useCallback(
+    () =>
+      getMovements({ page, type: type === 'all' ? undefined : type, search })
+        .then((res) => {
+          setData(res);
+          setLoadError(null);
+        })
+        .catch((err) => setLoadError(errorText(err, 'Historique indisponible.'))),
+    [page, type, search],
+  );
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setSearch(searchInput.trim());
+      setPage(1);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col md:flex-row gap-3">
+        <select
+          value={type}
+          onChange={(e) => {
+            setType(e.target.value as typeof type);
+            setPage(1);
+          }}
+          aria-label="Type de mouvement"
+          className="h-10 px-3 rounded-xl border border-[#e7e4dd] bg-white text-xs"
+        >
+          <option value="all">Tous les mouvements</option>
+          <option value="ENTRY">Entrées</option>
+          <option value="EXIT">Sorties</option>
+          <option value="ADJUSTMENT">Inventaires</option>
+        </select>
+        <label className="flex items-center gap-2 flex-1 px-3 rounded-xl border border-[#e7e4dd] bg-white">
+          <Search className="h-4 w-4 text-gray-400" />
+          <input type="search" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Produit, SKU ou motif…" aria-label="Rechercher un mouvement" className="w-full h-10 text-xs outline-none" />
+        </label>
+      </div>
+      {loadError && (
+        <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-800">
+          {loadError}
+        </div>
+      )}
+      {data === null && !loadError ? (
+        <div className="flex items-center justify-center gap-2 py-16 text-sm text-gray-500">
+          <Loader2 className="h-5 w-5 animate-spin" /> Chargement…
+        </div>
+      ) : (data?.items ?? []).length === 0 ? (
+        <div className="bg-white rounded-2xl border border-[#e7e4dd] p-10 text-center text-xs text-gray-500">Aucun mouvement.</div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-[#e7e4dd] overflow-x-auto">
+          <table className="w-full text-left text-xs min-w-[720px]">
+            <thead className="bg-[#faf8f4] border-b border-[#e7e4dd] font-bold">
+              <tr>
+                <th className="px-4 py-3">Date</th>
+                <th className="px-4 py-3">Produit / variante</th>
+                <th className="px-4 py-3">Type</th>
+                <th className="px-4 py-3 text-right">Quantité</th>
+                <th className="px-4 py-3 text-right">Stock</th>
+                <th className="px-4 py-3">Motif</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#f0ede6]">
+              {(data?.items ?? []).map((m) => (
+                <tr key={m.id}>
+                  <td className="px-4 py-3 whitespace-nowrap">{new Date(m.createdAt).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
+                  <td className="px-4 py-3">
+                    <span className="font-semibold">{m.product.name}</span>
+                    <span className="block text-gray-400">
+                      {m.variant.name} · {m.variant.sku}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-0.5 rounded-full border font-semibold ${MOVEMENT_LABELS[m.type].style}`}>{MOVEMENT_LABELS[m.type].label}</span>
+                  </td>
+                  <td className="px-4 py-3 text-right font-semibold">
+                    {m.type === 'ENTRY' ? '+' : m.type === 'EXIT' ? '−' : '='}
+                    {m.quantity}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {m.previousStock} → <strong>{m.newStock}</strong>
+                  </td>
+                  <td className="px-4 py-3">{m.reason}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="px-4 py-3 border-t border-[#e7e4dd] bg-[#faf8f4]">
+            <Pager page={page} totalPages={data?.totalPages ?? 1} onChange={setPage} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

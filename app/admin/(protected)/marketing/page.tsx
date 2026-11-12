@@ -12,7 +12,6 @@ import {
   type CampaignChannel,
   type CartRecoveryStatus,
 } from '@/lib/admin/mock-data/types';
-import { defaultCartRecoverySettings as defaultCartSettings } from '@/lib/admin/mock-data/marketing';
 import {
   getAdminCoupons,
   createAdminCoupon,
@@ -30,6 +29,10 @@ import {
   remindAdminAbandonedCart,
   getCartRecoverySettings,
   updateCartRecoverySettings,
+  runAdminCartReminders,
+  getMarketingSummary,
+  setAdminAbandonedCartStatus,
+  type MarketingSummary,
 } from '@/lib/api/admin/marketing';
 import { ApiClientError } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
@@ -43,28 +46,18 @@ import {
   ShoppingCart,
   Plus,
   Search,
-  Sparkles,
-  Percent,
-  Banknote,
   Truck,
-  MessageCircle,
-  Smartphone,
   Mail,
+  Loader2,
+  Send,
   Copy,
-  TrendingUp,
   DollarSign,
-  Users,
   Clock,
   CheckCircle,
-  AlertCircle,
   Sliders,
-  Send,
   Trash2,
   Calendar,
-  ExternalLink,
-  ShieldCheck,
   RefreshCw,
-  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { WhatsAppColorIcon, WhatsAppButtonIcon } from '@/components/icons';
@@ -83,39 +76,72 @@ export default function AdminMarketingPage() {
   const [promotions, setPromotions] = useState<AdminPromotion[]>([]);
   const [campaigns, setCampaigns] = useState<AdminCampaign[]>([]);
   const [abandonedCarts, setAbandonedCarts] = useState<AdminAbandonedCart[]>([]);
-  const [cartSettings, setCartSettings] = useState<CartRecoverySettings>(defaultCartSettings);
+  const [cartSettings, setCartSettings] = useState<CartRecoverySettings | null>(null);
+  const [summary, setSummary] = useState<MarketingSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadData = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
-
-    try {
-      const [cpRes, prRes, cmpRes, crtRes, setRes] = await Promise.all([
+  // Chaîne de promesses : les setState n'ont lieu que dans les callbacks, jamais pendant l'effet.
+  const fetchMarketing = useCallback(
+    () =>
+      Promise.all([
         getAdminCoupons(),
         getAdminPromotions(),
         getAdminCampaigns(),
         getAdminAbandonedCarts(),
         getCartRecoverySettings(),
-      ]);
-      if (cpRes && Array.isArray(cpRes)) setCoupons(cpRes);
-      if (prRes && Array.isArray(prRes)) setPromotions(prRes);
-      if (cmpRes && Array.isArray(cmpRes)) setCampaigns(cmpRes);
-      if (crtRes && Array.isArray(crtRes)) setAbandonedCarts(crtRes);
-      if (setRes) setCartSettings(setRes);
-    } catch (err) {
-      const msg = err instanceof ApiClientError ? err.message : 'Erreur lors du chargement des données marketing';
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
+        getMarketingSummary(),
+      ])
+        .then(([cpRes, prRes, cmpRes, crtRes, setRes, sumRes]) => {
+          setCoupons(cpRes);
+          setPromotions(prRes);
+          setCampaigns(cmpRes);
+          setAbandonedCarts(crtRes);
+          setCartSettings(setRes);
+          setSummary(sumRes);
+        })
+        .catch((err: unknown) => {
+          toast.error(err instanceof ApiClientError ? err.message : 'Erreur lors du chargement des données marketing');
+        })
+        .finally(() => {
+          setLoading(false);
+          setRefreshing(false);
+        }),
+    []
+  );
+
+  const loadData = useCallback(
+    (isRefresh = false) => {
+      if (isRefresh) setRefreshing(true);
+      return fetchMarketing();
+    },
+    [fetchMarketing]
+  );
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    fetchMarketing();
+  }, [fetchMarketing]);
+
+  // Relance automatique : passage immédiat (sinon toutes les 10 min côté serveur)
+  const [runningReminders, setRunningReminders] = useState(false);
+  const handleRunReminders = async () => {
+    setRunningReminders(true);
+    try {
+      const r = await runAdminCartReminders();
+      const sent = r.sentFirst + r.sentSecond;
+      if (!r.enabled) toast.info('Les relances automatiques sont désactivées.');
+      else if (sent === 0) toast.info('Aucun panier à relancer pour le moment.', { description: r.skipped ? `${r.skipped} panier(s) sans e-mail valide.` : undefined });
+      else
+        toast.success(`${sent} relance(s) envoyée(s) par e-mail`, {
+          description: `${r.sentFirst} 1re relance(s), ${r.sentSecond} 2e relance(s)${r.failed ? `, ${r.failed} échec(s)` : ''}.`,
+        });
+      await loadData(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Relance impossible pour le moment.');
+    } finally {
+      setRunningReminders(false);
+    }
+  };
 
   // Search & Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -130,31 +156,8 @@ export default function AdminMarketingPage() {
   const [isCampaignDialogOpen, setIsCampaignDialogOpen] = useState(false);
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
 
-  // KPIs
-  const kpiStats = useMemo(() => {
-    const totalCouponRev = coupons.reduce((sum, c) => sum + c.revenueGenerated, 0);
-    const totalPromoRev = promotions.reduce((sum, p) => sum + p.revenueGenerated, 0);
-    const totalCampaignRev = campaigns.reduce((sum, cmp) => sum + cmp.revenueGenerated, 0);
-    const totalMarketingRevenue = totalCouponRev + totalPromoRev + totalCampaignRev;
-
-    const activeCouponsCount = coupons.filter((c) => c.status === 'actif').length;
-    const activePromosCount = promotions.filter((p) => p.status === 'active').length;
-
-    const recoveredCarts = abandonedCarts.filter((c) => c.status === 'recupere');
-    const recoveredRevenue = recoveredCarts.reduce((sum, c) => sum + c.total, 0);
-    const recoveryRate =
-      abandonedCarts.length > 0
-        ? Math.round((recoveredCarts.length / abandonedCarts.length) * 100)
-        : 0;
-
-    return {
-      totalRevenue: totalMarketingRevenue,
-      activeCouponsCount,
-      activePromosCount,
-      recoveredRevenue,
-      recoveryRate,
-    };
-  }, [coupons, promotions, campaigns, abandonedCarts]);
+  // KPIs calculés par le serveur (GET /admin/marketing/summary)
+  const kpiStats = summary ?? { totalRevenue: 0, activeCouponsCount: 0, activePromosCount: 0, recoveredRevenue: 0, recoveryRate: 0 };
 
   // Filtered Coupons
   const filteredCoupons = useMemo(() => {
@@ -226,112 +229,80 @@ export default function AdminMarketingPage() {
     toast.success(`Code promo "${code}" copié dans le presse-papier !`);
   };
 
-  const handleToggleCouponStatus = async (couponId: string) => {
-    const cp = coupons.find((c) => c.id === couponId);
-    if (!cp) return;
-    const nextStatus: CouponStatus = cp.status === 'actif' ? 'inactif' : 'actif';
-
-    setCoupons((prev) =>
-      prev.map((c) => (c.id === couponId ? { ...c, status: nextStatus } : c))
-    );
-    toast.info(`Code ${cp.code} ${nextStatus === 'actif' ? 'activé' : 'désactivé'}`);
-
+  /** Exécute une action serveur puis recharge les données ; aucune mise à jour locale en cas d'échec. */
+  const runAction = async (action: () => Promise<unknown>, success: string): Promise<boolean> => {
     try {
-      await updateAdminCoupon(couponId, { status: nextStatus });
-    } catch {
-      // optimistic
+      await action();
+      toast.success(success);
+      await loadData(true);
+      return true;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Action impossible.');
+      return false;
     }
   };
 
+  const handleToggleCouponStatus = async (couponId: string) => {
+    const cp = coupons.find((c) => c.id === couponId);
+    if (!cp) return;
+    const activate = cp.status !== 'actif';
+    await runAction(() => updateAdminCoupon(couponId, { isActive: activate } as Partial<AdminCoupon>), `Code ${cp.code} ${activate ? 'activé' : 'désactivé'}.`);
+  };
+
   const handleDeleteCoupon = async (couponId: string) => {
-    setCoupons((prev) => prev.filter((c) => c.id !== couponId));
-    toast.info('Code promotionnel supprimé');
-    try {
-      await deleteAdminCoupon(couponId);
-    } catch {
-      // optimistic
-    }
+    const cp = coupons.find((c) => c.id === couponId);
+    if (!window.confirm(`Supprimer le code ${cp?.code ?? ''} ?`)) return;
+    await runAction(() => deleteAdminCoupon(couponId), 'Code promotionnel supprimé.');
   };
 
   const handleTogglePromotionStatus = async (promoId: string) => {
     const pr = promotions.find((p) => p.id === promoId);
     if (!pr) return;
-    const nextStatus: PromotionStatus = pr.status === 'active' ? 'inactive' : 'active';
-
-    setPromotions((prev) =>
-      prev.map((p) => (p.id === promoId ? { ...p, status: nextStatus } : p))
+    const activate = pr.status !== 'active';
+    await runAction(
+      () => updateAdminPromotion(promoId, { isActive: activate } as Partial<AdminPromotion>),
+      `Promotion « ${pr.name} » ${activate ? 'activée' : 'désactivée'}.`,
     );
-    toast.info(`Promotion "${pr.name}" passée en ${nextStatus}`);
-
-    try {
-      await updateAdminPromotion(promoId, { status: nextStatus });
-    } catch {
-      // optimistic
-    }
   };
 
   const handleDeletePromotion = async (promoId: string) => {
-    setPromotions((prev) => prev.filter((p) => p.id !== promoId));
-    toast.info('Promotion supprimée du catalogue');
-    try {
-      await deleteAdminPromotion(promoId);
-    } catch {
-      // optimistic
-    }
+    const pr = promotions.find((p) => p.id === promoId);
+    if (!window.confirm(`Supprimer la promotion « ${pr?.name ?? ''} » ?`)) return;
+    await runAction(() => deleteAdminPromotion(promoId), 'Promotion supprimée du catalogue.');
   };
 
+  const handleSendCampaign = async (camp: AdminCampaign) => {
+    if (!window.confirm(`Envoyer la campagne « ${camp.name} » maintenant ?`)) return;
+    await runAction(() => sendAdminCampaign(camp.id), `Campagne « ${camp.name} » envoyée.`);
+  };
+
+  const handleDeleteCampaign = async (camp: AdminCampaign) => {
+    if (!window.confirm(`Supprimer la campagne « ${camp.name} » ?`)) return;
+    await runAction(() => deleteAdminCampaign(camp.id), 'Campagne supprimée.');
+  };
+
+  /**
+   * Relance : par email, le serveur envoie réellement le message ; par WhatsApp, le message pré-rempli
+   * s'ouvre dans WhatsApp pour être envoyé depuis le téléphone de la boutique, et la relance est tracée.
+   */
   const handleSendCartReminder = async (cart: AdminAbandonedCart, channel: 'whatsapp' | 'email') => {
-    const nowTime = `Aujourd’hui à ${new Date().toLocaleTimeString('fr-FR', {
-      hour: '2-digit',
-      minute: '2-digit',
-    })}`;
-
-    setAbandonedCarts((prev) =>
-      prev.map((c) => {
-        if (c.id === cart.id) {
-          return {
-            ...c,
-            status: 'relance_1_envoyee',
-            lastReminderAt: nowTime,
-            recoveryChannel: channel,
-          };
-        }
-        return c;
-      })
-    );
-
-    try {
-      await remindAdminAbandonedCart(cart.id, channel);
-    } catch {
-      // optimistic
-    }
-
     if (channel === 'whatsapp') {
       const cleanPhone = cart.customerPhone.replace(/[^0-9]/g, '');
-      const defaultText = encodeURIComponent(
-        `Bonjour ${cart.customerName} 🌸 Vous avez laissé des articles dans votre panier Décofleur Plus (total: ${cart.total.toLocaleString('fr-FR')} FCFA). Profitez de notre livraison rapide sur Saly & Mbour pour finaliser votre commande !`
+      const text = encodeURIComponent(
+        `Bonjour ${cart.customerName}, vous avez laissé des articles dans votre panier Décofleur Plus (total : ${cart.total.toLocaleString('fr-FR')} FCFA).${
+          cart.recoveryCouponCode ? ` Profitez du code ${cart.recoveryCouponCode} pour finaliser votre commande.` : ''
+        } ${window.location.origin}/panier`,
       );
-      toast.success(`Message de relance WhatsApp envoyé à ${cart.customerName}`);
-      window.open(`https://wa.me/${cleanPhone}?text=${defaultText}`, '_blank');
-    } else {
-      toast.success(`Email de relance envoyé avec succès à ${cart.customerEmail}`);
+      window.open(`https://wa.me/${cleanPhone}?text=${text}`, '_blank');
     }
+    await runAction(
+      () => remindAdminAbandonedCart(cart.id, channel),
+      channel === 'email' ? `Email de relance envoyé à ${cart.customerEmail}.` : `Relance WhatsApp enregistrée pour ${cart.customerName}.`,
+    );
   };
 
-  const handleMarkCartRecovered = (cartId: string) => {
-    setAbandonedCarts((prev) =>
-      prev.map((c) => {
-        if (c.id === cartId) {
-          return {
-            ...c,
-            status: 'recupere',
-            recoveredAt: 'À l’instant',
-          };
-        }
-        return c;
-      })
-    );
-    toast.success('Panier marqué comme récupéré et converti !');
+  const handleMarkCartRecovered = async (cartId: string) => {
+    await runAction(() => setAdminAbandonedCartStatus(cartId, 'recupere'), 'Panier marqué comme récupéré.');
   };
 
   // Helper Badges
@@ -408,13 +379,6 @@ export default function AdminMarketingPage() {
             WhatsApp
           </Badge>
         );
-      case 'sms':
-        return (
-          <Badge className="bg-[#e5eaff] text-[#3d5a99] border-none font-medium text-xs gap-1">
-            <Smartphone className="h-3 w-3 text-[#3d5a99]" />
-            SMS Direct
-          </Badge>
-        );
       case 'email':
         return (
           <Badge className="bg-[#fdf2f4] text-[#c1647a] border-none font-medium text-xs gap-1">
@@ -467,7 +431,7 @@ export default function AdminMarketingPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-[#1e2a1f]">Marketing & Promotions</h1>
           <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
-            Créez des offres attractives, fidélisez vos clients via WhatsApp & SMS et récupérez vos ventes perdues.
+            Créez des offres attractives, fidélisez vos clients par e-mail et récupérez vos paniers abandonnés.
           </p>
         </div>
 
@@ -538,10 +502,7 @@ export default function AdminMarketingPage() {
           <p className="text-sm sm:text-xl font-bold text-gray-900 font-mono truncate">
             {kpiStats.totalRevenue.toLocaleString('fr-FR')} F
           </p>
-          <p className="text-[10px] sm:text-[11px] text-emerald-600 font-medium flex items-center gap-1">
-            <TrendingUp className="h-3 w-3 shrink-0" />
-            <span>+18.4%</span>
-          </p>
+          <p className="text-[10px] sm:text-[11px] text-gray-500 font-medium">Codes, promotions et campagnes</p>
         </div>
 
         <div className="bg-white border border-[#e7e4dd] rounded-xl p-3 sm:p-4 shadow-xs space-y-1">
@@ -561,14 +522,14 @@ export default function AdminMarketingPage() {
 
         <div className="bg-white border border-[#e7e4dd] rounded-xl p-3 sm:p-4 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-gray-500 text-[11px] sm:text-xs">
-            <span className="truncate">Réactivité</span>
+            <span className="truncate">Campagnes envoyées</span>
             <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg bg-[#e5eaff] text-[#3d5a99] flex items-center justify-center shrink-0">
               <Megaphone className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
           </div>
-          <p className="text-sm sm:text-xl font-bold text-gray-900 truncate">94.2% WA</p>
+          <p className="text-sm sm:text-xl font-bold text-gray-900 truncate">{campaigns.filter((c) => c.status === 'envoyee').length}</p>
           <p className="text-[10px] sm:text-[11px] text-[#3d5a99] font-medium">
-            32.5% clics
+            {campaigns.filter((c) => c.status === 'envoyee').reduce((sum, c) => sum + c.recipientCount, 0).toLocaleString('fr-FR')} emails envoyés
           </p>
         </div>
 
@@ -1282,7 +1243,6 @@ export default function AdminMarketingPage() {
               {[
                 { id: 'all', label: 'Tous canaux' },
                 { id: 'whatsapp', label: 'WhatsApp' },
-                { id: 'sms', label: 'SMS Direct' },
                 { id: 'email', label: 'Email' },
               ].map((pill) => (
                 <button
@@ -1409,16 +1369,26 @@ export default function AdminMarketingPage() {
 
                       {/* Actions */}
                       <TableCell className="px-3 py-2.5 text-right pr-4">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            toast.info(`Message : "${camp.messageContent}"`);
-                          }}
-                          className="h-7 text-xs border-[#e7e4dd]"
-                        >
-                          Aperçu
-                        </Button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          {camp.status !== 'envoyee' && camp.channel === 'email' && (
+                            <Button size="sm" onClick={() => void handleSendCampaign(camp)} className="h-7 text-xs bg-[#c1647a] hover:bg-[#a85266] text-white">
+                              Envoyer
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => window.alert(`${camp.name}\n\n${camp.messageContent}`)}
+                            className="h-7 text-xs border-[#e7e4dd]"
+                          >
+                            Aperçu
+                          </Button>
+                          {camp.status !== 'envoyee' && (
+                            <Button size="sm" variant="outline" onClick={() => void handleDeleteCampaign(camp)} className="h-7 text-xs border-red-200 text-red-600">
+                              Supprimer
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -1494,16 +1464,21 @@ export default function AdminMarketingPage() {
                   <span className="text-[11px] text-gray-400">
                     {camp.sentAt || camp.scheduledAt || 'Brouillon'}
                   </span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      toast.info(`Message : "${camp.messageContent}"`);
-                    }}
-                    className="h-8 text-xs border-[#e7e4dd]"
-                  >
-                    Aperçu
-                  </Button>
+                  <div className="flex gap-1.5">
+                    {camp.status !== 'envoyee' && camp.channel === 'email' && (
+                      <Button size="sm" onClick={() => void handleSendCampaign(camp)} className="h-8 text-xs bg-[#c1647a] text-white">
+                        Envoyer
+                      </Button>
+                    )}
+                    <Button size="sm" variant="outline" onClick={() => window.alert(`${camp.name}\n\n${camp.messageContent}`)} className="h-8 text-xs border-[#e7e4dd]">
+                      Aperçu
+                    </Button>
+                    {camp.status !== 'envoyee' && (
+                      <Button size="sm" variant="outline" onClick={() => void handleDeleteCampaign(camp)} className="h-8 text-xs border-red-200 text-red-600">
+                        Supprimer
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -1523,31 +1498,52 @@ export default function AdminMarketingPage() {
       {activeTab === 'paniers' && (
         <div className="space-y-4">
           {/* Recovery Automation Banner */}
-          <div className="bg-[#fcfaf7] border border-[#e7e4dd] rounded-xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {cartSettings && (
+          <div className="bg-[#fcfaf7] border border-[#e7e4dd] rounded-xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3" data-testid="cart-automation">
             <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-xs text-gray-900">
-                  Automatisation active :
-                </span>
-                <Badge className="bg-[#dcfce7] text-[#166534] border-none text-[10px]">
-                  {cartSettings.autoEnabled ? 'WhatsApp & Email activés' : 'Désactivé'}
-                </Badge>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-bold text-xs text-gray-900">Relances automatiques :</span>
+                {cartSettings.autoEnabled ? (
+                  <Badge className="bg-[#dcfce7] text-[#166534] border-none text-[10px]">Activées · par e-mail</Badge>
+                ) : (
+                  <Badge className="bg-gray-100 text-gray-600 border-none text-[10px]">Désactivées</Badge>
+                )}
               </div>
               <p className="text-[11px] text-gray-500">
-                1ère relance à H+{cartSettings.delayHours1} • 2ème relance à H+{cartSettings.delayHours2}{' '}
-                avec code {cartSettings.discountCode} ({cartSettings.discountValue})
+                1re relance {cartSettings.delayHours1} h après l’abandon • 2e relance à {cartSettings.delayHours2} h
+                {cartSettings.includeDiscount && cartSettings.discountCode
+                  ? ` avec le code ${cartSettings.discountCode}${cartSettings.discountValue ? ` (${cartSettings.discountValue})` : ''}`
+                  : ' sans code promo'}
+              </p>
+              <p className="text-[11px] text-gray-400">
+                {cartSettings.lastAutoRunAt
+                  ? `Dernière vérification : ${new Date(cartSettings.lastAutoRunAt).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} · ${cartSettings.lastAutoRunSent ?? 0} e-mail(s) envoyé(s)`
+                  : 'Aucune vérification automatique pour le moment (toutes les 10 min une fois activées).'}
               </p>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setIsConfigDialogOpen(true)}
-              className="text-xs h-9 sm:h-8 border-[#e7e4dd] bg-white text-gray-700 hover:text-[#c1647a] shrink-0 gap-1 w-full sm:w-auto"
-            >
-              <Sliders className="h-3.5 w-3.5" />
-              Modifier règles
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!cartSettings.autoEnabled || runningReminders}
+                onClick={handleRunReminders}
+                className="text-xs h-9 sm:h-8 border-[#e7e4dd] bg-white text-gray-700 hover:text-[#c1647a] gap-1 w-full sm:w-auto"
+              >
+                {runningReminders ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                Lancer maintenant
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setIsConfigDialogOpen(true)}
+                className="text-xs h-9 sm:h-8 border-[#e7e4dd] bg-white text-gray-700 hover:text-[#c1647a] gap-1 w-full sm:w-auto"
+              >
+                <Sliders className="h-3.5 w-3.5" />
+                Modifier les règles
+              </Button>
+            </div>
           </div>
+          )}
 
           {/* Sub-Filters and Search */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
@@ -1833,7 +1829,6 @@ export default function AdminMarketingPage() {
         isOpen={isCouponDialogOpen}
         onOpenChange={setIsCouponDialogOpen}
         onCreate={async (newCoupon) => {
-          setCoupons((prev) => [newCoupon, ...prev]);
           try {
             await createAdminCoupon({
               code: newCoupon.code,
@@ -1844,10 +1839,14 @@ export default function AdminMarketingPage() {
               startDate: newCoupon.startDate,
               endDate: newCoupon.endDate,
               description: newCoupon.description,
+              maxUsagePerCustomer: newCoupon.maxUsagePerCustomer,
             });
-            toast.success('Code promo créé avec succès !');
-          } catch {
-            // optimistic
+            toast.success(`Code promo ${newCoupon.code} créé.`);
+            await loadData(true);
+            return true;
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Création du code impossible.');
+            return false;
           }
         }}
       />
@@ -1856,7 +1855,6 @@ export default function AdminMarketingPage() {
         isOpen={isPromotionDialogOpen}
         onOpenChange={setIsPromotionDialogOpen}
         onCreate={async (newPromo) => {
-          setPromotions((prev) => [newPromo, ...prev]);
           try {
             await createAdminPromotion({
               name: newPromo.name,
@@ -1866,10 +1864,14 @@ export default function AdminMarketingPage() {
               badgeText: newPromo.badgeText,
               targetType: newPromo.targetType,
               targetNames: newPromo.targetNames,
+              targetIds: newPromo.targetIds,
             });
-            toast.success('Promotion catalogue créée avec succès !');
-          } catch {
-            // optimistic
+            toast.success(`Promotion « ${newPromo.name} » créée.`);
+            await loadData(true);
+            return true;
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Création de la promotion impossible.');
+            return false;
           }
         }}
       />
@@ -1878,7 +1880,6 @@ export default function AdminMarketingPage() {
         isOpen={isCampaignDialogOpen}
         onOpenChange={setIsCampaignDialogOpen}
         onCreate={async (newCamp) => {
-          setCampaigns((prev) => [newCamp, ...prev]);
           try {
             await createAdminCampaign({
               name: newCamp.name,
@@ -1886,27 +1887,34 @@ export default function AdminMarketingPage() {
               audience: newCamp.audience,
               messageContent: newCamp.messageContent,
             });
-            toast.success('Campagne marketing créée avec succès !');
-          } catch {
-            // optimistic
+            toast.success(`Campagne « ${newCamp.name} » enregistrée en brouillon.`);
+            await loadData(true);
+            return true;
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Création de la campagne impossible.');
+            return false;
           }
         }}
       />
 
+      {cartSettings && (
       <CartRecoveryConfigDialog
         isOpen={isConfigDialogOpen}
         onOpenChange={setIsConfigDialogOpen}
         settings={cartSettings}
+        coupons={coupons}
         onSave={async (newSettings) => {
-          setCartSettings(newSettings);
           try {
-            await updateCartRecoverySettings(newSettings);
-            toast.success('Paramètres de relance automatique enregistrés');
-          } catch {
-            // optimistic
+            setCartSettings(await updateCartRecoverySettings(newSettings));
+            toast.success('Paramètres de relance enregistrés.');
+            return true;
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Enregistrement impossible.');
+            return false;
           }
         }}
       />
+      )}
     </div>
   );
 }

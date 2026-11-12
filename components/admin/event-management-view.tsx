@@ -5,7 +5,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   Calendar,
-  Check,
   Copy,
   Edit3,
   ExternalLink,
@@ -13,7 +12,6 @@ import {
   Plus,
   RotateCcw,
   Search,
-  Sparkles,
   Store,
   Trash2,
   X,
@@ -30,20 +28,21 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 import {
-  type SeasonalEvent,
+  activateAdminEvent,
+  createAdminEvent,
+  deactivateAdminEvents,
+  deleteAdminEvent,
+  duplicateAdminEvent,
+  listAdminEvents,
+  toEventInput,
+  updateAdminEvent,
   type EventThemeColor,
-  initialSeasonalEvents,
-  getStoredSeasonalEvents,
-  getActiveSeasonalEvent,
-  setActiveSeasonalEvent,
-  saveSeasonalEvents,
-  duplicateSeasonalEvent,
-  deleteSeasonalEvent,
-  standardBoutiqueEvent,
-  stripEmojis,
-} from '@/lib/events-data';
-import { EditEventDialog } from './edit-event-dialog';
+  type SeasonalEvent,
+} from '@/lib/api/events';
+import { EVENT_TEMPLATES } from '@/lib/events-data';
+import { EditEventDialog, type EventDraft } from './edit-event-dialog';
 
 const themeLabels: Record<EventThemeColor, { label: string; dot: string; bg: string }> = {
   emerald: { label: 'Vert Atelier', dot: '#193e23', bg: '#edf8ef' },
@@ -56,213 +55,152 @@ const themeLabels: Record<EventThemeColor, { label: string; dot: string; bg: str
   standard: { label: 'Signature Atelier', dot: '#193e23', bg: '#f4f8f4' },
 };
 
-export function EventManagementView() {
-  const [events, setEvents] = useState<SeasonalEvent[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = getStoredSeasonalEvents();
-        if (stored && stored.length > 0) return stored;
-      } catch {}
-    }
-    return initialSeasonalEvents;
-  });
-  const [activeEvent, setActiveEvent] = useState<SeasonalEvent>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        return getActiveSeasonalEvent();
-      } catch {}
-    }
-    return standardBoutiqueEvent;
-  });
+const NEW_EVENT: EventDraft = {
+  name: 'Nouvelle célébration',
+  categoryLabel: 'Célébration personnalisée',
+  datesLabel: 'À définir',
+  headline: 'Célébrez ce moment précieux',
+  headlineHighlight: 'avec nos créations d’exception',
+  subheadline: 'Découvrez notre collection florale dédiée, confectionnée avec soin par nos fleuristes.',
+  badge: '',
+  ctaText: 'Découvrir la sélection',
+  ctaLink: '/boutique',
+  whatsappMessage: 'Bonjour, je souhaite commander pour cet événement spécial.',
+  themeColor: 'emerald',
+  bgImage: '/images/hero.jpg',
+  collectionTitle: 'Créations dédiées à l’événement',
+  collectionDesc: 'Des pièces artisanales sélectionnées avec amour.',
+  discountNote: null,
+  featuredProductIds: [],
+};
 
+const errorText = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback);
+
+/** Marketing › Événements : événements saisonniers enregistrés en base et affichés sur l'accueil. */
+export function EventManagementView() {
+  const [events, setEvents] = useState<SeasonalEvent[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [editingEvent, setEditingEvent] = useState<SeasonalEvent | null>(null);
+  const [editingEvent, setEditingEvent] = useState<EventDraft | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<SeasonalEvent | null>(null);
 
-  // Synchronisation au montage et écouteurs d'événements
+  const reload = () =>
+    listAdminEvents()
+      .then((list) => {
+        setEvents(list);
+        setLoadError(null);
+      })
+      .catch((err) => setLoadError(errorText(err, 'Impossible de charger les événements.')));
+
   useEffect(() => {
-    const list = getStoredSeasonalEvents();
-    if (list && list.length > 0) {
-      setEvents(list);
-    } else {
-      setEvents(initialSeasonalEvents);
-    }
-    const curr = getActiveSeasonalEvent();
-    setActiveEvent(curr);
-
-    const handleEventChange = () => {
-      const updatedList = getStoredSeasonalEvents();
-      if (updatedList && updatedList.length > 0) {
-        setEvents(updatedList);
-      }
-      const updatedActive = getActiveSeasonalEvent();
-      setActiveEvent(updatedActive);
-    };
-
-    window.addEventListener('decofleur-event-changed', handleEventChange);
-    window.addEventListener('storage', handleEventChange);
-
-    return () => {
-      window.removeEventListener('decofleur-event-changed', handleEventChange);
-      window.removeEventListener('storage', handleEventChange);
-    };
+    listAdminEvents()
+      .then(setEvents)
+      .catch((err) => setLoadError(errorText(err, 'Impossible de charger les événements.')));
   }, []);
 
-  // Activer ou désactiver un événement
-  const handleToggleEvent = (eventId: string, currentIsActive: boolean) => {
-    if (currentIsActive) {
-      // Revenir en mode boutique standard
-      handleResetToStandard();
-    } else {
-      setActiveSeasonalEvent(eventId);
-      const currList = events && events.length > 0 ? events : initialSeasonalEvents;
-      const updated = currList.map((ev) => ({
-        ...ev,
-        isActive: ev.id === eventId,
-      }));
-      setEvents(updated);
-      saveSeasonalEvents(updated);
-      const target = updated.find((e) => e.id === eventId);
-      if (target) {
-        setActiveEvent(target);
-        toast.success(`Événement « ${target.name} » activé en ligne sur la vitrine.`);
-      }
+  const activeEvent = events?.find((e) => e.isActive) ?? null;
+
+  /** Exécute une action, recharge la liste et affiche le résultat. */
+  async function run(action: () => Promise<unknown>, success: string, failure: string): Promise<boolean> {
+    setBusy(true);
+    try {
+      await action();
+      await reload();
+      toast.success(success);
+      return true;
+    } catch (err) {
+      toast.error(errorText(err, failure));
+      return false;
+    } finally {
+      setBusy(false);
     }
+  }
+
+  const handleToggleEvent = (ev: SeasonalEvent) =>
+    ev.isActive
+      ? handleResetToStandard()
+      : run(() => activateAdminEvent(ev.id), `Événement « ${ev.name} » en ligne sur la vitrine.`, 'Activation impossible.');
+
+  const handleResetToStandard = () =>
+    run(() => deactivateAdminEvents(), 'Vitrine remise en mode boutique standard.', 'Opération impossible.');
+
+  const handleSaveEvent = (draft: EventDraft, activateImmediately = false) => {
+    const input = toEventInput(draft);
+    return run(
+      async () => {
+        if (draft.id) {
+          await updateAdminEvent(draft.id, input);
+          if (activateImmediately) await activateAdminEvent(draft.id);
+        } else {
+          await createAdminEvent(input, activateImmediately);
+        }
+      },
+      activateImmediately ? `Événement « ${draft.name} » enregistré et mis en ligne.` : `Événement « ${draft.name} » enregistré.`,
+      'Enregistrement impossible.',
+    );
   };
 
-  // Revenir au mode standard
-  const handleResetToStandard = () => {
-    setActiveSeasonalEvent('standard');
-    const currList = events && events.length > 0 ? events : initialSeasonalEvents;
-    const updated = currList.map((ev) => ({ ...ev, isActive: false }));
-    setEvents(updated);
-    saveSeasonalEvents(updated);
-    setActiveEvent(standardBoutiqueEvent);
-    toast.success('Vitrine remise en mode boutique standard.');
-  };
-
-  // Enregistrer les modifications
-  const handleSaveEvent = (updated: SeasonalEvent, activateImmediately = false) => {
-    const currList = events && events.length > 0 ? events : initialSeasonalEvents;
-    const exists = currList.some((e) => e.id === updated.id);
-    let nextEvents: SeasonalEvent[];
-
-    if (activateImmediately) {
-      updated = { ...updated, isActive: true };
-      const deactivated = currList.map((e) => ({ ...e, isActive: false }));
-      if (exists) {
-        nextEvents = deactivated.map((e) => (e.id === updated.id ? updated : e));
-      } else {
-        nextEvents = [updated, ...deactivated];
-      }
-      setActiveSeasonalEvent(updated.id);
-      setActiveEvent(updated);
-      toast.success(`Événement « ${updated.name} » enregistré et mis en direct sur la vitrine.`);
-    } else {
-      if (exists) {
-        nextEvents = currList.map((e) => (e.id === updated.id ? updated : e));
-      } else {
-        nextEvents = [updated, ...currList];
-      }
-      if (activeEvent.id === updated.id) {
-        setActiveEvent(updated);
-      }
-      toast.success(`Événement « ${updated.name} » enregistré avec succès.`);
-    }
-
-    setEvents(nextEvents);
-    saveSeasonalEvents(nextEvents);
-  };
-
-  // Créer un nouvel événement vierge
   const handleCreateNewEvent = () => {
-    const newId = `custom-${Date.now()}`;
-    const newEvent: SeasonalEvent = {
-      id: newId,
-      name: 'Nouvelle célébration',
-      categoryLabel: 'Célébration personnalisée',
-      datesLabel: 'À définir',
-      headline: 'Célébrez ce moment précieux',
-      headlineHighlight: 'avec nos créations d’exception',
-      subheadline:
-        'Découvrez notre collection florale dédiée, confectionnée avec soin par nos maîtres fleuristes à Saly Portudal.',
-      badge: 'Célébration Spéciale',
-      ctaText: 'Découvrir la sélection',
-      ctaLink: '/boutique',
-      whatsappMessage:
-        'Bonjour DécoFleur Plus, je souhaite commander pour cet événement spécial.',
-      themeColor: 'emerald',
-      bgImage: '/images/hero.jpg',
-      isActive: false,
-      collectionTitle: 'Créations dédiées à l’événement',
-      collectionDesc: 'Des pièces artisanales sélectionnées avec amour.',
-      featuredProductIds: [
-        'bouquet-elegance-rose',
-        'panier-fruits-tropicaux',
-        'bouquet-passion',
-        'composition-orchidee-blanche',
-      ],
-    };
-    setEditingEvent(newEvent);
+    setEditingEvent({ ...NEW_EVENT });
     setIsDialogOpen(true);
   };
 
-  // Dupliquer un événement
-  const handleDuplicate = (eventId: string) => {
-    const duplicated = duplicateSeasonalEvent(eventId);
-    if (duplicated) {
-      const refreshed = getStoredSeasonalEvents();
-      setEvents(refreshed);
-      toast.success(`Événement « ${duplicated.name} » dupliqué.`);
-    }
+  const handleDuplicate = (ev: SeasonalEvent) =>
+    run(() => duplicateAdminEvent(ev.id), `Événement « ${ev.name} » dupliqué.`, 'Duplication impossible.');
+
+  const confirmDelete = async () => {
+    if (!eventToDelete) return;
+    const target = eventToDelete;
+    const ok = await run(() => deleteAdminEvent(target.id), `Événement « ${target.name} » supprimé.`, 'Suppression impossible.');
+    if (ok) setEventToDelete(null);
   };
 
-  // Confirmer la suppression
-  const confirmDelete = () => {
-    if (!eventToDelete) return;
-    const ok = deleteSeasonalEvent(eventToDelete.id);
-    if (ok) {
-      const refreshed = getStoredSeasonalEvents();
-      setEvents(refreshed);
-      const curr = getActiveSeasonalEvent();
-      setActiveEvent(curr);
-      toast.success(`Événement « ${eventToDelete.name} » supprimé.`);
-    }
-    setEventToDelete(null);
+  /** Ajoute les événements types de l'atelier qui n'existent pas encore (par nom). */
+  const importTemplates = () => {
+    const existing = new Set((events ?? []).map((e) => e.name.toLowerCase()));
+    const missing = EVENT_TEMPLATES.filter((t) => !existing.has(t.name.toLowerCase()));
+    return run(
+      async () => {
+        for (const template of missing) await createAdminEvent(template);
+      },
+      `${missing.length} événement(s) type(s) ajouté(s).`,
+      'Import interrompu.',
+    );
   };
 
   // Filtrage des événements
   const filteredEvents = useMemo(() => {
-    let list = events;
+    let list = events ?? [];
 
     // Filtre par catégorie
     if (selectedCategory !== 'all') {
       if (selectedCategory === 'religieux') {
         list = list.filter(
           (ev) =>
-            ['tabaski', 'magal', 'gamou', 'korite'].includes(ev.id) ||
+            ['tabaski', 'magal', 'gamou', 'korite'].includes(ev.slug) ||
             (ev.categoryLabel || '').toLowerCase().includes('religie')
         );
       } else if (selectedCategory === 'amour') {
         list = list.filter(
           (ev) =>
-            ['saint-valentin'].includes(ev.id) ||
+            ['saint-valentin'].includes(ev.slug) ||
             (ev.categoryLabel || '').toLowerCase().includes('amour') ||
             (ev.categoryLabel || '').toLowerCase().includes('romance')
         );
       } else if (selectedCategory === 'famille') {
         list = list.filter(
           (ev) =>
-            ['fete-meres', 'fete-peres', 'femmes-8mars'].includes(ev.id) ||
+            ['fete-meres', 'fete-peres', 'femmes-8mars'].includes(ev.slug) ||
             (ev.categoryLabel || '').toLowerCase().includes('famill') ||
             (ev.categoryLabel || '').toLowerCase().includes('hommage')
         );
       } else if (selectedCategory === 'saisonnier') {
         list = list.filter(
           (ev) =>
-            ['noel-fetes'].includes(ev.id) ||
+            ['noel-fetes'].includes(ev.slug) ||
             (ev.categoryLabel || '').toLowerCase().includes('saison') ||
             (ev.categoryLabel || '').toLowerCase().includes('noël') ||
             (ev.categoryLabel || '').toLowerCase().includes('noel')
@@ -286,7 +224,25 @@ export function EventManagementView() {
     return list;
   }, [events, selectedCategory, searchQuery]);
 
-  const isStandardActive = activeEvent.id === 'standard';
+  const isStandardActive = !activeEvent;
+
+  if (loadError && !events) {
+    return (
+      <div className="max-w-7xl mx-auto rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-800" role="alert">
+        <p className="mb-3">{loadError}</p>
+        <Button variant="outline" size="sm" onClick={reload}>
+          Réessayer
+        </Button>
+      </div>
+    );
+  }
+  if (!events) {
+    return (
+      <div className="flex items-center justify-center gap-2 py-16 text-sm text-zinc-500">
+        <Loader2 className="h-4 w-4 animate-spin" /> Chargement des événements…
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-10">
@@ -320,10 +276,10 @@ export function EventManagementView() {
 
           <div className="flex flex-wrap items-baseline gap-3">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 font-serif">
-              {isStandardActive ? 'Boutique Standard (Hors Événement)' : activeEvent.name}
+              {activeEvent ? activeEvent.name : 'Boutique Standard (Hors Événement)'}
             </h1>
 
-            {!isStandardActive && activeEvent.datesLabel && (
+            {activeEvent?.datesLabel && (
               <span className="text-xs font-medium text-zinc-500">
                 ({activeEvent.datesLabel})
               </span>
@@ -331,9 +287,9 @@ export function EventManagementView() {
           </div>
 
           <p className="text-xs sm:text-sm text-zinc-600 max-w-3xl leading-relaxed">
-            {isStandardActive
-              ? 'Aucun événement saisonnier n’est actuellement projeté sur le site. La bannière classique de la maison est diffusée.'
-              : `La scénographie « ${activeEvent.name} » est actuellement projetée sur la vitrine client avec son thème chromatique et ses créations dédiées.`}
+            {activeEvent
+              ? `La scénographie « ${activeEvent.name} » est actuellement projetée sur la vitrine client avec son thème chromatique et ses créations dédiées.`
+              : 'Aucun événement saisonnier n’est actuellement projeté sur le site. La bannière classique de la maison est diffusée.'}
           </p>
         </div>
 
@@ -344,6 +300,7 @@ export function EventManagementView() {
               variant="outline"
               size="sm"
               onClick={handleResetToStandard}
+              disabled={busy}
               className="text-xs border-zinc-300 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-50 h-9 px-3 gap-1.5"
             >
               <RotateCcw className="h-3.5 w-3.5 text-zinc-500" />
@@ -418,9 +375,8 @@ export function EventManagementView() {
       {/* ── 3. GRILLE DE CARTES ÉPURÉE ET VISUELLE ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filteredEvents.map((ev) => {
-          const isLive = ev.id === activeEvent.id && !isStandardActive;
+          const isLive = ev.isActive;
           const theme = themeLabels[ev.themeColor || 'emerald'] || themeLabels.emerald;
-          const isCustom = ev.id.startsWith('custom-') || ev.id.startsWith('event-');
 
           return (
             <div
@@ -476,22 +432,15 @@ export function EventManagementView() {
                           <Edit3 className="h-3.5 w-3.5 mr-2 text-zinc-500" />
                           <span>Modifier</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDuplicate(ev.id)}>
+                        <DropdownMenuItem onClick={() => handleDuplicate(ev)}>
                           <Copy className="h-3.5 w-3.5 mr-2 text-zinc-500" />
                           <span>Dupliquer</span>
                         </DropdownMenuItem>
-                        {isCustom && (
-                          <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onClick={() => setEventToDelete(ev)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5 mr-2 text-red-500" />
-                              <span>Supprimer</span>
-                            </DropdownMenuItem>
-                          </>
-                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem variant="destructive" onClick={() => setEventToDelete(ev)}>
+                          <Trash2 className="h-3.5 w-3.5 mr-2 text-red-500" />
+                          <span>Supprimer</span>
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -531,7 +480,7 @@ export function EventManagementView() {
                     </div>
 
                     <span className="text-[11px] text-zinc-500 font-medium bg-zinc-100 px-2 py-0.5 rounded">
-                      {ev.featuredProductIds?.length || 4} créations
+                      {ev.featuredProductIds.length} création{ev.featuredProductIds.length > 1 ? 's' : ''}
                     </span>
                   </div>
                 </div>
@@ -542,7 +491,8 @@ export function EventManagementView() {
                 <div className="flex items-center gap-2">
                   <Switch
                     checked={isLive}
-                    onCheckedChange={() => handleToggleEvent(ev.id, isLive)}
+                    disabled={busy}
+                    onCheckedChange={() => handleToggleEvent(ev)}
                     className={isLive ? 'bg-[#193e23]' : 'bg-zinc-200'}
                     aria-label={`Activer ou désactiver ${ev.name}`}
                   />
@@ -572,8 +522,21 @@ export function EventManagementView() {
           );
         })}
 
+        {/* Aucun événement enregistré : proposer les événements types de l'atelier */}
+        {events.length === 0 && (
+          <div className="col-span-full py-12 text-center bg-white rounded-2xl border border-zinc-200 p-8 space-y-3">
+            <p className="text-sm font-semibold text-zinc-800">Aucun événement enregistré</p>
+            <p className="text-xs text-zinc-500 max-w-md mx-auto">
+              Ajoutez d’un clic les événements types (Tabaski, Korité, Saint-Valentin, Fête des Mères, Noël…) puis personnalisez-les, ou créez le vôtre.
+            </p>
+            <Button size="sm" onClick={importTemplates} disabled={busy} className="mt-2 text-xs bg-[#193e23] hover:bg-[#122e1a] text-white">
+              {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} Importer les événements types
+            </Button>
+          </div>
+        )}
+
         {/* État vide si aucun résultat de recherche */}
-        {filteredEvents.length === 0 && (
+        {events.length > 0 && filteredEvents.length === 0 && (
           <div className="col-span-full py-12 text-center bg-white rounded-2xl border border-zinc-200 p-8 space-y-3">
             <p className="text-sm font-semibold text-zinc-800">
               Aucune célébration ne correspond à vos critères
@@ -601,7 +564,7 @@ export function EventManagementView() {
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         event={editingEvent}
-        isLive={Boolean(editingEvent && editingEvent.id === activeEvent.id && !isStandardActive)}
+        isLive={Boolean(editingEvent?.id && editingEvent.id === activeEvent?.id)}
         onSave={handleSaveEvent}
       />
 
@@ -627,6 +590,7 @@ export function EventManagementView() {
               <Button
                 size="sm"
                 onClick={confirmDelete}
+                disabled={busy}
                 className="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold"
               >
                 Confirmer la suppression

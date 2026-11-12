@@ -13,18 +13,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  CreditCard,
-  Smartphone,
   Banknote,
   Copy,
-  Calendar,
-  User,
-  Phone,
-  FileText,
   ShieldCheck,
-  ArrowRight,
   Clock,
-  ExternalLink,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -100,7 +92,7 @@ export function TransactionDetailDialog({
       case 'en_attente':
         return (
           <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-200">
-            En attente d'encaissement
+            En attente d’encaissement
           </Badge>
         );
       case 'rembourse':
@@ -137,7 +129,7 @@ export function TransactionDetailDialog({
             Détail de la transaction financière
           </DialogTitle>
           <DialogDescription className="text-xs text-gray-500">
-            Enregistrement d'audit bancaire et de trésorerie pour la commande associée.
+            Enregistrement d’audit bancaire et de trésorerie pour la commande associée.
           </DialogDescription>
         </DialogHeader>
 
@@ -206,7 +198,7 @@ export function TransactionDetailDialog({
 
             <div className="rounded-lg border border-gray-100 p-2.5">
               <span className="block text-[11px] font-medium text-gray-500 mb-0.5">
-                Client donneur d'ordre
+                Client donneur d’ordre
               </span>
               <div className="font-medium text-xs text-gray-900">{transaction.customerName}</div>
               <div className="text-[11px] text-gray-500">{transaction.customerPhone}</div>
@@ -227,7 +219,7 @@ export function TransactionDetailDialog({
             <div className="flex items-center justify-between">
               <span className="text-gray-500 flex items-center gap-1.5">
                 <Clock className="h-3.5 w-3.5 text-gray-400" />
-                Date de l'opération :
+                Date de l’opération :
               </span>
               <span className="font-medium text-gray-800">
                 {new Date(transaction.date).toLocaleDateString('fr-FR', {

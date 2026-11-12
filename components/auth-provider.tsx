@@ -4,11 +4,14 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import {
   loginUser as apiLoginUser,
   registerUser as apiRegisterUser,
+  verifyEmail as apiVerifyEmail,
+  loginWithGoogle as apiLoginWithGoogle,
+  verifyLoginCode as apiVerifyLoginCode,
   getCurrentUser,
   logoutUser as apiLogoutUser,
 } from '@/lib/api/auth';
 import { getAuthToken } from '@/lib/api/auth-token';
-import { ApiUser } from '@/lib/api/types';
+import { ApiUser, PendingVerificationData } from '@/lib/api/types';
 
 export type User = {
   id: string;
@@ -21,39 +24,24 @@ export type User = {
   role?: string;
 };
 
-export const DEFAULT_USER: User = {
-  id: 'user-fatou',
-  name: 'Fatou Ba',
-  email: 'fatou.ba@email.com',
-  phone: '+221 77 123 45 67',
-  provider: 'email',
-};
-
-export const DEMO_USERS: User[] = [
-  DEFAULT_USER,
-  {
-    id: 'user-sally',
-    name: 'Sally Diop',
-    email: 'sally.diop@email.com',
-    phone: '+221 77 941 78 60',
-    provider: 'email',
-  },
-];
+type RegisterData = { name: string; email: string; phone: string; password: string };
 
 type AuthContextType = {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (identifier: string, password?: string) => Promise<User>;
-  loginWithGoogle: () => Promise<User>;
-  register: (
-    data: { name: string; email: string; phone: string; password?: string },
-    autoLogin?: boolean,
-  ) => Promise<User>;
-  loginUser: (userToLogin: User) => void;
+  /** Lève une ApiClientError `EMAIL_NOT_VERIFIED` si le compte attend encore son code */
+  login: (identifier: string, password: string, remember?: boolean) => Promise<User>;
+  /** `credential` = jeton d'identité renvoyé par Google Identity Services */
+  loginWithGoogle: (credential: string) => Promise<User>;
+  /** Connexion sans mot de passe : valide le code reçu par email et ouvre la session */
+  loginWithCode: (identifier: string, code: string, remember?: boolean) => Promise<User>;
+  /** Étape 1 : crée le compte et envoie le code par email (aucune session ouverte) */
+  register: (data: RegisterData) => Promise<PendingVerificationData>;
+  /** Étape 2 : valide le code et ouvre la session */
+  verifyEmail: (email: string, code: string) => Promise<User>;
   updateUser: (updatedData: Partial<User>) => void;
   logout: () => void;
-  resetToDefault: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -66,11 +54,20 @@ function mapApiUserToUser(apiUser: ApiUser): User {
     name: apiUser.name || `${apiUser.firstName || ''} ${apiUser.lastName || ''}`.trim() || 'Client',
     email: apiUser.email,
     phone: apiUser.phone,
-    avatar: apiUser.avatar,
+    avatar: apiUser.avatar || undefined,
     provider: apiUser.provider || 'email',
     createdAt: apiUser.createdAt,
     role: apiUser.role,
   };
+}
+
+function persistSession(user: User | null) {
+  try {
+    if (user) localStorage.setItem(USER_SESSION_KEY, JSON.stringify(user));
+    else localStorage.removeItem(USER_SESSION_KEY);
+  } catch {
+    // Stockage indisponible (navigation privée) : la session reste en mémoire
+  }
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -91,29 +88,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Tenter de charger le profil en cache pour un rendu rapide
+      // Profil en cache pour un premier rendu immédiat
       try {
         const cached = localStorage.getItem(USER_SESSION_KEY);
         if (cached && isMounted) {
           setUser(JSON.parse(cached));
         }
       } catch {
-        // Ignorer l'erreur de cache
+        // Cache illisible : on attend la réponse du serveur
       }
 
-      // Valider le token auprès du serveur backend
+      // Valider le token auprès du serveur
       try {
-        const apiUser = await getCurrentUser();
-        if (isMounted && apiUser) {
-          const freshUser = mapApiUserToUser(apiUser);
+        const freshUser = mapApiUserToUser(await getCurrentUser());
+        if (isMounted) {
           setUser(freshUser);
-          localStorage.setItem(USER_SESSION_KEY, JSON.stringify(freshUser));
+          persistSession(freshUser);
         }
-      } catch (error) {
-        console.warn('[Auth] Token invalide ou expiré, réinitialisation de la session');
+      } catch {
+        // Token invalide ou expiré : la session est fermée
         if (isMounted) {
           apiLogoutUser();
-          localStorage.removeItem(USER_SESSION_KEY);
+          persistSession(null);
           setUser(null);
         }
       } finally {
@@ -130,73 +126,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const login = useCallback(async (identifier: string, password = ''): Promise<User> => {
-    setIsLoading(true);
-    try {
-      const authData = await apiLoginUser({
-        identifier,
-        password,
-      });
-
-      const loggedUser = mapApiUserToUser(authData.user);
-      setUser(loggedUser);
-      localStorage.setItem(USER_SESSION_KEY, JSON.stringify(loggedUser));
-      return loggedUser;
-    } finally {
-      setIsLoading(false);
-    }
+  const openSession = useCallback((apiUser: ApiUser): User => {
+    const sessionUser = mapApiUserToUser(apiUser);
+    setUser(sessionUser);
+    persistSession(sessionUser);
+    return sessionUser;
   }, []);
 
-  const register = useCallback(
-    async (
-      data: { name: string; email: string; phone: string; password?: string },
-      autoLogin = true,
-    ): Promise<User> => {
-      setIsLoading(true);
-      try {
-        const authData = await apiRegisterUser({
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
-          password: data.password || 'Pass1234!',
-        });
-
-        const newUser = mapApiUserToUser(authData.user);
-        if (autoLogin) {
-          setUser(newUser);
-          localStorage.setItem(USER_SESSION_KEY, JSON.stringify(newUser));
-        }
-        return newUser;
-      } finally {
-        setIsLoading(false);
-      }
+  const login = useCallback(
+    async (identifier: string, password: string, remember = true): Promise<User> => {
+      const authData = await apiLoginUser({ identifier, password, remember });
+      return openSession(authData.user);
     },
-    [],
+    [openSession],
   );
 
-  const loginWithGoogle = useCallback(async (): Promise<User> => {
-    // V1 : Non supporté côté serveur, message informatif
-    throw new Error('La connexion avec Google sera bientôt disponible.');
-  }, []);
+  const register = useCallback((data: RegisterData) => apiRegisterUser(data), []);
 
-  const loginUser = useCallback((userToLogin: User) => {
-    setUser(userToLogin);
-    try {
-      localStorage.setItem(USER_SESSION_KEY, JSON.stringify(userToLogin));
-    } catch {
-      // Ignorer
-    }
-  }, []);
+  const verifyEmail = useCallback(
+    async (email: string, code: string): Promise<User> => {
+      const authData = await apiVerifyEmail(email, code);
+      return openSession(authData.user);
+    },
+    [openSession],
+  );
+
+  const loginWithCode = useCallback(
+    async (identifier: string, code: string, remember = true): Promise<User> => {
+      const authData = await apiVerifyLoginCode(identifier, code, remember);
+      return openSession(authData.user);
+    },
+    [openSession]
+  );
+
+  const loginWithGoogle = useCallback(
+    async (credential: string): Promise<User> => {
+      const authData = await apiLoginWithGoogle(credential);
+      return openSession(authData.user);
+    },
+    [openSession],
+  );
 
   const updateUser = useCallback((updatedData: Partial<User>) => {
     setUser((prev) => {
       if (!prev) return null;
       const nextUser = { ...prev, ...updatedData };
-      try {
-        localStorage.setItem(USER_SESSION_KEY, JSON.stringify(nextUser));
-      } catch {
-        // Ignorer
-      }
+      persistSession(nextUser);
       return nextUser;
     });
   }, []);
@@ -204,16 +179,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     apiLogoutUser();
     setUser(null);
-    try {
-      localStorage.removeItem(USER_SESSION_KEY);
-    } catch {
-      // Ignorer
-    }
+    persistSession(null);
   }, []);
-
-  const resetToDefault = useCallback(() => {
-    logout();
-  }, [logout]);
 
   return (
     <AuthContext.Provider
@@ -223,11 +190,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         login,
         loginWithGoogle,
+        loginWithCode,
         register,
-        loginUser,
+        verifyEmail,
         updateUser,
         logout,
-        resetToDefault,
       }}
     >
       {children}

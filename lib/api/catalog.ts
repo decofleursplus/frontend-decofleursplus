@@ -1,10 +1,18 @@
 /**
- * Service API Catalogue Public (Catégories et Produits)
+ * Service API Catalogue public (catégories, produits, avis).
+ * Les erreurs remontent à l'appelant : aucune liste vide ni valeur de repli silencieuse.
  */
 
 import { apiClient } from './client';
 import { PaginatedResponse } from './types';
-import { Product } from '../products';
+import { PRODUCT_PLACEHOLDER_IMAGE, type Product, type ProductStatus } from '../products';
+
+export interface ApiSubCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+}
 
 export interface ApiCategory {
   id: string;
@@ -12,8 +20,11 @@ export interface ApiCategory {
   slug: string;
   description?: string | null;
   imageUrl?: string | null;
+  isActive?: boolean;
+  sortOrder?: number;
+  /** Produits visibles en vitrine */
   productCount?: number;
-  subCategories?: Array<{ id: string; name: string; slug: string }>;
+  subCategories?: ApiSubCategory[];
 }
 
 export interface ApiProductVariant {
@@ -21,15 +32,9 @@ export interface ApiProductVariant {
   name: string;
   sku: string;
   price: number;
+  oldPrice: number | null;
   stockQuantity: number;
   minStockAlert: number;
-}
-
-export interface ApiProductSize {
-  id: string;
-  name: string;
-  label: string;
-  priceDelta: number;
 }
 
 export interface ApiProduct {
@@ -37,199 +42,145 @@ export interface ApiProduct {
   slug: string;
   name: string;
   description: string;
-  category: { id: string; name: string; slug: string } | string;
+  category: { id: string; name: string; slug: string } | null;
   subCategory?: { id: string; name: string; slug: string } | null;
   price: number;
-  oldPrice?: number | null;
-  image: string;
+  oldPrice: number | null;
+  image: string | null;
   images?: string[];
   rating: number;
   reviews: number;
   badge?: string | null;
   badgeType?: 'discount' | 'new' | null;
+  isNew?: boolean;
+  promotion?: { id: string; name: string; badgeText: string | null; discountPercentage: number } | null;
   inStock: boolean;
-  status?: 'ACTIVE' | 'HIDDEN' | 'ON_QUOTE' | 'PROMO';
+  status: ProductStatus;
   isFeatured?: boolean;
-  reference?: string;
-  sizes?: ApiProductSize[];
+  reference?: string | null;
   variants?: ApiProductVariant[];
   createdAt?: string;
 }
 
+export type ProductSort = 'newest' | 'popular' | 'price_asc' | 'price_desc' | 'name';
+
 export interface ProductFilterParams {
+  /** Slug de la catégorie */
   category?: string;
+  /** Slug de la sous-catégorie */
   subCategory?: string;
   featured?: boolean;
   search?: string;
   minPrice?: number;
   maxPrice?: number;
-  sort?: 'newest' | 'price_asc' | 'price_desc' | 'name';
+  inStock?: boolean;
+  newOnly?: boolean;
+  onSale?: boolean;
+  sort?: ProductSort;
+  /** Ids ou slugs précis (ex. sélection d'un événement) */
+  ids?: string[];
   page?: number;
   limit?: number;
 }
 
-/**
- * Convertit un produit API en format Product utilisé par les composants React du frontend
- */
+/** Convertit un produit de l'API au format utilisé par les composants de la vitrine. */
 export function mapApiProductToProduct(item: ApiProduct): Product {
-  const categoryName =
-    typeof item.category === 'object' && item.category !== null
-      ? item.category.name
-      : String(item.category || 'Général');
-
-  const hasRealDiscount = typeof item.oldPrice === 'number' && item.oldPrice > item.price;
-
-  let badge: string | undefined = undefined;
-  let badgeType: 'discount' | 'new' | undefined = undefined;
-
-  if (hasRealDiscount) {
-    badge = item.badge || `-${Math.round(((item.oldPrice! - item.price) / item.oldPrice!) * 100)}%`;
-    badgeType = 'discount';
-  } else if (item.badgeType === 'new') {
-    badge = item.badge || 'Nouveau';
-    badgeType = 'new';
-  } else if (
-    item.badge &&
-    !item.badge.startsWith('-') &&
-    !item.badge.includes('%') &&
-    !/promo|remise|solde|sale|discount/i.test(item.badge) &&
-    item.badgeType !== 'discount'
-  ) {
-    badge = item.badge;
-  }
-
+  const images = item.images && item.images.length > 0 ? item.images : item.image ? [item.image] : [];
   return {
     id: item.id,
     slug: item.slug,
     name: item.name,
-    category: categoryName,
+    category: item.category?.name ?? '',
+    categorySlug: item.category?.slug ?? null,
     price: item.price,
-    oldPrice: hasRealDiscount ? (item.oldPrice as number) : undefined,
-    image: item.image || (item.images && item.images[0]) || '/images/hero.jpg',
-    images: item.images && item.images.length > 0 ? item.images : [item.image || '/images/hero.jpg'],
-    rating: item.rating ?? 4.8,
+    oldPrice: item.oldPrice ?? undefined,
+    image: item.image || images[0] || PRODUCT_PLACEHOLDER_IMAGE,
+    images: images.length > 0 ? images : [PRODUCT_PLACEHOLDER_IMAGE],
+    rating: item.rating ?? 0,
     reviews: item.reviews ?? 0,
-    badge,
-    badgeType,
+    badge: item.badge ?? undefined,
+    badgeType: item.badgeType ?? undefined,
     description: item.description || '',
-    inStock: item.inStock ?? true,
-    reference: item.reference,
-    sizes: (item.sizes || []).map((s) => ({
-      name: s.name,
-      label: s.label || s.name,
-      priceDelta: s.priceDelta || 0,
+    inStock: item.inStock,
+    reference: item.reference ?? undefined,
+    status: item.status,
+    isNew: Boolean(item.isNew),
+    promotion: item.promotion ?? null,
+    variants: (item.variants ?? []).map((v) => ({
+      id: v.id,
+      name: v.name,
+      sku: v.sku,
+      price: v.price,
+      oldPrice: v.oldPrice,
+      stockQuantity: v.stockQuantity,
     })),
   };
 }
 
-/**
- * Récupère la liste de toutes les catégories publiques avec sous-catégories
- */
+/** Catégories visibles en vitrine (triées par le serveur). */
 export async function getCategories(): Promise<ApiCategory[]> {
-  try {
-    const res = await apiClient.get<ApiCategory[]>('/categories');
-    return Array.isArray(res) ? res : [];
-  } catch (error) {
-    console.warn('[Catalog] Impossible de charger les catégories depuis l’API:', error);
-    return [];
-  }
+  return apiClient.get<ApiCategory[]>('/categories');
 }
 
-/**
- * Récupère le détail d'une catégorie par son slug
- */
+/** Détail d'une catégorie ; renvoie null si elle n'existe pas (404). */
 export async function getCategoryBySlug(slug: string): Promise<ApiCategory | null> {
   try {
-    return await apiClient.get<ApiCategory>(`/categories/${slug}`);
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Récupère la liste filtrée et paginée des produits publics
- */
-export async function getProducts(
-  filters: ProductFilterParams = {},
-): Promise<PaginatedResponse<Product>> {
-  try {
-    const apiData = await apiClient.get<PaginatedResponse<ApiProduct>>('/products', {
-      params: {
-        category: filters.category,
-        subCategory: filters.subCategory,
-        featured: filters.featured ? 'true' : undefined,
-        search: filters.search,
-        minPrice: filters.minPrice,
-        maxPrice: filters.maxPrice,
-        sort: filters.sort,
-        page: filters.page || 1,
-        limit: filters.limit || 20,
-      },
-    });
-
-    if (apiData && Array.isArray(apiData.items)) {
-      return {
-        ...apiData,
-        items: apiData.items.map(mapApiProductToProduct),
-      };
-    }
-
-    return {
-      items: [],
-      total: 0,
-      page: 1,
-      limit: 20,
-      totalPages: 1,
-    };
+    return await apiClient.get<ApiCategory>(`/categories/${encodeURIComponent(slug)}`);
   } catch (error) {
-    console.warn('[Catalog] Erreur lors de l’appel /products:', error);
-    return {
-      items: [],
-      total: 0,
-      page: 1,
-      limit: 20,
-      totalPages: 1,
-    };
+    if (isNotFound(error)) return null;
+    throw error;
   }
 }
 
-/**
- * Récupère les produits vedettes pour la page d'accueil
- */
+/** Liste filtrée et paginée des produits publics. */
+export async function getProducts(filters: ProductFilterParams = {}): Promise<PaginatedResponse<Product>> {
+  const apiData = await apiClient.get<PaginatedResponse<ApiProduct>>('/products', {
+    params: {
+      category: filters.category,
+      subCategory: filters.subCategory,
+      featured: filters.featured ? 'true' : undefined,
+      inStock: filters.inStock ? 'true' : undefined,
+      newOnly: filters.newOnly ? 'true' : undefined,
+      onSale: filters.onSale ? 'true' : undefined,
+      search: filters.search,
+      minPrice: filters.minPrice,
+      maxPrice: filters.maxPrice,
+      sort: filters.sort,
+      ids: filters.ids?.length ? filters.ids.join(',') : undefined,
+      page: filters.page || 1,
+      limit: filters.limit || 20,
+    },
+  });
+  return { ...apiData, items: apiData.items.map(mapApiProductToProduct) };
+}
+
+/** Produits mis en avant (page d'accueil). */
 export async function getFeaturedProducts(limit = 8): Promise<Product[]> {
-  try {
-    const res = await getProducts({ featured: true, limit });
-    return res.items;
-  } catch {
-    return [];
-  }
+  return (await getProducts({ featured: true, limit })).items;
 }
 
-/**
- * Récupère le détail d'un produit par son slug
- */
+/** Détail d'un produit ; renvoie null si le produit n'existe pas ou n'est plus en vente (404). */
 export async function getProductBySlug(slug: string): Promise<Product | null> {
   try {
-    const apiProduct = await apiClient.get<ApiProduct>(`/products/${slug}`);
-    if (apiProduct) {
-      return mapApiProductToProduct(apiProduct);
-    }
-  } catch {
-    // API not found or error
+    const apiProduct = await apiClient.get<ApiProduct>(`/products/${encodeURIComponent(slug)}`);
+    return mapApiProductToProduct(apiProduct);
+  } catch (error) {
+    if (isNotFound(error)) return null;
+    throw error;
   }
-
-  return null;
 }
 
-/**
- * Types Avis Produits
- */
+function isNotFound(error: unknown): boolean {
+  return Boolean(error && typeof error === 'object' && 'status' in error && (error as { status: number }).status === 404);
+}
+
+// ── Avis produits ──────────────────────────────────────────────────────────
+
 export interface ProductReview {
   id: string;
   productId: string;
   userId?: string | null;
   userName: string;
-  userEmail?: string | null;
   rating: number;
   comment: string;
   createdAt: string;
@@ -238,6 +189,9 @@ export interface ProductReview {
 export interface ProductReviewsResponse {
   reviews: ProductReview[];
   total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
   averageRating: number;
   reviewsCount: number;
 }
@@ -245,39 +199,38 @@ export interface ProductReviewsResponse {
 export interface AddProductReviewPayload {
   rating: number;
   comment: string;
-  authorName?: string;
-  userName?: string;
-  authorEmail?: string;
+  /** Nom affiché (2 à 80 caractères) */
+  userName: string;
   userEmail?: string;
 }
 
-/**
- * Récupère les avis d'un produit avec la note moyenne et le total
- */
 export async function getProductReviews(
   productId: string,
   options?: { page?: number; limit?: number },
 ): Promise<ProductReviewsResponse> {
-  return apiClient.get<ProductReviewsResponse>(`/products/${productId}/reviews`, {
-    params: options,
-  });
+  return apiClient.get<ProductReviewsResponse>(`/products/${productId}/reviews`, { params: options });
 }
 
-/**
- * Dépose un avis client sur un produit
- */
-export async function addProductReview(
-  productId: string,
-  payload: AddProductReviewPayload,
-): Promise<ProductReview> {
-  const authorName = payload.authorName || payload.userName || 'Client DécoFleur';
-  const authorEmail = payload.authorEmail || payload.userEmail;
-
+/** Dépose un avis (connecté ou non) ; le serveur recalcule la note moyenne. */
+export async function addProductReview(productId: string, payload: AddProductReviewPayload): Promise<ProductReview> {
   return apiClient.post<ProductReview>(`/products/${productId}/reviews`, {
     rating: payload.rating,
     comment: payload.comment.trim(),
-    authorName,
-    ...(authorEmail ? { authorEmail: authorEmail.trim() } : {}),
+    userName: payload.userName.trim(),
+    ...(payload.userEmail?.trim() ? { userEmail: payload.userEmail.trim() } : {}),
   });
 }
 
+/** Témoignage de l'accueil : avis réel 4-5 étoiles (nom abrégé côté serveur). */
+export interface FeaturedReview {
+  id: string;
+  authorName: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  product: { name: string; slug: string };
+}
+
+export async function getFeaturedReviews(limit = 6): Promise<FeaturedReview[]> {
+  return apiClient.get<FeaturedReview[]>('/reviews/featured', { params: { limit } });
+}

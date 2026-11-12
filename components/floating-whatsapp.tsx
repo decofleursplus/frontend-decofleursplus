@@ -3,6 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { WhatsAppIcon } from '@/components/icons';
+import { usePublicSettings } from '@/lib/hooks/use-public-settings';
+import { whatsappHref } from '@/lib/shop-contact';
+import { SITE_CONFIG } from '@/lib/seo/config';
 
 const STORAGE_KEY = 'decofleur_whatsapp_btn_pos';
 const BTN_SIZE_DESKTOP = 52;
@@ -18,6 +21,8 @@ interface Position {
 
 export function FloatingWhatsApp() {
   const pathname = usePathname();
+  // Numéro géré dans Paramètres › Boutique (repli sur la configuration du site si l'API est indisponible)
+  const { settings, error: settingsError } = usePublicSettings();
 
   const [position, setPosition] = useState<Position | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -30,8 +35,10 @@ export function FloatingWhatsApp() {
   const startBtnPosRef = useRef({ x: 0, y: 0 });
   const currentPosRef = useRef<Position | null>(null);
 
-  // Synchroniser la référence courante
-  currentPosRef.current = position;
+  // Synchroniser la référence courante (hors rendu)
+  useEffect(() => {
+    currentPosRef.current = position;
+  }, [position]);
 
   // Calcul des limites d'écran
   const getBounds = useCallback(() => {
@@ -84,6 +91,8 @@ export function FloatingWhatsApp() {
 
   // Initialisation au montage (SSR-safe + LocalStorage)
   useEffect(() => {
+    // Position mémorisée dans le navigateur : lisible seulement après le montage (rendu serveur sans localStorage)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -215,13 +224,15 @@ export function FloatingWhatsApp() {
   };
 
   // Masquer sur les routes admin / back-office
-  if (pathname.startsWith('/admin')) {
+  const whatsappNumber = settings?.boutique.whatsappNumber || (settingsError ? SITE_CONFIG.phoneDakar : '');
+  const href = whatsappNumber
+    ? whatsappHref(whatsappNumber, `Bonjour ${settings?.boutique.shopName ?? 'DécoFleur Plus'}, je souhaite un renseignement ou passer une commande.`)
+    : '';
+
+  if (pathname.startsWith('/admin') || !href) {
     return null;
   }
 
-  const defaultMessage = encodeURIComponent(
-    'Bonjour DécoFleur Plus, je souhaite un renseignement ou passer une commande.'
-  );
 
   // Position calculée
   const inlineStyles: React.CSSProperties = isMounted && position
@@ -237,12 +248,12 @@ export function FloatingWhatsApp() {
   return (
     <aside aria-label="Assistance WhatsApp">
       <a
-        href={`https://wa.me/221779417860?text=${defaultMessage}`}
+        href={href}
         target="_blank"
         rel="noopener noreferrer"
         draggable={false}
         onDragStart={(e) => e.preventDefault()}
-        aria-label="Contacter DécoFleur Plus sur WhatsApp (+221 77 941 78 60)"
+        aria-label={`Contacter la boutique sur WhatsApp (${whatsappNumber})`}
         title="Glisser pour déplacer le bouton ou cliquer pour discuter sur WhatsApp"
         className={`floating-whatsapp-btn ${isDragging ? 'is-dragging' : ''} ${
           isMounted ? 'is-positioned' : ''

@@ -1,16 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, CheckCircle2, X } from 'lucide-react';
-import { initialLandscapePrestations } from '@/lib/admin/mock-data/landscaping';
+import { ArrowRight, CheckCircle2, Loader2, X } from 'lucide-react';
+import { getLandscapeServices } from '@/lib/api/landscaping';
 import { LandscapePrestation } from '@/lib/admin/mock-data/types';
 import { BotanicalCorners } from '@/components/botanical-corners';
 import { SiteFooter } from '@/components/site-footer';
 
 export default function PrestationsPage() {
   const [selectedPrestation, setSelectedPrestation] = useState<LandscapePrestation | null>(null);
+  // Prestations gérées dans le back-office (Paysagisme › Prestations)
+  const [services, setServices] = useState<LandscapePrestation[] | null>(null);
+  const [loadError, setLoadError] = useState(false);
+
+  useEffect(() => {
+    getLandscapeServices()
+      .then(setServices)
+      .catch(() => setLoadError(true));
+  }, []);
 
   return (
     <div className="relative min-h-screen bg-white text-[#1c2e20] overflow-x-hidden">
@@ -23,19 +32,20 @@ export default function PrestationsPage() {
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-[#173f22] tracking-tight">
               Nos prestations
             </h1>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
-              À venir
-            </span>
           </div>
           <p className="text-xs sm:text-sm text-[#526655] font-medium mt-1">
-            Des solutions végétales sur mesure adaptées à tous vos espaces (catalogue en ligne en cours d&apos;implémentation)
+            Des solutions végétales sur mesure adaptées à tous vos espaces
           </p>
         </div>
 
         {/* ── Grille des Prestations (Maquette Écran 2) ── */}
-        {initialLandscapePrestations.length > 0 ? (
+        {services === null && !loadError ? (
+          <div className="flex justify-center py-16" aria-busy="true">
+            <Loader2 className="animate-spin text-[#173f22]" />
+          </div>
+        ) : services && services.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-16 sm:mb-20">
-            {initialLandscapePrestations.map((prestation) => (
+            {services.map((prestation) => (
               <div
                 key={prestation.id}
                 id={prestation.id}
@@ -88,9 +98,11 @@ export default function PrestationsPage() {
           </div>
         ) : (
           <div className="text-center py-16 px-6 bg-[#fbfdfb] rounded-3xl border border-[#e8efe9] mb-16 max-w-2xl mx-auto space-y-4">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
-              Catalogue en ligne à venir
-            </span>
+            {loadError && (
+              <p role="alert" className="text-xs text-red-700">
+                Le catalogue des prestations est momentanément indisponible.
+              </p>
+            )}
             <h2 className="text-xl font-serif font-bold text-[#173f22]">
               Prestations paysagères sur mesure
             </h2>
@@ -98,7 +110,7 @@ export default function PrestationsPage() {
               Nos architectes et paysagistes conçoivent vos projets végétaux personnalisés à Saly, Dakar et sur la Petite Côte. Contactez-nous pour une étude personnalisée de votre espace.
             </p>
             <Link
-              href="/devis"
+              href="/devis?type=paysagisme"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#173f22] text-white text-sm font-medium hover:bg-[#12311a] transition-colors"
             >
               <span>Demander une étude & devis</span>

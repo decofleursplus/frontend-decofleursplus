@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { use, useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -17,13 +17,11 @@ import {
   MapPin,
   Calendar,
   CreditCard,
-  Banknote,
   Receipt,
   XCircle,
   Loader2,
-  ShoppingBag,
 } from 'lucide-react';
-import { getMyOrder, cancelMyOrder, CustomerOrder } from '@/lib/api/orders';
+import { getMyOrder, cancelMyOrder, DELIVERY_MODE_LABELS, type CustomerOrder } from '@/lib/api/orders';
 import { getOrderPayments, payOrder, Payment } from '@/lib/api/payment';
 import { formatPrice } from '@/lib/products';
 import { useAuth } from '@/components/auth-provider';
@@ -39,71 +37,73 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
   const [retryingPayment, setRetryingPayment] = useState(false);
   const [cancellingOrder, setCancellingOrder] = useState(false);
   const [actionMessage, setActionMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
+  const [loadError, setLoadError] = useState<{ notFound: boolean; text: string } | null>(null);
+
+  // `loading` vaut déjà true au premier rendu ; les rechargements manuels passent par `reloadOrder`.
+  const loadOrderData = useCallback(
+    () =>
+      Promise.all([getMyOrder(id), getOrderPayments(id)])
+        .then(([ord, pays]) => {
+          setOrder(ord);
+          setPayments(pays);
+          setLoadError(null);
+        })
+        .catch((err) => {
+          const status = err && typeof err === 'object' && 'status' in err ? (err as { status: number }).status : 0;
+          setLoadError({
+            notFound: status === 404,
+            text: err instanceof Error ? err.message : 'Impossible de charger la commande.',
+          });
+        })
+        .finally(() => setLoading(false)),
+    [id],
+  );
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push(`/connexion?redirect=/compte/commandes/${encodeURIComponent(id)}`);
       return;
     }
+    if (isAuthenticated) void loadOrderData();
+  }, [id, isAuthenticated, authLoading, router, loadOrderData]);
 
-    if (isAuthenticated) {
-      loadOrderData();
-    }
-  }, [id, isAuthenticated, authLoading]);
-
-  async function loadOrderData() {
+  function reloadOrder() {
     setLoading(true);
-    try {
-      const [ord, pays] = await Promise.all([
-        getMyOrder(id),
-        getOrderPayments(id),
-      ]);
-      setOrder(ord);
-      setPayments(pays);
-    } catch {
-      // Ignorer
-    } finally {
-      setLoading(false);
-    }
+    void loadOrderData();
   }
 
   async function handleRetryPayment() {
     if (!order) return;
     setRetryingPayment(true);
     setActionMessage(null);
-    const res = await payOrder(order.orderNumber);
-    setRetryingPayment(false);
-
-    if (res.success && res.data?.checkoutUrl) {
-      window.location.href = res.data.checkoutUrl;
-    } else {
-      setActionMessage({
-        type: 'error',
-        text: res.error || 'Impossible d’initialiser le paiement. Veuillez réessayer.',
-      });
+    try {
+      const session = await payOrder(order.orderNumber);
+      if (session.checkoutUrl) {
+        window.location.href = session.checkoutUrl;
+        return;
+      }
+      setActionMessage({ type: 'error', text: 'Le service de paiement n’a pas renvoyé de lien. Réessayez.' });
+    } catch (err) {
+      setActionMessage({ type: 'error', text: err instanceof Error ? err.message : 'Impossible d’initialiser le paiement.' });
     }
+    setRetryingPayment(false);
   }
 
   async function handleCancelOrder() {
     if (!order) return;
-    if (!window.confirm('Voulez-vous vraiment annuler cette commande ?')) return;
+    const reason = window.prompt('Souhaitez-vous indiquer la raison de l’annulation ? (facultatif)', '');
+    if (reason === null) return;
 
     setCancellingOrder(true);
     setActionMessage(null);
-    const ok = await cancelMyOrder(order.orderNumber, 'Annulation par le client depuis son espace');
-    setCancellingOrder(false);
-
-    if (ok) {
-      setActionMessage({
-        type: 'success',
-        text: 'Votre commande a bien été annulée.',
-      });
-      loadOrderData();
-    } else {
-      setActionMessage({
-        type: 'error',
-        text: 'Impossible d’annuler cette commande. Veuillez contacter notre service client.',
-      });
+    try {
+      await cancelMyOrder(order.orderNumber, reason.trim() || 'Annulation par le client depuis son espace');
+      setActionMessage({ type: 'success', text: 'Votre commande a bien été annulée.' });
+      void loadOrderData();
+    } catch (err) {
+      setActionMessage({ type: 'error', text: err instanceof Error ? err.message : 'Impossible d’annuler cette commande.' });
+    } finally {
+      setCancellingOrder(false);
     }
   }
 
@@ -138,10 +138,19 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
     return (
       <div className="account-panel text-center py-12">
         <AlertCircle size={36} className="mx-auto text-amber-600 mb-3" />
-        <h2 className="text-xl font-serif font-bold text-neutral-800 mb-2">Commande introuvable</h2>
+        <h2 className="text-xl font-serif font-bold text-neutral-800 mb-2">
+          {loadError && !loadError.notFound ? 'Chargement impossible' : 'Commande introuvable'}
+        </h2>
         <p className="text-sm text-neutral-600 mb-6 max-w-md mx-auto">
-          La commande demandée ({id}) n’existe pas ou n’est pas associée à votre compte.
+          {loadError && !loadError.notFound
+            ? loadError.text
+            : `La commande ${id} n’existe pas ou n’est pas associée à votre compte.`}
         </p>
+        {loadError && !loadError.notFound && (
+          <button type="button" onClick={reloadOrder} className="button button-outline mb-3 inline-flex items-center gap-1.5">
+            <RotateCw size={15} /> Réessayer
+          </button>
+        )}
         <Link href="/compte/commandes" className="button button-primary inline-flex items-center gap-1.5">
           <ArrowLeft size={16} /> Retour à mes commandes
         </Link>
@@ -152,6 +161,10 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
   const isPendingPayment = order.paymentStatus === 'PENDING' && order.orderStatus !== 'CANCELLED';
   const isCash = order.paymentMethod === 'CASH_ON_DELIVERY';
   const canCancel = ['PENDING', 'PAID'].includes(order.orderStatus);
+  const reachedOn = (status: string) => {
+    const entry = order.statusHistory.find((h) => h.toStatus === status);
+    return entry ? new Date(entry.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : null;
+  };
 
   return (
     <>
@@ -172,14 +185,32 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {order.orderStatus !== 'CANCELLED' && (
+        <div className="flex flex-wrap items-center gap-2">
+          {order.orderStatus !== 'CANCELLED' && order.deliveryMode !== 'PICKUP' && (
             <Link
               className="button button-outline button-small flex items-center gap-1"
-              href={`/compte/suivi/${order.orderNumber}`}
+              href={`/compte/suivi/${encodeURIComponent(order.orderNumber)}`}
             >
               <Truck size={14} /> Suivre la livraison
             </Link>
+          )}
+          {order.orderStatus !== 'CANCELLED' && (
+            <Link
+              className="button button-outline button-small flex items-center gap-1"
+              href={`/compte/commandes/${encodeURIComponent(order.orderNumber)}/facture`}
+            >
+              <Receipt size={14} /> Facture
+            </Link>
+          )}
+          {canCancel && !(isPendingPayment && !isCash) && (
+            <button
+              type="button"
+              onClick={handleCancelOrder}
+              disabled={cancellingOrder}
+              className="button button-outline button-small flex items-center gap-1 text-red-700"
+            >
+              {cancellingOrder ? <Loader2 size={13} className="animate-spin" /> : <XCircle size={14} />} Annuler la commande
+            </button>
           )}
         </div>
       </div>
@@ -248,6 +279,13 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
         </section>
       )}
 
+      {order.orderStatus === 'CANCELLED' && (
+        <section className="account-panel border-red-200 bg-red-50/60 text-sm text-red-800">
+          Commande annulée le {order.cancelledAt ? new Date(order.cancelledAt).toLocaleDateString('fr-FR') : '—'}
+          {order.cancelReason ? ` — ${order.cancelReason}` : ''}.
+        </section>
+      )}
+
       {/* Timeline de statut */}
       <section className="account-panel">
         <div className="order-timeline">
@@ -259,17 +297,17 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
           <div className={['PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED'].includes(order.orderStatus) ? 'complete' : 'pending'}>
             <span><PackageCheck size={14} /></span>
             <b>Préparation atelier</b>
-            <small>{['PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED'].includes(order.orderStatus) ? 'Validée' : 'En attente'}</small>
+            <small>{reachedOn('PREPARING') ?? 'En attente'}</small>
           </div>
           <div className={['IN_DELIVERY', 'DELIVERED'].includes(order.orderStatus) ? (order.orderStatus === 'DELIVERED' ? 'complete' : 'current') : 'pending'}>
             <span><Truck size={14} /></span>
             <b>En livraison</b>
-            <small>{order.orderStatus === 'IN_DELIVERY' ? 'En cours' : (order.orderStatus === 'DELIVERED' ? 'Acheminée' : 'À venir')}</small>
+            <small>{reachedOn('IN_DELIVERY') ?? (order.deliveryMode === 'PICKUP' ? 'Retrait en boutique' : 'À venir')}</small>
           </div>
           <div className={order.orderStatus === 'DELIVERED' ? 'complete' : 'pending'}>
             <span><Check size={14} /></span>
             <b>Livrée</b>
-            <small>{order.orderStatus === 'DELIVERED' ? 'Remise en main propre' : 'En attente'}</small>
+            <small>{reachedOn('DELIVERED') ?? 'En attente'}</small>
           </div>
         </div>
       </section>
@@ -297,8 +335,10 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
                   />
                   <span>
                     <b>{it.productName}</b>
-                    {it.variantName && <small className="block text-neutral-500">{it.variantName}</small>}
+                    {it.variantName && it.variantName !== 'Standard' && <small className="block text-neutral-500">{it.variantName}</small>}
                     <small>Quantité : {it.quantity}</small>
+                    {it.giftWrap && <small className="block text-neutral-500">Emballage cadeau</small>}
+                    {it.cardMessage && <small className="block text-neutral-500">Carte : « {it.cardMessage} »</small>}
                   </span>
                   <strong>{formatPrice(it.totalPrice)}</strong>
                 </div>
@@ -310,14 +350,23 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
                 <span>Sous-total articles</span>
                 <span>{formatPrice(order.subtotal)}</span>
               </div>
+              {order.extrasAmount > 0 && (
+                <div className="recap-line">
+                  <span>Options cadeau</span>
+                  <span>{formatPrice(order.extrasAmount)}</span>
+                </div>
+              )}
               {order.discountAmount > 0 && (
                 <div className="recap-line text-emerald-700">
-                  <span>Réduction code promo</span>
+                  <span>Réduction{order.couponCode ? ` (${order.couponCode})` : ''}</span>
                   <span>-{formatPrice(order.discountAmount)}</span>
                 </div>
               )}
               <div className="recap-line">
-                <span>Frais de livraison ({order.deliveryMode})</span>
+                <span>
+                  {DELIVERY_MODE_LABELS[order.deliveryMode]}
+                  {order.deliveryZone ? ` — ${order.deliveryZone.name}` : ''}
+                </span>
                 <span>{order.deliveryFee === 0 ? 'Offerts' : formatPrice(order.deliveryFee)}</span>
               </div>
               <div className="recap-line border-t border-neutral-200 pt-2 text-sm font-bold text-neutral-900">
@@ -386,7 +435,7 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
             </h2>
             <div className="address-preview text-xs text-neutral-700 leading-relaxed bg-neutral-50 p-3.5 rounded-xl border border-neutral-100">
               <b className="block text-neutral-900 mb-1">{order.recipientName || order.customerName}</b>
-              <p>{order.deliveryAddress || 'Adresse non spécifiée'}</p>
+              <p>{order.deliveryMode === 'PICKUP' ? 'Retrait à notre atelier' : order.deliveryAddress}</p>
               {order.recipientPhone && <p className="text-neutral-500 mt-1">Tél : {order.recipientPhone}</p>}
             </div>
 

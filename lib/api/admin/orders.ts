@@ -1,238 +1,217 @@
 import { apiClient } from '../client';
 import type { AdminOrder, OrderStatus } from '@/lib/admin/mock-data/types';
 
-export interface GetAdminOrdersParams {
+const admin = { useAdminToken: true as const, cache: 'no-store' as const };
+
+/** Statuts de commande du backend. */
+export type BackendOrderStatus = 'PENDING' | 'PAID' | 'PREPARING' | 'READY' | 'IN_DELIVERY' | 'DELIVERED' | 'CANCELLED';
+export type BackendPaymentStatus = 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+
+export const ORDER_STATUS_LABELS: Record<BackendOrderStatus, string> = {
+  PENDING: 'En attente',
+  PAID: 'Payée',
+  PREPARING: 'En préparation',
+  READY: 'Prête',
+  IN_DELIVERY: 'En livraison',
+  DELIVERED: 'Livrée',
+  CANCELLED: 'Annulée',
+};
+
+export const ORDER_STATUS_STYLES: Record<BackendOrderStatus, string> = {
+  PENDING: 'bg-amber-50 text-amber-800 border-amber-200',
+  PAID: 'bg-sky-50 text-sky-800 border-sky-200',
+  PREPARING: 'bg-violet-50 text-violet-800 border-violet-200',
+  READY: 'bg-indigo-50 text-indigo-800 border-indigo-200',
+  IN_DELIVERY: 'bg-blue-50 text-blue-800 border-blue-200',
+  DELIVERED: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+  CANCELLED: 'bg-red-50 text-red-700 border-red-200',
+};
+
+/** Libellé du bouton qui fait passer la commande vers ce statut. */
+export const ORDER_ACTION_LABELS: Record<BackendOrderStatus, string> = {
+  PENDING: 'Remettre en attente',
+  PAID: 'Marquer payée',
+  PREPARING: 'Lancer la préparation',
+  READY: 'Marquer prête',
+  IN_DELIVERY: 'Remettre au livreur',
+  DELIVERED: 'Marquer livrée / retirée',
+  CANCELLED: 'Annuler la commande',
+};
+
+export const PAYMENT_STATUS_LABELS: Record<BackendPaymentStatus, string> = {
+  PENDING: 'En attente',
+  PAID: 'Payé',
+  FAILED: 'Échoué',
+  REFUNDED: 'Remboursé',
+};
+
+export const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  WAVE: 'Wave',
+  ORANGE_MONEY: 'Orange Money',
+  FREE_MONEY: 'Free Money',
+  CARD: 'Carte bancaire',
+  CASH_ON_DELIVERY: 'Paiement à la livraison',
+};
+
+export const DELIVERY_MODE_LABELS: Record<string, string> = {
+  STANDARD: 'Livraison standard',
+  EXPRESS: 'Livraison express',
+  PICKUP: 'Retrait en boutique',
+};
+
+export const TIME_SLOTS = ['9h-12h', '10h-14h', '14h-18h', '18h-20h'] as const;
+
+export interface AdminOrderItemDetail {
+  id: string;
+  productId: string;
+  variantId: string;
+  productName: string;
+  variantName: string | null;
+  sku: string | null;
+  image: string | null;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  giftWrap: boolean;
+  cardMessage: string | null;
+  extrasPrice: number;
+}
+
+export interface AdminOrderDetail {
+  id: string;
+  orderNumber: string;
+  userId: string | null;
+  customerId: string | null;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  recipientName: string | null;
+  recipientPhone: string | null;
+  deliveryMode: 'STANDARD' | 'EXPRESS' | 'PICKUP';
+  deliveryAddress: string | null;
+  deliveryZone: { id: string; name: string } | null;
+  deliveryDate: string | null;
+  timeSlot: string | null;
+  subtotal: number;
+  extrasAmount: number;
+  discountAmount: number;
+  couponCode: string | null;
+  deliveryFee: number;
+  totalAmount: number;
+  paymentStatus: BackendPaymentStatus;
+  paymentMethod: string;
+  orderStatus: BackendOrderStatus;
+  notes: string | null;
+  adminNotes: string | null;
+  paidAt: string | null;
+  cancelledAt: string | null;
+  cancelReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+  items: AdminOrderItemDetail[];
+  statusHistory: { id: string; fromStatus: BackendOrderStatus | null; toStatus: BackendOrderStatus; note: string | null; createdAt: string; authorName: string | null }[];
+  /** Statuts proposés par le backend depuis l'état actuel */
+  allowedTransitions: BackendOrderStatus[];
+}
+
+export interface AdminOrdersFilters {
   page?: number;
   limit?: number;
-  status?: string;
-  paymentStatus?: string;
+  status?: BackendOrderStatus;
+  paymentStatus?: BackendPaymentStatus;
+  deliveryMode?: 'STANDARD' | 'EXPRESS' | 'PICKUP';
   search?: string;
   from?: string;
   to?: string;
+  sort?: 'date_desc' | 'date_asc' | 'amount_desc' | 'amount_asc';
 }
 
-export interface AdminOrdersResponse {
-  orders: AdminOrder[];
+export interface AdminOrdersPage {
+  items: AdminOrderDetail[];
   total: number;
-  page?: number;
-  totalPages?: number;
+  page: number;
+  totalPages: number;
+  counts: Record<BackendOrderStatus, number>;
 }
 
-// Convert backend status to frontend OrderStatus
-export function mapBackendOrderStatus(status: string): OrderStatus {
-  const s = (status || '').toUpperCase();
-  switch (s) {
-    case 'PENDING':
-    case 'PAID':
-    case 'CONFIRMED':
-    case 'NOUVELLE':
-      return 'nouvelle';
-    case 'PREPARING':
-    case 'READY':
-    case 'EN_PREPARATION':
-      return 'en_preparation';
-    case 'IN_DELIVERY':
-    case 'EN_LIVRAISON':
-      return 'en_livraison';
-    case 'DELIVERED':
-    case 'LIVREE':
-      return 'livree';
-    case 'CANCELLED':
-    case 'ANNULEE':
-      return 'annulee';
-    case 'REFUNDED':
-    case 'REMBOURSEE':
-      return 'remboursee';
-    default:
-      return (status as OrderStatus) || 'nouvelle';
-  }
+export async function getAdminOrders(filters: AdminOrdersFilters = {}): Promise<AdminOrdersPage> {
+  return apiClient.get<AdminOrdersPage>('/admin/orders', {
+    ...admin,
+    params: {
+      page: filters.page ?? 1,
+      limit: filters.limit ?? 20,
+      status: filters.status,
+      paymentStatus: filters.paymentStatus,
+      deliveryMode: filters.deliveryMode,
+      search: filters.search || undefined,
+      from: filters.from,
+      to: filters.to,
+      sort: filters.sort,
+    },
+  });
 }
 
-// Convert frontend OrderStatus to backend enum
-export function mapFrontendToBackendOrderStatus(status: OrderStatus | string): string {
-  switch (status) {
-    case 'nouvelle':
-      return 'PENDING';
-    case 'en_preparation':
-      return 'PREPARING';
-    case 'en_livraison':
-      return 'IN_DELIVERY';
-    case 'livree':
-      return 'DELIVERED';
-    case 'annulee':
-    case 'remboursee':
-      return 'CANCELLED';
-    default:
-      return status.toUpperCase();
-  }
-}
-
-// Transform raw API order to AdminOrder
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function transformAdminOrder(raw: any): AdminOrder {
-  const itemData = raw?.data || raw;
-  const customerName = itemData.customer
-    ? `${itemData.customer.firstName || ''} ${itemData.customer.lastName || ''}`.trim() || itemData.shippingAddress?.fullName || 'Client'
-    : itemData.customerName || itemData.shippingAddress?.fullName || 'Client DécoFleur';
-
-  let deliveryAddress = itemData.deliveryAddress || '';
-  if (!deliveryAddress && itemData.shippingAddress) {
-    if (typeof itemData.shippingAddress === 'string') {
-      deliveryAddress = itemData.shippingAddress;
-    } else {
-      deliveryAddress = [
-        itemData.shippingAddress.address,
-        itemData.shippingAddress.city,
-        itemData.shippingAddress.zone,
-      ].filter(Boolean).join(', ');
-    }
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const items = Array.isArray(itemData.items) ? itemData.items.map((it: any) => ({
-    productId: it.productId || it.product?.id || it.id || '',
-    productName: it.productName || it.product?.name || 'Produit floral',
-    quantity: it.quantity || 1,
-    unitPrice: Number(it.unitPrice ?? it.price ?? 0),
-    image: it.image || it.product?.image || it.product?.images?.[0]?.url || '/images/products/rose-rouge.jpg',
-  })) : [];
-
-  return {
-    id: itemData.id,
-    ref: itemData.orderNumber || itemData.ref || itemData.id,
-    customerId: itemData.customerId || itemData.customer?.id || '',
-    customerName,
-    items,
-    total: Number(itemData.totalAmount ?? itemData.total ?? 0),
-    status: mapBackendOrderStatus(itemData.status),
-    date: itemData.createdAt || itemData.date || new Date().toISOString(),
-    deliveryAddress: deliveryAddress || 'Adresse non spécifiée',
-    deliveryMode: itemData.deliveryMode || (itemData.isExpress ? 'Livraison express' : 'Livraison standard'),
-    deliveryFee: Number(itemData.deliveryFee ?? 0),
-    paymentMethod: itemData.paymentMethod || 'NabooPay',
-    notes: itemData.adminNotes || itemData.notes || itemData.customerNotes || '',
-  };
-}
-
-/**
- * Fetch orders list from admin API
- */
-export async function getAdminOrders(params?: GetAdminOrdersParams): Promise<AdminOrdersResponse> {
+/** Détail ; null si la commande n'existe pas (404). */
+export async function getAdminOrderById(id: string): Promise<AdminOrderDetail | null> {
   try {
-    const q = new URLSearchParams();
-    if (params?.page) q.set('page', String(params.page));
-    if (params?.limit) q.set('limit', String(params.limit));
-    if (params?.status && params.status !== 'all') {
-      q.set('status', mapFrontendToBackendOrderStatus(params.status));
-    }
-    if (params?.paymentStatus && params.paymentStatus !== 'all') {
-      q.set('paymentStatus', params.paymentStatus.toUpperCase());
-    }
-    if (params?.search) q.set('search', params.search);
-    if (params?.from) q.set('from', params.from);
-    if (params?.to) q.set('to', params.to);
-
-    const queryStr = q.toString() ? `?${q.toString()}` : '';
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const res = await apiClient.get<any>(`/admin/orders${queryStr}`, {
-      useAdminToken: true,
-      cache: 'no-store',
-    });
-
-    if (res && typeof res === 'object') {
-      const dataObj = res.data ?? res;
-      if (Array.isArray(dataObj.items)) {
-        return {
-          orders: dataObj.items.map(transformAdminOrder),
-          total: dataObj.total ?? dataObj.items.length,
-          page: dataObj.page ?? 1,
-          totalPages: dataObj.totalPages ?? 1,
-        };
-      }
-      if (Array.isArray(res.orders)) {
-        return {
-          orders: res.orders.map(transformAdminOrder),
-          total: res.total ?? res.orders.length,
-          page: res.page ?? 1,
-          totalPages: res.totalPages ?? 1,
-        };
-      }
-      if (Array.isArray(res)) {
-        return {
-          orders: res.map(transformAdminOrder),
-          total: res.length,
-        };
-      }
-      if (Array.isArray(res.data)) {
-        return {
-          orders: res.data.map(transformAdminOrder),
-          total: res.total ?? res.data.length,
-        };
-      }
-    }
+    return await apiClient.get<AdminOrderDetail>(`/admin/orders/${id}`, admin);
   } catch (err) {
-    console.warn('[AdminOrdersAPI] Erreur de récupération des commandes:', err);
+    if ((err as { status?: number }).status === 404) return null;
+    throw err;
   }
-
-  return {
-    orders: [],
-    total: 0,
-    page: 1,
-    totalPages: 1,
-  };
 }
 
-/**
- * Get single order detail
- */
-export async function getAdminOrderById(id: string): Promise<AdminOrder | null> {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const res = await apiClient.get<any>(`/admin/orders/${id}`, {
-      useAdminToken: true,
-      cache: 'no-store',
-    });
-    if (res) {
-      return transformAdminOrder(res);
-    }
-  } catch (err) {
-    console.warn(`[AdminOrdersAPI] Fetching order ${id} failed:`, err);
-  }
-
-  return null;
-}
-
-/**
- * Update order notes or delivery slot
- */
+/** Notes internes, date et créneau de livraison. */
 export async function updateAdminOrder(
   id: string,
-  body: { adminNotes?: string; deliveryDate?: string; timeSlot?: string }
-): Promise<AdminOrder> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const res = await apiClient.patch<any>(`/admin/orders/${id}`, body, {
-    useAdminToken: true,
-  });
-  return transformAdminOrder(res);
+  body: { adminNotes?: string | null; deliveryDate?: string | null; timeSlot?: string | null },
+): Promise<AdminOrderDetail> {
+  return apiClient.patch<AdminOrderDetail>(`/admin/orders/${id}`, body, admin);
 }
 
-/**
- * Update order status (CONFIRMED, PREPARING, IN_DELIVERY, DELIVERED, CANCELLED, REFUNDED)
- */
-export async function updateAdminOrderStatus(
+export async function changeAdminOrderStatus(
   id: string,
-  body: { status: OrderStatus | string; note?: string; cancelReason?: string }
-): Promise<AdminOrder> {
-  const backendStatus = mapFrontendToBackendOrderStatus(body.status);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const res = await apiClient.patch<any>(
-    `/admin/orders/${id}/status`,
-    {
-      status: backendStatus,
-      note: body.note,
-      cancelReason: body.cancelReason,
-    },
-    { useAdminToken: true }
-  );
-  return transformAdminOrder(res);
+  status: BackendOrderStatus,
+  extra: { note?: string; cancelReason?: string } = {},
+): Promise<AdminOrderDetail> {
+  return apiClient.patch<AdminOrderDetail>(`/admin/orders/${id}/status`, { status, ...extra }, admin);
+}
+
+// ---------- Format « historique client » (page Clients) ----------
+
+const LEGACY_STATUS: Record<string, OrderStatus> = {
+  PENDING: 'nouvelle',
+  PAID: 'nouvelle',
+  PREPARING: 'en_preparation',
+  READY: 'en_preparation',
+  IN_DELIVERY: 'en_livraison',
+  DELIVERED: 'livree',
+  CANCELLED: 'annulee',
+};
+
+/** Résumé d'une commande pour l'historique d'un client. */
+export function transformAdminOrder(
+  raw: Pick<AdminOrderDetail, 'id' | 'orderNumber' | 'createdAt' | 'orderStatus' | 'totalAmount'> & Partial<AdminOrderDetail>,
+): AdminOrder {
+  return {
+    id: raw.id,
+    ref: raw.orderNumber,
+    customerId: raw.customerId ?? '',
+    customerName: raw.customerName ?? '',
+    items: (raw.items ?? []).map((it) => ({
+      productId: it.productId,
+      productName: it.productName,
+      quantity: it.quantity,
+      unitPrice: it.unitPrice,
+      image: it.image ?? '/images/hero.jpg',
+    })),
+    total: raw.totalAmount,
+    status: LEGACY_STATUS[raw.orderStatus] ?? 'nouvelle',
+    date: raw.createdAt,
+    deliveryAddress: raw.deliveryAddress ?? '',
+    deliveryMode: raw.deliveryMode ? DELIVERY_MODE_LABELS[raw.deliveryMode] : '',
+    deliveryFee: raw.deliveryFee ?? 0,
+    paymentMethod: raw.paymentMethod ? PAYMENT_METHOD_LABELS[raw.paymentMethod] ?? raw.paymentMethod : '',
+    notes: raw.adminNotes ?? raw.notes ?? '',
+  };
 }

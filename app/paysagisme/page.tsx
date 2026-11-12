@@ -73,17 +73,17 @@ export default function PaysagismePage() {
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <Link
-                href="/devis?type=evenements"
+                href="/devis?type=paysagisme"
                 className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-[#c8436e] hover:bg-[#b0355d] text-white font-medium text-xs sm:text-sm shadow-md transition-all active:scale-95"
               >
-                Demander un devis (Événements)
+                Demander une étude & un devis
                 <ArrowRight size={15} />
               </Link>
               <Link
                 href="/paysagisme/prestations"
                 className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-md text-white border border-white/30 font-medium text-xs sm:text-sm transition-all"
               >
-                Découvrir nos prestations (À venir)
+                Découvrir nos prestations
               </Link>
             </div>
           </div>
@@ -99,7 +99,7 @@ export default function PaysagismePage() {
         <section className="mb-8 sm:mb-12">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5">
             <Link
-              href="/paysagisme/prestations#conception-jardins"
+              href="/paysagisme/prestations"
               className="flex items-center gap-3 p-3 rounded-xl bg-white border border-[#eae3d9] hover:border-[#173f22]/30 hover:shadow-2xs transition-all group"
             >
               <div className="w-9 h-9 rounded-full bg-[#eef7f0] flex items-center justify-center text-[#193e23] shrink-0 group-hover:scale-105 transition-transform">
@@ -112,7 +112,7 @@ export default function PaysagismePage() {
             </Link>
 
             <Link
-              href="/paysagisme/prestations#terrasses-balcons"
+              href="/paysagisme/prestations"
               className="flex items-center gap-3 p-3 rounded-xl bg-white border border-[#eae3d9] hover:border-[#173f22]/30 hover:shadow-2xs transition-all group"
             >
               <div className="w-9 h-9 rounded-full bg-[#eef7f0] flex items-center justify-center text-[#193e23] shrink-0 group-hover:scale-105 transition-transform">
@@ -125,7 +125,7 @@ export default function PaysagismePage() {
             </Link>
 
             <Link
-              href="/paysagisme/prestations#espaces-professionnels"
+              href="/paysagisme/prestations"
               className="flex items-center gap-3 p-3 rounded-xl bg-white border border-[#eae3d9] hover:border-[#173f22]/30 hover:shadow-2xs transition-all group"
             >
               <div className="w-9 h-9 rounded-full bg-[#eef7f0] flex items-center justify-center text-[#193e23] shrink-0 group-hover:scale-105 transition-transform">
@@ -138,7 +138,7 @@ export default function PaysagismePage() {
             </Link>
 
             <Link
-              href="/paysagisme/prestations#entretien-espaces-verts"
+              href="/paysagisme/prestations"
               className="flex items-center gap-3 p-3 rounded-xl bg-white border border-[#eae3d9] hover:border-[#173f22]/30 hover:shadow-2xs transition-all group"
             >
               <div className="w-9 h-9 rounded-full bg-[#eef7f0] flex items-center justify-center text-[#193e23] shrink-0 group-hover:scale-105 transition-transform">

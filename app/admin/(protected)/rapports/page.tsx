@@ -31,24 +31,17 @@ import {
   Download,
   RotateCw,
   Search,
-  Filter,
   Eye,
-  Calendar,
-  Layers,
   Banknote,
-  Smartphone,
   ShieldCheck,
   Clock,
   Sparkles,
   MapPin,
   Percent,
   CheckCircle2,
-  ChevronRight,
   ChevronDown,
   ChevronUp,
-  PieChart as PieIcon,
   Wallet,
-  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ExportReportDialog } from '@/components/admin/export-report-dialog';
@@ -66,6 +59,7 @@ import {
   Filler,
   Legend,
   ArcElement,
+  type TooltipItem,
 } from 'chart.js';
 import { Line, Doughnut } from 'react-chartjs-2';
 
@@ -255,7 +249,7 @@ export default function AdminRapportsPage() {
         mode: 'index' as const,
         intersect: false,
         callbacks: {
-          label: function (context: any) {
+          label: function (context: TooltipItem<'line'>) {
             let label = context.dataset.label || '';
             if (label) label += ' : ';
             if (context.parsed.y !== null) {
@@ -276,7 +270,8 @@ export default function AdminRapportsPage() {
         ticks: {
           color: '#64748b',
           font: { size: 12 },
-          callback: function (val: any) {
+          callback: function (raw: string | number) {
+            const val = Number(raw);
             return val >= 1000000
               ? (val / 1000000).toFixed(1) + 'M'
               : val / 1000 + 'k';
@@ -314,7 +309,7 @@ export default function AdminRapportsPage() {
       },
       tooltip: {
         callbacks: {
-          label: function (context: any) {
+          label: function (context: TooltipItem<'doughnut'>) {
             return ` ${context.label} : ${context.parsed}% du total`;
           },
         },
@@ -757,7 +752,7 @@ export default function AdminRapportsPage() {
                   Évolution des Ventes & Comparaison
                 </CardTitle>
                 <p className="text-xs text-gray-500">
-                  Courbe de chiffre d'affaires sur {dataset.periodLabel} vs {dataset.comparisonLabel}
+                  Courbe de chiffre d’affaires sur {dataset.periodLabel} vs {dataset.comparisonLabel}
                 </p>
               </div>
               <div className="hidden sm:flex items-center gap-3 text-xs">
@@ -789,7 +784,7 @@ export default function AdminRapportsPage() {
                       Top Ventes Florales
                     </CardTitle>
                     <p className="text-xs text-gray-500">
-                      Articles les plus performants en volume et chiffre d'affaires
+                      Articles les plus performants en volume et chiffre d’affaires
                     </p>
                   </div>
                   <Sparkles className="h-4 w-4 text-[#c1647a]" />
@@ -834,7 +829,7 @@ export default function AdminRapportsPage() {
                           {product.quantitySold} vendus
                         </span>
                         <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
-                          {product.marginRate}% marge
+                          {product.marginRate == null ? 'marge : prix d’achat non renseigné' : `${product.marginRate}% marge`}
                         </span>
                       </div>
                     </div>
@@ -852,7 +847,7 @@ export default function AdminRapportsPage() {
                     Ventes par Catégorie
                   </CardTitle>
                   <p className="text-xs text-gray-500">
-                    Contribution au chiffre d'affaires global
+                    Contribution au chiffre d’affaires global
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -1104,7 +1099,7 @@ export default function AdminRapportsPage() {
                     Grand Livre des Encaissements
                   </CardTitle>
                   <p className="text-xs text-gray-500">
-                    Journal d'audit détaillé de chaque transaction et déduction des commissions
+                    Journal d’audit détaillé de chaque transaction et déduction des commissions
                   </p>
                 </div>
 

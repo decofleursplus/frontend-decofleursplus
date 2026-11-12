@@ -13,8 +13,10 @@ export interface GetAdminQuotesParams {
 export interface AdminQuotesResponse {
   quotes: LandscapeQuote[];
   total: number;
-  page?: number;
-  totalPages?: number;
+  page: number;
+  totalPages: number;
+  /** Nombre de devis par statut (toute la base) */
+  counts: Record<QuoteStatus, number>;
 }
 
 // Map backend QuoteStatus to frontend QuoteStatus
@@ -104,8 +106,8 @@ export function transformAdminQuote(raw: any): LandscapeQuote {
     clientPhone,
     company: raw.company || raw.organization || '',
     prestationType: raw.eventType || raw.prestationType || 'Événement Floral',
-    spaceType: raw.spaceType || (raw.estimatedGuests ? `${raw.estimatedGuests} convives` : 'Espace de réception'),
-    surfaceArea: raw.surfaceArea ? String(raw.surfaceArea) : (raw.estimatedGuests ? `${raw.estimatedGuests} pers.` : 'N/C'),
+    spaceType: raw.estimatedGuests ? `${raw.estimatedGuests} invités` : '',
+    surfaceArea: '',
     desiredDate: raw.eventDate ? raw.eventDate.split('T')[0] : (raw.desiredDate || ''),
     location: raw.eventLocation || raw.location || 'Saly / Dakar',
     description: raw.details || raw.description || '',
@@ -116,71 +118,54 @@ export function transformAdminQuote(raw: any): LandscapeQuote {
     notes: raw.adminNotes || raw.notes || '',
     quoteAmount: raw.quotedAmount ? Number(raw.quotedAmount) : raw.quoteAmount,
     quoteItems,
+    estimatedGuests: raw.estimatedGuests ?? null,
+    budgetRange: raw.budgetRange ?? null,
   };
 }
 
+const EMPTY_QUOTE_COUNTS: Record<QuoteStatus, number> = {
+  nouvelle: 0,
+  en_cours: 0,
+  devis_envoye: 0,
+  acceptee: 0,
+  refusee: 0,
+  terminee: 0,
+};
+
 /**
- * Fetch quotes list from admin API
+ * Liste paginée côté serveur (GET /admin/quotes) avec compteurs par statut.
+ * Lève une ApiClientError en cas d'échec.
  */
-export async function getAdminQuotes(params?: GetAdminQuotesParams): Promise<AdminQuotesResponse> {
-  try {
-    const q = new URLSearchParams();
-    if (params?.page) q.set('page', String(params.page));
-    if (params?.limit) q.set('limit', String(params.limit));
-    if (params?.status && params.status !== 'all') {
-      q.set('status', mapFrontendToBackendQuoteStatus(params.status));
-    }
-    if (params?.search) q.set('search', params.search);
-    if (params?.from) q.set('from', params.from);
-    if (params?.to) q.set('to', params.to);
-
-    const queryStr = q.toString() ? `?${q.toString()}` : '';
+export async function getAdminQuotes(params: GetAdminQuotesParams = {}): Promise<AdminQuotesResponse> {
+  const res = await apiClient.get<{
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const res = await apiClient.get<any>(`/admin/quotes${queryStr}`, {
-      useAdminToken: true,
-      cache: 'no-store',
-    });
-
-    if (res && typeof res === 'object') {
-      const dataObj = res.data ?? res;
-      if (Array.isArray(dataObj.items)) {
-        return {
-          quotes: dataObj.items.map(transformAdminQuote),
-          total: dataObj.total ?? dataObj.items.length,
-          page: dataObj.page ?? 1,
-          totalPages: dataObj.totalPages ?? 1,
-        };
-      }
-      if (Array.isArray(res.quotes)) {
-        return {
-          quotes: res.quotes.map(transformAdminQuote),
-          total: res.total ?? res.quotes.length,
-          page: res.page ?? 1,
-          totalPages: res.totalPages ?? 1,
-        };
-      }
-      if (Array.isArray(res)) {
-        return {
-          quotes: res.map(transformAdminQuote),
-          total: res.length,
-        };
-      }
-      if (Array.isArray(res.data)) {
-        return {
-          quotes: res.data.map(transformAdminQuote),
-          total: res.total ?? res.data.length,
-        };
-      }
-    }
-  } catch (err) {
-    console.warn('[AdminQuotesAPI] Erreur de récupération des devis:', err);
+    items: any[];
+    total: number;
+    page: number;
+    totalPages: number;
+    counts?: Record<string, number>;
+  }>('/admin/quotes', {
+    useAdminToken: true,
+    cache: 'no-store',
+    params: {
+      page: params.page ?? 1,
+      limit: params.limit ?? 25,
+      status: params.status && params.status !== 'all' ? mapFrontendToBackendQuoteStatus(params.status) : undefined,
+      search: params.search || undefined,
+      from: params.from,
+      to: params.to,
+    },
+  });
+  const counts = { ...EMPTY_QUOTE_COUNTS };
+  for (const [backendStatus, n] of Object.entries(res.counts ?? {})) {
+    counts[mapBackendQuoteStatus(backendStatus)] += n;
   }
-
   return {
-    quotes: [],
-    total: 0,
-    page: 1,
-    totalPages: 1,
+    quotes: (res.items ?? []).map(transformAdminQuote),
+    total: res.total ?? 0,
+    page: res.page ?? 1,
+    totalPages: res.totalPages ?? 1,
+    counts,
   };
 }
 
@@ -253,4 +238,38 @@ export async function updateAdminQuoteStatus(
   }
 
   return transformAdminQuote(res?.data || res);
+}
+
+/** Transitions de statut autorisées par le backend (l'envoi de la proposition passe par `sendAdminQuoteProposal`). */
+export const QUOTE_NEXT_STATUSES: Record<string, QuoteStatus[]> = {
+  nouvelle: ['en_cours', 'refusee'],
+  en_cours: ['refusee'],
+  devis_envoye: ['acceptee', 'refusee', 'en_cours'],
+  acceptee: [],
+  refusee: [],
+  terminee: [],
+};
+
+/** Enregistre les lignes chiffrées (le montant est recalculé côté serveur) et les notes internes. */
+export async function saveAdminQuoteProposal(
+  id: string,
+  body: {
+    items: { description: string; quantity: number; unitPrice: number }[];
+    adminNotes: string | null;
+    /** AAAA-MM-JJ ou null pour effacer */
+    eventDate?: string | null;
+    eventLocation?: string;
+    budgetRange?: string | null;
+    estimatedGuests?: number | null;
+  },
+): Promise<LandscapeQuote> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return transformAdminQuote(await apiClient.patch<any>(`/admin/quotes/${id}`, body, { useAdminToken: true }));
+}
+
+/** Envoie la proposition au client (email + notification dans son espace). */
+export async function sendAdminQuoteProposal(id: string, message?: string): Promise<LandscapeQuote & { emailSent?: boolean }> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const res = await apiClient.post<any>(`/admin/quotes/${id}/send`, { message: message || undefined }, { useAdminToken: true });
+  return { ...transformAdminQuote(res), emailSent: res?.emailSent };
 }

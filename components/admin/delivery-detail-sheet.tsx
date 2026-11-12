@@ -23,7 +23,6 @@ import {
   Bike,
   Package,
   Calendar,
-  ChevronRight,
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -77,7 +76,6 @@ export function DeliveryDetailSheet({
   };
 
   const handlePrint = () => {
-    toast.success(`Impression du bon de livraison ${delivery.id}...`);
     window.print();
   };
 
@@ -94,7 +92,7 @@ export function DeliveryDetailSheet({
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span className="font-mono text-sm font-bold text-[#1e2a1f] bg-white px-2.5 py-1 rounded-lg border border-[#e7e4dd]">
-                  {delivery.id}
+                  {delivery.deliveryNumber}
                 </span>
                 {getStatusBadge(delivery.status)}
               </div>

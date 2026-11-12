@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
 import {
   Dialog,
@@ -29,19 +29,21 @@ import {
 import { toast } from 'sonner';
 import { uploadAdminMedia } from '@/lib/api/admin/uploads';
 import { WhatsAppColorIcon } from '@/components/icons';
-import { products as allProducts } from '@/lib/products';
-import {
-  type SeasonalEvent,
-  type EventThemeColor,
-  stripEmojis,
-} from '@/lib/events-data';
+import type { Product } from '@/lib/products';
+import { getProducts } from '@/lib/api/catalog';
+import { stripEmojis } from '@/lib/events-data';
+import type { EventThemeColor, SeasonalEventInput } from '@/lib/api/events';
+
+/** Événement en cours d'édition (`id` absent pour une création). */
+export type EventDraft = SeasonalEventInput & { id?: string };
 
 interface EditEventDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  event: SeasonalEvent | null;
+  event: EventDraft | null;
   isLive: boolean;
-  onSave: (updatedEvent: SeasonalEvent, activateImmediately?: boolean) => void;
+  /** Résout à true si l'enregistrement a réussi (la fenêtre se ferme alors). */
+  onSave: (event: EventDraft, activateImmediately?: boolean) => Promise<boolean>;
 }
 
 const themeOptions: {
@@ -85,7 +87,7 @@ const categorySuggestions = [
 
 export function EditEventDialog(props: EditEventDialogProps) {
   if (!props.open || !props.event) return null;
-  return <EditEventDialogInner key={props.event.id} {...props} event={props.event} />;
+  return <EditEventDialogInner key={props.event.id ?? 'nouveau'} {...props} event={props.event} />;
 }
 
 function EditEventDialogInner({
@@ -94,8 +96,9 @@ function EditEventDialogInner({
   event,
   isLive,
   onSave,
-}: EditEventDialogProps & { event: SeasonalEvent }) {
-  const [formData, setFormData] = useState<SeasonalEvent>(event);
+}: EditEventDialogProps & { event: EventDraft }) {
+  const [formData, setFormData] = useState<EventDraft>(event);
+  const [saving, setSaving] = useState(false);
   const [productSearch, setProductSearch] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -126,55 +129,78 @@ function EditEventDialogInner({
     }
   };
 
-  // Produits sélectionnés
-  const selectedProductIds = formData.featuredProductIds || [];
-  const selectedProducts = useMemo(() => {
-    return allProducts.filter(
-      (p) => selectedProductIds.includes(p.id) || selectedProductIds.includes(p.slug)
-    );
-  }, [selectedProductIds]);
+  // Créations sélectionnées : chargées par identifiant pour rester affichées quelle que soit la recherche
+  const MAX_FEATURED = 4;
+  const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  useEffect(() => {
+    if (event.featuredProductIds.length === 0) return;
+    getProducts({ ids: event.featuredProductIds, limit: MAX_FEATURED })
+      .then((res) => {
+        const order = event.featuredProductIds;
+        const rank = (p: Product) => {
+          const i = order.findIndex((id) => id === p.id || id === p.slug);
+          return i === -1 ? order.length : i;
+        };
+        setSelectedProducts([...res.items].sort((a, b) => rank(a) - rank(b)));
+      })
+      .catch((err) => setCatalogError(err instanceof Error ? err.message : 'Créations sélectionnées indisponibles.'));
+  }, [event.featuredProductIds]);
+  const selectedProductIds = selectedProducts.map((p) => p.id);
 
-  // Catalogue filtré pour sélection rapide
-  const filteredCatalog = useMemo(() => {
-    if (!productSearch.trim()) return allProducts;
-    const q = productSearch.toLowerCase();
-    return allProducts.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q) ||
-        (p.reference && p.reference.toLowerCase().includes(q))
-    );
+  // Recherche côté serveur dans tout le catalogue publié (nom, description, référence)
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(productSearch.trim()), 300);
+    return () => clearTimeout(timer);
   }, [productSearch]);
+  const [results, setResults] = useState<{ query: string; items: Product[] } | null>(null);
+  const searching = results?.query !== debouncedSearch;
+  useEffect(() => {
+    let cancelled = false;
+    getProducts({ search: debouncedSearch || undefined, sort: debouncedSearch ? undefined : 'popular', limit: 30 })
+      .then((res) => {
+        if (!cancelled) {
+          setResults({ query: debouncedSearch, items: res.items });
+          setCatalogError(null);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setResults({ query: debouncedSearch, items: [] });
+          setCatalogError(err instanceof Error ? err.message : 'Catalogue indisponible.');
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedSearch]);
 
-  const handleToggleProduct = (productId: string) => {
-    const isSelected = selectedProductIds.includes(productId);
-    let nextIds: string[];
-    if (isSelected) {
-      nextIds = selectedProductIds.filter((id) => id !== productId);
-    } else {
-      if (selectedProductIds.length >= 4) {
-        nextIds = [...selectedProductIds.slice(0, 3), productId];
-      } else {
-        nextIds = [...selectedProductIds, productId];
-      }
+  const handleToggleProduct = (product: Product) => {
+    const isSelected = selectedProducts.some((p) => p.id === product.id);
+    if (!isSelected && selectedProducts.length >= MAX_FEATURED) {
+      toast.error(`${MAX_FEATURED} créations maximum : retirez-en une pour en ajouter une autre.`);
+      return;
     }
-    setFormData({ ...formData, featuredProductIds: nextIds });
+    const next = isSelected ? selectedProducts.filter((p) => p.id !== product.id) : [...selectedProducts, product];
+    setSelectedProducts(next);
+    setFormData((prev) => ({ ...prev, featuredProductIds: next.map((p) => p.id) }));
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData) {
-      const sanitized: SeasonalEvent = {
-        ...formData,
-        name: stripEmojis(formData.name),
-        badge: '',
-        categoryLabel: stripEmojis(formData.categoryLabel),
-        headline: stripEmojis(formData.headline),
-        headlineHighlight: stripEmojis(formData.headlineHighlight),
-      };
-      onSave(sanitized, false);
-      onOpenChange(false);
-    }
+    const sanitized: EventDraft = {
+      ...formData,
+      name: stripEmojis(formData.name),
+      badge: '',
+      categoryLabel: stripEmojis(formData.categoryLabel),
+      headline: stripEmojis(formData.headline),
+      headlineHighlight: stripEmojis(formData.headlineHighlight),
+    };
+    setSaving(true);
+    const ok = await onSave(sanitized, false);
+    setSaving(false);
+    if (ok) onOpenChange(false);
   };
 
   const currentTheme =
@@ -560,9 +586,10 @@ function EditEventDialogInner({
                   </div>
                   <button
                     type="button"
-                    onClick={() => handleToggleProduct(p.id)}
+                    onClick={() => handleToggleProduct(p)}
                     className="h-5 w-5 rounded-full bg-zinc-200 hover:bg-red-100 hover:text-red-600 flex items-center justify-center text-zinc-500 transition-colors shrink-0"
                     title="Retirer"
+                    aria-label={`Retirer ${p.name}`}
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -581,59 +608,60 @@ function EditEventDialogInner({
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-400" />
                 <Input
-                  placeholder="Rechercher une création à ajouter (ex: Lys, Panier, Rose)..."
+                  placeholder="Rechercher dans tout le catalogue (ex : lys, panier, rose)…"
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
                   className="pl-8 h-8 text-xs bg-white border-zinc-200"
                 />
               </div>
 
-              {/* Résultats rapides du catalogue */}
-              <div className="max-h-36 overflow-y-auto space-y-1 pr-1">
-                {filteredCatalog.slice(0, 8).map((p) => {
-                  const isSelected = selectedProductIds.includes(p.id);
-                  return (
-                    <div
-                      key={p.id}
-                      onClick={() => handleToggleProduct(p.id)}
-                      className={`flex items-center justify-between p-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
-                        isSelected
-                          ? 'bg-emerald-50 text-emerald-900 font-medium border border-emerald-200'
-                          : 'hover:bg-zinc-50 text-zinc-700 border border-transparent'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="relative h-7 w-7 rounded overflow-hidden shrink-0 border border-zinc-200">
-                          <Image
-                            src={p.image}
-                            alt={p.name}
-                            fill
-                            className="object-cover"
-                            sizes="28px"
+              {/* Résultats du catalogue (recherche serveur) */}
+              {catalogError && <p className="text-xs text-rose-600">{catalogError}</p>}
+              <div className="max-h-60 overflow-y-auto space-y-1 pr-1 rounded-xl border border-zinc-100 p-1" aria-busy={searching}>
+                {results === null ? (
+                  <p className="py-4 text-center text-xs text-zinc-400">Chargement du catalogue…</p>
+                ) : results.items.length === 0 ? (
+                  <p className="py-4 text-center text-xs text-zinc-400">
+                    {debouncedSearch ? `Aucune création ne correspond à « ${debouncedSearch} ».` : 'Aucune création publiée.'}
+                  </p>
+                ) : (
+                  results.items.map((p) => {
+                    const isSelected = selectedProductIds.includes(p.id);
+                    const limitReached = !isSelected && selectedProductIds.length >= MAX_FEATURED;
+                    return (
+                      <label
+                        key={p.id}
+                        className={`flex items-center justify-between gap-2 p-1.5 rounded-lg text-xs transition-colors ${
+                          isSelected
+                            ? 'bg-emerald-50 text-emerald-900 font-medium border border-emerald-200 cursor-pointer'
+                            : limitReached
+                              ? 'opacity-50 border border-transparent cursor-not-allowed'
+                              : 'hover:bg-zinc-50 text-zinc-700 border border-transparent cursor-pointer'
+                        } ${searching ? 'opacity-60' : ''}`}
+                      >
+                        <span className="flex items-center gap-2 min-w-0">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 accent-emerald-700 shrink-0"
+                            checked={isSelected}
+                            disabled={limitReached}
+                            onChange={() => handleToggleProduct(p)}
                           />
-                        </div>
-                        <span className="truncate">{p.name}</span>
-                        <span className="text-[10px] text-zinc-400">({p.category})</span>
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[11px] font-medium text-zinc-600">
-                          {p.price.toLocaleString('fr-FR')} F
+                          <span className="relative h-7 w-7 rounded overflow-hidden shrink-0 border border-zinc-200">
+                            <Image src={p.image} alt="" fill className="object-cover" sizes="28px" />
+                          </span>
+                          <span className="truncate">{p.name}</span>
+                          <span className="text-[10px] text-zinc-400 shrink-0">({p.category})</span>
                         </span>
-                        <div
-                          className={`h-4 w-4 rounded-full flex items-center justify-center border text-[10px] ${
-                            isSelected
-                              ? 'bg-emerald-600 text-white border-emerald-600'
-                              : 'border-zinc-300 text-transparent'
-                          }`}
-                        >
-                          ✓
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                        <span className="text-[11px] font-medium text-zinc-600 shrink-0">{p.price.toLocaleString('fr-FR')} F</span>
+                      </label>
+                    );
+                  })
+                )}
               </div>
+              {selectedProductIds.length >= MAX_FEATURED && (
+                <p className="text-[11px] text-amber-700">Limite de {MAX_FEATURED} créations atteinte : retirez-en une pour en choisir une autre.</p>
+              )}
             </div>
           </div>
         </form>
@@ -652,9 +680,10 @@ function EditEventDialogInner({
           <Button
             type="submit"
             form="edit-event-form"
+            disabled={saving || isUploading}
             className="bg-[#193e23] hover:bg-[#122e1a] text-white text-xs font-semibold px-6 h-9 shadow-xs"
           >
-            Enregistrer
+            {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />} {saving ? 'Enregistrement…' : 'Enregistrer'}
           </Button>
         </div>
       </DialogContent>

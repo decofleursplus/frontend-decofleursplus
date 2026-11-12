@@ -1,214 +1,337 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-  Calendar,
+  AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  Banknote,
   Check,
   CheckCircle2,
-  Clock,
-  CreditCard,
   Flower2,
+  Loader2,
+  Mail,
   MapPin,
   Phone,
   RefreshCw,
-  Send,
   ShieldCheck,
-  Sparkles,
   Truck,
   User,
-  ArrowRight,
-  ArrowLeft,
-  ChevronRight,
-  Loader2,
-  AlertCircle,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
-import { subscribeToPlan, CustomerSubscription } from '@/lib/api/subscriptions';
-
-export interface PlanConfig {
-  id: 'particulier' | 'prestige' | 'entreprise';
-  name: string;
-  badge?: string;
-  tagline: string;
-  perDeliveryPrice: number;
-  monthlyPriceHebdo: number;
-  monthlyPriceBimensuel: number;
-  bouquetSpecs: string;
-  vaseSpecs: string;
-  recommendedFor: string;
-  serviceCommitments: string[];
-}
-
-export const subscriptionPlans: PlanConfig[] = [
-  {
-    id: 'particulier',
-    name: 'Particulier & Villa',
-    tagline: 'Fraîcheur & poésie au quotidien',
-    badge: 'Résidentiel',
-    perDeliveryPrice: 25000,
-    monthlyPriceHebdo: 100000,
-    monthlyPriceBimensuel: 50000,
-    bouquetSpecs: 'Bouquet artisanal généreux (Ø 35-40 cm) en fleurs fraîches nobles',
-    vaseSpecs: 'Vase verre ou céramique prêté, garni d’eau & renouvelé',
-    recommendedFor: 'Salons, salles à manger & vérandas de villas à Saly et Ngaparou',
-    serviceCommitments: [
-      'Fleurs fraîches coupées le matin même',
-      'Vase prêté & échangé à chaque passage',
-      'Sans engagement : suspension en 1 clic',
-    ],
-  },
-  {
-    id: 'prestige',
-    name: 'Prestige & Réception',
-    tagline: 'L’art floral dans sa plus haute expression',
-    badge: 'Recommandé',
-    perDeliveryPrice: 50000,
-    monthlyPriceHebdo: 200000,
-    monthlyPriceBimensuel: 100000,
-    bouquetSpecs: 'Grande pièce maîtresse sculpturale (Ø 55-65 cm, H 65 cm)',
-    vaseSpecs: 'Vase d’art contemporain de collection inclus & nettoyé',
-    recommendedFor: 'Halls d’accueil, réceptions d’exception & tables de gala',
-    serviceCommitments: [
-      'Variétés nobles d’exception & fleurs rares',
-      'Installation et mise en valeur par l’artisan',
-      'Vases de collection tournants à chaque passage',
-    ],
-  },
-  {
-    id: 'entreprise',
-    name: 'Entreprise & Hôtellerie',
-    tagline: 'Image de marque & accueil soigné',
-    badge: 'B2B & Hôtels',
-    perDeliveryPrice: 22500,
-    monthlyPriceHebdo: 90000,
-    monthlyPriceBimensuel: 45000,
-    bouquetSpecs: 'Scénographie comptoir, lobby, restaurant ou salons VIP',
-    vaseSpecs: 'Contenants professionnels adaptés aux espaces de passage',
-    recommendedFor: 'Hôtels, banques, restaurants, cabinets & conciergeries',
-    serviceCommitments: [
-      'Compositions adaptées à votre identité visuelle',
-      'Facturation mensuelle entreprise & TVA déductible',
-      'Assistance prioritaire 7j/7 et remplacements express',
-    ],
-  },
-];
-
-const senegalLocations = [
-  'Saly Portudal',
-  'Saly Niakhniakhal / Saly Joseph',
-  'Mbour centre / Tefess / Warang',
-  'Ngaparou / La Somone',
-  'Dakar (Almadies, Plateau, Fann, Mermoz)',
-  'Autre localité Petite Côte',
-];
+import { ApiClientError } from '@/lib/api/client';
+import {
+  getSubscriptionDeliveryZones,
+  getSubscriptionPaymentOptions,
+  getSubscriptionPlans,
+  subscribeToPlan,
+  type CustomerSubscription,
+  type PlanConfig,
+  type SubscriptionDeliveryDay,
+  type SubscriptionDeliveryZone,
+  type SubscriptionFrequency,
+  type SubscriptionPaymentOptions,
+  type SubscriptionPlan,
+} from '@/lib/api/subscriptions';
 
 type Step = 'plan' | 'details' | 'payment' | 'confirmation';
+type PaymentChoice = 'CASH_ON_DELIVERY' | 'WAVE' | 'ORANGE_MONEY';
+type FieldName = 'name' | 'phone' | 'email' | 'location' | 'address';
+
+const DELIVERY_DAYS: { id: SubscriptionDeliveryDay; label: string }[] = [
+  { id: 'MARDI', label: 'Mardi' },
+  { id: 'VENDREDI', label: 'Vendredi' },
+  { id: 'SAMEDI', label: 'Samedi' },
+];
+
+const PAYMENT_LABELS: Record<PaymentChoice, string> = {
+  CASH_ON_DELIVERY: 'Espèces à la livraison',
+  WAVE: 'Wave',
+  ORANGE_MONEY: 'Orange Money',
+};
+
+/** Champs du formulaire correspondant aux champs validés par l'API. */
+const API_FIELD_TO_FORM: Record<string, FieldName> = {
+  recipientName: 'name',
+  phone: 'phone',
+  email: 'email',
+  location: 'location',
+  address: 'address',
+};
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function deliveriesPerMonth(frequency: SubscriptionFrequency) {
+  return frequency === 'HEBDOMADAIRE' ? 4 : 2;
+}
+
+function monthlyPrice(plan: PlanConfig, frequency: SubscriptionFrequency) {
+  return frequency === 'HEBDOMADAIRE' ? plan.monthlyPriceHebdo : plan.monthlyPriceBimensuel;
+}
+
+function formatFcfa(amount: number) {
+  return `${amount.toLocaleString('fr-FR')} FCFA`;
+}
+
+function formatLongDate(iso: string) {
+  return new Date(iso).toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
 
 export function SubscriptionForm({
   defaultPlan = 'particulier',
 }: {
-  defaultPlan?: 'particulier' | 'prestige' | 'entreprise';
+  /** Code (insensible à la casse) de la formule présélectionnée */
+  defaultPlan?: string;
 }) {
-  const [currentStep, setCurrentStep] = useState<Step>('plan');
-  const [selectedPlanId, setSelectedPlanId] = useState<'particulier' | 'prestige' | 'entreprise'>(defaultPlan);
-  const [frequency, setFrequency] = useState<'hebdomadaire' | 'bimensuelle'>('hebdomadaire');
-  const [deliveryDay, setDeliveryDay] = useState<'Mardi' | 'Vendredi' | 'Samedi'>('Vendredi');
-  const [paymentMethod, setPaymentMethod] = useState<'wave' | 'orange_money' | 'card'>('wave');
-  const [mobilePlanTab, setMobilePlanTab] = useState<'particulier' | 'prestige' | 'entreprise'>(defaultPlan);
+  const { user } = useAuth();
 
-  const [orderId, setOrderId] = useState('284910');
+  // Données de référence chargées depuis l'API
+  const [plans, setPlans] = useState<PlanConfig[]>([]);
+  const [zones, setZones] = useState<SubscriptionDeliveryZone[]>([]);
+  const [paymentOptions, setPaymentOptions] = useState<SubscriptionPaymentOptions | null>(null);
+  const [loadState, setLoadState] = useState<'loading' | 'error' | 'ready'>('loading');
+  const [loadError, setLoadError] = useState('');
+
+  const [currentStep, setCurrentStep] = useState<Step>('plan');
+  const [selectedPlanId, setSelectedPlanId] = useState<SubscriptionPlan>(
+    defaultPlan.toUpperCase() as SubscriptionPlan
+  );
+  const [frequency, setFrequency] = useState<SubscriptionFrequency>('HEBDOMADAIRE');
+  const [deliveryDay, setDeliveryDay] = useState<SubscriptionDeliveryDay>('VENDREDI');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentChoice | null>(null);
+
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
     email: '',
-    location: senegalLocations[0],
+    location: '',
     address: '',
     paymentPhone: '',
     notes: '',
   });
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldName, string>>>({});
 
-  const { user } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [createdSubscription, setCreatedSubscription] = useState<CustomerSubscription | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      setFormData((prev) => ({
-        ...prev,
-        name: prev.name || user.name || '',
-        email: prev.email || user.email || '',
-        phone: prev.phone || user.phone || '',
-      }));
-    }
-  }, [user]);
+  // Chaîne de promesses : les setState n'ont lieu que dans les callbacks, jamais pendant l'effet.
+  const fetchReferenceData = useCallback(
+    () =>
+      Promise.all([getSubscriptionPlans(), getSubscriptionDeliveryZones(), getSubscriptionPaymentOptions()])
+        .then(([plansRes, zonesRes, paymentsRes]) => {
+          setPlans(plansRes);
+          setZones(zonesRes);
+          setPaymentOptions(paymentsRes);
+          setSelectedPlanId((prev) => (plansRes.some((p) => p.id === prev) ? prev : (plansRes[0]?.id ?? prev)));
+          setFormData((prev) => ({
+            ...prev,
+            location: zonesRes.some((z) => z.name === prev.location) ? prev.location : (zonesRes[0]?.name ?? ''),
+          }));
+          setLoadState('ready');
+        })
+        .catch((err: unknown) => {
+          setLoadError(
+            err instanceof ApiClientError ? err.message : 'Impossible de charger les formules d’abonnement pour le moment.'
+          );
+          setLoadState('error');
+        }),
+    []
+  );
 
-  const selectedPlan = subscriptionPlans.find((p) => p.id === selectedPlanId) || subscriptionPlans[0];
-  const monthlyTotal = frequency === 'hebdomadaire' ? selectedPlan.monthlyPriceHebdo : selectedPlan.monthlyPriceBimensuel;
-  const deliveriesCount = frequency === 'hebdomadaire' ? 4 : 2;
+  const loadReferenceData = () => {
+    setLoadState('loading');
+    setLoadError('');
+    return fetchReferenceData();
+  };
+
+  useEffect(() => {
+    fetchReferenceData();
+  }, [fetchReferenceData]);
+
+  // Pré-remplissage avec le compte connecté, une seule fois par utilisateur (ajustement d'état pendant le rendu).
+  const [prefilledFor, setPrefilledFor] = useState<string | null>(null);
+  const userKey = user?.id ?? null;
+  if (user && userKey !== prefilledFor) {
+    setPrefilledFor(userKey);
+    setFormData((prev) => ({
+      ...prev,
+      name: prev.name || user.name || '',
+      email: prev.email || user.email || '',
+      phone: prev.phone || user.phone || '',
+    }));
+  }
+
+  // Modes de règlement réellement proposés : ceux activés dans les paramètres de la boutique.
+  const availablePayments: PaymentChoice[] = paymentOptions
+    ? ([
+        paymentOptions.cash ? 'CASH_ON_DELIVERY' : null,
+        paymentOptions.wave ? 'WAVE' : null,
+        paymentOptions.orangeMoney ? 'ORANGE_MONEY' : null,
+      ].filter(Boolean) as PaymentChoice[])
+    : [];
+  const effectivePayment: PaymentChoice | null =
+    paymentMethod && availablePayments.includes(paymentMethod)
+      ? paymentMethod
+      : (availablePayments[0] ?? null);
+
+  const selectedPlan = plans.find((p) => p.id === selectedPlanId) ?? plans[0];
+  const monthlyTotal = selectedPlan ? monthlyPrice(selectedPlan, frequency) : 0;
+  const deliveriesCount = deliveriesPerMonth(frequency);
+  const dayLabel = DELIVERY_DAYS.find((d) => d.id === deliveryDay)?.label ?? '';
+  const zoneNames = zones.map((z) => z.name).join(', ');
 
   function handleInputChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name in fieldErrors) {
+      setFieldErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
   }
 
-  function handleSelectPlan(id: 'particulier' | 'prestige' | 'entreprise') {
+  function handleSelectPlan(id: SubscriptionPlan) {
     setSelectedPlanId(id);
-    setMobilePlanTab(id);
     setCurrentStep('details');
   }
 
+  function validateDetails(): boolean {
+    const errors: Partial<Record<FieldName, string>> = {};
+    if (formData.name.trim().length < 2) errors.name = 'Indiquez le nom du destinataire.';
+    if (formData.phone.replace(/\D/g, '').length < 8) {
+      errors.phone = 'Indiquez un numéro de téléphone valide.';
+    }
+    if (!EMAIL_PATTERN.test(formData.email.trim())) {
+      errors.email = 'Indiquez une adresse email valide : la confirmation y est envoyée.';
+    }
+    if (!formData.location) errors.location = 'Choisissez une zone de livraison.';
+    if (formData.address.trim().length < 5) {
+      errors.address = 'Précisez l’adresse ou les repères de livraison.';
+    }
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  }
+
   async function handleConfirmSubscription() {
+    if (!selectedPlan || !effectivePayment) return;
+    if (!validateDetails()) {
+      setCurrentStep('details');
+      return;
+    }
+
     setSubmitting(true);
     setSubmitError('');
 
-    const planMap: Record<string, 'PARTICULIER' | 'PRESTIGE' | 'ENTREPRISE'> = {
-      particulier: 'PARTICULIER',
-      prestige: 'PRESTIGE',
-      entreprise: 'ENTREPRISE',
-    };
-    const freqMap: Record<string, 'HEBDOMADAIRE' | 'BIMENSUELLE'> = {
-      hebdomadaire: 'HEBDOMADAIRE',
-      bimensuelle: 'BIMENSUELLE',
-    };
-    const dayMap: Record<string, 'MARDI' | 'VENDREDI' | 'SAMEDI'> = {
-      Mardi: 'MARDI',
-      Vendredi: 'VENDREDI',
-      Samedi: 'SAMEDI',
-    };
-    const payMap: Record<string, 'WAVE' | 'ORANGE_MONEY' | 'CARD'> = {
-      wave: 'WAVE',
-      orange_money: 'ORANGE_MONEY',
-      card: 'CARD',
-    };
-
-    const res = await subscribeToPlan({
-      plan: planMap[selectedPlanId],
-      frequency: freqMap[frequency],
-      deliveryDay: dayMap[deliveryDay],
-      recipientName: formData.name || 'Client Décofleur',
-      phone: formData.phone || '+221779417860',
-      email: formData.email || undefined,
-      location: formData.location,
-      address: formData.address || 'Saly Portudal',
-      notes: formData.notes || undefined,
-      paymentMethod: payMap[paymentMethod] || 'WAVE',
-      paymentPhone: formData.paymentPhone || formData.phone || undefined,
-    });
-
-    setSubmitting(false);
-
-    if (res.success && res.subscription) {
-      setCreatedSubscription(res.subscription);
-      setOrderId(res.subscription.subscriptionNumber);
+    try {
+      const subscription = await subscribeToPlan({
+        plan: selectedPlan.id,
+        frequency,
+        deliveryDay,
+        recipientName: formData.name.trim(),
+        phone: formData.phone.trim(),
+        email: formData.email.trim(),
+        location: formData.location,
+        address: formData.address.trim(),
+        notes: formData.notes.trim() || undefined,
+        paymentMethod: effectivePayment,
+        paymentPhone:
+          effectivePayment === 'CASH_ON_DELIVERY'
+            ? undefined
+            : formData.paymentPhone.trim() || formData.phone.trim(),
+      });
+      setCreatedSubscription(subscription);
       setCurrentStep('confirmation');
-    } else {
-      setSubmitError(res.error || 'Une erreur est survenue lors de la souscription.');
+    } catch (err) {
+      if (err instanceof ApiClientError && err.details?.length) {
+        // Erreurs de validation renvoyées par le serveur : on les rattache aux champs concernés.
+        const errors: Partial<Record<FieldName, string>> = {};
+        const others: string[] = [];
+        for (const detail of err.details) {
+          const field = API_FIELD_TO_FORM[detail.path];
+          if (field) errors[field] = detail.message;
+          else others.push(detail.message);
+        }
+        if (Object.keys(errors).length > 0) {
+          setFieldErrors(errors);
+          setCurrentStep('details');
+        }
+        setSubmitError(
+          others.length > 0
+            ? `${err.message} : ${others.join(' ; ')}`
+            : 'Certaines informations sont invalides. Corrigez les champs signalés.'
+        );
+      } else {
+        setSubmitError(
+          err instanceof ApiClientError
+            ? err.message
+            : 'Votre abonnement n’a pas pu être enregistré. Veuillez réessayer.'
+        );
+      }
+    } finally {
+      setSubmitting(false);
     }
+  }
+
+  function handleNewSubscription() {
+    setCreatedSubscription(null);
+    setSubmitError('');
+    setFormData((prev) => ({ ...prev, address: '', notes: '', paymentPhone: '' }));
+    setCurrentStep('plan');
+  }
+
+  const errorBox = (message: string) => (
+    <div
+      role="alert"
+      className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 my-4 text-sm text-red-600"
+    >
+      <AlertCircle size={18} className="shrink-0" />
+      <span>{message}</span>
+    </div>
+  );
+
+  const fieldError = (field: FieldName) =>
+    fieldErrors[field] ? (
+      <span role="alert" className="mt-1 block text-xs text-red-600">
+        {fieldErrors[field]}
+      </span>
+    ) : null;
+
+  if (loadState === 'loading') {
+    return (
+      <div className="sub-flow-container" id="abonnement-tunnel">
+        <div className="flex items-center justify-center gap-3 py-16 text-sm text-stone-600" role="status">
+          <Loader2 size={20} className="animate-spin" />
+          <span>Chargement des formules d’abonnement…</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadState === 'error' || !selectedPlan) {
+    return (
+      <div className="sub-flow-container" id="abonnement-tunnel">
+        <div className="flex flex-col items-center gap-4 py-14 px-4 text-center">
+          <AlertCircle size={28} className="text-red-500" />
+          <p className="text-sm text-stone-700 max-w-md">
+            {loadState === 'error'
+              ? loadError
+              : 'Aucune formule d’abonnement n’est disponible pour le moment.'}
+          </p>
+          <button type="button" className="button-pill-outline sub-btn-back" onClick={loadReferenceData}>
+            <RefreshCw size={16} />
+            <span>Réessayer</span>
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -218,7 +341,8 @@ export function SubscriptionForm({
         <button
           type="button"
           className={`sub-step-pill ${currentStep === 'plan' ? 'active' : 'completed'}`}
-          onClick={() => setCurrentStep('plan')}
+          onClick={() => currentStep !== 'confirmation' && setCurrentStep('plan')}
+          disabled={currentStep === 'confirmation'}
         >
           <span className="step-num">1</span>
           <span className="step-label">Formule</span>
@@ -229,8 +353,8 @@ export function SubscriptionForm({
         <button
           type="button"
           className={`sub-step-pill ${currentStep === 'details' ? 'active' : currentStep === 'payment' || currentStep === 'confirmation' ? 'completed' : 'disabled'}`}
-          onClick={() => currentStep !== 'plan' && setCurrentStep('details')}
-          disabled={currentStep === 'plan'}
+          onClick={() => currentStep === 'payment' && setCurrentStep('details')}
+          disabled={currentStep === 'plan' || currentStep === 'confirmation'}
         >
           <span className="step-num">2</span>
           <span className="step-label">Livraison</span>
@@ -241,11 +365,10 @@ export function SubscriptionForm({
         <button
           type="button"
           className={`sub-step-pill ${currentStep === 'payment' ? 'active' : currentStep === 'confirmation' ? 'completed' : 'disabled'}`}
-          onClick={() => (currentStep === 'payment' || currentStep === 'confirmation') && setCurrentStep('payment')}
-          disabled={currentStep === 'plan' || currentStep === 'details'}
+          disabled={currentStep !== 'payment'}
         >
           <span className="step-num">3</span>
-          <span className="step-label">Paiement</span>
+          <span className="step-label">Règlement</span>
         </button>
 
         <span className="stepper-sep">›</span>
@@ -256,59 +379,63 @@ export function SubscriptionForm({
         </div>
       </nav>
 
-      {/* ── STEP 1: COMPACT OFFERS (ABOVE THE FOLD) ── */}
+      {/* ── ÉTAPE 1 : FORMULES (GET /subscriptions/plans) ── */}
       {currentStep === 'plan' && (
         <div className="sub-step-screen sub-plans-screen">
           <div className="sub-screen-header">
             <div className="sub-freq-toggle-wrap">
               <span className="sub-toggle-label">Rythme :</span>
               <div className="sub-freq-toggle">
-                <button
-                  type="button"
-                  className={`sub-freq-btn ${frequency === 'hebdomadaire' ? 'active' : ''}`}
-                  onClick={() => setFrequency('hebdomadaire')}
-                >
-                  Hebdomadaire (4 passages / mois)
-                </button>
-                <button
-                  type="button"
-                  className={`sub-freq-btn ${frequency === 'bimensuelle' ? 'active' : ''}`}
-                  onClick={() => setFrequency('bimensuelle')}
-                >
-                  Bimensuel (2 passages / mois)
-                </button>
+                {/* Seuls les rythmes proposés par au moins une formule sont affichés */}
+                {plans.some((p) => p.frequencies.includes('HEBDOMADAIRE')) && (
+                  <button
+                    type="button"
+                    className={`sub-freq-btn ${frequency === 'HEBDOMADAIRE' ? 'active' : ''}`}
+                    onClick={() => setFrequency('HEBDOMADAIRE')}
+                  >
+                    Hebdomadaire (4 passages / mois)
+                  </button>
+                )}
+                {plans.some((p) => p.frequencies.includes('BIMENSUELLE')) && (
+                  <button
+                    type="button"
+                    className={`sub-freq-btn ${frequency === 'BIMENSUELLE' ? 'active' : ''}`}
+                    onClick={() => setFrequency('BIMENSUELLE')}
+                  >
+                    Bimensuel (2 passages / mois)
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* Mobile Tab Switcher for ultra-compact mobile view */}
+            {/* Onglets mobiles : une formule visible à la fois */}
             <div className="sub-mobile-tabs">
-              {subscriptionPlans.map((p) => (
+              {plans.map((p) => (
                 <button
                   key={p.id}
                   type="button"
-                  className={`sub-mobile-tab-btn ${mobilePlanTab === p.id ? 'active' : ''}`}
-                  onClick={() => {
-                    setMobilePlanTab(p.id);
-                    setSelectedPlanId(p.id);
-                  }}
+                  className={`sub-mobile-tab-btn ${selectedPlan.id === p.id ? 'active' : ''}`}
+                  onClick={() => setSelectedPlanId(p.id)}
                 >
-                  <span>{p.id === 'particulier' ? 'Villa' : p.id === 'prestige' ? 'Prestige ⭐' : 'Entreprise'}</span>
+                  <span>{p.name.split(' ')[0]}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* 3 Compact Plan Columns */}
           <div className="sub-plans-grid">
-            {subscriptionPlans.map((p) => {
-              const isSelected = selectedPlanId === p.id;
-              const isMobileActive = mobilePlanTab === p.id;
-              const price = frequency === 'hebdomadaire' ? p.monthlyPriceHebdo : p.monthlyPriceBimensuel;
+            {plans.map((p) => {
+              const isSelected = selectedPlan.id === p.id;
+              const isFeatured = p.id === 'PRESTIGE';
+              // Formule non proposée dans le rythme affiché : on propose son rythme disponible
+              const offered = p.frequencies.includes(frequency);
+              const fallbackFrequency = p.frequencies[0];
 
               return (
                 <article
                   key={p.id}
-                  className={`sub-compact-card ${p.id === 'prestige' ? 'featured' : ''} ${isSelected ? 'selected' : ''} ${isMobileActive ? 'mobile-visible' : 'mobile-hidden'}`}
+                  data-plan={p.id}
+                  className={`sub-compact-card ${isFeatured ? 'featured' : ''} ${isSelected ? 'selected mobile-visible' : 'mobile-hidden'}`}
                 >
                   {p.badge && <span className="sub-card-badge">{p.badge}</span>}
 
@@ -318,13 +445,22 @@ export function SubscriptionForm({
                   </div>
 
                   <div className="sub-card-pricing">
-                    <div className="sub-price-main">
-                      <strong>{price.toLocaleString('fr-FR')}</strong>
-                      <span>FCFA / mois</span>
-                    </div>
-                    <div className="sub-price-detail">
-                      soit {p.perDeliveryPrice.toLocaleString('fr-FR')} FCFA par livraison ({deliveriesCount} passages)
-                    </div>
+                    {offered ? (
+                      <>
+                        <div className="sub-price-main">
+                          <strong>{monthlyPrice(p, frequency).toLocaleString('fr-FR')}</strong>
+                          <span>FCFA / mois</span>
+                        </div>
+                        <div className="sub-price-detail">
+                          soit {formatFcfa(p.perDeliveryPrice)} par livraison ({deliveriesCount} passages)
+                        </div>
+                      </>
+                    ) : (
+                      <div className="sub-price-detail">
+                        Proposée uniquement en rythme {fallbackFrequency === 'HEBDOMADAIRE' ? 'hebdomadaire' : 'bimensuel'} :{' '}
+                        {monthlyPrice(p, fallbackFrequency).toLocaleString('fr-FR')} FCFA / mois
+                      </div>
+                    )}
                   </div>
 
                   <div className="sub-card-specs">
@@ -336,18 +472,23 @@ export function SubscriptionForm({
                       <RefreshCw size={16} className="spec-icon" />
                       <span>{p.vaseSpecs}</span>
                     </div>
-                    <div className="sub-spec-row">
-                      <Truck size={16} className="spec-icon" />
-                      <span>Livraison soignée incluse à Saly, Mbour, Ngaparou, Somone &amp; Dakar</span>
-                    </div>
+                    {zones.length > 0 && (
+                      <div className="sub-spec-row">
+                        <Truck size={16} className="spec-icon" />
+                        <span>Livraison incluse : {zoneNames}</span>
+                      </div>
+                    )}
                   </div>
 
                   <button
                     type="button"
-                    className={`sub-choose-cta ${p.id === 'prestige' ? 'button-pill-pink' : 'button-pill-outline'}`}
-                    onClick={() => handleSelectPlan(p.id)}
+                    className={`sub-choose-cta ${isFeatured ? 'button-pill-pink' : 'button-pill-outline'}`}
+                    onClick={() => {
+                      if (!offered && fallbackFrequency) setFrequency(fallbackFrequency);
+                      handleSelectPlan(p.id);
+                    }}
                   >
-                    <span>Choisir cette formule</span>
+                    <span>{offered ? 'Choisir cette formule' : `Choisir (rythme ${fallbackFrequency === 'HEBDOMADAIRE' ? 'hebdomadaire' : 'bimensuel'})`}</span>
                     <ArrowRight size={16} />
                   </button>
                 </article>
@@ -358,46 +499,43 @@ export function SubscriptionForm({
           <div className="sub-compact-trust-strip">
             <span>Vases fournis &amp; renouvelés</span>
             <span className="dot">·</span>
-            <span>Fleurs fraîches sélectionnées le matin</span>
+            <span>Aucun paiement en ligne à la souscription</span>
             <span className="dot">·</span>
-            <span>Sans engagement (pause ou arrêt en 1 clic)</span>
+            <span>Sans engagement : suspension ou résiliation à tout moment</span>
           </div>
         </div>
       )}
 
-      {/* ── STEP 2: COORDONNÉES & LIVRAISON (COMPACT 100VH) ── */}
+      {/* ── ÉTAPE 2 : COORDONNÉES & LIVRAISON ── */}
       {currentStep === 'details' && (
         <div className="sub-step-screen sub-details-screen">
-          {/* Active plan summary banner */}
           <div className="sub-active-plan-banner">
             <div className="plan-recap-left">
               <span className="recap-label">Formule sélectionnée :</span>
               <strong>{selectedPlan.name}</strong>
               <span className="recap-freq">
-                ({frequency === 'hebdomadaire' ? 'Hebdomadaire · 4 passages' : 'Bimensuel · 2 passages'})
+                ({frequency === 'HEBDOMADAIRE' ? 'Hebdomadaire · 4 passages' : 'Bimensuel · 2 passages'})
               </span>
-              <span className="recap-price">{monthlyTotal.toLocaleString('fr-FR')} FCFA / mois</span>
+              <span className="recap-price">{formatFcfa(monthlyTotal)} / mois</span>
             </div>
-            <button
-              type="button"
-              className="sub-change-link"
-              onClick={() => setCurrentStep('plan')}
-            >
+            <button type="button" className="sub-change-link" onClick={() => setCurrentStep('plan')}>
               Modifier
             </button>
           </div>
 
           <form
+            noValidate
             onSubmit={(e) => {
               e.preventDefault();
-              if (!formData.name || !formData.phone || !formData.address) return;
-              if (!formData.paymentPhone) {
-                setFormData((prev) => ({ ...prev, paymentPhone: prev.phone }));
+              if (validateDetails()) {
+                setSubmitError('');
+                setCurrentStep('payment');
               }
-              setCurrentStep('payment');
             }}
             className="sub-details-form"
           >
+            {submitError && errorBox(submitError)}
+
             <div className="sub-fields-grid">
               <div className="form-group">
                 <label htmlFor="name" className="form-label">
@@ -409,13 +547,15 @@ export function SubscriptionForm({
                     type="text"
                     id="name"
                     name="name"
-                    required
+                    autoComplete="name"
                     value={formData.name}
                     onChange={handleInputChange}
                     placeholder="Ex : Sophie Faye"
                     className="form-input"
+                    aria-invalid={!!fieldErrors.name}
                   />
                 </div>
+                {fieldError('name')}
               </div>
 
               <div className="form-group">
@@ -428,50 +568,81 @@ export function SubscriptionForm({
                     type="tel"
                     id="phone"
                     name="phone"
-                    required
+                    autoComplete="tel"
                     value={formData.phone}
                     onChange={handleInputChange}
                     placeholder="+221 77 123 45 67"
                     className="form-input"
+                    aria-invalid={!!fieldErrors.phone}
                   />
                 </div>
+                {fieldError('phone')}
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="email" className="form-label">
+                  Email <span className="req">*</span>
+                </label>
+                <div className="input-with-icon">
+                  <Mail size={18} className="field-icon" />
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    autoComplete="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="vous@exemple.com"
+                    className="form-input"
+                    aria-invalid={!!fieldErrors.email}
+                  />
+                </div>
+                {fieldError('email')}
               </div>
 
               <div className="form-group">
                 <label htmlFor="location" className="form-label">
                   Zone de livraison <span className="req">*</span>
                 </label>
-                <div className="input-with-icon">
-                  <MapPin size={18} className="field-icon" />
-                  <select
-                    id="location"
-                    name="location"
-                    value={formData.location}
-                    onChange={handleInputChange}
-                    className="form-input form-select"
-                  >
-                    {senegalLocations.map((loc) => (
-                      <option key={loc} value={loc}>
-                        {loc}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {zones.length === 0 ? (
+                  <span role="alert" className="block text-xs text-red-600">
+                    Aucune zone de livraison n’est ouverte actuellement : la souscription en ligne est
+                    indisponible.
+                  </span>
+                ) : (
+                  <div className="input-with-icon">
+                    <MapPin size={18} className="field-icon" />
+                    <select
+                      id="location"
+                      name="location"
+                      value={formData.location}
+                      onChange={handleInputChange}
+                      className="form-input form-select"
+                    >
+                      {zones.map((zone) => (
+                        <option key={zone.id} value={zone.name}>
+                          {zone.coverage ? `${zone.name} — ${zone.coverage}` : zone.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {fieldError('location')}
               </div>
 
-              <div className="form-group">
+              <div className="form-group full-width">
                 <label className="form-label">
                   Jour de livraison préféré <span className="req">*</span>
                 </label>
                 <div className="sub-day-selector">
-                  {(['Mardi', 'Vendredi', 'Samedi'] as const).map((day) => (
+                  {DELIVERY_DAYS.map((day) => (
                     <button
-                      key={day}
+                      key={day.id}
                       type="button"
-                      className={`sub-day-pill ${deliveryDay === day ? 'active' : ''}`}
-                      onClick={() => setDeliveryDay(day)}
+                      className={`sub-day-pill ${deliveryDay === day.id ? 'active' : ''}`}
+                      onClick={() => setDeliveryDay(day.id)}
                     >
-                      Chaque {day}
+                      {frequency === 'HEBDOMADAIRE' ? `Chaque ${day.label}` : `Un ${day.label} sur deux`}
                     </button>
                   ))}
                 </div>
@@ -487,13 +658,15 @@ export function SubscriptionForm({
                     type="text"
                     id="address"
                     name="address"
-                    required
+                    autoComplete="street-address"
                     value={formData.address}
                     onChange={handleInputChange}
-                    placeholder="Ex : Villa Baobab, Route du Golf, à côté du restaurant Le Teranga, Saly"
+                    placeholder="Ex : Villa Baobab, Route du Golf, à côté du restaurant Le Teranga"
                     className="form-input"
+                    aria-invalid={!!fieldErrors.address}
                   />
                 </div>
+                {fieldError('address')}
               </div>
 
               <div className="form-group full-width">
@@ -506,7 +679,7 @@ export function SubscriptionForm({
                   name="notes"
                   value={formData.notes}
                   onChange={handleInputChange}
-                  placeholder="Ex : Tons pastel préférés, code portail 1234, laisser à l’accueil..."
+                  placeholder="Ex : Tons pastel préférés, laisser à l’accueil..."
                   className="form-input"
                 />
               </div>
@@ -522,8 +695,8 @@ export function SubscriptionForm({
                 <span>Retour aux offres</span>
               </button>
 
-              <button type="submit" className="button-pill-pink sub-btn-next">
-                <span>Passer au paiement</span>
+              <button type="submit" className="button-pill-pink sub-btn-next" disabled={zones.length === 0}>
+                <span>Continuer</span>
                 <ArrowRight size={16} />
               </button>
             </div>
@@ -531,127 +704,90 @@ export function SubscriptionForm({
         </div>
       )}
 
-      {/* ── STEP 3: PAIEMENT AVEC VRAIS LOGOS MOBILE MONEY (COMPACT 100VH) ── */}
+      {/* ── ÉTAPE 3 : MODE DE RÈGLEMENT SOUHAITÉ (aucun paiement en ligne) ── */}
       {currentStep === 'payment' && (
         <div className="sub-step-screen sub-payment-screen">
           <div className="sub-active-plan-banner">
             <div className="plan-recap-left">
               <span className="recap-label">Récapitulatif :</span>
               <strong>{selectedPlan.name}</strong>
-              <span className="recap-freq">· Chaque {deliveryDay}</span>
-              <span className="recap-price">{monthlyTotal.toLocaleString('fr-FR')} FCFA</span>
+              <span className="recap-freq">
+                · {frequency === 'HEBDOMADAIRE' ? `Chaque ${dayLabel}` : `Un ${dayLabel} sur deux`} · {formData.location}
+              </span>
+              <span className="recap-price">{formatFcfa(monthlyTotal)} / mois</span>
             </div>
-            <button
-              type="button"
-              className="sub-change-link"
-              onClick={() => setCurrentStep('details')}
-            >
+            <button type="button" className="sub-change-link" onClick={() => setCurrentStep('details')}>
               Modifier coordonnées
             </button>
           </div>
 
           <div className="sub-payment-body">
-            <h3 className="sub-payment-title">Choisissez votre mode de paiement sécurisé</h3>
+            <h3 className="sub-payment-title">Comment souhaitez-vous régler votre abonnement ?</h3>
 
-            {/* Official logos payment cards */}
-            <div className="sub-real-payment-methods">
-              {/* 1. WAVE SÉNÉGAL */}
-              <label
-                className={`sub-real-pay-card ${paymentMethod === 'wave' ? 'active' : ''}`}
-                onClick={() => setPaymentMethod('wave')}
-              >
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="wave"
-                  checked={paymentMethod === 'wave'}
-                  onChange={() => setPaymentMethod('wave')}
-                  className="pay-radio"
-                />
-                <div className="pay-logo-frame wave-frame">
-                  <Image
-                    src="/payment/wave.png"
-                    alt="Wave"
-                    width={34}
-                    height={34}
-                    className="pay-logo-img"
-                  />
-                </div>
-                <div className="pay-info">
-                  <strong>Wave Sénégal</strong>
-                  <span>Paiement mobile instantané (0% frais)</span>
-                </div>
-              </label>
+            <p className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[13px] leading-relaxed text-emerald-900">
+              <strong>Aucun paiement en ligne n’est demandé aujourd’hui.</strong> Après votre souscription,
+              notre équipe vous contacte au {formData.phone} pour confirmer l’abonnement et convenir du
+              règlement, selon le mode que vous indiquez ici, avant le premier passage.
+            </p>
 
-              {/* 2. ORANGE MONEY */}
-              <label
-                className={`sub-real-pay-card ${paymentMethod === 'orange_money' ? 'active' : ''}`}
-                onClick={() => setPaymentMethod('orange_money')}
-              >
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="orange_money"
-                  checked={paymentMethod === 'orange_money'}
-                  onChange={() => setPaymentMethod('orange_money')}
-                  className="pay-radio"
-                />
-                <div className="pay-logo-frame om-frame">
-                  <Image
-                    src="/payment/orange-money.svg"
-                    alt="Orange Money"
-                    width={30}
-                    height={30}
-                    className="pay-logo-img"
-                  />
-                </div>
-                <div className="pay-info">
-                  <strong>Orange Money</strong>
-                  <span>Validation par code ou notification push</span>
-                </div>
-              </label>
+            {availablePayments.length === 0 ? (
+              errorBox(
+                'Aucun mode de règlement n’est disponible actuellement. Contactez-nous pour souscrire.'
+              )
+            ) : (
+              <div className="sub-real-payment-methods">
+                {availablePayments.map((method) => (
+                  <label
+                    key={method}
+                    className={`sub-real-pay-card ${effectivePayment === method ? 'active' : ''}`}
+                  >
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value={method}
+                      checked={effectivePayment === method}
+                      onChange={() => setPaymentMethod(method)}
+                      className="pay-radio"
+                    />
+                    {method === 'CASH_ON_DELIVERY' && (
+                      <div className="pay-logo-frame cb-frame">
+                        <Banknote size={24} className="text-[#193e23]" />
+                      </div>
+                    )}
+                    {method === 'WAVE' && (
+                      <div className="pay-logo-frame wave-frame">
+                        <Image src="/payment/wave.png" alt="Wave" width={34} height={34} className="pay-logo-img" />
+                      </div>
+                    )}
+                    {method === 'ORANGE_MONEY' && (
+                      <div className="pay-logo-frame om-frame">
+                        <Image
+                          src="/payment/orange-money.svg"
+                          alt="Orange Money"
+                          width={30}
+                          height={30}
+                          className="pay-logo-img"
+                        />
+                      </div>
+                    )}
+                    <div className="pay-info">
+                      <strong>{PAYMENT_LABELS[method]}</strong>
+                      <span>
+                        {method === 'CASH_ON_DELIVERY'
+                          ? 'Règlement remis à notre livreur'
+                          : 'Transfert mobile convenu avec notre équipe'}
+                      </span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
 
-              {/* 3. CARTE BANCAIRE */}
-              <label
-                className={`sub-real-pay-card ${paymentMethod === 'card' ? 'active' : ''}`}
-                onClick={() => setPaymentMethod('card')}
-              >
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="card"
-                  checked={paymentMethod === 'card'}
-                  onChange={() => setPaymentMethod('card')}
-                  className="pay-radio"
-                />
-                <div className="pay-logo-frame cb-frame">
-                  <Image
-                    src="/payment/visa.svg"
-                    alt="Visa"
-                    width={32}
-                    height={18}
-                    className="pay-logo-img"
-                  />
-                  <Image
-                    src="/payment/mastercard.svg"
-                    alt="Mastercard"
-                    width={26}
-                    height={18}
-                    className="pay-logo-img"
-                  />
-                </div>
-                <div className="pay-info">
-                  <strong>Carte Bancaire</strong>
-                  <span>Visa &amp; Mastercard via passerelle bancaire</span>
-                </div>
-              </label>
-            </div>
-
-            {/* Mobile Money Account Number Field */}
-            {(paymentMethod === 'wave' || paymentMethod === 'orange_money') && (
+            {(effectivePayment === 'WAVE' || effectivePayment === 'ORANGE_MONEY') && (
               <div className="sub-pay-account-box">
                 <label htmlFor="paymentPhone" className="form-label">
-                  Numéro de compte {paymentMethod === 'wave' ? 'Wave' : 'Orange Money'} pour le prélèvement :
+                  Numéro {PAYMENT_LABELS[effectivePayment]} que vous utiliserez{' '}
+                  <span className="opt">(si différent de votre téléphone)</span>
                 </label>
                 <div className="input-with-icon">
                   <Phone size={18} className="field-icon" />
@@ -659,40 +795,20 @@ export function SubscriptionForm({
                     type="tel"
                     id="paymentPhone"
                     name="paymentPhone"
-                    value={formData.paymentPhone || formData.phone}
+                    value={formData.paymentPhone}
                     onChange={handleInputChange}
-                    placeholder="+221 7X XXX XX XX"
+                    placeholder={formData.phone || '+221 7X XXX XX XX'}
                     className="form-input"
                   />
                 </div>
                 <span className="pay-hint">
-                  {paymentMethod === 'wave'
-                    ? 'Une demande de paiement Wave sera émise sur ce numéro.'
-                    : 'Un code de confirmation Orange Money vous sera transmis par SMS.'}
+                  Ce numéro est transmis à notre équipe. Aucune demande de paiement n’est envoyée
+                  automatiquement.
                 </span>
               </div>
             )}
 
-            {submitError && (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.75rem 1rem',
-                  marginTop: '1rem',
-                  marginBottom: '1rem',
-                  background: '#fef2f2',
-                  border: '1px solid #fecaca',
-                  borderRadius: '12px',
-                  color: '#dc2626',
-                  fontSize: '0.875rem',
-                }}
-              >
-                <AlertCircle size={18} />
-                <span>{submitError}</span>
-              </div>
-            )}
+            {submitError && errorBox(submitError)}
 
             <div className="sub-actions-row">
               <button
@@ -709,12 +825,12 @@ export function SubscriptionForm({
                 type="button"
                 className="button-pill-pink sub-btn-next"
                 onClick={handleConfirmSubscription}
-                disabled={submitting}
+                disabled={submitting || !effectivePayment}
               >
                 {submitting ? (
                   <>
                     <Loader2 size={18} className="animate-spin" />
-                    <span>Création en cours...</span>
+                    <span>Enregistrement en cours...</span>
                   </>
                 ) : (
                   <>
@@ -727,14 +843,14 @@ export function SubscriptionForm({
 
             <div className="sub-security-note">
               <ShieldCheck size={16} />
-              <span>Paiement sécurisé · Aucun engagement · Annulable en un clic à tout moment</span>
+              <span>Aucun prélèvement en ligne · Sans engagement · Suspension ou résiliation à tout moment</span>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── STEP 4: CONFIRMATION & RÉCAPITULATIF (COMPACT 100VH) ── */}
-      {currentStep === 'confirmation' && (
+      {/* ── ÉTAPE 4 : CONFIRMATION (données renvoyées par le serveur) ── */}
+      {currentStep === 'confirmation' && createdSubscription && (
         <div className="sub-step-screen sub-confirm-screen">
           <div className="sub-confirm-card">
             <div className="confirm-icon-wrap">
@@ -742,70 +858,81 @@ export function SubscriptionForm({
             </div>
 
             <h2 className="confirm-title">
-              Abonnement confirmé {formData.name ? `pour ${formData.name}` : ''}
+              Abonnement enregistré pour {createdSubscription.recipientName}
             </h2>
             <p className="confirm-subtitle">
-              Votre souscription est enregistrée. Votre premier vase garni sera préparé par nos artisans fleuristes de Saly.
+              Aucun paiement n’a été prélevé. Notre équipe vous contacte au {createdSubscription.phone} pour
+              confirmer votre abonnement et convenir du règlement avant le premier passage.
+              {createdSubscription.email && (
+                <> Un email récapitulatif vient d’être envoyé à {createdSubscription.email}.</>
+              )}
             </p>
 
-            {/* Recap Ticket Compact */}
             <div className="sub-recap-ticket">
               <div className="recap-ticket-header">
                 <span>RÉCAPITULATIF DE L’ABONNEMENT</span>
-                <strong>N° ABO-{orderId}</strong>
+                <strong data-testid="subscription-number">N° {createdSubscription.subscriptionNumber}</strong>
               </div>
 
               <div className="recap-ticket-grid">
                 <div className="ticket-item">
                   <span className="ticket-label">Formule :</span>
-                  <strong>{selectedPlan.name}</strong>
+                  <strong>
+                    {plans.find((p) => p.id === createdSubscription.plan)?.name ?? createdSubscription.plan}
+                  </strong>
                 </div>
 
                 <div className="ticket-item">
                   <span className="ticket-label">Rythme :</span>
-                  <strong>{frequency === 'hebdomadaire' ? 'Hebdomadaire (4 livraisons / mois)' : 'Bimensuel (2 livraisons / mois)'}</strong>
+                  <strong>
+                    {createdSubscription.frequency === 'HEBDOMADAIRE' ? 'Hebdomadaire' : 'Bimensuel'} (
+                    {createdSubscription.deliveriesPerMonth} livraisons / mois)
+                  </strong>
                 </div>
 
                 <div className="ticket-item">
-                  <span className="ticket-label">Premier passage :</span>
-                  <strong>Chaque {deliveryDay}</strong>
+                  <span className="ticket-label">Premier passage prévu :</span>
+                  <strong>
+                    {createdSubscription.nextDeliveryDate
+                      ? formatLongDate(createdSubscription.nextDeliveryDate)
+                      : 'À convenir avec notre équipe'}
+                  </strong>
                 </div>
 
                 <div className="ticket-item">
                   <span className="ticket-label">Montant :</span>
-                  <strong className="text-pink">{monthlyTotal.toLocaleString('fr-FR')} FCFA / mois</strong>
+                  <strong className="text-pink" data-testid="subscription-amount">
+                    {formatFcfa(createdSubscription.monthlyAmount)} / mois
+                  </strong>
                 </div>
 
                 <div className="ticket-item full">
                   <span className="ticket-label">Lieu &amp; Contact :</span>
-                  <span>{formData.address || 'Adresse à préciser'}, {formData.location} · Tél : {formData.phone || 'Non renseigné'}</span>
+                  <span>
+                    {createdSubscription.address}, {createdSubscription.location} · Tél :{' '}
+                    {createdSubscription.phone}
+                  </span>
                 </div>
 
                 <div className="ticket-item full">
-                  <span className="ticket-label">Règlement :</span>
+                  <span className="ticket-label">Règlement souhaité :</span>
                   <span>
-                    {paymentMethod === 'wave' && 'Wave Sénégal (0% de frais)'}
-                    {paymentMethod === 'orange_money' && 'Orange Money Sénégal'}
-                    {paymentMethod === 'card' && 'Carte Bancaire sécurisée'}
+                    {PAYMENT_LABELS[createdSubscription.paymentMethod as PaymentChoice] ??
+                      createdSubscription.paymentMethod}{' '}
+                    (à convenir avec notre équipe)
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Actions sans bouton WhatsApp */}
             <div className="confirm-actions-row">
-              <Link href="/compte/abonnements" className="button-pill-pink sub-btn-action">
-                Voir mes abonnements
-              </Link>
+              {user && createdSubscription.userId && (
+                <Link href="/compte/abonnements" className="button-pill-pink sub-btn-action">
+                  Voir mes abonnements
+                </Link>
+              )}
 
-              <button
-                type="button"
-                className="button-pill-outline sub-btn-action"
-                onClick={() => {
-                  setCurrentStep('plan');
-                  setSelectedPlanId('particulier');
-                }}
-              >
+              <button type="button" className="button-pill-outline sub-btn-action" onClick={handleNewSubscription}>
                 Nouvelle souscription
               </button>
 

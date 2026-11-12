@@ -10,3 +10,5 @@ CLAUDE.md
 *.tsbuildinfo
 test-results/*
 playwright-report/*
+.next-local
+.pw-tmp

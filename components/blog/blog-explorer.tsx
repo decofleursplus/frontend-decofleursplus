@@ -6,11 +6,8 @@ import Link from 'next/link';
 import {
   Calendar,
   Clock,
-  Heart,
   Search,
   ArrowRight,
-  User,
-  Tag,
   BookOpen,
 } from 'lucide-react';
 import type { BlogArticle, BlogCategory } from '@/lib/admin/mock-data/types';

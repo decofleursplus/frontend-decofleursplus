@@ -23,22 +23,30 @@ export function getAuthToken(): string | null {
       const cookieToken = decodeURIComponent(match[2]);
       if (cookieToken) return cookieToken;
     }
-    const local = localStorage.getItem(AUTH_TOKEN_KEY);
-    if (local) return local;
-    return null;
+    return localStorage.getItem(AUTH_TOKEN_KEY) || sessionStorage.getItem(AUTH_TOKEN_KEY) || null;
   } catch {
     return null;
   }
 }
 
 /**
- * Enregistre le jeton JWT client
+ * Enregistre le jeton JWT client.
+ * `persistent: false` (case « Se souvenir de moi » décochée) : la session se termine à la fermeture du navigateur.
  */
-export function setAuthToken(token: string): void {
+export function setAuthToken(token: string, options: { persistent?: boolean } = {}): void {
   if (typeof window === 'undefined') return;
+  const persistent = options.persistent !== false;
   try {
-    localStorage.setItem(AUTH_TOKEN_KEY, token);
-    document.cookie = `${AUTH_TOKEN_KEY}=${encodeURIComponent(token)}; path=/; max-age=${7 * 24 * 3600}; SameSite=Lax`;
+    if (persistent) {
+      localStorage.setItem(AUTH_TOKEN_KEY, token);
+      sessionStorage.removeItem(AUTH_TOKEN_KEY);
+      document.cookie = `${AUTH_TOKEN_KEY}=${encodeURIComponent(token)}; path=/; max-age=${7 * 24 * 3600}; SameSite=Lax`;
+    } else {
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      sessionStorage.setItem(AUTH_TOKEN_KEY, token);
+      // Sans max-age : cookie de session, supprimé à la fermeture du navigateur
+      document.cookie = `${AUTH_TOKEN_KEY}=${encodeURIComponent(token)}; path=/; SameSite=Lax`;
+    }
   } catch (error) {
     console.error('Erreur lors du stockage du token client:', error);
   }
@@ -51,6 +59,7 @@ export function removeAuthToken(): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.removeItem(AUTH_TOKEN_KEY);
+    sessionStorage.removeItem(AUTH_TOKEN_KEY);
     document.cookie = `${AUTH_TOKEN_KEY}=; path=/; max-age=0; SameSite=Lax`;
   } catch (error) {
     console.error('Erreur lors de la suppression du token client:', error);

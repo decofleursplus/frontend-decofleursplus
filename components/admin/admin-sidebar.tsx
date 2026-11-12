@@ -6,56 +6,12 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { logoutAdmin } from '@/app/admin/connexion/actions';
 import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { AdminSessionUser } from '@/lib/api/auth-token';
 import { AdminProfileDialog } from '@/components/admin/admin-profile-dialog';
-import {
-  LayoutDashboard,
-  ShoppingBag,
-  FolderTree,
-  Users,
-  Package,
-  Truck,
-  Megaphone,
-  FileText,
-  BarChart3,
-  Settings,
-  LogOut,
-  ClipboardList,
-  ChevronLeft,
-  ChevronRight,
-  Building2,
-  Boxes,
-  FileSpreadsheet,
-  Armchair,
-  Trees,
-  Repeat,
-} from 'lucide-react';
+import { LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-const navGroups = [
-  {
-    items: [
-      { label: 'Tableau de bord', href: '/admin/tableau-de-bord', icon: LayoutDashboard },
-      { label: 'Commandes', href: '/admin/commandes', icon: ClipboardList },
-      { label: 'Abonnements', href: '/admin/abonnements', icon: Repeat },
-      { label: 'Produits', href: '/admin/produits', icon: ShoppingBag },
-      { label: 'Fournisseurs', href: '/admin/fournisseurs', icon: Building2, badge: 'À venir' },
-      { label: 'Approvisionnements', href: '/admin/approvisionnements', icon: Boxes, badge: 'À venir' },
-      { label: 'Stock', href: '/admin/stock', icon: Package },
-      { label: 'Clients', href: '/admin/clients', icon: Users },
-      { label: 'Devis', href: '/admin/devis', icon: FileSpreadsheet },
-      { label: 'Location', href: '/admin/location', icon: Armchair },
-      { label: 'Paysagisme', href: '/admin/paysagisme', icon: Trees, badge: 'À venir' },
-      { label: 'Livraisons', href: '/admin/livraisons', icon: Truck },
-      { label: 'Catégories', href: '/admin/categories', icon: FolderTree },
-      { label: 'Marketing', href: '/admin/marketing', icon: Megaphone },
-      { label: 'Blog & Contenu', href: '/admin/blog', icon: FileText },
-      { label: 'Rapports', href: '/admin/rapports', icon: BarChart3 },
-      { label: 'Paramètres', href: '/admin/parametres', icon: Settings },
-    ],
-  },
-];
+import { canAccessAdminPath } from '@/lib/admin/access';
+import { ADMIN_NAV_GROUPS, isAdminNavActive } from '@/lib/admin/navigation';
 
 export function AdminSidebar({ initialUser }: { initialUser?: AdminSessionUser | null } = {}) {
   const pathname = usePathname();
@@ -131,12 +87,21 @@ export function AdminSidebar({ initialUser }: { initialUser?: AdminSessionUser |
 
       {/* ── Navigation Principale ── */}
       <nav className="admin-sidebar-nav">
-        {navGroups.map((group, gi) => (
-          <ul key={gi} className="admin-nav-group">
+        {ADMIN_NAV_GROUPS.map((group) => ({
+          ...group,
+          items: group.items.filter((item) => canAccessAdminPath(currentUser?.role ?? 'ADMIN', item.href)),
+        }))
+          .filter((group) => group.items.length > 0)
+          .map((group, gi) => (
+          <div key={group.title} className={cn(gi > 0 && 'mt-3')}>
+            {isCollapsed ? (
+              gi > 0 && <div className="mx-3 mb-2 border-t border-white/10" aria-hidden="true" />
+            ) : (
+              <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-white/40">{group.title}</p>
+            )}
+          <ul className="admin-nav-group" aria-label={group.title}>
             {group.items.map((item) => {
-              const isActive =
-                pathname === item.href ||
-                (item.href !== '/admin/tableau-de-bord' && pathname.startsWith(item.href + '/'));
+              const isActive = isAdminNavActive(pathname, item.href);
               const Icon = item.icon;
 
               if (isCollapsed) {
@@ -161,11 +126,6 @@ export function AdminSidebar({ initialUser }: { initialUser?: AdminSessionUser |
                     {/* Tooltip flottant au survol */}
                     <div className="pointer-events-none absolute left-full ml-2.5 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-1.5 z-50 whitespace-nowrap rounded-md bg-black/90 px-2.5 py-1 text-xs font-medium text-white shadow-md border border-white/15">
                       <span>{item.label}</span>
-                      {item.badge && (
-                        <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                          {item.badge}
-                        </span>
-                      )}
                     </div>
                   </li>
                 );
@@ -182,16 +142,12 @@ export function AdminSidebar({ initialUser }: { initialUser?: AdminSessionUser |
                   >
                     <Icon size={18} strokeWidth={isActive ? 2.2 : 1.8} />
                     <span>{item.label}</span>
-                    {item.badge && (
-                      <span className="ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                        {item.badge}
-                      </span>
-                    )}
                   </Link>
                 </li>
               );
             })}
           </ul>
+          </div>
         ))}
       </nav>
 

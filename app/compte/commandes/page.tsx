@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Package, Truck, ExternalLink, Loader2, ArrowRight } from 'lucide-react';
+import { Package, Loader2, ArrowRight } from 'lucide-react';
 import { getMyOrders, CustomerOrder } from '@/lib/api/orders';
 import { formatPrice } from '@/lib/products';
 import { useAuth } from '@/components/auth-provider';
@@ -12,19 +12,36 @@ export default function AccountOrdersPage() {
   const { isAuthenticated } = useAuth();
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
-    getMyOrders()
+    if (!isAuthenticated) return;
+    getMyOrders(1, 10)
       .then((data) => {
-        if (data && data.items) {
-          setOrders(data.items);
-        }
+        setOrders(data.items);
+        setTotalPages(data.totalPages);
+        setError(null);
       })
-      .catch(() => {
-        // Ignorer
-      })
+      .catch((err) => setError(err instanceof Error ? err.message : 'Impossible de charger vos commandes.'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [isAuthenticated]);
+
+  async function loadMore() {
+    setLoadingMore(true);
+    try {
+      const next = await getMyOrders(page + 1, 10);
+      setOrders((prev) => [...prev, ...next.items]);
+      setPage(next.page);
+      setTotalPages(next.totalPages);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Impossible de charger la suite.');
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   const statusLabels: Record<string, { label: string; class: string }> = {
     PENDING: { label: 'En attente', class: 'pending' },
@@ -46,6 +63,11 @@ export default function AccountOrdersPage() {
       </div>
 
       <section className="account-panel">
+        {error && (
+          <p role="alert" className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+            {error}
+          </p>
+        )}
         {loading ? (
           <div className="flex items-center justify-center p-12 text-neutral-500 gap-2">
             <Loader2 size={20} className="animate-spin" />
@@ -75,7 +97,7 @@ export default function AccountOrdersPage() {
                 <div className="demo-order" key={order.id}>
                   <Link
                     className="demo-order-name"
-                    href={`/compte/commandes/${order.orderNumber}`}
+                    href={`/compte/commandes/${encodeURIComponent(order.orderNumber)}`}
                   >
                     <Image src={itemImg} alt={itemName || 'Article commandé'} width={40} height={40} className="rounded-lg object-cover" />
                     <span>{itemName}</span>
@@ -103,14 +125,14 @@ export default function AccountOrdersPage() {
                   <div className="flex items-center gap-2">
                     <Link
                       className="order-action"
-                      href={`/compte/commandes/${order.orderNumber}`}
+                      href={`/compte/commandes/${encodeURIComponent(order.orderNumber)}`}
                     >
                       Détails
                     </Link>
-                    {isInProgress && (
+                    {isInProgress && order.deliveryMode !== 'PICKUP' && (
                       <Link
                         className="order-action text-[#173f22] font-semibold"
-                        href={`/compte/suivi/${order.orderNumber}`}
+                        href={`/compte/suivi/${encodeURIComponent(order.orderNumber)}`}
                       >
                         Suivre
                       </Link>
@@ -119,8 +141,13 @@ export default function AccountOrdersPage() {
                 </div>
               );
             })}
+            {page < totalPages && (
+              <button type="button" onClick={loadMore} disabled={loadingMore} className="button button-outline button-small justify-self-start">
+                {loadingMore && <Loader2 size={14} className="animate-spin" />} Voir les commandes plus anciennes
+              </button>
+            )}
           </div>
-        ) : (
+        ) : error ? null : (
           <div className="text-center p-10 bg-neutral-50 rounded-2xl border border-neutral-100">
             <div className="w-12 h-12 bg-[#173f22]/10 text-[#173f22] rounded-full flex items-center justify-center mx-auto mb-3">
               <Package size={24} />

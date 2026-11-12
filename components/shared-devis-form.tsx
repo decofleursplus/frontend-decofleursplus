@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import Image from 'next/image';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   UploadCloud,
@@ -15,35 +14,62 @@ import {
   ArrowRight,
   ArrowLeft,
   X,
-  FileText,
   Sprout,
   PartyPopper,
 } from 'lucide-react';
-import { submitQuote } from '@/lib/api/quotes';
+import { submitQuote, uploadQuoteImages } from '@/lib/api/quotes';
+import { useAuth } from '@/components/auth-provider';
+
+const MAX_PHOTOS = 10;
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+const PHONE_PATTERN = /^\+?[0-9\s().-]{7,20}$/;
+
+interface PhotoDraft {
+  file: File;
+  preview: string;
+}
 
 export type DevisServiceType = 'paysagisme' | 'evenements';
 
 interface SharedDevisFormProps {
   initialServiceType?: DevisServiceType;
   initialPrestation?: string;
+  /** Produit de la boutique à l'origine de la demande (`?produit=`) */
+  initialProduct?: string;
+  /** Réalisation ou inspiration citée (`?inspiration=`) */
+  initialInspiration?: string;
   className?: string;
 }
 
 export function SharedDevisForm({
   initialServiceType = 'evenements',
   initialPrestation = '',
+  initialProduct = '',
+  initialInspiration = '',
   className = '',
 }: SharedDevisFormProps) {
+  const { user } = useAuth();
   const [serviceType, setServiceType] = useState<DevisServiceType>(initialServiceType);
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submittedRef, setSubmittedRef] = useState<string | null>(null);
+  const [stepError, setStepError] = useState<string | null>(null);
 
-  // Étape 1 : Coordonnées
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('+221 ');
+  // Étape 1 : Coordonnées (pré-remplies pour un client connecté, toujours modifiables)
+  const [fullName, setFullName] = useState(user?.name ?? '');
+  const [email, setEmail] = useState(user?.email ?? '');
+  const [phone, setPhone] = useState(user?.phone || '+221 ');
   const [company, setCompany] = useState('');
+
+  // Le compte peut se charger après l'ouverture du formulaire : on complète alors les champs encore vides,
+  // une seule fois par utilisateur, sans écraser une saisie.
+  const [prefilledFor, setPrefilledFor] = useState<string | null>(user?.id ?? null);
+  if (user && user.id !== prefilledFor) {
+    setPrefilledFor(user.id);
+    setFullName((v) => v || user.name || '');
+    setEmail((v) => v || user.email || '');
+    setPhone((v) => (v.trim() && v.trim() !== '+221' ? v : user.phone || v));
+  }
 
   // Étape 2 : Détails du Projet
   const [prestationType, setPrestationType] = useState(
@@ -54,14 +80,19 @@ export function SharedDevisForm({
   const [desiredDate, setDesiredDate] = useState('');
   const [location, setLocation] = useState('Saly Portudal');
   const [budget, setBudget] = useState('500 000 - 1 500 000 FCFA');
-  const [description, setDescription] = useState('');
+  const [description, setDescription] = useState(() => {
+    const refs = [
+      initialProduct && `Inspiré de la création « ${initialProduct.replace(/-/g, ' ')} » de la boutique.`,
+      initialInspiration && `Inspiré de la réalisation « ${initialInspiration} ».`,
+    ].filter(Boolean);
+    return refs.length ? `${refs.join('\n')}\n` : '';
+  });
 
-  // Étape 3 : Photos
-  const [photos, setPhotos] = useState<string[]>([
-    serviceType === 'paysagisme'
-      ? '/images/paysagisme/paysagisme-villas.jpg'
-      : '/images/mariage.jpg',
-  ]);
+  // Étape 3 : Photos (envoyées au moment de la validation)
+  const [photos, setPhotos] = useState<PhotoDraft[]>([]);
+
+  // Libère les aperçus locaux quand le formulaire disparaît
+  useEffect(() => () => photos.forEach((p) => URL.revokeObjectURL(p.preview)), [photos]);
 
   const handleServiceChange = (type: DevisServiceType) => {
     setServiceType(type);
@@ -75,69 +106,84 @@ export function SharedDevisForm({
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    Array.from(files).forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setPhotos((prev) => [...prev, event.target!.result as string]);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = '';
+    if (files.length === 0) return;
+    const rejected = files.filter((f) => !['image/jpeg', 'image/png', 'image/webp'].includes(f.type) || f.size > MAX_PHOTO_BYTES);
+    const accepted = files.filter((f) => !rejected.includes(f)).slice(0, Math.max(0, MAX_PHOTOS - photos.length));
+    setPhotos((prev) => [...prev, ...accepted.map((file) => ({ file, preview: URL.createObjectURL(file) }))]);
+    setStepError(
+      rejected.length
+        ? `${rejected.length} fichier(s) ignoré(s) : formats JPG, PNG ou WEBP de 5 Mo maximum.`
+        : photos.length + files.length > MAX_PHOTOS
+          ? `${MAX_PHOTOS} photos maximum par demande.`
+          : null,
+    );
   };
 
   const removePhoto = (index: number) => {
-    setPhotos((prev) => prev.filter((_, i) => i !== index));
+    setPhotos((prev) => {
+      URL.revokeObjectURL(prev[index].preview);
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const handleNextFromStep1 = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName.trim() || !email.trim() || !phone.trim()) {
-      alert('Veuillez renseigner les coordonnées obligatoires.');
-      return;
-    }
+    if (fullName.trim().length < 2) return setStepError('Indiquez votre nom complet.');
+    if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) return setStepError('Adresse email invalide.');
+    if (!PHONE_PATTERN.test(phone.trim())) return setStepError('Numéro de téléphone invalide (ex. +221 77 123 45 67).');
+    setStepError(null);
     setCurrentStep(2);
   };
 
   const handleNextFromStep2 = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!location.trim() || !description.trim()) {
-      alert('Veuillez renseigner la localisation et une brève description de votre projet.');
-      return;
+    if (location.trim().length < 2 || !description.trim()) {
+      return setStepError('Renseignez la localisation et une brève description de votre projet.');
     }
+    if (desiredDate && new Date(desiredDate) < new Date(new Date().toDateString())) {
+      return setStepError('La date souhaitée ne peut pas être dans le passé.');
+    }
+    setStepError(null);
     setCurrentStep(3);
   };
 
   const handleFinalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setStepError(null);
 
     try {
-      const res = await submitQuote({
+      const inspirationImages = photos.length ? await uploadQuoteImages(photos.map((p) => p.file)) : [];
+      const guests = serviceType === 'evenements' && metricValue ? Number.parseInt(metricValue, 10) : NaN;
+      const notes = [
+        description.trim(),
+        `Type de lieu : ${spaceType}`,
+        serviceType === 'paysagisme' && metricValue ? `Surface approximative : ${metricValue} m²` : null,
+        company.trim() ? `Société : ${company.trim()}` : null,
+      ]
+        .filter(Boolean)
+        .join('\n');
+
+      const quote = await submitQuote({
         name: fullName.trim(),
         email: email.trim() || undefined,
         phone: phone.trim(),
-        eventType: `${serviceType.toUpperCase()} - ${prestationType}`,
+        eventType: `${serviceType === 'paysagisme' ? 'Paysagisme' : 'Événement'} — ${prestationType}`,
         location: location.trim(),
         budget: budget || undefined,
         eventDate: desiredDate || undefined,
-        notes: `${description}${company ? ` | Société: ${company}` : ''}${metricValue ? ` | Détail: ${metricValue}` : ''}`,
+        estimatedGuests: Number.isFinite(guests) && guests > 0 ? guests : undefined,
+        inspirationImages,
+        notes,
       });
-
-      if (res.success && res.quote) {
-        setSubmittedRef(res.quote.quoteNumber || res.quote.id);
-      } else {
-        const newRef = `DEV-2026-${Math.floor(1000 + Math.random() * 9000)}`;
-        setSubmittedRef(newRef);
-      }
-    } catch {
-      const newRef = `DEV-2026-${Math.floor(1000 + Math.random() * 9000)}`;
-      setSubmittedRef(newRef);
+      setSubmittedRef(quote.quoteNumber);
+      setCurrentStep(4);
+    } catch (err) {
+      setStepError(err instanceof Error ? err.message : 'Votre demande n’a pas pu être envoyée. Réessayez dans un instant.');
     } finally {
       setIsSubmitting(false);
-      setCurrentStep(4);
     }
   };
 
@@ -157,9 +203,6 @@ export function SharedDevisForm({
           >
             <Sprout size={14} />
             <span>Paysagisme &amp; Espaces Verts</span>
-            <span className="ml-1 text-[10px] font-semibold px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
-              À venir
-            </span>
           </button>
           <button
             type="button"
@@ -234,6 +277,12 @@ export function SharedDevisForm({
       {/* ── Conteneur de Carte Formulaire Épuré sur Fond Blanc ── */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200 shadow-sm">
         {/* ── Étape 1 : Coordonnées ── */}
+        {stepError && currentStep < 4 && (
+          <p role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs sm:text-sm text-red-800">
+            {stepError}
+          </p>
+        )}
+
         {currentStep === 1 && (
           <form onSubmit={handleNextFromStep1} className="space-y-5">
             <div className="border-b border-gray-100 pb-3">
@@ -549,17 +598,13 @@ export function SharedDevisForm({
 
             {photos.length > 0 && (
               <div className="flex flex-wrap gap-3">
-                {photos.map((src, index) => (
+                {photos.map(({ preview: src }, index) => (
                   <div
-                    key={index}
+                    key={src}
                     className="relative w-16 h-16 rounded-xl overflow-hidden border border-gray-200 group shadow-2xs"
                   >
-                    <Image
-                      src={src}
-                      alt={`Photo aperçu ${index + 1}`}
-                      fill
-                      className="object-cover"
-                    />
+                    {/* eslint-disable-next-line @next/next/no-img-element -- aperçu local (blob:) avant envoi */}
+                    <img src={src} alt={`Photo aperçu ${index + 1}`} className="absolute inset-0 h-full w-full object-cover" />
                     <button
                       type="button"
                       onClick={() => removePhoto(index)}
@@ -617,7 +662,8 @@ export function SharedDevisForm({
                 Votre demande de devis est enregistrée !
               </h2>
               <p className="text-xs sm:text-sm text-gray-600 max-w-md mx-auto mt-1">
-                Merci {fullName}. Nos équipes étudient votre projet avec soin et vous transmettent une proposition détaillée sous 24 à 48 heures ouvrées.
+                Merci {fullName}. Nos équipes étudient votre projet avec soin et vous transmettent une proposition détaillée sous 24 à 48 heures ouvrées
+                {user ? ' : vous la retrouverez dans « Mes devis » de votre espace client.' : '.'}
               </p>
             </div>
 
@@ -642,6 +688,8 @@ export function SharedDevisForm({
                 onClick={() => {
                   setCurrentStep(1);
                   setSubmittedRef(null);
+                  setPhotos([]);
+                  setDescription('');
                 }}
                 className="w-full sm:w-auto px-6 py-2.5 rounded-full border border-gray-300 text-gray-700 hover:bg-gray-50 text-xs sm:text-sm font-medium transition-colors"
               >

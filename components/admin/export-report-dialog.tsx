@@ -16,11 +16,9 @@ import {
   FileSpreadsheet,
   FileText,
   Download,
-  Calendar,
   Layers,
   Sparkles,
   Printer,
-  CheckCircle2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -69,7 +67,7 @@ export function ExportReportDialog({
       csvContent += `TOP VENTES PRODUITS\n`;
       csvContent += `Produit;SKU;Catégorie;Quantité vendue;Revenu total (FCFA);Prix moyen (FCFA);Marge (%)\n`;
       dataset.topProducts.forEach((p) => {
-        csvContent += `"${p.name}";${p.sku};"${p.category}";${p.quantitySold};${p.revenue};${p.averagePrice};${p.marginRate}%\n`;
+        csvContent += `"${p.name}";${p.sku};"${p.category}";${p.quantitySold};${p.revenue};${p.averagePrice};${p.marginRate == null ? 'n.c.' : `${p.marginRate}%`}\n`;
       });
       csvContent += `\n`;
 
@@ -107,7 +105,7 @@ export function ExportReportDialog({
       csvContent += `PRODUITS ET RENTABILITÉ\n`;
       csvContent += `Nom du produit;SKU;Catégorie;Quantité vendue;Revenu généré (FCFA);Prix unitaire moyen;Taux de marge estimé\n`;
       dataset.topProducts.forEach((p) => {
-        csvContent += `"${p.name}";${p.sku};"${p.category}";${p.quantitySold};${p.revenue};${p.averagePrice};${p.marginRate}%\n`;
+        csvContent += `"${p.name}";${p.sku};"${p.category}";${p.quantitySold};${p.revenue};${p.averagePrice};${p.marginRate == null ? 'n.c.' : `${p.marginRate}%`}\n`;
       });
     } else {
       // transactions
@@ -209,7 +207,7 @@ export function ExportReportDialog({
                 <td>${p.category}</td>
                 <td style="text-align: right;">${p.quantitySold}</td>
                 <td style="text-align: right;">${formatCurrency(p.revenue)}</td>
-                <td style="text-align: right;">${p.marginRate}%</td>
+                <td style="text-align: right;">${p.marginRate == null ? 'n.c.' : `${p.marginRate}%`}</td>
               </tr>
             `
               )
@@ -503,7 +501,7 @@ export function ExportReportDialog({
               <Download className="h-5 w-5" />
             </div>
             <div>
-              <DialogTitle className="text-lg sm:text-xl font-bold">Exporter un rapport d'activité</DialogTitle>
+              <DialogTitle className="text-lg sm:text-xl font-bold">Exporter un rapport d’activité</DialogTitle>
               <DialogDescription className="text-xs sm:text-sm text-gray-500">
                 Période : <span className="font-semibold text-gray-900">{periodLabel}</span>
               </DialogDescription>
@@ -568,7 +566,7 @@ export function ExportReportDialog({
                   <span>Performance Produits</span>
                 </div>
                 <p className="text-xs text-gray-500">
-                  Volumes vendus par bouquet, chiffre d'affaires et marges.
+                  Volumes vendus par bouquet, chiffre d’affaires et marges.
                 </p>
               </button>
 
@@ -586,7 +584,7 @@ export function ExportReportDialog({
                   <span>Grand Livre Encaissements</span>
                 </div>
                 <p className="text-xs text-gray-500">
-                  Journal d'audit détaillé de chaque transaction et statut.
+                  Journal d’audit détaillé de chaque transaction et statut.
                 </p>
               </button>
             </div>
@@ -595,7 +593,7 @@ export function ExportReportDialog({
           {/* Sélection du Format */}
           <div className="space-y-2 sm:space-y-2.5">
             <Label className="text-xs font-semibold uppercase text-gray-500">
-              Format d'exportation
+              Format d’exportation
             </Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
               <button

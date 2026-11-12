@@ -2,10 +2,15 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { User as UserIcon, Mail, Phone, LockKeyhole, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
 import { FloralMotifIcon } from '@/components/icons';
-import { useAuth, User } from '@/components/auth-provider';
+import { useAuth } from '@/components/auth-provider';
+import { ApiClientError } from '@/lib/api/client';
+import { PASSWORD_MIN_LENGTH } from '@/lib/api/auth';
+import type { PendingVerificationData } from '@/lib/api/types';
+import { EmailVerificationStep } from './email-verification-step';
+import { GoogleSignInButton } from './google-sign-in-button';
 import { RegistrationSuccess } from './registration-success';
 
 export function RegisterForm() {
@@ -17,25 +22,32 @@ export function RegisterForm() {
     ? `/connexion?redirect=${encodeURIComponent(rawRedirect)}`
     : '/connexion';
 
-  const { register } = useAuth();
+  const router = useRouter();
+  const { register, loginWithGoogle } = useAuth();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [termsAccepted, setTermsAccepted] = useState(true);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [socialLoading, setSocialLoading] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  // Success state container
+  // Étapes : formulaire → code reçu par email → écran de succès
+  const [pending, setPending] = useState<PendingVerificationData | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [createdUser, setCreatedUser] = useState<User | null>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!termsAccepted) {
       setFeedback('Veuillez accepter les CGU et la Politique de confidentialité.');
+      return;
+    }
+    if (password.length < PASSWORD_MIN_LENGTH) {
+      setFeedback(`Le mot de passe doit contenir au moins ${PASSWORD_MIN_LENGTH} caractères.`);
       return;
     }
 
@@ -43,25 +55,43 @@ export function RegisterForm() {
     setFeedback(null);
 
     try {
-      const user = await register({
-        name,
-        email,
-        phone,
-        password,
-      });
-
-      setCreatedUser(user);
-      setIsSuccess(true);
+      setPending(await register({ name, email, phone, password }));
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Une erreur est survenue lors de la création du compte.';
-      setFeedback(message);
+      const fieldError = err instanceof ApiClientError ? err.details?.[0]?.message : undefined;
+      setFeedback(
+        fieldError || (err instanceof Error ? err.message : 'Une erreur est survenue lors de la création du compte.'),
+      );
+    } finally {
       setIsSubmitting(false);
     }
   }
 
-  // If successfully registered, show the exact success screen from mockup panel 6
+  async function handleGoogleCredential(credential: string) {
+    setSocialLoading(true);
+    setFeedback(null);
+    try {
+      await loginWithGoogle(credential);
+      router.push(redirectTarget);
+    } catch (err: unknown) {
+      setFeedback(err instanceof Error ? err.message : 'L’inscription avec Google a échoué.');
+      setSocialLoading(false);
+    }
+  }
+
   if (isSuccess) {
-    return <RegistrationSuccess createdUser={createdUser} redirectTarget={redirectTarget} />;
+    return <RegistrationSuccess redirectTarget={redirectTarget} />;
+  }
+
+  if (pending) {
+    return (
+      <EmailVerificationStep
+        email={pending.email}
+        initialCooldown={pending.resendAvailableInSeconds}
+        expiresInMinutes={pending.expiresInMinutes}
+        onVerified={() => setIsSuccess(true)}
+        onBack={() => setPending(null)}
+      />
+    );
   }
 
   return (
@@ -76,7 +106,7 @@ export function RegisterForm() {
       </div>
 
       {feedback && (
-        <div className="auth-feedback-banner auth-feedback-error" role="status">
+        <div className="auth-feedback-banner auth-feedback-error" role="alert">
           <span>{feedback}</span>
         </div>
       )}
@@ -162,9 +192,9 @@ export function RegisterForm() {
               id="reg-password"
               type={showPassword ? 'text' : 'password'}
               required
-              minLength={6}
+              minLength={PASSWORD_MIN_LENGTH}
               autoComplete="new-password"
-              placeholder="Créez un mot de passe"
+              placeholder={`Au moins ${PASSWORD_MIN_LENGTH} caractères`}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="auth-input"
@@ -192,7 +222,7 @@ export function RegisterForm() {
             />
             <span className="auth-terms-text">
               J’accepte les{' '}
-              <Link href="/cgu" className="auth-terms-link" target="_blank">
+              <Link href="/conditions" className="auth-terms-link" target="_blank">
                 Conditions Générales d’Utilisation
               </Link>{' '}
               et la{' '}
@@ -206,13 +236,13 @@ export function RegisterForm() {
         {/* Submit button */}
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || socialLoading}
           className="auth-submit-button"
         >
           {isSubmitting ? (
             <>
               <Loader2 size={18} className="auth-spinner" />
-              <span>Création en cours…</span>
+              <span>Envoi du code…</span>
             </>
           ) : (
             <>
@@ -221,6 +251,19 @@ export function RegisterForm() {
             </>
           )}
         </button>
+
+        <div className="auth-or-divider">
+          <span className="auth-or-line" />
+          <span className="auth-or-text">ou</span>
+          <span className="auth-or-line" />
+        </div>
+
+        <GoogleSignInButton
+          onCredential={handleGoogleCredential}
+          onError={setFeedback}
+          disabled={isSubmitting || socialLoading}
+          text="signup_with"
+        />
 
         {/* Card Footer Link */}
         <div className="auth-card-footer">
