@@ -18,7 +18,7 @@ import { getLocalLandingSchema } from '@/lib/seo/schema';
 import { LiveProductGrid, ZoneFeeSentence } from '@/components/storefront/live-data';
 
 export const metadata: Metadata = constructMetadata({
-  title: 'Fleuriste Somone — Livraison de Fleurs & Décoration Événementielle | Décofleur Plus',
+  title: 'Fleuriste Somone · Livraison de Fleurs & Décoration Événementielle | Décofleur Plus',
   description:
     'Livraison de fleurs le jour même à la Somone (lagune, villas de plage, résidences). Décors floraux de mariage bohème, arches florales côtières et paniers de fruits frais livrés avec soin.',
   canonical: '/fleuriste-somone',
@@ -158,7 +158,7 @@ export default function FleuristeSomonePage() {
           <div className="text-center mb-8">
             <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#173f22] mb-2 flex items-center justify-center gap-2">
               <HelpCircle size={24} className="text-[#c8436e]" />
-              FAQ — Fleuriste Somone
+              FAQ : Fleuriste Somone
             </h2>
             <p className="text-neutral-600 text-xs sm:text-sm">
               Questions pratiques sur les livraisons et décorations à la Somone.

@@ -22,7 +22,7 @@ import { SITE_URL, SITE_CONFIG } from '@/lib/seo/config';
 export const revalidate = 3600;
 
 export const metadata: Metadata = constructMetadata({
-  title: 'Décofleur Plus — Fleuriste & Magasin de Décoration à Saly, Dakar & Petite-Côte',
+  title: 'Décofleur Plus | Fleuriste & Magasin de Décoration à Saly, Dakar & Petite-Côte',
   description:
     'Déco Fleurs Plus (Déco-Fleurs) : artisan fleuriste et magasin de décoration à Saly-Portudal et Dakar. Bouquets de roses fraîches, décoration événementielle, vases d’art, paysagisme et livraison express.',
   canonical: '/',

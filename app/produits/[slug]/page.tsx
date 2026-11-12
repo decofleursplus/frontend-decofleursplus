@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   const priceFormatted = `${product.price.toLocaleString('fr-FR')} FCFA`;
   return constructMetadata({
-    title: `${product.name} — ${product.category || 'Fleuriste'} Saly & Dakar (${priceFormatted})`,
+    title: `${product.name} | ${product.category || 'Fleuriste'} Saly & Dakar (${priceFormatted})`,
     description: `${product.description} Prix : ${priceFormatted}.`,
     image: product.image,
     canonical: `/produits/${product.slug}`,

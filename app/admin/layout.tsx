@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
-  title: 'Back-office — Décofleur Plus',
+  title: 'Back-office | Décofleur Plus',
   description: 'Panneau d\'administration Décofleur Plus',
 };
 

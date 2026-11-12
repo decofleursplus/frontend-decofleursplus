@@ -141,7 +141,6 @@ export function ProductReviews({ productId, productName, initialRating, initialR
         <div className="p-4 sm:p-6 border-t border-neutral-100 space-y-6">
           <div className="p-5 rounded-2xl border border-emerald-100/80 bg-emerald-50/30">
             <h3 className="text-sm font-semibold text-neutral-900 mb-1 flex items-center gap-2">
-              <Send size={15} className="text-emerald-700" />
               Donner votre avis sur « {productName} »
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4 mt-3">

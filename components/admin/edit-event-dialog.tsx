@@ -70,7 +70,7 @@ const availableImages = [
   { path: '/images/events/gamou.jpg', label: 'Gamou de Tivaouane' },
   { path: '/images/events/korite.jpg', label: 'Korité (Aïd el-Fitr)' },
   { path: '/images/events/saint-valentin.jpg', label: 'Saint-Valentin' },
-  { path: '/images/events/femmes-8mars.jpg', label: '8 Mars — Droits des Femmes' },
+  { path: '/images/events/femmes-8mars.jpg', label: '8 Mars : Droits des Femmes' },
   { path: '/images/events/fete-meres.jpg', label: 'Fête des Mères' },
   { path: '/images/events/fete-peres.jpg', label: 'Fête des Pères' },
   { path: '/images/events/noel-fetes.jpg', label: 'Noël & Fin d’année' },

@@ -54,7 +54,7 @@ function QuoteCard({ quote, onUpdated }: { quote: QuoteItem; onUpdated: (q: Quot
             <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${status.color}`}>{status.label}</span>
           </div>
           <div className="text-sm text-neutral-600">
-            <strong>{quote.eventType}</strong> — {quote.eventLocation}
+            <strong>{quote.eventType}</strong> · {quote.eventLocation}
           </div>
           <div className="text-xs text-neutral-400 mt-1">
             Demandé le {formatDate(quote.createdAt)}

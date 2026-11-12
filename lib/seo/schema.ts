@@ -45,7 +45,7 @@ export function getFloristSchema() {
     '@context': 'https://schema.org',
     '@type': ['Florist', 'HomeGoodsStore', 'LocalBusiness'],
     '@id': `${SITE_URL}/#florist`,
-    name: `${SITE_CONFIG.name} — Fleuriste & Magasin de Décoration`,
+    name: `${SITE_CONFIG.name} | Fleuriste & Magasin de Décoration`,
     alternateName: SITE_CONFIG.alternateNames,
     description: SITE_CONFIG.description,
     url: SITE_URL,
@@ -273,8 +273,8 @@ export function getLocalLandingSchema(options: {
     '@type': isSaly ? ['Florist', 'HomeGoodsStore', 'LocalBusiness'] : ['Florist', 'LocalBusiness'],
     '@id': `${pageUrl}#localbusiness`,
     name: isSaly
-      ? `Décofleur Plus — Fleuriste & Magasin de Décoration à Saly Portudal`
-      : `Décofleur Plus — Fleuriste ${options.city}`,
+      ? `Décofleur Plus | Fleuriste & Magasin de Décoration à Saly Portudal`
+      : `Décofleur Plus | Fleuriste ${options.city}`,
     alternateName: isSaly ? SITE_CONFIG.alternateNames : undefined,
     description: options.description,
     url: pageUrl,

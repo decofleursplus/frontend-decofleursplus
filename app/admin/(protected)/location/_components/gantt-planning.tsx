@@ -426,7 +426,7 @@ export function GanttPlanning({ refreshKey, onOpenReservation }: GanttPlanningPr
                                   onClick={() => onOpenReservation(b.id)}
                                   style={{ left: `${left}%`, width: `${width}%`, top: 7 + lane * LANE_HEIGHT, height: LANE_HEIGHT - 6 }}
                                   className={`absolute rounded-lg px-2 flex items-center text-[10px] font-bold shadow-xs cursor-pointer hover:ring-2 hover:ring-black/20 hover:z-20 transition-all ${GANTT_BAR_CLASSES[b.status]}`}
-                                  title={`${b.reservationNumber} — ${b.clientName}\n${b.quantity} × ${b.equipmentName}\n${formatRentalPeriod(b.startDate, b.endDate)}\nStatut : ${RESERVATION_STATUS_LABELS[b.status]}`}
+                                  title={`${b.reservationNumber} : ${b.clientName}\n${b.quantity} × ${b.equipmentName}\n${formatRentalPeriod(b.startDate, b.endDate)}\nStatut : ${RESERVATION_STATUS_LABELS[b.status]}`}
                                   data-testid="gantt-bar"
                                 >
                                   <span className="truncate">

@@ -9,7 +9,7 @@ import { JsonLd } from '@/components/seo/json-ld';
 import { SITE_URL, SITE_CONFIG } from '@/lib/seo/config';
 
 export const metadata: Metadata = constructMetadata({
-  title: 'Boutique Florale en Ligne — Bouquets, Plantes & Cadeaux à Saly & Dakar',
+  title: 'Boutique Florale en Ligne | Bouquets, Plantes & Cadeaux à Saly & Dakar',
   description:
     'Achetez en ligne vos bouquets de roses, plantes tropicales, corbeilles de fruits et cadeaux raffinés. Livraison rapide à Saly Portudal, Somone, Mbour et Dakar.',
   canonical: '/boutique',

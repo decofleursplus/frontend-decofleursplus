@@ -281,7 +281,7 @@ export default function FleuristeSalyPage() {
           <div className="text-center mb-8">
             <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#173f22] mb-2 flex items-center justify-center gap-2">
               <HelpCircle size={24} className="text-[#c8436e]" />
-              Questions fréquentes — Fleuriste Saly Portudal
+              Questions fréquentes : Fleuriste Saly Portudal
             </h2>
             <p className="text-neutral-600 text-xs sm:text-sm">
               Réponses pratiques pour vos achats en boutique ou en livraison.

@@ -261,7 +261,7 @@ export default function CartPage() {
                       <option value="">Choisir votre zone…</option>
                       {zones.map((z) => (
                         <option key={z.id} value={z.id}>
-                          {z.name} — {formatPrice(prefs.deliveryMode === 'EXPRESS' ? z.expressFee : z.fee)}
+                          {z.name} : {formatPrice(prefs.deliveryMode === 'EXPRESS' ? z.expressFee : z.fee)}
                         </option>
                       ))}
                     </select>

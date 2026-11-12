@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   const description = cat.description || `${cat.name} : découvrez notre sélection, livrée à Saly, Mbour et Dakar.`;
   return constructMetadata({
-    title: `${cat.name} — Fleuriste Saly & Dakar`,
+    title: `${cat.name} | Fleuriste Saly & Dakar`,
     description,
     canonical: `/categories/${cat.slug}`,
     image: cat.imageUrl || undefined,
@@ -55,7 +55,7 @@ export default async function CategoryRoute({ params }: { params: Promise<{ slug
       <JsonLd data={collectionSchema} />
       <main className="content-width page-main">
         <section className="page-banner shop-banner">
-          <Image src={cat.imageUrl || '/images/hero.jpg'} alt={`${cat.name} — Décofleur Plus`} fill sizes="100vw" priority />
+          <Image src={cat.imageUrl || '/images/hero.jpg'} alt={`${cat.name} · Décofleur Plus`} fill sizes="100vw" priority />
           <div>
             <h1>{cat.name}</h1>
             <p>{description}</p>

@@ -10,7 +10,7 @@ import { BlogExplorer } from '@/components/blog/blog-explorer';
 import type { BlogArticle, BlogCategory } from '@/lib/admin/mock-data/types';
 
 export const metadata: Metadata = constructMetadata({
-  title: 'Blog Floral & Art de Vivre à Saly — Conseils, Mariages & Plantes | Décofleur Plus',
+  title: 'Blog Floral & Art de Vivre à Saly · Conseils, Mariages & Plantes | Décofleur Plus',
   description:
     'Inspirations florales et astuces d’experts pour préserver vos roses sous le climat de Saly et Dakar, idées de scénographies de mariages et entretien des plantes tropicales.',
   canonical: '/blog',

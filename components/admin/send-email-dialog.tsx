@@ -55,12 +55,12 @@ function SendEmailDialogInner({
   const templates = [
     {
       title: 'Suivi de commande',
-      subject: `Décofleur Plus — Mise à jour de votre commande`,
+      subject: `Décofleur Plus : Mise à jour de votre commande`,
       body: `Bonjour ${customer.name},\n\nNous vous informons que votre commande chez Décofleur Plus est en cours de préparation par nos fleuristes.\n\nNous vous tiendrons informé dès que votre bouquet sera confié à notre livreur.\n\nCordialement,\nL'équipe Décofleur Plus`,
     },
     {
       title: 'Remerciement',
-      subject: `Décofleur Plus — Merci pour votre confiance`,
+      subject: `Décofleur Plus : Merci pour votre confiance`,
       body: `Bonjour ${customer.name},\n\nToute l'équipe Décofleur Plus vous remercie pour votre fidélité. Nous serons ravis de vous accompagner pour vos prochaines occasions.\n\nÀ très bientôt,\nL'équipe Décofleur Plus`,
     },
     {

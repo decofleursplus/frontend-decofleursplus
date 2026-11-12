@@ -173,7 +173,7 @@ function ConfirmationContent() {
                 <Banknote size={20} className="text-emerald-700 shrink-0 mt-0.5" />
                 <div>
                   <strong className="block text-sm mb-1">
-                    Commande validée — Règlement en espèces à la livraison
+                    Commande validée : Règlement en espèces à la livraison
                   </strong>
                   <p className="text-xs text-emerald-800 leading-relaxed">
                     Votre commande est bien transmise à notre atelier. Préparez la somme exacte de{' '}

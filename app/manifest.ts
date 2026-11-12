@@ -3,7 +3,7 @@ import type { MetadataRoute } from 'next';
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: '/',
-    name: 'Décofleur Plus — Nature en élégance',
+    name: 'Décofleur Plus · Nature en élégance',
     short_name: 'Décofleur',
     description: 'Bouquets, plantes, cadeaux et décoration florale à Saly et Mbour.',
     start_url: '/',
