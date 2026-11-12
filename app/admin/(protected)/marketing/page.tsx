@@ -58,6 +58,8 @@ import {
   Trash2,
   Calendar,
   RefreshCw,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { WhatsAppColorIcon, WhatsAppButtonIcon } from '@/components/icons';
@@ -247,6 +249,16 @@ export default function AdminMarketingPage() {
     if (!cp) return;
     const activate = cp.status !== 'actif';
     await runAction(() => updateAdminCoupon(couponId, { isActive: activate } as Partial<AdminCoupon>), `Code ${cp.code} ${activate ? 'activé' : 'désactivé'}.`);
+  };
+
+  const handleToggleCouponVisibility = async (couponId: string) => {
+    const cp = coupons.find((c) => c.id === couponId);
+    if (!cp) return;
+    const visible = !cp.isPublic;
+    await runAction(
+      () => updateAdminCoupon(couponId, { isPublic: visible }),
+      visible ? `Code ${cp.code} visible dans « Mes coupons » des clients.` : `Code ${cp.code} retiré de « Mes coupons ».`,
+    );
   };
 
   const handleDeleteCoupon = async (couponId: string) => {
@@ -783,6 +795,11 @@ export default function AdminMarketingPage() {
                               {coupon.description}
                             </p>
                           )}
+                          {coupon.isPublic && (
+                            <p className="flex items-center gap-1 text-[10px] font-semibold text-[#24582d]">
+                              <Eye className="h-3 w-3" /> Visible dans « Mes coupons »
+                            </p>
+                          )}
                         </div>
                       </TableCell>
 
@@ -828,6 +845,15 @@ export default function AdminMarketingPage() {
                       {/* Actions */}
                       <TableCell className="px-3 py-2.5 text-right pr-4">
                         <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleCouponVisibility(coupon.id)}
+                            className={`p-1 ${coupon.isPublic ? 'text-[#24582d]' : 'text-gray-400 hover:text-gray-700'}`}
+                            title={coupon.isPublic ? 'Retirer de « Mes coupons » des clients' : 'Afficher dans « Mes coupons » des clients'}
+                            aria-label={coupon.isPublic ? 'Retirer de « Mes coupons » des clients' : 'Afficher dans « Mes coupons » des clients'}
+                          >
+                            {coupon.isPublic ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                          </button>
                           <button
                             type="button"
                             onClick={() => handleToggleCouponStatus(coupon.id)}
@@ -950,6 +976,14 @@ export default function AdminMarketingPage() {
                   </span>
 
                   <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleCouponVisibility(coupon.id)}
+                      className={`p-1.5 rounded-md border border-[#e7e4dd] ${coupon.isPublic ? 'text-[#24582d] bg-[#edf8ef]' : 'text-gray-400'}`}
+                      title={coupon.isPublic ? 'Retirer de « Mes coupons » des clients' : 'Afficher dans « Mes coupons » des clients'}
+                    >
+                      {coupon.isPublic ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                    </button>
                     <button
                       type="button"
                       onClick={() => handleToggleCouponStatus(coupon.id)}
@@ -1840,6 +1874,7 @@ export default function AdminMarketingPage() {
               endDate: newCoupon.endDate,
               description: newCoupon.description,
               maxUsagePerCustomer: newCoupon.maxUsagePerCustomer,
+              isPublic: newCoupon.isPublic,
             });
             toast.success(`Code promo ${newCoupon.code} créé.`);
             await loadData(true);

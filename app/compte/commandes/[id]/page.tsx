@@ -369,8 +369,16 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
                 </span>
                 <span>{order.deliveryFee === 0 ? 'Offerts' : formatPrice(order.deliveryFee)}</span>
               </div>
+              {(order.giftCardAmount ?? 0) > 0 && (
+                <div className="recap-line text-emerald-700">
+                  <span>Carte cadeau</span>
+                  <span>-{formatPrice(order.giftCardAmount ?? 0)}</span>
+                </div>
+              )}
               <div className="recap-line border-t border-neutral-200 pt-2 text-sm font-bold text-neutral-900">
-                <span>{order.paymentStatus === 'PAID' ? 'Total réglé' : 'Total commande'}</span>
+                <span>
+                  {(order.giftCardAmount ?? 0) > 0 ? 'Reste à payer' : order.paymentStatus === 'PAID' ? 'Total réglé' : 'Total commande'}
+                </span>
                 <strong className="text-[#173f22] text-base">{formatPrice(order.totalAmount)}</strong>
               </div>
             </div>

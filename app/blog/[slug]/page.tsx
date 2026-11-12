@@ -5,6 +5,9 @@ import { notFound } from 'next/navigation';
 import { Calendar, Clock, ArrowLeft, Tag } from 'lucide-react';
 import { SiteFooter } from '@/components/site-footer';
 import { getBlogArticleBySlug } from '@/lib/api/blog';
+import { getProducts } from '@/lib/api/catalog';
+import { ProductGrid } from '@/components/product-grid';
+import type { Product } from '@/lib/products';
 import { constructMetadata } from '@/lib/seo/metadata';
 import { getArticleSchema } from '@/lib/seo/schema';
 import { JsonLd } from '@/components/seo/json-ld';
@@ -131,6 +134,22 @@ export default async function BlogDetailPage({
   }
 
   const { article, relatedArticles } = data;
+
+  // Créations choisies par l'équipe pour cet article (prix et promotions à jour, produits en vente uniquement)
+  let relatedProducts: Product[] = [];
+  const productIds = article.relatedProductIds ?? [];
+  if (productIds.length > 0) {
+    try {
+      const res = await getProducts({ ids: productIds, limit: Math.min(100, productIds.length) });
+      const rank = (p: Product) => {
+        const i = productIds.indexOf(p.id);
+        return i === -1 ? productIds.length : i;
+      };
+      relatedProducts = [...res.items].sort((a, b) => rank(a) - rank(b));
+    } catch {
+      // Catalogue indisponible : l'article reste lisible sans la sélection
+    }
+  }
 
   const breadcrumbs = [
     { label: 'Accueil', href: '/' },
@@ -260,6 +279,16 @@ export default async function BlogDetailPage({
             title={article.title}
           />
         </article>
+
+        {relatedProducts.length > 0 && (
+          <section className="related-products max-w-5xl mx-auto mt-16 pt-12 border-t border-neutral-200">
+            <div className="section-heading">
+              <h2>Créations associées</h2>
+              <Link href="/boutique">Voir toute la boutique</Link>
+            </div>
+            <ProductGrid products={relatedProducts} />
+          </section>
+        )}
 
         {/* Related Articles */}
         {relatedArticles && relatedArticles.length > 0 && (

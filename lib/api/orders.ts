@@ -39,6 +39,8 @@ export interface QuoteCartPayload {
   deliveryMode?: DeliveryMode;
   deliveryZoneId?: string;
   couponCode?: string;
+  /** Carte cadeau utilisée en paiement (partiel ou total) */
+  giftCardCode?: string;
 }
 
 export interface QuotedLine {
@@ -65,6 +67,9 @@ export interface CartQuote {
   items: QuotedLine[];
   deliveryZone: { id: string; name: string } | null;
   appliedCoupon: { id: string; code: string; discountAmount: number; freeShipping: boolean } | null;
+  appliedGiftCard: { id: string; code: string; amount: number; remainingBalance: number } | null;
+  /** Montant réglé par carte cadeau (déjà déduit de totalAmount) */
+  giftCardAmount: number;
   subtotal: number;
   extrasAmount: number;
   discountAmount: number;
@@ -127,6 +132,8 @@ export interface CustomerOrder {
   discountAmount: number;
   couponCode: string | null;
   deliveryFee: number;
+  /** Montant réglé par carte cadeau ; totalAmount = reste à payer */
+  giftCardAmount?: number;
   totalAmount: number;
   paymentStatus: PaymentStatus;
   paymentMethod: OrderPaymentMethod;
