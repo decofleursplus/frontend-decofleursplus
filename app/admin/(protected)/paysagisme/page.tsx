@@ -145,6 +145,12 @@ export default function AdminPaysagismePage() {
       featured: projectForm.featured,
       isPublished: projectForm.isPublished,
     };
+    if (payload.featured) {
+      const currentFeatured = (projects ?? []).filter((p) => p.featured && p.id !== projectForm.id);
+      if (currentFeatured.length >= 3) {
+        return toast.error('Vous pouvez sélectionner au maximum 3 réalisations à la une. Veuillez en retirer une avant d’en ajouter une nouvelle.');
+      }
+    }
     setSaving(true);
     try {
       if (projectForm.id) await updateLandscapeProject(projectForm.id, payload);
@@ -162,6 +168,19 @@ export default function AdminPaysagismePage() {
   const q = searchTerm.toLowerCase();
   const shownServices = (services ?? []).filter((s) => !q || `${s.title} ${s.category} ${s.subtitle}`.toLowerCase().includes(q));
   const shownProjects = (projects ?? []).filter((p) => !q || `${p.title} ${p.location} ${p.categoryLabel}`.toLowerCase().includes(q));
+  const featuredCount = (projects ?? []).filter((p) => p.featured).length;
+
+  const toggleProjectFeatured = (p: LandscapeProject) => {
+    if (!p.featured && featuredCount >= 3) {
+      toast.error('Vous pouvez sélectionner au maximum 3 réalisations à la une. Veuillez en retirer une avant d’en ajouter une nouvelle.');
+      return;
+    }
+    void run(
+      p.id,
+      () => updateLandscapeProject(p.id, { featured: !p.featured }),
+      p.featured ? 'Retirée de la une.' : 'Mise à la une (affichée sur la vitrine paysagisme).',
+    );
+  };
 
   const imagePicker = (value: string, presets: { path: string; label: string }[], apply: (url: string) => void) => (
     <div className="space-y-2">
@@ -231,7 +250,7 @@ export default function AdminPaysagismePage() {
               onClick={() => setActiveTab(tab)}
               className={`px-4 py-2 rounded-xl text-xs font-semibold border ${activeTab === tab ? 'bg-[#193e23] text-white border-[#193e23]' : 'bg-white border-border'}`}
             >
-              {tab === 'prestations' ? `Prestations (${services?.length ?? 0})` : `Réalisations (${projects?.length ?? 0})`}
+              {tab === 'prestations' ? `Prestations (${services?.length ?? 0})` : `Réalisations (${projects?.length ?? 0}${featuredCount > 0 ? ` · ${featuredCount}/3 à la une` : ''})`}
             </button>
           ))}
         </div>
@@ -345,9 +364,10 @@ export default function AdminPaysagismePage() {
                 <button
                   type="button"
                   disabled={busyId === p.id}
-                  onClick={() => void run(p.id, () => updateLandscapeProject(p.id, { featured: !p.featured }), p.featured ? 'Retirée de la une.' : 'Mise à la une.')}
-                  className={`p-1.5 rounded-lg border ${p.featured ? 'border-amber-300 text-amber-600' : 'border-border'}`}
-                  aria-label={p.featured ? `Retirer ${p.title} de la une` : `Mettre ${p.title} à la une`}
+                  onClick={() => toggleProjectFeatured(p)}
+                  className={`p-1.5 rounded-lg border transition-colors ${p.featured ? 'border-amber-300 text-amber-600 bg-amber-50/60' : 'border-border hover:bg-muted'}`}
+                  aria-label={p.featured ? `Retirer ${p.title} de la une` : `Mettre ${p.title} à la une (max 3)`}
+                  title={p.featured ? 'Retirer de la une' : 'Mettre à la une sur la vitrine (max 3)'}
                 >
                   <Star size={15} fill={p.featured ? 'currentColor' : 'none'} />
                 </button>
@@ -499,7 +519,22 @@ export default function AdminPaysagismePage() {
             <span className="block font-semibold">Photo principale *</span>
             {imagePicker(projectForm.image, PROJECT_IMAGES, (url) => setProjectForm((f) => (f ? { ...f, image: url } : f)))}
             <label className="flex items-center gap-2">
-              <input type="checkbox" checked={projectForm.featured} onChange={(e) => setProjectForm({ ...projectForm, featured: e.target.checked })} /> À la une
+              <input
+                type="checkbox"
+                checked={projectForm.featured}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  if (checked) {
+                    const otherFeaturedCount = (projects ?? []).filter((p) => p.featured && p.id !== projectForm.id).length;
+                    if (otherFeaturedCount >= 3) {
+                      toast.error('Vous pouvez sélectionner au maximum 3 réalisations à la une. Veuillez en retirer une avant.');
+                      return;
+                    }
+                  }
+                  setProjectForm({ ...projectForm, featured: checked });
+                }}
+              />
+              <span>À la une sur la vitrine (3 maximum)</span>
             </label>
             <label className="flex items-center gap-2">
               <input type="checkbox" checked={projectForm.isPublished} onChange={(e) => setProjectForm({ ...projectForm, isPublished: e.target.checked })} /> Publiée sur le site

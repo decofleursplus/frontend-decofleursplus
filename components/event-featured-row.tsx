@@ -43,7 +43,7 @@ export function EventFeaturedRow() {
         {/* Full background wedding banquet image */}
         <div className="absolute inset-0 z-0 pointer-events-none">
           <Image
-            src={isSpecialEvent ? event!.bgImage : '/images/wedding-events-banner.jpg'}
+            src={isSpecialEvent ? event!.bgImage : '/images/evenements/hero-side.webp'}
             alt={isSpecialEvent ? event!.name : 'Décoration florale de prestige par Décofleur Plus'}
             fill
             priority

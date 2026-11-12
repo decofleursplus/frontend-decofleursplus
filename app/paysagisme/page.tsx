@@ -8,6 +8,9 @@ import { constructMetadata } from '@/lib/seo/metadata';
 import { Breadcrumbs } from '@/components/seo/breadcrumbs';
 import { JsonLd } from '@/components/seo/json-ld';
 import { getServiceSchema } from '@/lib/seo/schema';
+import { getLandscapeProjects } from '@/lib/api/landscaping';
+import type { LandscapeProject } from '@/lib/admin/mock-data/types';
+import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = constructMetadata({
   title: 'Paysagisme & Aménagement Vert au Sénégal | Villas & Hôtels Saly & Dakar',
@@ -25,7 +28,14 @@ export const metadata: Metadata = constructMetadata({
   ],
 });
 
-export default function PaysagismePage() {
+export default async function PaysagismePage() {
+  let featuredProjects: LandscapeProject[] = [];
+  try {
+    featuredProjects = await getLandscapeProjects({ featured: true, limit: 3 });
+  } catch {
+    featuredProjects = [];
+  }
+
   const landscapingServiceSchema = getServiceSchema({
     name: 'Paysagisme & Aménagement d’Espaces Verts',
     description:
@@ -50,11 +60,11 @@ export default function PaysagismePage() {
         {/* ── 1. Hero Banner Panoramique Compact (Hauteur Réduite) ── */}
         <section className="relative w-full rounded-xl overflow-hidden min-h-[280px] sm:min-h-[310px] lg:min-h-[340px] flex items-center p-6 sm:p-8 lg:p-10 mb-6 sm:mb-8 shadow-md border border-[#e6ded5]">
           <Image
-            src="/images/paysagisme/paysagisme-hero.jpg"
-            alt="Aménagement paysager d'exception avec villa et piscine par Décofleur Plus"
+            src="/images/paysagisme/hero-paysagisme.webp"
+            alt="Aménagement paysager et scénographie végétale par Décofleur Plus"
             fill
             priority
-            className="object-cover"
+            className="object-cover object-center"
             sizes="100vw"
           />
           {/* Dégradé doux et protecteur pour lisibilité optimale */}
@@ -171,82 +181,72 @@ export default function PaysagismePage() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6">
-            {/* Carte 1 : Villas & résidences */}
-            <div className="group relative rounded-2xl overflow-hidden border border-[#e8dfd5] shadow-2xs hover:shadow-lg transition-all aspect-[4/3]">
-              <Image
-                src="/images/paysagisme/paysagisme-villas.jpg"
-                alt="Villas & résidences"
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-500"
-                sizes="(max-width: 768px) 100vw, 33vw"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-              
-              <div className="absolute bottom-3 left-3 right-3 p-3.5 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-white">
-                <div className="text-[11px] text-[#f5c6cb] font-medium mb-0.5">Saly &amp; Almadies</div>
-                <h3 className="text-base font-serif font-bold text-white">Villas &amp; résidences</h3>
-                <p className="text-xs text-white/85 mt-0.5 line-clamp-2">
-                  Des jardins sur mesure conçus pour résister au climat tropical et sublimer votre villa.
-                </p>
-                <div className="mt-2 pt-2 border-t border-white/15 flex justify-end">
-                  <Link href="/paysagisme/realisations" className="text-xs font-semibold text-[#f5c6cb] hover:text-white transition-colors">
-                    Découvrir ›
-                  </Link>
-                </div>
-              </div>
-            </div>
+          {featuredProjects.length > 0 ? (
+            <div
+              className={cn(
+                'grid gap-5 lg:gap-6',
+                featuredProjects.length === 1 && 'grid-cols-1 max-w-xl mx-auto',
+                featuredProjects.length === 2 && 'grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto',
+                featuredProjects.length >= 3 && 'grid-cols-1 md:grid-cols-3',
+              )}
+            >
+              {featuredProjects.map((project) => (
+                <div
+                  key={project.id}
+                  className="group relative rounded-2xl overflow-hidden border border-[#e8dfd5] shadow-2xs hover:shadow-lg transition-all aspect-[4/3]"
+                >
+                  <Image
+                    src={project.image}
+                    alt={project.title}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-            {/* Carte 2 : Hôtels & restaurants */}
-            <div className="group relative rounded-2xl overflow-hidden border border-[#e8dfd5] shadow-2xs hover:shadow-lg transition-all aspect-[4/3]">
-              <Image
-                src="/images/paysagisme/paysagisme-hotels.jpg"
-                alt="Hôtels & restaurants"
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-500"
-                sizes="(max-width: 768px) 100vw, 33vw"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-              
-              <div className="absolute bottom-3 left-3 right-3 p-3.5 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-white">
-                <div className="text-[11px] text-[#f5c6cb] font-medium mb-0.5">Petite Côte &amp; Somone</div>
-                <h3 className="text-base font-serif font-bold text-white">Hôtels &amp; restaurants</h3>
-                <p className="text-xs text-white/85 mt-0.5 line-clamp-2">
-                  Des espaces paysagers d&apos;accueil et de détente pour vos hôtes et convives.
-                </p>
-                <div className="mt-2 pt-2 border-t border-white/15 flex justify-end">
-                  <Link href="/paysagisme/realisations" className="text-xs font-semibold text-[#f5c6cb] hover:text-white transition-colors">
-                    Découvrir ›
-                  </Link>
+                  <div className="absolute bottom-3 left-3 right-3 p-3.5 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-white">
+                    {project.location ? (
+                      <div className="text-[11px] text-[#f5c6cb] font-medium mb-0.5">{project.location}</div>
+                    ) : null}
+                    <h3 className="text-base font-serif font-bold text-white line-clamp-1">{project.title}</h3>
+                    {project.description ? (
+                      <p className="text-xs text-white/85 mt-0.5 line-clamp-2">
+                        {project.description}
+                      </p>
+                    ) : null}
+                    <div className="mt-2 pt-2 border-t border-white/15 flex justify-end">
+                      <Link
+                        href="/paysagisme/realisations"
+                        className="text-xs font-semibold text-[#f5c6cb] hover:text-white transition-colors"
+                      >
+                        Découvrir ›
+                      </Link>
+                    </div>
+                  </div>
                 </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-[#dcd3c7] bg-[#faf7f2] p-8 sm:p-12 text-center">
+              <p className="text-xs sm:text-sm text-[#526655] font-medium">
+                Aucune réalisation mise en avant pour le moment. Découvrez nos services ou contactez-nous.
+              </p>
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+                <Link
+                  href="/paysagisme/prestations"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-[#173f22]/20 bg-white text-xs font-semibold text-[#173f22] hover:bg-[#edf8ef] transition-colors"
+                >
+                  Nos prestations
+                </Link>
+                <Link
+                  href="/devis?type=paysagisme"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#c8436e] hover:bg-[#b0355d] text-white text-xs font-semibold transition-colors shadow-2xs"
+                >
+                  Demander un devis <ArrowRight size={14} />
+                </Link>
               </div>
             </div>
-
-            {/* Carte 3 : Bureaux & entreprises */}
-            <div className="group relative rounded-2xl overflow-hidden border border-[#e8dfd5] shadow-2xs hover:shadow-lg transition-all aspect-[4/3]">
-              <Image
-                src="/images/paysagisme/paysagisme-bureaux.jpg"
-                alt="Bureaux & entreprises"
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-500"
-                sizes="(max-width: 768px) 100vw, 33vw"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-              
-              <div className="absolute bottom-3 left-3 right-3 p-3.5 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-white">
-                <div className="text-[11px] text-[#f5c6cb] font-medium mb-0.5">Plateau &amp; Dakar</div>
-                <h3 className="text-base font-serif font-bold text-white">Bureaux &amp; entreprises</h3>
-                <p className="text-xs text-white/85 mt-0.5 line-clamp-2">
-                  Des murs végétaux et atriums biophiles pour le bien-être de vos collaborateurs.
-                </p>
-                <div className="mt-2 pt-2 border-t border-white/15 flex justify-end">
-                  <Link href="/paysagisme/realisations" className="text-xs font-semibold text-[#f5c6cb] hover:text-white transition-colors">
-                    Découvrir ›
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
+          )}
         </section>
 
         {/* ── 4. Bannière d'Appel à l'Action & Devis (Sans Eyebrow) ── */}

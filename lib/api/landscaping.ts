@@ -17,8 +17,15 @@ export async function getLandscapeServices(): Promise<LandscapePrestation[]> {
   return apiClient.get<LandscapePrestation[]>('/landscaping/services');
 }
 
-export async function getLandscapeProjects(category?: LandscapeProjectCategory): Promise<LandscapeProject[]> {
-  return apiClient.get<LandscapeProject[]>('/landscaping/projects', { params: { category } });
+export interface LandscapeProjectsParams extends Record<string, string | number | boolean | undefined | null> {
+  category?: LandscapeProjectCategory;
+  featured?: boolean;
+  limit?: number;
+}
+
+export async function getLandscapeProjects(params?: LandscapeProjectsParams | LandscapeProjectCategory): Promise<LandscapeProject[]> {
+  const queryParams = typeof params === 'string' ? { category: params } : params;
+  return apiClient.get<LandscapeProject[]>('/landscaping/projects', { params: queryParams });
 }
 
 export async function likeLandscapeProject(id: string, liked: boolean): Promise<number> {

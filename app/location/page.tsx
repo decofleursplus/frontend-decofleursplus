@@ -159,11 +159,11 @@ export default function LocationEvenementiellePage() {
         {/* ── 1. Hero Banner Panoramique Compact (Hauteur Réduite) ── */}
         <section className="relative rounded-3xl overflow-hidden min-h-[280px] sm:min-h-[310px] lg:min-h-[340px] flex items-center p-6 sm:p-8 lg:p-10 mb-6 sm:mb-8 shadow-md border border-[#e6ded5]">
           <Image
-            src="/images/location/location-hero.jpg"
+            src="/images/location/hero-location.webp"
             alt="Location événementielle mobilier et décoration banquet par Décofleur Plus"
             fill
             priority
-            className="object-cover"
+            className="object-fill"
             sizes="100vw"
           />
           {/* Dégradé de lisibilité haute définition */}
