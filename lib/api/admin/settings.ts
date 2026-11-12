@@ -22,7 +22,6 @@ export interface BoutiqueSettings {
 
 export interface NotificationSettings {
   whatsappEnabled: boolean;
-  smsEnabled: boolean;
   emailEnabled: boolean;
   onNewOrder: boolean;
   onDriverAssigned: boolean;

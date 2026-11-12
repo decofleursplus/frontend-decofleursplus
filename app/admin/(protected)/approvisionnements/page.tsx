@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { AdminPagination } from '@/components/admin/admin-pagination';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Boxes, Plus, Search, Receipt, Trash2, Loader2, PackageCheck, Eye, RefreshCw } from 'lucide-react';
@@ -52,8 +53,21 @@ function SupplierOrdersScreen() {
   const [orders, setOrders] = useState<SupplierOrder[] | null>(null);
   const [counts, setCounts] = useState<Record<SupplierOrderStatus, number> | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<'all' | SupplierOrderStatus>('all');
-  const [supplierFilter, setSupplierFilter] = useState<string>(params.get('fournisseur') ?? 'all');
+  const [statusFilter, setStatusFilterRaw] = useState<'all' | SupplierOrderStatus>('all');
+  const [supplierFilter, setSupplierFilterRaw] = useState<string>(params.get('fournisseur') ?? 'all');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  // Tout changement de filtre revient à la première page
+  const setStatusFilter = (v: 'all' | SupplierOrderStatus) => {
+    setStatusFilterRaw(v);
+    setPage(1);
+  };
+  const setSupplierFilter = (v: string) => {
+    setSupplierFilterRaw(v);
+    setPage(1);
+  };
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -71,14 +85,22 @@ function SupplierOrdersScreen() {
 
   const load = useCallback(
     () =>
-      getSupplierOrders({ status: statusFilter === 'all' ? undefined : statusFilter, supplierId: supplierFilter === 'all' ? undefined : supplierFilter, search })
+      getSupplierOrders({
+        status: statusFilter === 'all' ? undefined : statusFilter,
+        supplierId: supplierFilter === 'all' ? undefined : supplierFilter,
+        search,
+        page,
+        limit: pageSize,
+      })
         .then((res) => {
           setOrders(res.items);
           setCounts(res.counts);
+          setTotalCount(res.total);
+          setTotalPages(res.totalPages);
           setLoadError(null);
         })
         .catch((err) => setLoadError(err instanceof Error ? err.message : 'Impossible de charger les commandes fournisseurs.')),
-    [statusFilter, supplierFilter, search],
+    [statusFilter, supplierFilter, search, page, pageSize],
   );
 
   useEffect(() => {
@@ -86,7 +108,10 @@ function SupplierOrdersScreen() {
   }, [load]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setSearch(searchInput.trim()), 300);
+    const timer = window.setTimeout(() => {
+      setSearch(searchInput.trim());
+      setPage(1);
+    }, 300);
     return () => window.clearTimeout(timer);
   }, [searchInput]);
 
@@ -298,6 +323,21 @@ function SupplierOrdersScreen() {
             </div>
           ))}
         </div>
+      )}
+
+      {(orders ?? []).length > 0 && (
+        <AdminPagination
+          page={page}
+          totalPages={totalPages}
+          total={totalCount}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
+          itemLabel="commandes"
+        />
       )}
 
       <AdminDrawer

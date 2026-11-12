@@ -20,7 +20,6 @@ const STATUS: Record<string, { label: string; color: string }> = {
   CANCELLED: { label: 'Résilié', color: 'bg-neutral-100 text-neutral-600' },
   EXPIRED: { label: 'Terminé', color: 'bg-neutral-100 text-neutral-600' },
 };
-const PLAN: Record<string, string> = { PARTICULIER: 'Particulier', PRESTIGE: 'Prestige', ENTREPRISE: 'Entreprise' };
 const DAY: Record<string, string> = { MARDI: 'mardi', VENDREDI: 'vendredi', SAMEDI: 'samedi' };
 const DELIVERY_STATUS: Record<SubscriptionDelivery['status'], string> = {
   SCHEDULED: 'Prévue',
@@ -73,7 +72,7 @@ function SubscriptionCard({ sub, onChanged }: { sub: CustomerSubscription; onCha
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-2 mb-1">
-            <span className="font-semibold text-neutral-900 text-base">Formule {PLAN[sub.plan] ?? sub.plan}</span>
+            <span className="font-semibold text-neutral-900 text-base">Formule {sub.planName ?? sub.plan}</span>
             <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${status.color}`}>{status.label}</span>
             <span className="text-xs text-neutral-400">{sub.subscriptionNumber}</span>
           </div>

@@ -87,7 +87,8 @@ function formatLongDate(iso: string) {
 export function SubscriptionForm({
   defaultPlan = 'particulier',
 }: {
-  defaultPlan?: 'particulier' | 'prestige' | 'entreprise';
+  /** Code (insensible à la casse) de la formule présélectionnée */
+  defaultPlan?: string;
 }) {
   const { user } = useAuth();
 
@@ -385,20 +386,25 @@ export function SubscriptionForm({
             <div className="sub-freq-toggle-wrap">
               <span className="sub-toggle-label">Rythme :</span>
               <div className="sub-freq-toggle">
-                <button
-                  type="button"
-                  className={`sub-freq-btn ${frequency === 'HEBDOMADAIRE' ? 'active' : ''}`}
-                  onClick={() => setFrequency('HEBDOMADAIRE')}
-                >
-                  Hebdomadaire (4 passages / mois)
-                </button>
-                <button
-                  type="button"
-                  className={`sub-freq-btn ${frequency === 'BIMENSUELLE' ? 'active' : ''}`}
-                  onClick={() => setFrequency('BIMENSUELLE')}
-                >
-                  Bimensuel (2 passages / mois)
-                </button>
+                {/* Seuls les rythmes proposés par au moins une formule sont affichés */}
+                {plans.some((p) => p.frequencies.includes('HEBDOMADAIRE')) && (
+                  <button
+                    type="button"
+                    className={`sub-freq-btn ${frequency === 'HEBDOMADAIRE' ? 'active' : ''}`}
+                    onClick={() => setFrequency('HEBDOMADAIRE')}
+                  >
+                    Hebdomadaire (4 passages / mois)
+                  </button>
+                )}
+                {plans.some((p) => p.frequencies.includes('BIMENSUELLE')) && (
+                  <button
+                    type="button"
+                    className={`sub-freq-btn ${frequency === 'BIMENSUELLE' ? 'active' : ''}`}
+                    onClick={() => setFrequency('BIMENSUELLE')}
+                  >
+                    Bimensuel (2 passages / mois)
+                  </button>
+                )}
               </div>
             </div>
 
@@ -421,6 +427,9 @@ export function SubscriptionForm({
             {plans.map((p) => {
               const isSelected = selectedPlan.id === p.id;
               const isFeatured = p.id === 'PRESTIGE';
+              // Formule non proposée dans le rythme affiché : on propose son rythme disponible
+              const offered = p.frequencies.includes(frequency);
+              const fallbackFrequency = p.frequencies[0];
 
               return (
                 <article
@@ -436,13 +445,22 @@ export function SubscriptionForm({
                   </div>
 
                   <div className="sub-card-pricing">
-                    <div className="sub-price-main">
-                      <strong>{monthlyPrice(p, frequency).toLocaleString('fr-FR')}</strong>
-                      <span>FCFA / mois</span>
-                    </div>
-                    <div className="sub-price-detail">
-                      soit {formatFcfa(p.perDeliveryPrice)} par livraison ({deliveriesCount} passages)
-                    </div>
+                    {offered ? (
+                      <>
+                        <div className="sub-price-main">
+                          <strong>{monthlyPrice(p, frequency).toLocaleString('fr-FR')}</strong>
+                          <span>FCFA / mois</span>
+                        </div>
+                        <div className="sub-price-detail">
+                          soit {formatFcfa(p.perDeliveryPrice)} par livraison ({deliveriesCount} passages)
+                        </div>
+                      </>
+                    ) : (
+                      <div className="sub-price-detail">
+                        Proposée uniquement en rythme {fallbackFrequency === 'HEBDOMADAIRE' ? 'hebdomadaire' : 'bimensuel'} :{' '}
+                        {monthlyPrice(p, fallbackFrequency).toLocaleString('fr-FR')} FCFA / mois
+                      </div>
+                    )}
                   </div>
 
                   <div className="sub-card-specs">
@@ -465,9 +483,12 @@ export function SubscriptionForm({
                   <button
                     type="button"
                     className={`sub-choose-cta ${isFeatured ? 'button-pill-pink' : 'button-pill-outline'}`}
-                    onClick={() => handleSelectPlan(p.id)}
+                    onClick={() => {
+                      if (!offered && fallbackFrequency) setFrequency(fallbackFrequency);
+                      handleSelectPlan(p.id);
+                    }}
                   >
-                    <span>Choisir cette formule</span>
+                    <span>{offered ? 'Choisir cette formule' : `Choisir (rythme ${fallbackFrequency === 'HEBDOMADAIRE' ? 'hebdomadaire' : 'bimensuel'})`}</span>
                     <ArrowRight size={16} />
                   </button>
                 </article>

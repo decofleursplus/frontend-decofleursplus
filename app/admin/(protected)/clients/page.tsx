@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { AdminCustomer } from '@/lib/admin/mock-data/types';
-import { getAdminCustomers } from '@/lib/api/admin/customers';
+import { getAdminCustomers, updateAdminCustomer } from '@/lib/api/admin/customers';
+import { AdminPagination } from '@/components/admin/admin-pagination';
 import { ApiClientError } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,60 +55,138 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { SendEmailDialog } from '@/components/admin/send-email-dialog';
 import { toast } from 'sonner';
 
+type SegmentPill = 'all' | 'vip' | 'entreprise' | 'particulier' | 'inactif';
+type SortOption = 'spent_desc' | 'orders_desc' | 'recent_order' | 'name_asc';
+
+const SEGMENT_OPTIONS: { value: 'PARTICULIER' | 'VIP' | 'ENTREPRISE'; label: string }[] = [
+  { value: 'PARTICULIER', label: 'Standard (particulier)' },
+  { value: 'VIP', label: 'VIP' },
+  { value: 'ENTREPRISE', label: 'Entreprise / Pro' },
+];
+
 export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState<AdminCustomer[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [counts, setCounts] = useState({ all: 0, vip: 0, entreprise: 0, particulier: 0, inactif: 0 });
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [updatingSegmentId, setUpdatingSegmentId] = useState<string | null>(null);
+
+  const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(25);
 
-  // Chaîne de promesses : les setState n'ont lieu que dans les callbacks, jamais pendant l'effet.
-  const fetchCustomers = useCallback(
-    () =>
-      getAdminCustomers()
-        .then((res) => {
-          if (res?.customers) setCustomers(res.customers);
-        })
-        .catch((err: unknown) => {
-          toast.error(err instanceof ApiClientError ? err.message : 'Erreur lors du chargement des clients');
-        })
-        .finally(() => {
-          setLoading(false);
-          setRefreshing(false);
-        }),
-    []
-  );
-
-  const loadCustomers = useCallback(
-    (isRefresh = false) => {
-      if (isRefresh) setRefreshing(true);
-      return fetchCustomers();
-    },
-    [fetchCustomers]
-  );
-
-  useEffect(() => {
-    fetchCustomers();
-  }, [fetchCustomers]);
-
-  // Segment Pill Filter: 'all' | 'vip' | 'entreprise' | 'particulier' | 'inactif'
-  const [segmentFilter, setSegmentFilter] = useState<
-    'all' | 'vip' | 'entreprise' | 'particulier' | 'inactif'
-  >('all');
+  // Segment Pill Filter
+  const [segmentFilter, setSegmentFilterState] = useState<SegmentPill>('all');
 
   // Advanced Filters (Drawer)
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'actif' | 'inactif'>('all');
-  const [minSpentFilter, setMinSpentFilter] = useState<number>(0);
-  const [sortOption, setSortOption] = useState<
-    'spent_desc' | 'orders_desc' | 'recent_order' | 'name_asc'
-  >('spent_desc');
+  const [statusFilter, setStatusFilterState] = useState<'all' | 'actif' | 'inactif'>('all');
+  const [minSpentFilter, setMinSpentFilterState] = useState<number>(0);
+  const [sortOption, setSortOptionState] = useState<SortOption>('spent_desc');
+
+  // Tout changement de filtre revient à la première page
+  const setSegmentFilter = (v: SegmentPill) => {
+    setSegmentFilterState(v);
+    setPage(1);
+  };
+  const setStatusFilter = (v: 'all' | 'actif' | 'inactif') => {
+    setStatusFilterState(v);
+    setPage(1);
+  };
+  const setMinSpentFilter = (v: number) => {
+    setMinSpentFilterState(v);
+    setPage(1);
+  };
+  const setSortOption = (v: SortOption) => {
+    setSortOptionState(v);
+    setPage(1);
+  };
+
+  // Recherche envoyée au serveur après une courte pause de saisie
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(searchInput.trim());
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Le pill « Inactif » filtre sur le statut ; les autres sur le segment
+  const query = useMemo(
+    () => ({
+      search: searchQuery || undefined,
+      segment: segmentFilter !== 'all' && segmentFilter !== 'inactif' ? segmentFilter : undefined,
+      status: segmentFilter === 'inactif' ? 'inactif' : statusFilter,
+      minSpent: minSpentFilter,
+      sort: sortOption,
+      page,
+      limit: pageSize,
+    }),
+    [searchQuery, segmentFilter, statusFilter, minSpentFilter, sortOption, page, pageSize]
+  );
+  const [retry, setRetry] = useState(0);
+  const requestKey = JSON.stringify([query, retry]);
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const loading = loadedKey !== requestKey && !refreshing;
+
+  const applyResult = (res: Awaited<ReturnType<typeof getAdminCustomers>>) => {
+    setCustomers(res.customers);
+    setTotal(res.total);
+    setTotalPages(res.totalPages);
+    setCounts(res.counts);
+    setLoadError(null);
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    getAdminCustomers(query)
+      .then((res) => {
+        if (!cancelled) applyResult(res);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setLoadError(err instanceof ApiClientError ? err.message : 'Erreur lors du chargement des clients');
+      })
+      .finally(() => {
+        if (!cancelled) setLoadedKey(requestKey);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [query, requestKey]);
+
+  const loadCustomers = async () => {
+    setRefreshing(true);
+    try {
+      applyResult(await getAdminCustomers(query));
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : 'Erreur lors du chargement des clients');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleChangeSegment = async (customer: AdminCustomer, segment: 'PARTICULIER' | 'VIP' | 'ENTREPRISE') => {
+    if (customer.segment.toUpperCase() === segment) return;
+    setUpdatingSegmentId(customer.id);
+    try {
+      await updateAdminCustomer(customer.id, { segment });
+      const label = SEGMENT_OPTIONS.find((o) => o.value === segment)?.label ?? segment;
+      toast.success('Segment mis à jour', { description: `${customer.name} est maintenant « ${label} ».` });
+      await loadCustomers();
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : 'Le segment n’a pas pu être modifié.');
+    } finally {
+      setUpdatingSegmentId(null);
+    }
+  };
 
   // Draft filters for drawer
   const [draftStatus, setDraftStatus] = useState<'all' | 'actif' | 'inactif'>('all');
   const [draftMinSpent, setDraftMinSpent] = useState<number>(0);
-  const [draftSort, setDraftSort] = useState<
-    'spent_desc' | 'orders_desc' | 'recent_order' | 'name_asc'
-  >('spent_desc');
+  const [draftSort, setDraftSort] = useState<SortOption>('spent_desc');
 
   // Email Dialog State
   const [selectedCustomerForEmail, setSelectedCustomerForEmail] =
@@ -139,6 +218,7 @@ export default function AdminCustomersPage() {
     setMinSpentFilter(0);
     setSortOption('spent_desc');
     setSegmentFilter('all');
+    setSearchInput('');
     setSearchQuery('');
     setIsFilterDrawerOpen(false);
   };
@@ -152,17 +232,8 @@ export default function AdminCustomersPage() {
     return count;
   }, [statusFilter, minSpentFilter, sortOption]);
 
-  // Counts for Segment Sub-Pills
-  const counts = useMemo(() => {
-    return {
-      all: customers.length,
-      vip: customers.filter((c) => c.segment === 'vip').length,
-      entreprise: customers.filter((c) => c.segment === 'entreprise').length,
-      particulier: customers.filter((c) => c.segment === 'particulier' && c.status === 'actif')
-        .length,
-      inactif: customers.filter((c) => c.status === 'inactif').length,
-    };
-  }, [customers]);
+  const hasAnyFilter =
+    Boolean(searchQuery) || segmentFilter !== 'all' || statusFilter !== 'all' || minSpentFilter > 0;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -221,55 +292,7 @@ export default function AdminCustomersPage() {
     }
   };
 
-  // Filter & sort logic
-  const filteredCustomers = useMemo(() => {
-    return customers
-      .filter((customer) => {
-        // Search query
-        const matchesSearch =
-          searchQuery.trim() === '' ||
-          customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          customer.phone.includes(searchQuery);
-
-        // Segment sub-pills
-        let matchesSegmentPill = true;
-        if (segmentFilter === 'vip') {
-          matchesSegmentPill = customer.segment === 'vip';
-        } else if (segmentFilter === 'entreprise') {
-          matchesSegmentPill = customer.segment === 'entreprise';
-        } else if (segmentFilter === 'particulier') {
-          matchesSegmentPill = customer.segment === 'particulier' && customer.status === 'actif';
-        } else if (segmentFilter === 'inactif') {
-          matchesSegmentPill = customer.status === 'inactif';
-        }
-
-        // Advanced filter: Status
-        const matchesStatus = statusFilter === 'all' || customer.status === statusFilter;
-
-        // Advanced filter: Min spent
-        const matchesMinSpent = minSpentFilter === 0 || customer.totalSpent >= minSpentFilter;
-
-        return matchesSearch && matchesSegmentPill && matchesStatus && matchesMinSpent;
-      })
-      .sort((a, b) => {
-        if (sortOption === 'spent_desc') {
-          return b.totalSpent - a.totalSpent;
-        }
-        if (sortOption === 'orders_desc') {
-          return b.totalOrders - a.totalOrders;
-        }
-        if (sortOption === 'recent_order') {
-          const dateA = a.lastOrderDate ? new Date(a.lastOrderDate).getTime() : 0;
-          const dateB = b.lastOrderDate ? new Date(b.lastOrderDate).getTime() : 0;
-          return dateB - dateA;
-        }
-        if (sortOption === 'name_asc') {
-          return a.name.localeCompare(b.name, 'fr');
-        }
-        return 0;
-      });
-  }, [customers, searchQuery, segmentFilter, statusFilter, minSpentFilter, sortOption]);
+  const filteredCustomers = customers;
 
   const handleOpenEmailDialog = (customer: AdminCustomer) => {
     setSelectedCustomerForEmail(customer);
@@ -290,7 +313,7 @@ export default function AdminCustomersPage() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => loadCustomers(true)}
+            onClick={() => loadCustomers()}
             disabled={loading || refreshing}
             className="h-10 text-xs text-gray-700 bg-white border-[#e7e4dd] hover:bg-gray-50"
           >
@@ -482,13 +505,15 @@ export default function AdminCustomersPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             placeholder="Rechercher nom, email, tél..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="pl-9 pr-8 border-[#e7e4dd] focus-visible:ring-[#24582d]/20 text-xs sm:text-sm h-10 bg-white"
           />
-          {searchQuery && (
+          {searchInput && (
             <button
-              onClick={() => setSearchQuery('')}
+              type="button"
+              aria-label="Effacer la recherche"
+              onClick={() => setSearchInput('')}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
               <X className="h-4 w-4" />
@@ -730,7 +755,7 @@ export default function AdminCustomersPage() {
                     <UserX className="h-8 w-8 text-gray-400" />
                     <p className="font-semibold text-gray-700">Aucun client trouvé</p>
                     <p className="text-xs text-gray-500 max-w-sm">
-                      {customers.length === 0 ? "Aucun client n'est encore enregistré." : "Aucun profil ne correspond à vos filtres actuels. Modifiez vos critères de recherche."}
+                      {!hasAnyFilter ? "Aucun client n'est encore enregistré." : "Aucun profil ne correspond à vos filtres actuels. Modifiez vos critères de recherche."}
                     </p>
                     <Button
                       variant="outline"
@@ -811,6 +836,30 @@ export default function AdminCustomersPage() {
                             Envoyer un e-mail
                           </DropdownMenuItem>
                         </DropdownMenuGroup>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuGroup>
+                          <DropdownMenuLabel className="text-xs text-gray-400 uppercase">
+                            Changer de segment
+                          </DropdownMenuLabel>
+                          {SEGMENT_OPTIONS.map((opt) => {
+                            const current = customer.segment.toUpperCase() === opt.value;
+                            return (
+                              <DropdownMenuItem
+                                key={opt.value}
+                                className="cursor-pointer"
+                                disabled={current || updatingSegmentId === customer.id}
+                                onClick={() => handleChangeSegment(customer, opt.value)}
+                              >
+                                {current ? (
+                                  <Check className="mr-2 h-4 w-4 text-[#24582d]" />
+                                ) : (
+                                  <span className="mr-2 inline-block h-4 w-4" />
+                                )}
+                                {opt.label}
+                              </DropdownMenuItem>
+                            );
+                          })}
+                        </DropdownMenuGroup>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -833,7 +882,7 @@ export default function AdminCustomersPage() {
             <UserX className="h-8 w-8 text-gray-300 mx-auto" />
             <p className="font-semibold text-gray-700 text-sm">Aucun client trouvé</p>
             <p className="text-xs text-gray-500">
-              {customers.length === 0 ? "Aucun client n'est encore enregistré." : "Essayez de modifier vos critères de recherche."}
+              {!hasAnyFilter ? "Aucun client n'est encore enregistré." : "Essayez de modifier vos critères de recherche."}
             </p>
             <Button
               variant="outline"
@@ -929,10 +978,49 @@ export default function AdminCustomersPage() {
                   Email
                 </Button>
               </div>
+              <label className="flex items-center justify-between gap-2 text-xs text-gray-600">
+                <span>Segment</span>
+                <select
+                  value={customer.segment.toUpperCase()}
+                  disabled={updatingSegmentId === customer.id}
+                  onChange={(e) => handleChangeSegment(customer, e.target.value as 'PARTICULIER' | 'VIP' | 'ENTREPRISE')}
+                  className="h-8 rounded-md border border-[#e7e4dd] bg-white px-2 text-xs"
+                  aria-label={`Segment de ${customer.name}`}
+                >
+                  {SEGMENT_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
           ))
         )}
       </div>
+
+      {loadError && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <span>{loadError}</span>
+          <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => setRetry((n) => n + 1)}>
+            Réessayer
+          </Button>
+        </div>
+      )}
+
+      <AdminPagination
+        page={page}
+        totalPages={totalPages}
+        total={total}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(1);
+        }}
+        itemLabel="clients"
+        disabled={loading || refreshing}
+      />
 
       {/* Send Email Modal */}
       <SendEmailDialog

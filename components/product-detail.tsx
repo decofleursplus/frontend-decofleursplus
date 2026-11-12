@@ -72,6 +72,11 @@ export function ProductDetail({ product }: { product: Product }) {
           {product.badge && (
             <span className={`product-badge ${product.badgeType === 'discount' ? 'discount' : 'new'}`}>{product.badge}</span>
           )}
+          {!quoteOnly && !product.inStock && (
+            <span className="absolute left-3 bottom-3 z-[2] rounded-full bg-[#1e2a1f]/85 px-3 py-1.5 text-xs font-semibold text-white">
+              En rupture
+            </span>
+          )}
         </div>
       </div>
 
@@ -87,8 +92,10 @@ export function ProductDetail({ product }: { product: Product }) {
                 <>
                   <Check size={13} /> {stock <= 5 ? `Plus que ${stock} en stock` : 'En stock'}
                 </>
+              ) : product.inStock ? (
+                'Cette taille est épuisée'
               ) : (
-                'Épuisé pour le moment'
+                'En rupture de stock'
               )}
             </div>
           )}
@@ -230,7 +237,7 @@ export function ProductDetail({ product }: { product: Product }) {
 
           {!quoteOnly && (
             <button type="button" className="button-pill-pink button-large flex-1" onClick={addItem} disabled={!available}>
-              {available ? 'Ajouter au panier' : 'Épuisé'}
+              {available ? 'Ajouter au panier' : product.inStock ? 'Taille épuisée' : 'En rupture'}
             </button>
           )}
 

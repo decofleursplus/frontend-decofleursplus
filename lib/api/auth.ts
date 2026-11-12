@@ -109,6 +109,30 @@ export async function loginWithGoogle(credential: string): Promise<AuthResponseD
 }
 
 /**
+ * Connexion sans mot de passe — étape 1 : envoie un code à 6 chiffres sur l'email du compte
+ * (identifié par email ou téléphone). Réponse identique que le compte existe ou non.
+ */
+export async function requestLoginCode(identifier: string): Promise<ForgotPasswordResult> {
+  return apiClient.post<ForgotPasswordResult>('/auth/login-code/request', {
+    identifier: identifier.trim(),
+  });
+}
+
+/**
+ * Connexion sans mot de passe — étape 2 : échange le code contre une session.
+ */
+export async function verifyLoginCode(identifier: string, code: string, remember = true): Promise<AuthResponseData> {
+  const data = await apiClient.post<AuthResponseData>('/auth/login-code/verify', {
+    identifier: identifier.trim(),
+    code: code.trim(),
+  });
+  if (data?.token) {
+    setAuthToken(data.token, { persistent: remember });
+  }
+  return data;
+}
+
+/**
  * Mot de passe oublié : envoie un code à 6 chiffres sur l'email du compte
  * (identifié par email ou numéro de téléphone).
  */

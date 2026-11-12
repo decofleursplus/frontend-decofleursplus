@@ -4,8 +4,18 @@ import { useSearchParams } from 'next/navigation';
 
 import { Suspense, useState, useMemo, useEffect } from 'react';
 import type { AdminProduct, AdminCategory } from '@/lib/admin/mock-data/types';
-import { getAdminProducts, deleteAdminProduct } from '@/lib/api/admin/products';
+import {
+  getAdminProducts,
+  deleteAdminProduct,
+  bulkUpdateAdminProducts,
+  bulkDeleteAdminProducts,
+  type AdminProductState,
+  type AdminProductsResult,
+} from '@/lib/api/admin/products';
 import { getAdminCategories } from '@/lib/api/admin/categories';
+import { ApiClientError } from '@/lib/api/client';
+import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
+import { AdminPagination } from '@/components/admin/admin-pagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -19,23 +29,8 @@ import {
   DropdownMenuTrigger,
   DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  Sheet,
-  SheetTrigger,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import {
   Search,
   Plus,
@@ -57,6 +52,64 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
+type StateTab = 'all' | AdminProductState;
+type StockFilter = 'all' | 'ok' | 'low' | 'out';
+type SortOption = 'default' | 'popular' | 'price_asc' | 'price_desc' | 'name';
+type BulkStatus = 'ACTIVE' | 'PROMO' | 'ON_QUOTE' | 'HIDDEN';
+
+const STATE_TABS: { value: StateTab; label: string; hint: string }[] = [
+  { value: 'all', label: 'Tous', hint: 'Tous les produits' },
+  { value: 'active', label: 'Actifs', hint: 'Publiés et disponibles' },
+  { value: 'out', label: 'En rupture', hint: 'Publiés mais stock épuisé' },
+  { value: 'draft', label: 'Brouillons / Inactifs', hint: 'Non publiés sur la boutique' },
+];
+
+const STOCK_LEVELS: { label: string; value: StockFilter }[] = [
+  { label: 'Tous les niveaux', value: 'all' },
+  { label: 'Stock correct (aucune alerte)', value: 'ok' },
+  { label: 'Stock faible (sous le seuil d’alerte)', value: 'low' },
+  { label: 'Épuisé (stock total à 0)', value: 'out' },
+];
+
+const SORT_OPTIONS: { label: string; value: SortOption }[] = [
+  { label: 'Plus récents', value: 'default' },
+  { label: 'Plus vendus', value: 'popular' },
+  { label: 'Prix croissant', value: 'price_asc' },
+  { label: 'Prix décroissant', value: 'price_desc' },
+  { label: 'Nom alphabétique (A-Z)', value: 'name' },
+];
+
+const BULK_STATUSES: { value: BulkStatus; label: string }[] = [
+  { value: 'ACTIVE', label: 'Publier (en vente)' },
+  { value: 'PROMO', label: 'Publier en promotion' },
+  { value: 'ON_QUOTE', label: 'Publier sur devis' },
+  { value: 'HIDDEN', label: 'Passer en brouillon (masquer)' },
+];
+
+const errorMessage = (err: unknown, fallback: string) => (err instanceof ApiClientError || err instanceof Error ? err.message : fallback);
+
+const formatCurrency = (amount: number) =>
+  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', minimumFractionDigits: 0 }).format(amount);
+
+/** Statut harmonisé : Actif / En rupture / Brouillon, avec une précision commerciale (promo, sur devis). */
+function ProductStateBadge({ product }: { product: AdminProduct }) {
+  if (product.status === 'HIDDEN') {
+    return <Badge className="bg-gray-100 text-gray-700 border-none font-medium">Brouillon / Inactif</Badge>;
+  }
+  const outOfStock = product.stock <= 0 && product.status !== 'ON_QUOTE';
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1">
+      {outOfStock ? (
+        <Badge className="bg-[#fef2f2] text-[#991b1b] border-none font-medium">En rupture</Badge>
+      ) : (
+        <Badge className="bg-[#e8f4ea] text-[#166534] border-none font-medium">Actif</Badge>
+      )}
+      {product.status === 'PROMO' && <Badge className="bg-[#fdf2f4] text-[#c1647a] border-none font-medium">Promo</Badge>}
+      {product.status === 'ON_QUOTE' && <Badge className="bg-[#e5eaff] text-[#3d5a99] border-none font-medium">Sur devis</Badge>}
+    </span>
+  );
+}
+
 export default function AdminProductsPage() {
   return (
     <Suspense fallback={null}>
@@ -67,18 +120,54 @@ export default function AdminProductsPage() {
 
 function ProductsScreen() {
   const searchParams = useSearchParams();
-  const [products, setProducts] = useState<AdminProduct[]>([]);
-  const [apiCategories, setApiCategories] = useState<AdminCategory[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const { currentUser } = useAdminSidebar();
+  const canDelete = ['ADMIN', 'MANAGER'].includes(currentUser?.role ?? '');
 
-  // Applied filters state
+  const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [counts, setCounts] = useState<AdminProductsResult['counts']>({ all: 0, active: 0, out: 0, draft: 0 });
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [apiCategories, setApiCategories] = useState<AdminCategory[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const [searchInput, setSearchInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   // ?categorie=<slug> (lien « Voir les produits » depuis Catégories)
-  const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('categorie') || 'all');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  const [selectedStock, setSelectedStock] = useState<string>('all');
-  const [selectedSort, setSelectedSort] = useState<string>('default');
+  const [selectedCategory, setSelectedCategoryState] = useState<string>(searchParams.get('categorie') || 'all');
+  const [stateTab, setStateTabState] = useState<StateTab>('all');
+  const [selectedStock, setSelectedStockState] = useState<StockFilter>('all');
+  const [selectedSort, setSelectedSortState] = useState<SortOption>('default');
+  const [page, setPageState] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
+  // Sélection multiple (page courante)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+
+  // Tout changement de filtre ou de page revient à une sélection vide
+  const resetSelection = () => setSelectedIds(new Set());
+  const setPage = (p: number) => {
+    setPageState(p);
+    resetSelection();
+  };
+  const setSelectedCategory = (v: string) => {
+    setSelectedCategoryState(v);
+    setPage(1);
+  };
+  const setStateTab = (v: StateTab) => {
+    setStateTabState(v);
+    setPage(1);
+  };
+  const setSelectedStock = (v: StockFilter) => {
+    setSelectedStockState(v);
+    setPage(1);
+  };
+  const setSelectedSort = (v: SortOption) => {
+    setSelectedSortState(v);
+    setPage(1);
+  };
 
   useEffect(() => {
     let active = true;
@@ -86,71 +175,88 @@ function ProductsScreen() {
       .then((cats) => {
         if (active && cats) setApiCategories(cats);
       })
-      .catch((err) => console.warn('Erreur chargement catégories filter:', err));
+      .catch((err) => toast.error(errorMessage(err, 'Catégories indisponibles')));
     return () => {
       active = false;
     };
   }, []);
 
-  async function handleRefresh() {
+  // Recherche envoyée au serveur après une courte pause de saisie
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(searchInput.trim());
+      setPageState(1);
+      setSelectedIds(new Set());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  const query = useMemo(
+    () => ({
+      search: searchQuery || undefined,
+      category: selectedCategory !== 'all' ? selectedCategory : undefined,
+      state: stateTab !== 'all' ? stateTab : undefined,
+      stock: selectedStock !== 'all' ? selectedStock : undefined,
+      sort: selectedSort !== 'default' ? selectedSort : undefined,
+      page,
+      limit: pageSize,
+    }),
+    [searchQuery, selectedCategory, stateTab, selectedStock, selectedSort, page, pageSize]
+  );
+  const [retry, setRetry] = useState(0);
+  const requestKey = JSON.stringify([query, retry]);
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const loading = loadedKey !== requestKey && !refreshing;
+
+  const applyResult = (res: AdminProductsResult) => {
+    setProducts(res.items);
+    setTotal(res.total);
+    setTotalPages(res.totalPages);
+    setCounts(res.counts);
+    setLoadError(null);
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    getAdminProducts(query)
+      .then((res) => {
+        if (!cancelled) applyResult(res);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setLoadError(errorMessage(err, 'Erreur lors du chargement des produits'));
+      })
+      .finally(() => {
+        if (!cancelled) setLoadedKey(requestKey);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [query, requestKey]);
+
+  async function reload() {
     setRefreshing(true);
     try {
-      const res = await getAdminProducts({
-        search: searchQuery || undefined,
-        category: selectedCategory !== 'all' ? selectedCategory : undefined,
-        status: selectedStatus !== 'all' ? selectedStatus : undefined,
-        limit: 100,
-      });
-      setProducts(res.items);
+      applyResult(await getAdminProducts(query));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur lors du chargement des produits');
+      toast.error(errorMessage(err, 'Erreur lors du chargement des produits'));
     } finally {
       setRefreshing(false);
     }
   }
 
-  useEffect(() => {
-    let active = true;
-    async function load() {
-      try {
-        const res = await getAdminProducts({
-          search: searchQuery || undefined,
-          category: selectedCategory !== 'all' ? selectedCategory : undefined,
-          status: selectedStatus !== 'all' ? selectedStatus : undefined,
-          limit: 100,
-        });
-        if (active) {
-          setProducts(res.items);
-        }
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Erreur lors du chargement des produits');
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    }
-    load();
-    return () => {
-      active = false;
-    };
-  }, [selectedCategory, selectedStatus, searchQuery]);
-
   // Draft filters inside drawer (applied only when clicking "Appliquer")
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [draftCategory, setDraftCategory] = useState<string>('all');
-  const [draftStatus, setDraftStatus] = useState<string>('all');
-  const [draftStock, setDraftStock] = useState<string>('all');
-  const [draftSort, setDraftSort] = useState<string>('default');
+  const [draftStock, setDraftStock] = useState<StockFilter>('all');
+  const [draftSort, setDraftSort] = useState<SortOption>('default');
 
   // Delete modal state
   const [productToDelete, setProductToDelete] = useState<AdminProduct | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  // Sync draft filters when opening drawer
   const handleOpenFilterDrawer = (open: boolean) => {
     if (open) {
       setDraftCategory(selectedCategory);
-      setDraftStatus(selectedStatus);
       setDraftStock(selectedStock);
       setDraftSort(selectedSort);
     }
@@ -159,172 +265,205 @@ function ProductsScreen() {
 
   const handleApplyFilters = () => {
     setSelectedCategory(draftCategory);
-    setSelectedStatus(draftStatus);
     setSelectedStock(draftStock);
     setSelectedSort(draftSort);
     setIsFilterOpen(false);
-    toast.success('Filtres appliqués');
   };
 
   const handleResetFilters = () => {
     setDraftCategory('all');
-    setDraftStatus('all');
     setDraftStock('all');
     setDraftSort('default');
     setSelectedCategory('all');
-    setSelectedStatus('all');
+    setStateTab('all');
     setSelectedStock('all');
     setSelectedSort('default');
+    setSearchInput('');
     setIsFilterOpen(false);
-    toast.info('Filtres réinitialisés');
   };
 
-  const activeFiltersCount = useMemo(() => {
-    let count = 0;
-    if (selectedCategory !== 'all') count++;
-    if (selectedStatus !== 'all') count++;
-    if (selectedStock !== 'all') count++;
-    if (selectedSort !== 'default') count++;
-    return count;
-  }, [selectedCategory, selectedStatus, selectedStock, selectedSort]);
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'XOF',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const getStatusBadge = (status: string, stock?: number) => {
-    const base = (() => {
-      switch (status) {
-        case 'ACTIVE':
-          return <Badge className="bg-[#e8f4ea] text-[#166534] hover:bg-[#d5ebd8] border-none font-medium">En vente</Badge>;
-        case 'PROMO':
-          return <Badge className="bg-[#fdf2f4] text-[#c1647a] border-none font-medium">Promotion</Badge>;
-        case 'ON_QUOTE':
-          return <Badge className="bg-[#e5eaff] text-[#3d5a99] border-none font-medium">Sur devis</Badge>;
-        case 'HIDDEN':
-          return <Badge className="bg-gray-100 text-gray-700 hover:bg-gray-200 border-none font-medium">Masqué</Badge>;
-        default:
-          return <Badge>{status}</Badge>;
-      }
-    })();
-    return stock === 0 && status !== 'ON_QUOTE' ? (
-      <span className="inline-flex items-center gap-1">
-        {base}
-        <Badge className="bg-[#fef2f2] text-[#991b1b] border-none font-medium">Rupture</Badge>
-      </span>
-    ) : (
-      base
-    );
-  };
+  const activeFiltersCount =
+    (selectedCategory !== 'all' ? 1 : 0) + (selectedStock !== 'all' ? 1 : 0) + (selectedSort !== 'default' ? 1 : 0);
 
   const categories = useMemo(() => {
     const list = apiCategories.map((c) => ({
       label: c.name,
-      value: c.slug || c.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-'),
+      id: c.id,
+      count: c.totalProductCount ?? c.productCount,
+      value: c.slug || c.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-'),
     }));
-    return [{ label: 'Tous', value: 'all' }, ...list];
+    return [{ label: 'Toutes', id: '', count: null as number | null, value: 'all' }, ...list];
   }, [apiCategories]);
 
-  const filteredProducts = useMemo(() => {
-    return products
-      .filter((product) => {
-        // Search
-        const matchesSearch =
-          searchQuery.trim() === '' ||
-          product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          product.sku.toLowerCase().includes(searchQuery.toLowerCase());
+  // ---------- Sélection ----------
+  const pageIds = products.map((p) => p.id);
+  const selectedOnPage = pageIds.filter((id) => selectedIds.has(id));
+  const allOnPageSelected = pageIds.length > 0 && selectedOnPage.length === pageIds.length;
+  const someOnPageSelected = selectedOnPage.length > 0 && !allOnPageSelected;
 
-        // Category
-        const selectedCatObj = categories.find((c) => c.value === selectedCategory);
-        const matchesCategory =
-          selectedCategory === 'all' ||
-          product.category.toLowerCase() === selectedCategory.toLowerCase() ||
-          (selectedCatObj && product.category.toLowerCase() === selectedCatObj.label.toLowerCase()) ||
-          product.categoryId === selectedCategory;
+  const toggleOne = (id: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const toggleAllOnPage = () => setSelectedIds(allOnPageSelected ? new Set() : new Set(pageIds));
 
-        // Status
-        const matchesStatus =
-          selectedStatus === 'all' || product.status === selectedStatus;
+  const summarizeFailures = (failed: { id: string; message: string }[]) => {
+    if (failed.length === 0) return undefined;
+    const names = failed.map((f) => products.find((p) => p.id === f.id)?.name ?? f.id);
+    return `${failed.length} échec(s) : ${names.slice(0, 3).join(', ')}${names.length > 3 ? '…' : ''} — ${failed[0].message}`;
+  };
 
-        // Stock
-        let matchesStock = true;
-        if (selectedStock === 'in_stock') {
-          matchesStock = product.stock > 5;
-        } else if (selectedStock === 'low_stock') {
-          matchesStock = product.stock > 0 && product.stock <= 5;
-        } else if (selectedStock === 'out_of_stock') {
-          matchesStock = product.stock === 0;
-        }
-
-        return matchesSearch && matchesCategory && matchesStatus && matchesStock;
-      })
-      .sort((a, b) => {
-        if (selectedSort === 'price_asc') return a.price - b.price;
-        if (selectedSort === 'price_desc') return b.price - a.price;
-        if (selectedSort === 'stock_asc') return a.stock - b.stock;
-        if (selectedSort === 'stock_desc') return b.stock - a.stock;
-        if (selectedSort === 'name_asc') return a.name.localeCompare(b.name);
-        return 0;
-      });
-  }, [products, searchQuery, selectedCategory, selectedStatus, selectedStock, selectedSort, categories]);
-
-  const confirmDeleteProduct = async () => {
-    if (!productToDelete) return;
+  const runBulkUpdate = async (patch: { status?: BulkStatus; categoryId?: string }, label: string) => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    setBulkBusy(true);
     try {
-      await deleteAdminProduct(productToDelete.id);
-      // Suppression « douce » côté serveur : le produit est masqué de la boutique
-      setProducts((prev) => prev.map((p) => (p.id === productToDelete.id ? { ...p, status: 'HIDDEN' } : p)));
-      toast.success(`Le produit « ${productToDelete.name} » est masqué de la boutique.`);
+      const res = await bulkUpdateAdminProducts({ ids, ...patch });
+      const failure = summarizeFailures(res.failed);
+      if (res.updated > 0) {
+        toast.success(`${res.updated} produit(s) mis à jour : ${label}`, failure ? { description: failure } : undefined);
+      } else {
+        toast.error('Aucun produit n’a été modifié', { description: failure });
+      }
+      resetSelection();
+      await reload();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Impossible de masquer le produit');
+      toast.error(errorMessage(err, 'L’action groupée a échoué.'));
     } finally {
-      setProductToDelete(null);
+      setBulkBusy(false);
     }
   };
 
-  const statuses = [
-    { label: 'Tous les statuts', value: 'all' },
-    { label: 'En vente', value: 'ACTIVE' },
-    { label: 'En promotion', value: 'PROMO' },
-    { label: 'Sur devis', value: 'ON_QUOTE' },
-    { label: 'Masqués', value: 'HIDDEN' },
-  ];
+  const runBulkDelete = async () => {
+    const ids = [...selectedIds];
+    setBulkBusy(true);
+    try {
+      const res = await bulkDeleteAdminProducts(ids);
+      const parts = [
+        res.deleted > 0 ? `${res.deleted} supprimé(s) définitivement` : null,
+        res.hidden > 0 ? `${res.hidden} masqué(s) car présents dans des commandes` : null,
+      ].filter(Boolean);
+      toast.success(parts.join(' · ') || 'Aucun produit supprimé', {
+        description: summarizeFailures(res.failed),
+      });
+      setBulkDeleteOpen(false);
+      resetSelection();
+      await reload();
+    } catch (err) {
+      toast.error(errorMessage(err, 'La suppression groupée a échoué.'));
+    } finally {
+      setBulkBusy(false);
+    }
+  };
 
-  const stockLevels = [
-    { label: 'Tous les niveaux', value: 'all' },
-    { label: 'En stock (> 5)', value: 'in_stock' },
-    { label: 'Stock faible (1 à 5)', value: 'low_stock' },
-    { label: 'En rupture (0)', value: 'out_of_stock' },
-  ];
+  const confirmDeleteProduct = async () => {
+    if (!productToDelete) return;
+    setDeleting(true);
+    try {
+      await deleteAdminProduct(productToDelete.id);
+      toast.success(`« ${productToDelete.name} » est passé en brouillon : il n’est plus visible sur la boutique.`);
+      setProductToDelete(null);
+      await reload();
+    } catch (err) {
+      toast.error(errorMessage(err, 'Impossible de masquer le produit'));
+    } finally {
+      setDeleting(false);
+    }
+  };
 
-  const sortOptions = [
-    { label: 'Par défaut', value: 'default' },
-    { label: 'Prix croissant', value: 'price_asc' },
-    { label: 'Prix décroissant', value: 'price_desc' },
-    { label: 'Stock croissant', value: 'stock_asc' },
-    { label: 'Stock décroissant', value: 'stock_desc' },
-    { label: 'Nom alphabétique (A-Z)', value: 'name_asc' },
-  ];
+  const hasFilters = Boolean(searchQuery) || activeFiltersCount > 0 || stateTab !== 'all';
+  const selectionCount = selectedIds.size;
+
+  const emptyState = (
+    <div className="flex flex-col items-center justify-center gap-2 text-center">
+      <Package className="h-8 w-8 text-gray-300" />
+      <p className="font-medium text-gray-700 text-sm">
+        {hasFilters ? 'Aucun produit ne correspond à ces critères.' : 'Aucun produit dans le catalogue.'}
+      </p>
+      {hasFilters && (
+        <Button variant="outline" size="sm" onClick={handleResetFilters} className="mt-2 text-xs border-[#e7e4dd]">
+          Effacer les filtres
+        </Button>
+      )}
+    </div>
+  );
+
+  const rowActions = (product: AdminProduct) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-gray-500 hover:text-[#24582d] hover:bg-[#edf8ef] hover:border-[#b0c8a8] transition-colors focus:outline-none shrink-0">
+        <span className="sr-only">Actions pour {product.name}</span>
+        <MoreHorizontal className="h-4 w-4" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" sideOffset={4} className="w-52 p-1.5 rounded-xl border border-[#e7e4dd] bg-white shadow-xl">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="px-2.5 py-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Actions</DropdownMenuLabel>
+          {product.status !== 'HIDDEN' && (
+            <DropdownMenuItem
+              className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef] whitespace-nowrap"
+              render={<Link href={`/produits/${product.slug || product.id}`} target="_blank" rel="noopener noreferrer" />}
+            >
+              <Eye className="mr-2.5 h-4 w-4 text-[#24582d]" />
+              Voir sur le site
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem
+            className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef] whitespace-nowrap"
+            render={<Link href={`/admin/produits/${product.id}`} />}
+          >
+            <Edit className="mr-2.5 h-4 w-4 text-blue-600" />
+            Modifier
+          </DropdownMenuItem>
+          {product.status !== 'HIDDEN' && canDelete && (
+            <>
+              <DropdownMenuSeparator className="my-1 border-t border-[#f0eee8]" />
+              <DropdownMenuItem
+                onClick={() => setProductToDelete(product)}
+                className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-red-600 hover:bg-red-50 whitespace-nowrap focus:text-red-700 focus:bg-red-50"
+              >
+                <Trash2 className="mr-2.5 h-4 w-4 text-red-600" />
+                Masquer (brouillon)
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
+  const thumb = (product: AdminProduct, size: number) => (
+    <div
+      className="relative rounded-lg overflow-hidden bg-gray-100 border border-[#e7e4dd] shrink-0"
+      style={{ width: size, height: size }}
+    >
+      {product.image ? (
+        <Image src={product.image} alt={product.name} fill sizes={`${size}px`} className="object-cover" />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center text-gray-400">
+          <Package className="h-5 w-5" />
+        </div>
+      )}
+    </div>
+  );
+
+  const stockClass = (stock: number) =>
+    stock === 0 ? 'text-red-600' : stock <= 5 ? 'text-amber-600' : 'text-gray-700';
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${selectionCount > 0 ? 'pb-24 lg:pb-0' : ''}`}>
       {/* Header */}
       <div className="admin-page-header">
         <div>
           <h1 className="admin-page-title">Gestion des produits</h1>
-          <p className="admin-page-subtitle">
-            Gérez votre catalogue de fleurs, plantes et cadeaux.
-          </p>
+          <p className="admin-page-subtitle">Gérez votre catalogue de fleurs, plantes et cadeaux.</p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Button
             type="button"
             variant="outline"
-            onClick={handleRefresh}
+            onClick={reload}
             disabled={loading || refreshing}
             className="h-10 text-xs text-gray-700 bg-white border-[#e7e4dd] hover:bg-gray-50"
           >
@@ -342,31 +481,25 @@ function ProductsScreen() {
         </div>
       </div>
 
-      {/* Categories Quick Tabs */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar">
-        {categories.map((cat) => {
-          const isActive = selectedCategory === cat.value;
-          const count = cat.value === 'all'
-            ? products.length
-            : products.filter((p) => p.category.toLowerCase() === cat.value.toLowerCase()).length;
+      {/* Onglets d'état (compteurs serveur) */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar" role="tablist" aria-label="État des produits">
+        {STATE_TABS.map((tab) => {
+          const isActive = stateTab === tab.value;
           return (
             <button
-              key={cat.value}
+              key={tab.value}
               type="button"
-              onClick={() => setSelectedCategory(cat.value)}
+              role="tab"
+              aria-selected={isActive}
+              title={tab.hint}
+              onClick={() => setStateTab(tab.value)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors shrink-0 ${
-                isActive
-                  ? 'bg-[#193e23] text-white shadow-2xs'
-                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-[#e7e4dd]'
+                isActive ? 'bg-[#193e23] text-white shadow-2xs' : 'bg-white text-gray-600 hover:bg-gray-100 border border-[#e7e4dd]'
               }`}
             >
-              <span>{cat.label}</span>
-              <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                  isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
-                }`}
-              >
-                {count}
+              <span>{tab.label}</span>
+              <span className={`text-[10px] px-1.5 rounded-full ${isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                {counts[tab.value]}
               </span>
             </button>
           );
@@ -378,14 +511,16 @@ function ProductsScreen() {
         <div className="relative w-full sm:w-96">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Rechercher par nom ou référence..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Rechercher par nom, description ou référence..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="pl-9 border-[#e7e4dd] focus-visible:ring-[#24582d]/20 text-xs sm:text-sm"
           />
-          {searchQuery && (
+          {searchInput && (
             <button
-              onClick={() => setSearchQuery('')}
+              type="button"
+              aria-label="Effacer la recherche"
+              onClick={() => setSearchInput('')}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
               <X className="h-4 w-4" />
@@ -394,16 +529,26 @@ function ProductsScreen() {
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          {/* Filter Drawer */}
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="h-9 flex-1 sm:flex-none sm:w-48 rounded-lg border border-[#e7e4dd] bg-white px-2 text-xs text-gray-700"
+            aria-label="Catégorie"
+          >
+            {categories.map((cat) => (
+              <option key={cat.value} value={cat.value}>
+                {cat.value === 'all' ? 'Toutes les catégories' : `${cat.label}${cat.count !== null ? ` (${cat.count})` : ''}`}
+              </option>
+            ))}
+          </select>
+
           <Sheet open={isFilterOpen} onOpenChange={handleOpenFilterDrawer}>
             <SheetTrigger
               render={
                 <Button
                   variant="outline"
-                  className={`border-[#e7e4dd] flex-1 sm:w-auto transition-colors ${
-                    activeFiltersCount > 0
-                      ? 'border-[#c1647a] text-[#c1647a] bg-[#fdf5f7]'
-                      : 'text-gray-700 hover:bg-[#faf8f4]'
+                  className={`border-[#e7e4dd] shrink-0 transition-colors ${
+                    activeFiltersCount > 0 ? 'border-[#c1647a] text-[#c1647a] bg-[#fdf5f7]' : 'text-gray-700 hover:bg-[#faf8f4]'
                   }`}
                 />
               }
@@ -423,18 +568,12 @@ function ProductsScreen() {
                   <Filter className="h-5 w-5" />
                   <SheetTitle>Filtrer les produits</SheetTitle>
                 </div>
-                <SheetDescription>
-                  Affinez votre inventaire selon vos critères et validez.
-                </SheetDescription>
+                <SheetDescription>Affinez votre catalogue selon vos critères et validez.</SheetDescription>
               </SheetHeader>
 
-              {/* Drawer Scrollable Content */}
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                {/* Category Filter */}
                 <div className="space-y-3">
-                  <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Catégorie
-                  </label>
+                  <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Catégorie</label>
                   <div className="grid grid-cols-2 gap-2">
                     {categories.map((cat) => {
                       const isSelected = draftCategory === cat.value;
@@ -457,40 +596,10 @@ function ProductsScreen() {
                   </div>
                 </div>
 
-                {/* Status Filter */}
                 <div className="space-y-3">
-                  <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Statut du produit
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {statuses.map((stat) => {
-                      const isSelected = draftStatus === stat.value;
-                      return (
-                        <button
-                          key={stat.value}
-                          type="button"
-                          onClick={() => setDraftStatus(stat.value)}
-                          className={`flex items-center justify-between px-3 py-2 text-xs rounded-lg border text-left transition-all ${
-                            isSelected
-                              ? 'border-[#24582d] bg-[#edf8ef] text-[#24582d] font-semibold ring-1 ring-[#24582d]'
-                              : 'border-[#e7e4dd] bg-white text-gray-600 hover:bg-[#faf8f4]'
-                          }`}
-                        >
-                          <span>{stat.label}</span>
-                          {isSelected && <Check className="h-3.5 w-3.5 shrink-0 text-[#24582d]" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Stock Level Filter */}
-                <div className="space-y-3">
-                  <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Niveau de stock
-                  </label>
+                  <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Niveau de stock</label>
                   <div className="grid grid-cols-1 gap-2">
-                    {stockLevels.map((lvl) => {
+                    {STOCK_LEVELS.map((lvl) => {
                       const isSelected = draftStock === lvl.value;
                       return (
                         <button
@@ -511,7 +620,6 @@ function ProductsScreen() {
                   </div>
                 </div>
 
-                {/* Sort Option */}
                 <div className="space-y-3">
                   <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
                     <ArrowUpDown className="h-3.5 w-3.5" />
@@ -519,10 +627,10 @@ function ProductsScreen() {
                   </label>
                   <select
                     value={draftSort}
-                    onChange={(e) => setDraftSort(e.target.value)}
+                    onChange={(e) => setDraftSort(e.target.value as SortOption)}
                     className="flex h-10 w-full items-center justify-between rounded-lg border border-[#e7e4dd] bg-white px-3 py-2 text-xs text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#24582d]"
                   >
-                    {sortOptions.map((opt) => (
+                    {SORT_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
                         {opt.label}
                       </option>
@@ -531,238 +639,197 @@ function ProductsScreen() {
                 </div>
               </div>
 
-              {/* Drawer Footer Buttons */}
               <SheetFooter className="gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleResetFilters}
-                  className="flex-1 border-[#e7e4dd] text-gray-600 hover:bg-gray-100"
-                >
+                <Button type="button" variant="outline" onClick={handleResetFilters} className="flex-1 border-[#e7e4dd] text-gray-600 hover:bg-gray-100">
                   <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
                   Réinitialiser
                 </Button>
-                <Button
-                  type="button"
-                  variant="cta"
-                  onClick={handleApplyFilters}
-                  className="flex-1 bg-[#c1647a] hover:bg-[#a9576a] !text-white"
-                >
+                <Button type="button" variant="cta" onClick={handleApplyFilters} className="flex-1 bg-[#c1647a] hover:bg-[#a9576a] !text-white">
                   Appliquer les filtres
                 </Button>
               </SheetFooter>
             </SheetContent>
           </Sheet>
-
-          {activeFiltersCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleResetFilters}
-              className="text-xs text-gray-500 hover:text-[#c1647a] shrink-0"
-            >
-              Réinitialiser
-            </Button>
-          )}
         </div>
       </div>
 
-      {/* Active Filter Pills (if any) */}
+      {/* Active Filter Pills */}
       {activeFiltersCount > 0 && (
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <span className="text-xs font-medium text-gray-500">Filtres actifs :</span>
           {selectedCategory !== 'all' && (
-            <Badge className="bg-[#f0eee8] text-gray-700 hover:bg-[#e7e4dd] border-none text-xs gap-1 py-1">
-              Catégorie : {categories.find((c) => c.value === selectedCategory)?.label}
-              <button onClick={() => setSelectedCategory('all')}>
-                <X className="h-3 w-3 hover:text-red-600" />
-              </button>
-            </Badge>
-          )}
-          {selectedStatus !== 'all' && (
-            <Badge className="bg-[#f0eee8] text-gray-700 hover:bg-[#e7e4dd] border-none text-xs gap-1 py-1">
-              Statut : {statuses.find((s) => s.value === selectedStatus)?.label}
-              <button onClick={() => setSelectedStatus('all')}>
+            <Badge className="bg-[#f0eee8] text-gray-700 border-none text-xs gap-1 py-1">
+              Catégorie : {categories.find((c) => c.value === selectedCategory)?.label ?? selectedCategory}
+              <button type="button" aria-label="Retirer le filtre catégorie" onClick={() => setSelectedCategory('all')}>
                 <X className="h-3 w-3 hover:text-red-600" />
               </button>
             </Badge>
           )}
           {selectedStock !== 'all' && (
-            <Badge className="bg-[#f0eee8] text-gray-700 hover:bg-[#e7e4dd] border-none text-xs gap-1 py-1">
-              Stock : {stockLevels.find((s) => s.value === selectedStock)?.label}
-              <button onClick={() => setSelectedStock('all')}>
+            <Badge className="bg-[#f0eee8] text-gray-700 border-none text-xs gap-1 py-1">
+              Stock : {STOCK_LEVELS.find((s) => s.value === selectedStock)?.label}
+              <button type="button" aria-label="Retirer le filtre stock" onClick={() => setSelectedStock('all')}>
                 <X className="h-3 w-3 hover:text-red-600" />
               </button>
             </Badge>
           )}
           {selectedSort !== 'default' && (
-            <Badge className="bg-[#f0eee8] text-gray-700 hover:bg-[#e7e4dd] border-none text-xs gap-1 py-1">
-              Tri : {sortOptions.find((o) => o.value === selectedSort)?.label}
-              <button onClick={() => setSelectedSort('default')}>
+            <Badge className="bg-[#f0eee8] text-gray-700 border-none text-xs gap-1 py-1">
+              Tri : {SORT_OPTIONS.find((o) => o.value === selectedSort)?.label}
+              <button type="button" aria-label="Retirer le tri" onClick={() => setSelectedSort('default')}>
                 <X className="h-3 w-3 hover:text-red-600" />
               </button>
             </Badge>
           )}
+          <button type="button" onClick={handleResetFilters} className="text-xs text-[#c1647a] hover:underline font-medium ml-1">
+            Tout effacer
+          </button>
+        </div>
+      )}
+
+      {loadError && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <span>{loadError}</span>
+          <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => setRetry((n) => n + 1)}>
+            Réessayer
+          </Button>
+        </div>
+      )}
+
+      {/* Barre d'actions groupées : discrète (desktop au-dessus du tableau, mobile fixée en bas) */}
+      {selectionCount > 0 && (
+        <div
+          role="region"
+          aria-label="Actions groupées"
+          className="fixed inset-x-3 bottom-3 z-40 lg:static lg:inset-auto flex flex-wrap items-center gap-2 rounded-xl border border-[#193e23]/20 bg-[#f3f8f3] px-3 py-2.5 shadow-lg lg:shadow-none"
+        >
+          <span className="text-xs font-semibold text-[#193e23] mr-1">
+            {selectionCount} sélectionné{selectionCount > 1 ? 's' : ''}
+          </span>
+          <select
+            value=""
+            disabled={bulkBusy}
+            onChange={(e) => {
+              const status = e.target.value as BulkStatus;
+              if (status) runBulkUpdate({ status }, BULK_STATUSES.find((s) => s.value === status)?.label ?? status);
+            }}
+            className="h-8 rounded-md border border-[#e7e4dd] bg-white px-2 text-xs"
+            aria-label="Changer le statut de la sélection"
+          >
+            <option value="">Modifier le statut…</option>
+            {BULK_STATUSES.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+          <select
+            value=""
+            disabled={bulkBusy}
+            onChange={(e) => {
+              const cat = categories.find((c) => c.id === e.target.value);
+              if (cat) runBulkUpdate({ categoryId: cat.id }, `catégorie « ${cat.label} »`);
+            }}
+            className="h-8 rounded-md border border-[#e7e4dd] bg-white px-2 text-xs max-w-44"
+            aria-label="Changer la catégorie de la sélection"
+          >
+            <option value="">Changer de catégorie…</option>
+            {categories
+              .filter((c) => c.id)
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.label}
+                </option>
+              ))}
+          </select>
+          {canDelete && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={bulkBusy}
+              onClick={() => setBulkDeleteOpen(true)}
+              className="h-8 text-xs text-red-600 border-red-200 hover:bg-red-50"
+            >
+              <Trash2 className="mr-1 h-3.5 w-3.5" />
+              Supprimer
+            </Button>
+          )}
+          {bulkBusy && <Loader2 className="h-4 w-4 animate-spin text-[#193e23]" aria-label="Traitement en cours" />}
+          <button type="button" onClick={resetSelection} className="ml-auto text-xs text-gray-500 hover:text-gray-800 underline">
+            Annuler la sélection
+          </button>
         </div>
       )}
 
       {/* Mobile Products Card View (visible on < lg) */}
       <div className="space-y-3 lg:hidden">
-        {filteredProducts.map((product) => (
-          <div
-            key={product.id}
-            className="bg-white rounded-xl border border-[#e7e4dd] p-3.5 shadow-2xs space-y-3"
-          >
-            <div className="flex items-start gap-3">
-              {/* Product Thumbnail */}
-              <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 border border-[#e7e4dd] shrink-0">
-                {product.image ? (
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    fill
-                    sizes="64px"
-                    className="object-cover"
-                    onError={(e) => {
-                      const target = e.currentTarget as HTMLImageElement;
-                      target.style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-gray-400">
-                    <Package className="h-6 w-6" />
-                  </div>
-                )}
-              </div>
-
-              {/* Product Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-1">
-                  <Link
-                    href={`/admin/produits/${product.id}`}
-                    className="font-bold text-sm text-[#1e2a1f] hover:text-[#24582d] truncate"
-                  >
-                    {product.name}
-                  </Link>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 shrink-0">
-                      <MoreHorizontal size={16} />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      align="end"
-                      sideOffset={4}
-                      className="w-52 p-1.5 rounded-xl border border-[#e7e4dd] bg-white shadow-xl"
-                    >
-                      <DropdownMenuGroup>
-                        <DropdownMenuLabel className="px-2.5 py-1 text-[10.5px] font-bold text-gray-400 uppercase tracking-wider">
-                          Actions
-                        </DropdownMenuLabel>
-                        <DropdownMenuItem
-                          className="cursor-pointer font-medium py-1.5 px-2.5 rounded-lg text-xs text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef]"
-                          render={<Link href={`/admin/produits/${product.id}`} />}
-                        >
-                          <Edit className="mr-2 h-3.5 w-3.5 text-[#24582d]" />
-                          Modifier la fiche
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="cursor-pointer font-medium py-1.5 px-2.5 rounded-lg text-xs text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef]"
-                          render={<Link href={`/produits/${product.slug ?? product.id}`} target="_blank" />}
-                        >
-                          <Eye className="mr-2 h-3.5 w-3.5 text-gray-500" />
-                          Voir sur la boutique
-                        </DropdownMenuItem>
-                      </DropdownMenuGroup>
-                      <DropdownMenuSeparator className="my-1 border-t border-[#f0eee8]" />
-                      <DropdownMenuGroup>
-                        <DropdownMenuItem
-                          className="cursor-pointer font-medium py-1.5 px-2.5 rounded-lg text-xs text-red-600 hover:bg-red-50 focus:bg-red-50"
-                          onClick={() => setProductToDelete(product)}
-                        >
-                          <Trash2 className="mr-2 h-3.5 w-3.5 text-red-600" />
-                          Supprimer le produit
-                        </DropdownMenuItem>
-                      </DropdownMenuGroup>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-gray-600 font-medium">
-                    {product.category}
-                  </span>
-                  <span className="text-gray-300">•</span>
-                  <span className="text-[11px] text-gray-400 font-mono">
-                    {product.sku}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2 mt-1.5">
-                  {getStatusBadge(product.status, product.stock)}
-                  <span
-                    className={`text-[11px] font-semibold px-2 py-0.5 rounded-md ${
-                      product.stock === 0
-                        ? 'bg-red-50 text-red-700 border border-red-200'
-                        : product.stock <= 5
-                        ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                        : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                    }`}
-                  >
-                    Stock: {product.stock}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom: Price + Actions */}
-            <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
-              <div>
-                <span className="text-[10px] uppercase font-bold tracking-wider text-gray-400 block">Prix</span>
-                <span className="font-bold text-base text-[#24582d]">
-                  {formatCurrency(product.price)}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 px-2.5 text-xs text-gray-700 border-[#e7e4dd]"
-                  render={<Link href={`/admin/produits/${product.id}`} />}
-                >
-                  <Edit size={13} className="mr-1" />
-                  Modifier
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0 text-red-600 border-red-100 hover:bg-red-50"
-                  onClick={() => setProductToDelete(product)}
-                >
-                  <Trash2 size={13} />
-                </Button>
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {loading ? (
+        {products.length > 0 && (
+          <label className="flex items-center gap-2 px-1 text-xs text-gray-600">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-[#193e23]"
+              checked={allOnPageSelected}
+              ref={(el) => {
+                if (el) el.indeterminate = someOnPageSelected;
+              }}
+              onChange={toggleAllOnPage}
+            />
+            Tout sélectionner ({products.length})
+          </label>
+        )}
+        {loading && products.length === 0 ? (
           <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-gray-500 space-y-2">
             <Loader2 className="h-7 w-7 text-[#c1647a] animate-spin mx-auto" />
             <p className="text-sm font-medium">Chargement des produits...</p>
           </div>
-        ) : filteredProducts.length === 0 ? (
-          <div className="bg-white rounded-xl border border-[#e7e4dd] p-8 text-center text-gray-500 space-y-2">
-            <Package className="h-8 w-8 text-gray-300 mx-auto" />
-            <p className="font-medium text-gray-700 text-sm">Aucun produit ne correspond à ces critères</p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleResetFilters}
-              className="mt-2 text-xs border-[#e7e4dd]"
+        ) : products.length === 0 && !loadError ? (
+          <div className="bg-white rounded-xl border border-[#e7e4dd] p-8">{emptyState}</div>
+        ) : (
+          products.map((product) => (
+            <div
+              key={product.id}
+              className={`bg-white rounded-xl border p-3.5 shadow-2xs space-y-3 transition-opacity ${loading ? 'opacity-60' : ''} ${
+                selectedIds.has(product.id) ? 'border-[#193e23]/40 ring-1 ring-[#193e23]/20' : 'border-[#e7e4dd]'
+              }`}
             >
-              Effacer les filtres
-            </Button>
-          </div>
-        ) : null}
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 accent-[#193e23] shrink-0"
+                  checked={selectedIds.has(product.id)}
+                  onChange={() => toggleOne(product.id)}
+                  aria-label={`Sélectionner ${product.name}`}
+                />
+                {thumb(product, 64)}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-1">
+                    <Link href={`/admin/produits/${product.id}`} className="font-bold text-sm text-[#1e2a1f] hover:text-[#24582d] truncate">
+                      {product.name}
+                    </Link>
+                    {rowActions(product)}
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs text-gray-600 font-medium">{product.category}</span>
+                    <span className="text-gray-300">•</span>
+                    <span className="text-[11px] text-gray-400 font-mono">{product.sku}</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                    <ProductStateBadge product={product} />
+                    <span className={`text-[11px] font-semibold ${stockClass(product.stock)}`}>Stock : {product.stock}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
+                <span className="font-bold text-base text-[#24582d]">{formatCurrency(product.promoPrice ?? product.price)}</span>
+                <Button variant="outline" size="sm" className="h-8 px-2.5 text-xs text-gray-700 border-[#e7e4dd]" render={<Link href={`/admin/produits/${product.id}`} />}>
+                  <Edit size={13} className="mr-1" />
+                  Modifier
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Products Desktop Table (visible on lg+) */}
@@ -770,161 +837,102 @@ function ProductsScreen() {
         <Table>
           <TableHeader className="bg-[#faf8f4]">
             <TableRow>
-              <TableHead className="w-[80px]">Image</TableHead>
+              <TableHead className="w-10">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 accent-[#193e23] align-middle"
+                  checked={allOnPageSelected}
+                  disabled={products.length === 0}
+                  ref={(el) => {
+                    if (el) el.indeterminate = someOnPageSelected;
+                  }}
+                  onChange={toggleAllOnPage}
+                  aria-label="Tout sélectionner sur cette page"
+                />
+              </TableHead>
+              <TableHead className="w-[72px]">Image</TableHead>
               <TableHead>Produit</TableHead>
               <TableHead>Catégorie</TableHead>
               <TableHead className="text-right">Prix</TableHead>
               <TableHead className="text-right">Stock</TableHead>
               <TableHead>Statut</TableHead>
-              <TableHead className="text-right w-[100px]">Actions</TableHead>
+              <TableHead className="text-right w-[80px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
-            {filteredProducts.map((product) => (
-              <TableRow key={product.id} className="hover:bg-[#faf8f4]/60 transition-colors">
-                {/* Image Cell with Fallback */}
-                <TableCell>
-                  <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-[#e7e4dd] shrink-0">
-                    {product.image ? (
-                      <Image
-                        src={product.image}
-                        alt={product.name}
-                        fill
-                        sizes="48px"
-                        className="object-cover"
-                        onError={(e) => {
-                          const target = e.currentTarget as HTMLImageElement;
-                          target.style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-gray-400">
-                        <Package className="h-5 w-5" />
-                      </div>
-                    )}
-                  </div>
-                </TableCell>
-
-                {/* Product Name & SKU */}
-                <TableCell>
-                  <div className="font-semibold text-[#1e2a1f]">{product.name}</div>
-                  <div className="text-xs text-gray-500 font-mono">Réf: {product.sku}</div>
-                </TableCell>
-
-                <TableCell className="text-gray-600 font-medium">{product.category}</TableCell>
-
-                <TableCell className="text-right font-semibold text-[#24582d]">
-                  {formatCurrency(product.price)}
-                </TableCell>
-
-                <TableCell className="text-right">
-                  <span
-                    className={`font-semibold ${
-                      product.stock === 0
-                        ? 'text-red-600'
-                        : product.stock <= 5
-                        ? 'text-amber-600'
-                        : 'text-gray-700'
-                    }`}
-                  >
-                    {product.stock}
-                  </span>
-                </TableCell>
-
-                <TableCell>{getStatusBadge(product.status, product.stock)}</TableCell>
-
-                {/* Actions Cell with Redesigned Dropdown Menu */}
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-gray-500 hover:text-[#24582d] hover:bg-[#edf8ef] hover:border-[#b0c8a8] transition-colors focus:outline-none">
-                      <span className="sr-only">Ouvrir le menu</span>
-                      <MoreHorizontal className="h-4 w-4" />
-                    </DropdownMenuTrigger>
-
-                    <DropdownMenuContent
-                      align="end"
-                      sideOffset={4}
-                      className="w-52 p-1.5 rounded-xl border border-[#e7e4dd] bg-white shadow-xl"
-                    >
-                      <DropdownMenuGroup>
-                        <DropdownMenuLabel className="px-2.5 py-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                          Actions
-                        </DropdownMenuLabel>
-
-                        {/* View on Store (Open in new tab, no wrapping!) */}
-                        <DropdownMenuItem
-                          className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef] transition-colors whitespace-nowrap"
-                          render={
-                            <Link
-                              href={`/produits/${product.slug || product.id}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            />
-                          }
-                        >
-                          <Eye className="mr-2.5 h-4 w-4 text-[#24582d]" />
-                          Voir sur le site
-                        </DropdownMenuItem>
-
-                        {/* Edit Product */}
-                        <DropdownMenuItem
-                          className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef] transition-colors whitespace-nowrap"
-                          render={<Link href={`/admin/produits/${product.id}`} />}
-                        >
-                          <Edit className="mr-2.5 h-4 w-4 text-blue-600" />
-                          Modifier
-                        </DropdownMenuItem>
-
-                        <DropdownMenuSeparator className="my-1 border-t border-[#f0eee8]" />
-
-                        {/* Delete Product */}
-                        <DropdownMenuItem
-                          onClick={() => setProductToDelete(product)}
-                          className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors whitespace-nowrap focus:text-red-700 focus:bg-red-50"
-                        >
-                          <Trash2 className="mr-2.5 h-4 w-4 text-red-600" />
-                          Supprimer
-                        </DropdownMenuItem>
-                      </DropdownMenuGroup>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
-
-            {loading ? (
+          <TableBody className={`transition-opacity ${loading && products.length > 0 ? 'opacity-60' : ''}`}>
+            {loading && products.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-40 text-center text-gray-500">
+                <TableCell colSpan={8} className="h-40 text-center text-gray-500">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <Loader2 className="h-7 w-7 text-[#c1647a] animate-spin" />
                     <p className="text-sm font-medium text-gray-600">Chargement des produits...</p>
                   </div>
                 </TableCell>
               </TableRow>
-            ) : filteredProducts.length === 0 ? (
+            ) : products.length === 0 && !loadError ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-40 text-center text-gray-500">
-                  <div className="flex flex-col items-center justify-center gap-2">
-                    <Package className="h-8 w-8 text-gray-300" />
-                    <p className="font-medium text-gray-700">Aucun produit ne correspond aux critères.</p>
-                    <p className="text-xs text-gray-400">Essayez de modifier votre recherche ou de réinitialiser vos filtres.</p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleResetFilters}
-                      className="mt-2 text-xs border-[#e7e4dd]"
-                    >
-                      Effacer les filtres
-                    </Button>
-                  </div>
+                <TableCell colSpan={8} className="h-40">
+                  {emptyState}
                 </TableCell>
               </TableRow>
-            ) : null}
+            ) : (
+              products.map((product) => {
+                const selected = selectedIds.has(product.id);
+                return (
+                  <TableRow key={product.id} className={`transition-colors ${selected ? 'bg-[#f3f8f3]' : 'hover:bg-[#faf8f4]/60'}`}>
+                    <TableCell>
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 accent-[#193e23] align-middle"
+                        checked={selected}
+                        onChange={() => toggleOne(product.id)}
+                        aria-label={`Sélectionner ${product.name}`}
+                      />
+                    </TableCell>
+                    <TableCell>{thumb(product, 48)}</TableCell>
+                    <TableCell>
+                      <Link href={`/admin/produits/${product.id}`} className="font-semibold text-[#1e2a1f] hover:text-[#24582d]">
+                        {product.name}
+                      </Link>
+                      <div className="text-xs text-gray-500 font-mono">Réf : {product.sku}</div>
+                    </TableCell>
+                    <TableCell className="text-gray-600 font-medium">{product.category}</TableCell>
+                    <TableCell className="text-right">
+                      <span className="font-semibold text-[#24582d]">{formatCurrency(product.promoPrice ?? product.price)}</span>
+                      {product.promoPrice !== undefined && (
+                        <span className="block text-[11px] text-gray-400 line-through">{formatCurrency(product.price)}</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <span className={`font-semibold ${stockClass(product.stock)}`}>{product.stock}</span>
+                    </TableCell>
+                    <TableCell>
+                      <ProductStateBadge product={product} />
+                    </TableCell>
+                    <TableCell className="text-right">{rowActions(product)}</TableCell>
+                  </TableRow>
+                );
+              })
+            )}
           </TableBody>
         </Table>
       </div>
 
-      {/* Confirmation Dialog for Deletion */}
+      <AdminPagination
+        page={page}
+        totalPages={totalPages}
+        total={total}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(1);
+        }}
+        itemLabel="produits"
+        disabled={loading || refreshing}
+      />
+
+      {/* Masquage d'un produit */}
       <Dialog
         open={productToDelete !== null}
         onOpenChange={(open) => {
@@ -936,32 +944,47 @@ function ProductsScreen() {
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 mb-2">
               <AlertTriangle className="h-6 w-6" />
             </div>
-            <DialogTitle className="text-lg font-bold text-gray-900 font-serif">
-              Supprimer le produit ?
-            </DialogTitle>
+            <DialogTitle className="text-lg font-bold text-gray-900 font-serif">Masquer le produit ?</DialogTitle>
             <DialogDescription className="text-sm text-gray-500 leading-relaxed">
-              Êtes-vous certain de vouloir supprimer{' '}
-              <strong className="text-gray-900 font-semibold">{productToDelete?.name}</strong>{' '}
-              (Réf: {productToDelete?.sku}) ? Cette action est irréversible et retirera le produit du catalogue.
+              <strong className="text-gray-900 font-semibold">{productToDelete?.name}</strong> (Réf : {productToDelete?.sku}) passera en
+              brouillon : il ne sera plus visible ni trouvable sur la boutique. L’historique des commandes est conservé et vous pourrez le
+              republier à tout moment.
             </DialogDescription>
           </DialogHeader>
-
           <DialogFooter className="mt-6 gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setProductToDelete(null)}
-              className="border-[#e7e4dd] text-gray-700 hover:bg-gray-100 rounded-xl"
-            >
+            <Button type="button" variant="outline" onClick={() => setProductToDelete(null)} className="border-[#e7e4dd] text-gray-700 hover:bg-gray-100 rounded-xl">
               Annuler
             </Button>
-            <Button
-              type="button"
-              onClick={confirmDeleteProduct}
-              className="bg-red-600 hover:bg-red-700 !text-white rounded-xl shadow-xs"
-            >
-              <Trash2 className="mr-1.5 h-4 w-4" />
-              Supprimer définitivement
+            <Button type="button" onClick={confirmDeleteProduct} disabled={deleting} className="bg-red-600 hover:bg-red-700 !text-white rounded-xl shadow-xs">
+              {deleting ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Trash2 className="mr-1.5 h-4 w-4" />}
+              Masquer le produit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Suppression groupée */}
+      <Dialog open={bulkDeleteOpen} onOpenChange={(open) => !bulkBusy && setBulkDeleteOpen(open)}>
+        <DialogContent className="sm:max-w-md bg-white border border-[#e7e4dd] rounded-2xl shadow-2xl p-6">
+          <DialogHeader className="gap-2">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 mb-2">
+              <AlertTriangle className="h-6 w-6" />
+            </div>
+            <DialogTitle className="text-lg font-bold text-gray-900 font-serif">
+              Supprimer {selectionCount} produit{selectionCount > 1 ? 's' : ''} ?
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-500 leading-relaxed">
+              Les produits jamais commandés seront <strong>supprimés définitivement</strong>. Ceux qui figurent dans des commandes seront
+              seulement masqués (brouillon) pour conserver l’historique.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-6 gap-3">
+            <Button type="button" variant="outline" disabled={bulkBusy} onClick={() => setBulkDeleteOpen(false)} className="border-[#e7e4dd] rounded-xl">
+              Annuler
+            </Button>
+            <Button type="button" onClick={runBulkDelete} disabled={bulkBusy} className="bg-red-600 hover:bg-red-700 !text-white rounded-xl">
+              {bulkBusy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Trash2 className="mr-1.5 h-4 w-4" />}
+              Supprimer
             </Button>
           </DialogFooter>
         </DialogContent>

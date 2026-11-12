@@ -226,7 +226,7 @@ export type AdminPromotion = {
   revenueGenerated: number;
 };
 
-export type CampaignChannel = 'whatsapp' | 'sms' | 'email';
+export type CampaignChannel = 'whatsapp' | 'email';
 export type CampaignStatus = 'envoyee' | 'programmee' | 'brouillon';
 
 export type AdminCampaign = {
@@ -275,6 +275,21 @@ export type CartRecoverySettings = {
   includeDiscount: boolean;
   discountCode: string;
   discountValue: string;
+  /** Dernier passage de la relance automatique (lecture seule) */
+  lastAutoRunAt?: string | null;
+  /** Emails envoyés lors de ce passage (lecture seule) */
+  lastAutoRunSent?: number;
+};
+
+/** Bilan d'un passage de la relance automatique. */
+export type CartReminderRunResult = {
+  ranAt: string;
+  enabled: boolean;
+  sentFirst: number;
+  sentSecond: number;
+  skipped: number;
+  failed: number;
+  couponCode: string | null;
 };
 
 /* ── Blog & Contenu Types ────────────────────────────── */
@@ -537,7 +552,6 @@ export type DeliveryZoneSettings = {
 
 export type NotificationSettings = {
   whatsappEnabled: boolean;
-  smsEnabled: boolean;
   emailEnabled: boolean;
   onNewOrder: boolean;
   onDriverAssigned: boolean;
@@ -709,4 +723,7 @@ export type LandscapeQuote = {
   notes?: string;
   quoteAmount?: number;
   quoteItems?: { description: string; qty: number; unitPrice: number; total: number }[];
+  /** Valeurs brutes éditables par l'équipe */
+  estimatedGuests?: number | null;
+  budgetRange?: string | null;
 };

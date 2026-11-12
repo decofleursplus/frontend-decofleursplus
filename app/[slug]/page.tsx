@@ -216,7 +216,7 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
             <p>
               {slug === 'conditions'
                 ? 'Les présentes conditions régissent les commandes passées sur Décofleur Plus Saly. Tout achat implique l’adhésion pleine et entière aux modalités de livraison, de garantie fraîcheur et de paiement sécurisé.'
-                : 'Décofleur Plus protège votre vie privée. Les informations recueillies lors de votre commande (nom, téléphone, adresse de livraison à Saly ou Mbour) sont exclusivement utilisées pour l’acheminement de vos fleurs et la confirmation par SMS ou WhatsApp.'}
+                : 'Décofleur Plus protège votre vie privée. Les informations recueillies lors de votre commande (nom, téléphone, adresse de livraison à Saly ou Mbour) sont exclusivement utilisées pour l’acheminement de vos fleurs et la confirmation de votre commande par e-mail, téléphone ou WhatsApp.'}
             </p>
             <div className="info-card-grid" style={{ marginTop: '24px' }}>
               <article className="info-card">

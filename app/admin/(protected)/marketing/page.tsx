@@ -29,6 +29,7 @@ import {
   remindAdminAbandonedCart,
   getCartRecoverySettings,
   updateCartRecoverySettings,
+  runAdminCartReminders,
   getMarketingSummary,
   setAdminAbandonedCartStatus,
   type MarketingSummary,
@@ -46,8 +47,9 @@ import {
   Plus,
   Search,
   Truck,
-  Smartphone,
   Mail,
+  Loader2,
+  Send,
   Copy,
   DollarSign,
   Clock,
@@ -119,6 +121,27 @@ export default function AdminMarketingPage() {
   useEffect(() => {
     fetchMarketing();
   }, [fetchMarketing]);
+
+  // Relance automatique : passage immédiat (sinon toutes les 10 min côté serveur)
+  const [runningReminders, setRunningReminders] = useState(false);
+  const handleRunReminders = async () => {
+    setRunningReminders(true);
+    try {
+      const r = await runAdminCartReminders();
+      const sent = r.sentFirst + r.sentSecond;
+      if (!r.enabled) toast.info('Les relances automatiques sont désactivées.');
+      else if (sent === 0) toast.info('Aucun panier à relancer pour le moment.', { description: r.skipped ? `${r.skipped} panier(s) sans e-mail valide.` : undefined });
+      else
+        toast.success(`${sent} relance(s) envoyée(s) par e-mail`, {
+          description: `${r.sentFirst} 1re relance(s), ${r.sentSecond} 2e relance(s)${r.failed ? `, ${r.failed} échec(s)` : ''}.`,
+        });
+      await loadData(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Relance impossible pour le moment.');
+    } finally {
+      setRunningReminders(false);
+    }
+  };
 
   // Search & Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -356,13 +379,6 @@ export default function AdminMarketingPage() {
             WhatsApp
           </Badge>
         );
-      case 'sms':
-        return (
-          <Badge className="bg-[#e5eaff] text-[#3d5a99] border-none font-medium text-xs gap-1">
-            <Smartphone className="h-3 w-3 text-[#3d5a99]" />
-            SMS Direct
-          </Badge>
-        );
       case 'email':
         return (
           <Badge className="bg-[#fdf2f4] text-[#c1647a] border-none font-medium text-xs gap-1">
@@ -415,7 +431,7 @@ export default function AdminMarketingPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-[#1e2a1f]">Marketing & Promotions</h1>
           <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
-            Créez des offres attractives, fidélisez vos clients via WhatsApp & SMS et récupérez vos ventes perdues.
+            Créez des offres attractives, fidélisez vos clients par e-mail et récupérez vos paniers abandonnés.
           </p>
         </div>
 
@@ -1227,7 +1243,6 @@ export default function AdminMarketingPage() {
               {[
                 { id: 'all', label: 'Tous canaux' },
                 { id: 'whatsapp', label: 'WhatsApp' },
-                { id: 'sms', label: 'SMS Direct' },
                 { id: 'email', label: 'Email' },
               ].map((pill) => (
                 <button
@@ -1484,30 +1499,49 @@ export default function AdminMarketingPage() {
         <div className="space-y-4">
           {/* Recovery Automation Banner */}
           {cartSettings && (
-          <div className="bg-[#fcfaf7] border border-[#e7e4dd] rounded-xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="bg-[#fcfaf7] border border-[#e7e4dd] rounded-xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3" data-testid="cart-automation">
             <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-xs text-gray-900">
-                  Automatisation active :
-                </span>
-                <Badge className="bg-[#dcfce7] text-[#166534] border-none text-[10px]">
-                  {cartSettings.autoEnabled ? 'WhatsApp & Email activés' : 'Désactivé'}
-                </Badge>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-bold text-xs text-gray-900">Relances automatiques :</span>
+                {cartSettings.autoEnabled ? (
+                  <Badge className="bg-[#dcfce7] text-[#166534] border-none text-[10px]">Activées · par e-mail</Badge>
+                ) : (
+                  <Badge className="bg-gray-100 text-gray-600 border-none text-[10px]">Désactivées</Badge>
+                )}
               </div>
               <p className="text-[11px] text-gray-500">
-                1ère relance à H+{cartSettings.delayHours1} • 2ème relance à H+{cartSettings.delayHours2}{' '}
-                avec code {cartSettings.discountCode} ({cartSettings.discountValue})
+                1re relance {cartSettings.delayHours1} h après l’abandon • 2e relance à {cartSettings.delayHours2} h
+                {cartSettings.includeDiscount && cartSettings.discountCode
+                  ? ` avec le code ${cartSettings.discountCode}${cartSettings.discountValue ? ` (${cartSettings.discountValue})` : ''}`
+                  : ' sans code promo'}
+              </p>
+              <p className="text-[11px] text-gray-400">
+                {cartSettings.lastAutoRunAt
+                  ? `Dernière vérification : ${new Date(cartSettings.lastAutoRunAt).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} · ${cartSettings.lastAutoRunSent ?? 0} e-mail(s) envoyé(s)`
+                  : 'Aucune vérification automatique pour le moment (toutes les 10 min une fois activées).'}
               </p>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setIsConfigDialogOpen(true)}
-              className="text-xs h-9 sm:h-8 border-[#e7e4dd] bg-white text-gray-700 hover:text-[#c1647a] shrink-0 gap-1 w-full sm:w-auto"
-            >
-              <Sliders className="h-3.5 w-3.5" />
-              Modifier règles
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!cartSettings.autoEnabled || runningReminders}
+                onClick={handleRunReminders}
+                className="text-xs h-9 sm:h-8 border-[#e7e4dd] bg-white text-gray-700 hover:text-[#c1647a] gap-1 w-full sm:w-auto"
+              >
+                {runningReminders ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                Lancer maintenant
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setIsConfigDialogOpen(true)}
+                className="text-xs h-9 sm:h-8 border-[#e7e4dd] bg-white text-gray-700 hover:text-[#c1647a] gap-1 w-full sm:w-auto"
+              >
+                <Sliders className="h-3.5 w-3.5" />
+                Modifier les règles
+              </Button>
+            </div>
           </div>
           )}
 
@@ -1868,6 +1902,7 @@ export default function AdminMarketingPage() {
         isOpen={isConfigDialogOpen}
         onOpenChange={setIsConfigDialogOpen}
         settings={cartSettings}
+        coupons={coupons}
         onSave={async (newSettings) => {
           try {
             setCartSettings(await updateCartRecoverySettings(newSettings));

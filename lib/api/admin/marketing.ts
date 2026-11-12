@@ -5,6 +5,7 @@ import type {
   AdminCampaign,
   AdminAbandonedCart,
   CartRecoverySettings,
+  CartReminderRunResult,
   CouponStatus,
   PromotionStatus,
 } from '@/lib/admin/mock-data/types';
@@ -269,7 +270,7 @@ export async function getAdminAbandonedCarts(): Promise<AdminAbandonedCart[]> {
   return [];
 }
 
-export async function remindAdminAbandonedCart(id: string, channel: 'whatsapp' | 'email' | 'sms'): Promise<boolean> {
+export async function remindAdminAbandonedCart(id: string, channel: 'whatsapp' | 'email'): Promise<boolean> {
   await apiClient.post(`/admin/marketing/abandoned-carts/${id}/remind`, { channel }, {
     useAdminToken: true,
   });
@@ -291,11 +292,19 @@ export async function getCartRecoverySettings(): Promise<CartRecoverySettings> {
 }
 
 export async function updateCartRecoverySettings(settings: CartRecoverySettings): Promise<CartRecoverySettings> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const res = await apiClient.put<any>('/admin/marketing/abandoned-carts/settings', settings, {
+  const { lastAutoRunAt: _a, lastAutoRunSent: _b, ...editable } = settings;
+  void _a;
+  void _b;
+  return apiClient.put<CartRecoverySettings>('/admin/marketing/abandoned-carts/settings', editable, {
     useAdminToken: true,
   });
-  return res || settings;
+}
+
+/** Lance tout de suite un passage de la relance automatique (sinon exécutée toutes les 10 min par le serveur). */
+export async function runAdminCartReminders(): Promise<CartReminderRunResult> {
+  return apiClient.post<CartReminderRunResult>('/admin/marketing/abandoned-carts/run-reminders', undefined, {
+    useAdminToken: true,
+  });
 }
 
 /** Audiences de campagne (codes) avec le nombre réel de destinataires. */

@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
 import type { Supplier, SupplierStatus } from '@/lib/admin/mock-data/types';
 import { createSupplier, deleteSupplier, getSuppliers, updateSupplier } from '@/lib/api/admin/procurement';
+import { AdminPagination, paginate } from '@/components/admin/admin-pagination';
 
 const inputClass =
   'w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs transition-colors';
@@ -57,7 +58,14 @@ export default function AdminFournisseursPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | SupplierStatus>('all');
+  const [statusFilter, setStatusFilterRaw] = useState<'all' | SupplierStatus>('all');
+  // Le backend renvoie tous les fournisseurs : pagination côté client
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const setStatusFilter = (v: 'all' | SupplierStatus) => {
+    setStatusFilterRaw(v);
+    setPage(1);
+  };
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
@@ -79,7 +87,10 @@ export default function AdminFournisseursPage() {
   }, [load]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setSearch(searchInput.trim()), 300);
+    const timer = window.setTimeout(() => {
+      setSearch(searchInput.trim());
+      setPage(1);
+    }, 300);
     return () => window.clearTimeout(timer);
   }, [searchInput]);
 
@@ -145,6 +156,7 @@ export default function AdminFournisseursPage() {
   };
 
   const list = suppliers ?? [];
+  const { pageItems, totalPages, page: currentPage } = paginate(list, page, pageSize);
   const emptyText = search || statusFilter !== 'all' ? 'Aucun fournisseur ne correspond à ces critères.' : 'Aucun fournisseur enregistré pour le moment.';
 
   const actions = (sup: Supplier, compact = false) => (
@@ -255,7 +267,7 @@ export default function AdminFournisseursPage() {
                 {emptyText}
               </div>
             ) : (
-              list.map((sup) => (
+              pageItems.map((sup) => (
                 <div key={sup.id} className="bg-white rounded-2xl border border-border p-4 shadow-2xs space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <Link href={`/admin/fournisseurs/${sup.id}`} className="font-bold text-sm text-[#173f22] hover:text-[#c8436e]">
@@ -302,7 +314,7 @@ export default function AdminFournisseursPage() {
                     </td>
                   </tr>
                 ) : (
-                  list.map((sup) => (
+                  pageItems.map((sup) => (
                     <tr key={sup.id} className="hover:bg-muted/40 transition-colors">
                       <td className="py-4 px-5">
                         <Link href={`/admin/fournisseurs/${sup.id}`} className="font-bold text-[#173f22] hover:text-[#c8436e] flex items-center gap-2">
@@ -343,6 +355,21 @@ export default function AdminFournisseursPage() {
               </tbody>
             </table>
           </div>
+          {list.length > 0 && (
+            <AdminPagination
+              page={currentPage}
+              totalPages={totalPages}
+              total={list.length}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setPage(1);
+              }}
+              itemLabel="fournisseurs"
+              className="px-4"
+            />
+          )}
         </>
       )}
 

@@ -3,12 +3,14 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Mail, LockKeyhole, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
+import { Mail, LockKeyhole, Eye, EyeOff, ArrowRight, Loader2, KeyRound } from 'lucide-react';
 import { FloralMotifIcon } from '@/components/icons';
 import { useAuth } from '@/components/auth-provider';
 import { ApiClientError } from '@/lib/api/client';
 import { EmailVerificationStep } from './email-verification-step';
 import { GoogleSignInButton } from './google-sign-in-button';
+import { LoginCodeStep } from './login-code-step';
+import { requestLoginCode } from '@/lib/api/auth';
 
 export function LoginForm() {
   const router = useRouter();
@@ -27,15 +29,36 @@ export function LoginForm() {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   // Compte dont l'email n'a pas encore été confirmé : on bascule sur la saisie du code
   const [pendingVerification, setPendingVerification] = useState<{ email: string; cooldown: number } | null>(null);
+  // Connexion sans mot de passe : code à usage unique reçu par email
+  const [method, setMethod] = useState<'password' | 'code'>('password');
+  const [codeStep, setCodeStep] = useState<{ cooldown: number; minutes: number } | null>(null);
 
   function goToTarget(message: string) {
     setFeedback({ type: 'success', text: message });
     router.push(redirectTarget);
   }
 
+  async function handleRequestCode() {
+    setIsSubmitting(true);
+    setFeedback(null);
+    try {
+      const res = await requestLoginCode(identifier);
+      setCodeStep({ cooldown: res.resendAvailableInSeconds, minutes: res.expiresInMinutes });
+    } catch (err: unknown) {
+      setFeedback({ type: 'error', text: err instanceof Error ? err.message : 'Impossible d’envoyer le code pour le moment.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!identifier.trim() || isSubmitting) return;
+
+    if (method === 'code') {
+      await handleRequestCode();
+      return;
+    }
 
     setIsSubmitting(true);
     setFeedback(null);
@@ -74,6 +97,19 @@ export function LoginForm() {
     }
   }
 
+  if (codeStep) {
+    return (
+      <LoginCodeStep
+        identifier={identifier.trim()}
+        remember={rememberMe}
+        initialCooldown={codeStep.cooldown}
+        expiresInMinutes={codeStep.minutes}
+        onSignedIn={() => goToTarget('Connexion réussie ! Redirection en cours…')}
+        onBack={() => setCodeStep(null)}
+      />
+    );
+  }
+
   if (pendingVerification) {
     return (
       <EmailVerificationStep
@@ -106,6 +142,33 @@ export function LoginForm() {
         </div>
       )}
 
+      {/* Choix de la méthode : mot de passe ou code reçu par email */}
+      <div className="mb-4 grid grid-cols-2 gap-1 rounded-xl bg-[#f6f1ec] p-1 text-[13px] font-semibold" role="tablist" aria-label="Méthode de connexion">
+        {(
+          [
+            ['password', 'Mot de passe', LockKeyhole],
+            ['code', 'Code par e-mail', KeyRound],
+          ] as const
+        ).map(([value, label, Icon]) => (
+          <button
+            key={value}
+            type="button"
+            role="tab"
+            aria-selected={method === value}
+            onClick={() => {
+              setMethod(value);
+              setFeedback(null);
+            }}
+            className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 transition-colors ${
+              method === value ? 'bg-white text-[#173f22] shadow-sm' : 'text-[#7a7068] hover:text-[#173f22]'
+            }`}
+          >
+            <Icon size={15} aria-hidden="true" />
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* Main Form */}
       <form onSubmit={handleSubmit} className="auth-interactive-form">
         {/* Email or Phone field */}
@@ -130,6 +193,8 @@ export function LoginForm() {
           </div>
         </div>
 
+        {method === 'password' ? (
+          <>
         {/* Password field */}
         <div className="auth-field-group">
           <label htmlFor="auth-password" className="auth-label">
@@ -160,6 +225,14 @@ export function LoginForm() {
           </div>
         </div>
 
+          </>
+        ) : (
+          <p className="auth-otp-hint">
+            <KeyRound size={13} aria-hidden="true" />
+            <span>Nous envoyons un code à 6 chiffres, valable 10 minutes, à l’adresse email de votre compte.</span>
+          </p>
+        )}
+
         {/* Remember me & Forgot Password Row */}
         <div className="auth-options-row">
           <label className="auth-checkbox-label">
@@ -172,9 +245,11 @@ export function LoginForm() {
             <span className="auth-checkbox-text">Se souvenir de moi</span>
           </label>
 
-          <Link href="/mot-de-passe-oublie" className="auth-forgot-link">
-            Mot de passe oublié ?
-          </Link>
+          {method === 'password' && (
+            <Link href="/mot-de-passe-oublie" className="auth-forgot-link">
+              Mot de passe oublié ?
+            </Link>
+          )}
         </div>
 
         {/* Primary CTA Button */}
@@ -186,11 +261,11 @@ export function LoginForm() {
           {isSubmitting ? (
             <>
               <Loader2 size={18} className="auth-spinner" />
-              <span>Connexion en cours…</span>
+              <span>{method === 'code' ? 'Envoi du code…' : 'Connexion en cours…'}</span>
             </>
           ) : (
             <>
-              <span>Se connecter</span>
+              <span>{method === 'code' ? 'Recevoir mon code' : 'Se connecter'}</span>
               <ArrowRight size={18} />
             </>
           )}

@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Search, RefreshCw, Loader2, ChevronLeft, ChevronRight, ShoppingBag, Eye } from 'lucide-react';
+import { Search, RefreshCw, Loader2, ShoppingBag, Eye } from 'lucide-react';
+import { AdminPagination } from '@/components/admin/admin-pagination';
 import { toast } from 'sonner';
 import {
   DELIVERY_MODE_LABELS,
@@ -19,7 +20,7 @@ import {
 } from '@/lib/api/admin/orders';
 
 const STATUSES: BackendOrderStatus[] = ['PENDING', 'PAID', 'PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED', 'CANCELLED'];
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 25;
 const fcfa = (n: number) => `${Math.round(n).toLocaleString('fr-FR')} F`;
 
 /** Commandes : filtres, recherche, tri et pagination côté serveur ; actions selon les transitions autorisées. */
@@ -38,12 +39,13 @@ export default function AdminOrdersPage() {
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
 
   const load = useCallback(
     () =>
       getAdminOrders({
         page,
-        limit: PAGE_SIZE,
+        limit: pageSize,
         status: status === 'all' ? undefined : status,
         deliveryMode: deliveryMode === 'all' ? undefined : deliveryMode,
         search,
@@ -57,7 +59,7 @@ export default function AdminOrdersPage() {
           setLoadError(null);
         })
         .catch((err) => setLoadError(err instanceof Error ? err.message : 'Impossible de charger les commandes.')),
-    [page, status, deliveryMode, search, sort],
+    [page, pageSize, status, deliveryMode, search, sort],
   );
 
   useEffect(() => {
@@ -250,19 +252,19 @@ export default function AdminOrdersPage() {
               })}
             </tbody>
           </table>
-          <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-[#e7e4dd] bg-[#faf8f4] text-xs text-gray-600">
-            <span>
-              {total} commande(s) · page {page} / {totalPages}
-            </span>
-            <div className="flex gap-1.5">
-              <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="p-1.5 rounded-md border border-[#e7e4dd] bg-white disabled:opacity-40" aria-label="Page précédente">
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="p-1.5 rounded-md border border-[#e7e4dd] bg-white disabled:opacity-40" aria-label="Page suivante">
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
+          <AdminPagination
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setPage(1);
+            }}
+            itemLabel="commandes"
+            className="px-4 border-t border-[#e7e4dd] bg-[#faf8f4]"
+          />
         </div>
       )}
     </div>

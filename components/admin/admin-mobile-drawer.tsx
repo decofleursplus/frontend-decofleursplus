@@ -5,31 +5,9 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import {
-  FolderTree,
-  Users,
-  Package,
-  Megaphone,
-  FileText,
-  BarChart3,
-  Settings,
-  LogOut,
-  X,
-  ExternalLink,
-  Download,
-  Smartphone,
-  CheckCircle2,
-  Building2,
-  Boxes,
-  FileSpreadsheet,
-  Armchair,
-  Trees,
-  Repeat,
-  Camera,
-  Mail,
-  Truck as TruckIcon,
-} from 'lucide-react';
+import { LogOut, X, ExternalLink, Download, Smartphone, CheckCircle2, Camera } from 'lucide-react';
 import { canAccessAdminPath } from '@/lib/admin/access';
+import { ADMIN_NAV_GROUPS, isAdminNavActive } from '@/lib/admin/navigation';
 import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
 import { logoutAdmin } from '@/app/admin/connexion/actions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -42,24 +20,8 @@ type InstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 };
 
-// Seuls les modules n'apparaissant pas dans le bottom navbar (Dashboard, Commandes, Produits, Livraisons)
-const drawerMenuItems = [
-  { label: 'Mes livraisons', href: '/admin/mes-livraisons', icon: TruckIcon },
-  { label: 'Abonnements', href: '/admin/abonnements', icon: Repeat },
-  { label: 'Fournisseurs', href: '/admin/fournisseurs', icon: Building2 },
-  { label: 'Approvisionnements', href: '/admin/approvisionnements', icon: Boxes },
-  { label: 'Gestion du Stock', href: '/admin/stock', icon: Package },
-  { label: 'Clients & CRM', href: '/admin/clients', icon: Users },
-  { label: 'Demandes de Devis', href: '/admin/devis', icon: FileSpreadsheet },
-  { label: 'Location de Matériel', href: '/admin/location', icon: Armchair },
-  { label: 'Paysagisme & Projets', href: '/admin/paysagisme', icon: Trees },
-  { label: 'Catégories', href: '/admin/categories', icon: FolderTree },
-  { label: 'Marketing & Promos', href: '/admin/marketing', icon: Megaphone },
-  { label: 'Messages & newsletter', href: '/admin/messages', icon: Mail },
-  { label: 'Blog & Articles', href: '/admin/blog', icon: FileText },
-  { label: 'Rapports & Finances', href: '/admin/rapports', icon: BarChart3 },
-  { label: 'Paramètres & Équipe', href: '/admin/parametres', icon: Settings },
-];
+// Les modules déjà présents dans la barre d'onglets du bas ne sont pas répétés ici
+const TAB_BAR_HREFS = ['/admin/tableau-de-bord', '/admin/commandes', '/admin/produits', '/admin/livraisons'];
 
 export function AdminMobileDrawer({ initialUser }: { initialUser?: AdminSessionUser | null } = {}) {
   const pathname = usePathname();
@@ -284,13 +246,21 @@ export function AdminMobileDrawer({ initialUser }: { initialUser?: AdminSessionU
           ) : null}
         </div>
 
-        {/* Liste des modules */}
-        <div className="flex-1 overflow-y-auto px-3 py-2">
-          <ul className="space-y-1">
-            {drawerMenuItems.filter((item) => canAccessAdminPath(currentUser?.role ?? 'ADMIN', item.href)).map((item) => {
-              const isActive =
-                pathname === item.href ||
-                (item.href !== '/admin/tableau-de-bord' && pathname.startsWith(item.href + '/'));
+        {/* Liste des modules, regroupés par pôle */}
+        <div className="flex-1 overflow-y-auto px-3 py-2 space-y-3">
+          {ADMIN_NAV_GROUPS.map((group) => ({
+            ...group,
+            items: group.items.filter(
+              (item) => !TAB_BAR_HREFS.includes(item.href) && canAccessAdminPath(currentUser?.role ?? 'ADMIN', item.href),
+            ),
+          }))
+            .filter((group) => group.items.length > 0)
+            .map((group) => (
+          <div key={group.title}>
+            <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-white/40">{group.title}</p>
+          <ul className="space-y-1" aria-label={group.title}>
+            {group.items.map((item) => {
+              const isActive = isAdminNavActive(pathname, item.href);
               const Icon = item.icon;
 
               return (
@@ -310,7 +280,7 @@ export function AdminMobileDrawer({ initialUser }: { initialUser?: AdminSessionU
                       className={isActive ? 'text-[#ff5c8a]' : 'text-white/60'}
                       strokeWidth={isActive ? 2.2 : 1.8}
                     />
-                    <span className="flex-1 truncate">{item.label}</span>
+                    <span className="flex-1 truncate">{item.mobileLabel ?? item.label}</span>
                     {isActive && (
                       <span className="h-1.5 w-1.5 rounded-full bg-[#ff5c8a]" />
                     )}
@@ -319,6 +289,8 @@ export function AdminMobileDrawer({ initialUser }: { initialUser?: AdminSessionU
               );
             })}
           </ul>
+          </div>
+            ))}
         </div>
 
         {/* Footer du Drawer : Boutique & Déconnexion */}

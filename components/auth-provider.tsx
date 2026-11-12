@@ -6,6 +6,7 @@ import {
   registerUser as apiRegisterUser,
   verifyEmail as apiVerifyEmail,
   loginWithGoogle as apiLoginWithGoogle,
+  verifyLoginCode as apiVerifyLoginCode,
   getCurrentUser,
   logoutUser as apiLogoutUser,
 } from '@/lib/api/auth';
@@ -33,6 +34,8 @@ type AuthContextType = {
   login: (identifier: string, password: string, remember?: boolean) => Promise<User>;
   /** `credential` = jeton d'identité renvoyé par Google Identity Services */
   loginWithGoogle: (credential: string) => Promise<User>;
+  /** Connexion sans mot de passe : valide le code reçu par email et ouvre la session */
+  loginWithCode: (identifier: string, code: string, remember?: boolean) => Promise<User>;
   /** Étape 1 : crée le compte et envoie le code par email (aucune session ouverte) */
   register: (data: RegisterData) => Promise<PendingVerificationData>;
   /** Étape 2 : valide le code et ouvre la session */
@@ -148,6 +151,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [openSession],
   );
 
+  const loginWithCode = useCallback(
+    async (identifier: string, code: string, remember = true): Promise<User> => {
+      const authData = await apiVerifyLoginCode(identifier, code, remember);
+      return openSession(authData.user);
+    },
+    [openSession]
+  );
+
   const loginWithGoogle = useCallback(
     async (credential: string): Promise<User> => {
       const authData = await apiLoginWithGoogle(credential);
@@ -179,6 +190,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         login,
         loginWithGoogle,
+        loginWithCode,
         register,
         verifyEmail,
         updateUser,

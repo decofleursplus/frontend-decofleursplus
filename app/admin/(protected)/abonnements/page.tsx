@@ -67,8 +67,12 @@ import {
   getAdminSubscriptions,
   updateAdminSubscriptionDelivery,
   updateAdminSubscriptionStatus,
+  getAdminSubscriptionPlans,
+  type AdminSubscriptionPlan,
   type AdminSubscriptionStats,
 } from '@/lib/api/admin/subscriptions';
+import { SubscriptionPlansManager } from '@/components/admin/subscription-plans-manager';
+import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
 import type {
   CustomerSubscription,
   SubscriptionDelivery,
@@ -81,11 +85,6 @@ import { ApiClientError } from '@/lib/api/client';
 
 const PAGE_SIZE = 20;
 
-const PLAN_LABELS: Record<SubscriptionPlan, string> = {
-  PARTICULIER: 'Particulier',
-  PRESTIGE: 'Prestige',
-  ENTREPRISE: 'Entreprise',
-};
 
 const FREQUENCY_LABELS: Record<SubscriptionFrequency, string> = {
   HEBDOMADAIRE: 'Hebdomadaire',
@@ -171,16 +170,49 @@ function StatusBadge({ status }: { status: SubscriptionStatus }) {
   }
 }
 
-function PlanBadge({ plan }: { plan: SubscriptionPlan }) {
-  const styles: Record<SubscriptionPlan, string> = {
-    PRESTIGE: 'bg-purple-100 text-purple-800',
-    ENTREPRISE: 'bg-blue-100 text-blue-800',
-    PARTICULIER: 'bg-stone-100 text-stone-800',
-  };
-  return <Badge className={`${styles[plan]} border-none`}>{PLAN_LABELS[plan] ?? plan}</Badge>;
+const PLAN_STYLES = ['bg-stone-100 text-stone-800', 'bg-purple-100 text-purple-800', 'bg-blue-100 text-blue-800', 'bg-amber-100 text-amber-800', 'bg-emerald-100 text-emerald-800'];
+
+/** Libellé et couleur de la formule, issus du catalogue des formules (géré dans l'onglet « Formules »). */
+function PlanBadge({ plan, plans }: { plan: SubscriptionPlan; plans: AdminSubscriptionPlan[] | null }) {
+  const index = plans?.findIndex((p) => p.id === plan) ?? -1;
+  const label = index >= 0 ? plans![index].name : plan;
+  const style = PLAN_STYLES[(index >= 0 ? index : 0) % PLAN_STYLES.length];
+  return <Badge className={`${style} border-none`}>{label}</Badge>;
 }
 
 export default function AdminAbonnementsPage() {
+  const [view, setView] = useState<'abonnements' | 'formules'>('abonnements');
+  const { currentUser } = useAdminSidebar();
+  const canEditPlans = ['ADMIN', 'MANAGER'].includes(currentUser?.role ?? '');
+
+  // ── Catalogue des formules (libellés, filtre, gestion) ──
+  const [plans, setPlans] = useState<AdminSubscriptionPlan[] | null>(null);
+  const [plansError, setPlansError] = useState<string | null>(null);
+  const [plansRetry, setPlansRetry] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    getAdminSubscriptionPlans()
+      .then((list) => {
+        if (cancelled) return;
+        setPlans(list);
+        setPlansError(null);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setPlansError(errorMessage(err, 'Impossible de charger les formules.'));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [plansRetry]);
+  const reloadPlans = async () => {
+    try {
+      setPlans(await getAdminSubscriptionPlans());
+      setPlansError(null);
+    } catch (err) {
+      setPlansError(errorMessage(err, 'Impossible de charger les formules.'));
+    }
+  };
+
   // ── Liste paginée (filtres, recherche et statistiques côté serveur) ──
   const [subscriptions, setSubscriptions] = useState<CustomerSubscription[]>([]);
   const [stats, setStats] = useState<AdminSubscriptionStats | null>(null);
@@ -495,6 +527,39 @@ export default function AdminAbonnementsPage() {
         </Button>
       </div>
 
+      {/* ── Onglets : souscriptions / catalogue des formules ── */}
+      <div className="flex items-center gap-1.5 border-b border-stone-200" role="tablist" aria-label="Vue abonnements">
+        {(
+          [
+            ['abonnements', `Souscriptions${stats ? ` (${stats.total})` : ''}`],
+            ['formules', `Formules${plans ? ` (${plans.length})` : ''}`],
+          ] as const
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            role="tab"
+            aria-selected={view === value}
+            onClick={() => setView(value)}
+            className={`-mb-px border-b-2 px-3 py-2 text-xs font-semibold transition-colors ${
+              view === value ? 'border-[#c1647a] text-[#c1647a]' : 'border-transparent text-stone-500 hover:text-stone-800'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {view === 'formules' ? (
+        <SubscriptionPlansManager
+          plans={plans}
+          loadError={plansError}
+          canEdit={canEditPlans}
+          onChanged={reloadPlans}
+          onRetry={() => setPlansRetry((n) => n + 1)}
+        />
+      ) : (
+        <>
       {/* ── Indicateurs (calculés par le serveur sur l'ensemble des abonnements) ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4" data-testid="subscription-stats">
         <Card className="border border-stone-200 shadow-2xs">
@@ -601,9 +666,12 @@ export default function AdminAbonnementsPage() {
             className="w-full text-xs h-9 px-3 rounded-md bg-stone-50/50 border border-stone-200 text-stone-700"
           >
             <option value="ALL">Toutes les formules</option>
-            <option value="PARTICULIER">Particulier</option>
-            <option value="PRESTIGE">Prestige</option>
-            <option value="ENTREPRISE">Entreprise</option>
+            {(plans ?? []).map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+                {p.isActive ? '' : ' (désactivée)'}
+              </option>
+            ))}
           </select>
 
           <select
@@ -630,6 +698,7 @@ export default function AdminAbonnementsPage() {
               <TableHead className="text-xs font-semibold">N° Abonnement</TableHead>
               <TableHead className="text-xs font-semibold">Bénéficiaire</TableHead>
               <TableHead className="text-xs font-semibold">Formule</TableHead>
+              <TableHead className="text-xs font-semibold">Début</TableHead>
               <TableHead className="text-xs font-semibold">Fréquence & Jour</TableHead>
               <TableHead className="text-xs font-semibold">Prochain passage</TableHead>
               <TableHead className="text-xs font-semibold">Montant / mois</TableHead>
@@ -640,7 +709,7 @@ export default function AdminAbonnementsPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-stone-500 text-xs">
+                <TableCell colSpan={9} className="text-center py-8 text-stone-500 text-xs">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <Loader2 className="h-6 w-6 animate-spin text-[#193e23]" />
                     <p>Chargement des abonnements...</p>
@@ -649,7 +718,7 @@ export default function AdminAbonnementsPage() {
               </TableRow>
             ) : listError ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-xs">
+                <TableCell colSpan={9} className="text-center py-8 text-xs">
                   <div className="flex flex-col items-center justify-center gap-2" role="alert">
                     <AlertCircle className="h-8 w-8 text-rose-400" />
                     <p className="font-semibold text-stone-800">Les abonnements n’ont pas pu être chargés.</p>
@@ -662,7 +731,7 @@ export default function AdminAbonnementsPage() {
               </TableRow>
             ) : subscriptions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-stone-500 text-xs">
+                <TableCell colSpan={9} className="text-center py-8 text-stone-500 text-xs">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <Repeat className="h-8 w-8 text-stone-300" />
                     <p className="font-semibold text-stone-700">
@@ -694,8 +763,9 @@ export default function AdminAbonnementsPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <PlanBadge plan={sub.plan} />
+                    <PlanBadge plan={sub.plan} plans={plans} />
                   </TableCell>
+                  <TableCell className="text-xs text-stone-700 whitespace-nowrap">{formatDate(sub.startDate, false)}</TableCell>
                   <TableCell>
                     <div className="space-y-0.5">
                       <p className="text-xs text-stone-800">{FREQUENCY_LABELS[sub.frequency]}</p>
@@ -780,6 +850,9 @@ export default function AdminAbonnementsPage() {
         )}
       </div>
 
+        </>
+      )}
+
       {/* ── Fiche détail de l'abonnement ───────────────────────── */}
       <Sheet open={!!detailId} onOpenChange={(open) => !open && closeDetail()}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
@@ -851,7 +924,7 @@ export default function AdminAbonnementsPage() {
               <div className="p-4 bg-stone-50 rounded-xl space-y-3 border border-stone-200">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-stone-500">Formule souscrite :</span>
-                  <PlanBadge plan={detail.plan} />
+                  <PlanBadge plan={detail.plan} plans={plans} />
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-stone-500">Rythme :</span>

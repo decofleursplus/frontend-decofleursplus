@@ -16,7 +16,7 @@ type BooleanKey = {
 }[keyof NotificationSettings];
 
 /** Canaux réellement disponibles : seul l'email a un fournisseur d'envoi branché. */
-const UNAVAILABLE_CHANNELS = ['WhatsApp', 'SMS'];
+const UNAVAILABLE_CHANNELS = ['WhatsApp'];
 
 const EVENTS: { key: BooleanKey; label: string; desc: string }[] = [
   { key: 'onNewOrder', label: 'Nouvelle commande', desc: 'Email à l’adresse d’alerte ci-dessous à chaque nouvelle commande.' },

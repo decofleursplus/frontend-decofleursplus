@@ -238,6 +238,10 @@ export function ProductForm({ product }: { product?: AdminProductDto }) {
               ))}
             </select>
             {status === 'ON_QUOTE' && <span className="block mt-1 font-normal text-gray-500">Affiché avec « Demander un devis » au lieu de « Ajouter au panier ».</span>}
+            {status === 'HIDDEN' && <span className="block mt-1 font-normal text-gray-500">Invisible sur la boutique et dans la recherche.</span>}
+            {status !== 'HIDDEN' && status !== 'ON_QUOTE' && (
+              <span className="block mt-1 font-normal text-gray-500">Publié : sans stock, il reste visible avec le badge « En rupture » et l’achat désactivé.</span>
+            )}
           </label>
           <label className="block text-xs font-semibold">
             Prix de vente (FCFA) *

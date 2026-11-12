@@ -5,10 +5,10 @@ const admin = { useAdminToken: true as const, cache: 'no-store' as const };
 export type AdminProductStatus = 'ACTIVE' | 'HIDDEN' | 'ON_QUOTE' | 'PROMO';
 
 export const PRODUCT_STATUS_LABELS: Record<AdminProductStatus, string> = {
-  ACTIVE: 'En vente',
-  PROMO: 'En promotion',
-  ON_QUOTE: 'Sur devis',
-  HIDDEN: 'Masqué',
+  ACTIVE: 'Actif — en vente',
+  PROMO: 'Actif — en promotion',
+  ON_QUOTE: 'Actif — sur devis',
+  HIDDEN: 'Brouillon / Inactif (non publié)',
 };
 
 export interface AdminVariant {

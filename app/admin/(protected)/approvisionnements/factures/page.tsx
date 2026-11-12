@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, Plus, Search, Receipt, Loader2, CheckCircle2, RefreshCw, Wallet, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
+import { AdminPagination } from '@/components/admin/admin-pagination';
 import type { Supplier, SupplierInvoice, SupplierInvoiceStatus, SupplierOrder } from '@/lib/admin/mock-data/types';
 import {
   createSupplierInvoice,
@@ -33,8 +34,21 @@ export default function AdminFacturesFournisseursPage() {
   const [counts, setCounts] = useState<Record<SupplierInvoiceStatus, number> | null>(null);
   const [totals, setTotals] = useState<{ toPay: number; paid: number } | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<'all' | SupplierInvoiceStatus>('all');
-  const [supplierFilter, setSupplierFilter] = useState('all');
+  const [statusFilter, setStatusFilterRaw] = useState<'all' | SupplierInvoiceStatus>('all');
+  const [supplierFilter, setSupplierFilterRaw] = useState('all');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  // Tout changement de filtre revient à la première page
+  const setStatusFilter = (v: 'all' | SupplierInvoiceStatus) => {
+    setStatusFilterRaw(v);
+    setPage(1);
+  };
+  const setSupplierFilter = (v: string) => {
+    setSupplierFilterRaw(v);
+    setPage(1);
+  };
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -53,15 +67,23 @@ export default function AdminFacturesFournisseursPage() {
 
   const load = useCallback(
     () =>
-      getSupplierInvoices({ status: statusFilter === 'all' ? undefined : statusFilter, supplierId: supplierFilter === 'all' ? undefined : supplierFilter, search })
+      getSupplierInvoices({
+        status: statusFilter === 'all' ? undefined : statusFilter,
+        supplierId: supplierFilter === 'all' ? undefined : supplierFilter,
+        search,
+        page,
+        limit: pageSize,
+      })
         .then((res) => {
           setInvoices(res.items);
           setCounts(res.counts);
           setTotals(res.totals);
+          setTotal(res.total);
+          setTotalPages(res.totalPages);
           setLoadError(null);
         })
         .catch((err) => setLoadError(err instanceof Error ? err.message : 'Impossible de charger les factures.')),
-    [statusFilter, supplierFilter, search],
+    [statusFilter, supplierFilter, search, page, pageSize],
   );
 
   useEffect(() => {
@@ -69,7 +91,10 @@ export default function AdminFacturesFournisseursPage() {
   }, [load]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setSearch(searchInput.trim()), 300);
+    const timer = window.setTimeout(() => {
+      setSearch(searchInput.trim());
+      setPage(1);
+    }, 300);
     return () => window.clearTimeout(timer);
   }, [searchInput]);
 
@@ -293,6 +318,21 @@ export default function AdminFacturesFournisseursPage() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {list.length > 0 && (
+        <AdminPagination
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
+          itemLabel="factures"
+        />
       )}
 
       <AdminDrawer

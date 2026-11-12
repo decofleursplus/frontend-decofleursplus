@@ -1,5 +1,6 @@
 import { apiClient } from '../client';
 import type {
+  PlanConfig,
   CustomerSubscription,
   SubscriptionDelivery,
   SubscriptionDeliveryStatus,
@@ -96,4 +97,48 @@ export async function updateAdminSubscriptionDelivery(
     body,
     { useAdminToken: true }
   );
+}
+
+// ---------- Formules (catalogue géré par l'équipe) ----------
+
+export interface AdminSubscriptionPlan extends PlanConfig {
+  /** Abonnements (tous statuts) rattachés à la formule */
+  subscriptionsCount: number;
+}
+
+export interface SubscriptionPlanPayload {
+  name: string;
+  tagline: string;
+  badge?: string | null;
+  perDeliveryPrice: number;
+  monthlyPriceHebdo: number;
+  monthlyPriceBimensuel: number;
+  bouquetSpecs: string;
+  vaseSpecs: string;
+  recommendedFor: string;
+  serviceCommitments: string[];
+  frequencies: SubscriptionFrequency[];
+  isActive?: boolean;
+  sortOrder?: number;
+}
+
+const adminOpts = { useAdminToken: true as const, cache: 'no-store' as const };
+
+/** Toutes les formules (actives ou non) — GET /admin/subscription-plans */
+export async function getAdminSubscriptionPlans(): Promise<AdminSubscriptionPlan[]> {
+  return apiClient.get<AdminSubscriptionPlan[]>('/admin/subscription-plans', adminOpts);
+}
+
+/** Crée une formule ; le code est dérivé du nom s'il n'est pas fourni. */
+export async function createAdminSubscriptionPlan(payload: SubscriptionPlanPayload & { code?: string }): Promise<AdminSubscriptionPlan> {
+  return apiClient.post<AdminSubscriptionPlan>('/admin/subscription-plans', payload, adminOpts);
+}
+
+export async function updateAdminSubscriptionPlan(code: string, payload: Partial<SubscriptionPlanPayload>): Promise<AdminSubscriptionPlan> {
+  return apiClient.patch<AdminSubscriptionPlan>(`/admin/subscription-plans/${encodeURIComponent(code)}`, payload, adminOpts);
+}
+
+/** Refusé (409) si des abonnements utilisent la formule : il faut alors la désactiver. */
+export async function deleteAdminSubscriptionPlan(code: string): Promise<void> {
+  await apiClient.delete(`/admin/subscription-plans/${encodeURIComponent(code)}`, adminOpts);
 }

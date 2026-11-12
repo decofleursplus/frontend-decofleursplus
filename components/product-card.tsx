@@ -16,6 +16,8 @@ export function ProductCard({ product }: { product: Product }) {
   const variant = defaultVariant(product);
   const hasChoice = product.variants.length > 1;
   const canAddDirectly = !quoteOnly && !hasChoice && Boolean(variant) && (variant?.stockQuantity ?? 0) > 0;
+  // Publié mais épuisé : reste visible, badge « En rupture » et achat désactivé
+  const outOfStock = !quoteOnly && !product.inStock;
 
   function addToCart(e: React.MouseEvent) {
     e.preventDefault();
@@ -43,6 +45,11 @@ export function ProductCard({ product }: { product: Product }) {
         </Link>
         {product.badge && (
           <span className={`product-badge ${product.badgeType === 'discount' ? 'discount' : 'new'}`}>{product.badge}</span>
+        )}
+        {outOfStock && (
+          <span className="absolute left-2.5 bottom-2.5 z-[2] rounded-full bg-[#1e2a1f]/85 px-2.5 py-1 text-[11px] font-semibold text-white">
+            En rupture
+          </span>
         )}
         <button
           type="button"
@@ -111,7 +118,7 @@ export function ProductCard({ product }: { product: Product }) {
             ) : canAddDirectly ? (
               'Ajouter au panier'
             ) : (
-              'Épuisé'
+              'En rupture'
             )}
           </button>
         )}

@@ -55,11 +55,21 @@ export function SharedDevisForm({
   const [submittedRef, setSubmittedRef] = useState<string | null>(null);
   const [stepError, setStepError] = useState<string | null>(null);
 
-  // Étape 1 : Coordonnées (pré-remplies pour un client connecté)
+  // Étape 1 : Coordonnées (pré-remplies pour un client connecté, toujours modifiables)
   const [fullName, setFullName] = useState(user?.name ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
   const [phone, setPhone] = useState(user?.phone || '+221 ');
   const [company, setCompany] = useState('');
+
+  // Le compte peut se charger après l'ouverture du formulaire : on complète alors les champs encore vides,
+  // une seule fois par utilisateur, sans écraser une saisie.
+  const [prefilledFor, setPrefilledFor] = useState<string | null>(user?.id ?? null);
+  if (user && user.id !== prefilledFor) {
+    setPrefilledFor(user.id);
+    setFullName((v) => v || user.name || '');
+    setEmail((v) => v || user.email || '');
+    setPhone((v) => (v.trim() && v.trim() !== '+221' ? v : user.phone || v));
+  }
 
   // Étape 2 : Détails du Projet
   const [prestationType, setPrestationType] = useState(

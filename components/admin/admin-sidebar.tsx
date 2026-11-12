@@ -9,57 +9,10 @@ import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { AdminSessionUser } from '@/lib/api/auth-token';
 import { AdminProfileDialog } from '@/components/admin/admin-profile-dialog';
-import {
-  LayoutDashboard,
-  ShoppingBag,
-  FolderTree,
-  Users,
-  Package,
-  Truck,
-  Megaphone,
-  FileText,
-  BarChart3,
-  Settings,
-  LogOut,
-  ClipboardList,
-  ChevronLeft,
-  ChevronRight,
-  Building2,
-  Boxes,
-  FileSpreadsheet,
-  Armchair,
-  Trees,
-  Repeat,
-  Mail,
-} from 'lucide-react';
+import { LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { canAccessAdminPath } from '@/lib/admin/access';
-
-const navGroups = [
-  {
-    items: [
-      { label: 'Mes livraisons', href: '/admin/mes-livraisons', icon: Truck },
-      { label: 'Tableau de bord', href: '/admin/tableau-de-bord', icon: LayoutDashboard },
-      { label: 'Commandes', href: '/admin/commandes', icon: ClipboardList },
-      { label: 'Abonnements', href: '/admin/abonnements', icon: Repeat },
-      { label: 'Produits', href: '/admin/produits', icon: ShoppingBag },
-      { label: 'Fournisseurs', href: '/admin/fournisseurs', icon: Building2 },
-      { label: 'Approvisionnements', href: '/admin/approvisionnements', icon: Boxes },
-      { label: 'Stock', href: '/admin/stock', icon: Package },
-      { label: 'Clients', href: '/admin/clients', icon: Users },
-      { label: 'Devis', href: '/admin/devis', icon: FileSpreadsheet },
-      { label: 'Location', href: '/admin/location', icon: Armchair },
-      { label: 'Paysagisme', href: '/admin/paysagisme', icon: Trees },
-      { label: 'Livraisons', href: '/admin/livraisons', icon: Truck },
-      { label: 'Catégories', href: '/admin/categories', icon: FolderTree },
-      { label: 'Marketing', href: '/admin/marketing', icon: Megaphone },
-      { label: 'Messages', href: '/admin/messages', icon: Mail },
-      { label: 'Blog & Contenu', href: '/admin/blog', icon: FileText },
-      { label: 'Rapports', href: '/admin/rapports', icon: BarChart3 },
-      { label: 'Paramètres', href: '/admin/parametres', icon: Settings },
-    ],
-  },
-];
+import { ADMIN_NAV_GROUPS, isAdminNavActive } from '@/lib/admin/navigation';
 
 export function AdminSidebar({ initialUser }: { initialUser?: AdminSessionUser | null } = {}) {
   const pathname = usePathname();
@@ -135,12 +88,21 @@ export function AdminSidebar({ initialUser }: { initialUser?: AdminSessionUser |
 
       {/* ── Navigation Principale ── */}
       <nav className="admin-sidebar-nav">
-        {navGroups.map((group, gi) => (
-          <ul key={gi} className="admin-nav-group">
-            {group.items.filter((item) => canAccessAdminPath(currentUser?.role ?? 'ADMIN', item.href)).map((item) => {
-              const isActive =
-                pathname === item.href ||
-                (item.href !== '/admin/tableau-de-bord' && pathname.startsWith(item.href + '/'));
+        {ADMIN_NAV_GROUPS.map((group) => ({
+          ...group,
+          items: group.items.filter((item) => canAccessAdminPath(currentUser?.role ?? 'ADMIN', item.href)),
+        }))
+          .filter((group) => group.items.length > 0)
+          .map((group, gi) => (
+          <div key={group.title} className={cn(gi > 0 && 'mt-3')}>
+            {isCollapsed ? (
+              gi > 0 && <div className="mx-3 mb-2 border-t border-white/10" aria-hidden="true" />
+            ) : (
+              <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-white/40">{group.title}</p>
+            )}
+          <ul className="admin-nav-group" aria-label={group.title}>
+            {group.items.map((item) => {
+              const isActive = isAdminNavActive(pathname, item.href);
               const Icon = item.icon;
 
               if (isCollapsed) {
@@ -186,6 +148,7 @@ export function AdminSidebar({ initialUser }: { initialUser?: AdminSessionUser |
               );
             })}
           </ul>
+          </div>
         ))}
       </nav>
 

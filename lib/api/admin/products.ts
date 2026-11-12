@@ -1,9 +1,13 @@
 import { apiClient, ApiClientError } from '../client';
 import type { AdminProduct } from '@/lib/admin/mock-data/types';
 
+/** État affiché dans le back-office : publié et vendable / publié mais épuisé / non publié */
+export type AdminProductState = 'active' | 'out' | 'draft';
+
 export interface ProductFilterParams {
   /** Niveau de stock (ok, low, out) */
   stock?: 'ok' | 'low' | 'out';
+  state?: AdminProductState;
   page?: number;
   limit?: number;
   category?: string;
@@ -44,6 +48,15 @@ export interface CreateProductPayload {
 export interface AdminProductsResult {
   items: AdminProduct[];
   total: number;
+  page: number;
+  totalPages: number;
+  /** Compteurs par état (même recherche / catégorie, sans filtre d'état) */
+  counts: { all: number; active: number; out: number; draft: number };
+}
+
+export interface BulkFailure {
+  id: string;
+  message: string;
 }
 
 interface BackendImage {
@@ -91,6 +104,9 @@ interface BackendProductsListResponse {
   items?: BackendProductResponse[];
   products?: BackendProductResponse[];
   total?: number;
+  page?: number;
+  totalPages?: number;
+  counts?: AdminProductsResult['counts'];
 }
 
 function mapBackendToAdminProduct(p: BackendProductResponse): AdminProduct {
@@ -169,36 +185,54 @@ function mapBackendToAdminProduct(p: BackendProductResponse): AdminProduct {
 export async function getAdminProducts(
   params: ProductFilterParams = {}
 ): Promise<AdminProductsResult> {
-  try {
-    const res = await apiClient.get<BackendProductsListResponse | BackendProductResponse[]>('/admin/products', {
-      params: {
-        page: params.page,
-        limit: params.limit,
-        category: params.category,
-        subCategory: params.subCategory,
-        status: params.status,
-        featured: params.featured,
-        search: params.search,
-        minPrice: params.minPrice,
-        maxPrice: params.maxPrice,
-        sort: params.sort,
-        stock: params.stock,
-      },
-      isAdmin: true,
-    });
+  const res = await apiClient.get<BackendProductsListResponse>('/admin/products', {
+    params: {
+      page: params.page,
+      limit: params.limit,
+      category: params.category,
+      subCategory: params.subCategory,
+      status: params.status,
+      featured: params.featured,
+      search: params.search,
+      minPrice: params.minPrice,
+      maxPrice: params.maxPrice,
+      sort: params.sort,
+      stock: params.stock,
+      state: params.state,
+    },
+    isAdmin: true,
+    cache: 'no-store',
+  });
+  const items = res?.items || res?.products || [];
+  return {
+    items: items.map(mapBackendToAdminProduct),
+    total: res?.total ?? items.length,
+    page: res?.page ?? 1,
+    totalPages: res?.totalPages ?? 1,
+    counts: res?.counts ?? { all: items.length, active: 0, out: 0, draft: 0 },
+  };
+}
 
-    const items = Array.isArray(res)
-      ? res
-      : res?.items || res?.products || [];
-    const total = Array.isArray(res) ? items.length : (res?.total ?? items.length);
+/**
+ * Action groupée : nouveau statut et/ou nouvelle catégorie (POST /admin/products/bulk-update).
+ * Chaque produit est traité séparément ; les échecs sont renvoyés dans `failed`.
+ */
+export async function bulkUpdateAdminProducts(body: {
+  ids: string[];
+  status?: 'ACTIVE' | 'PROMO' | 'ON_QUOTE' | 'HIDDEN';
+  categoryId?: string;
+}): Promise<{ requested: number; updated: number; failed: BulkFailure[] }> {
+  return apiClient.post('/admin/products/bulk-update', body, { isAdmin: true });
+}
 
-    return {
-      items: items.map(mapBackendToAdminProduct),
-      total,
-    };
-  } catch (error) {
-    throw error instanceof Error ? error : new Error('Produits indisponibles');
-  }
+/**
+ * Suppression groupée (POST /admin/products/bulk-delete) : supprimé définitivement si jamais commandé,
+ * sinon masqué de la boutique pour conserver l'historique des commandes.
+ */
+export async function bulkDeleteAdminProducts(
+  ids: string[],
+): Promise<{ requested: number; deleted: number; hidden: number; failed: BulkFailure[] }> {
+  return apiClient.post('/admin/products/bulk-delete', { ids }, { isAdmin: true });
 }
 
 /**
@@ -448,11 +482,6 @@ export async function updateAdminProduct(
  * Supprimer / masquer un produit
  * Endpoint: DELETE /api/v1/admin/products/:id
  */
-export async function deleteAdminProduct(id: string): Promise<boolean> {
-  try {
-    await apiClient.delete(`/admin/products/${id}`, { isAdmin: true });
-    return true;
-  } catch {
-    return false;
-  }
+export async function deleteAdminProduct(id: string): Promise<void> {
+  await apiClient.delete(`/admin/products/${id}`, { isAdmin: true });
 }

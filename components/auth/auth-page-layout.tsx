@@ -123,7 +123,7 @@ const leftColumnContent = {
       {
         icon: Mail,
         title: 'Réception instantanée',
-        subtitle: 'Par email ou SMS en un instant',
+        subtitle: 'Par e-mail en un instant',
       },
       {
         icon: Headphones,

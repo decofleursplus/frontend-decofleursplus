@@ -1,6 +1,7 @@
 import { apiClient } from './client';
 
-export type SubscriptionPlan = 'PARTICULIER' | 'PRESTIGE' | 'ENTREPRISE';
+/** Code d'une formule (ex. PARTICULIER) : les formules sont gérées depuis le back-office. */
+export type SubscriptionPlan = string;
 export type SubscriptionFrequency = 'HEBDOMADAIRE' | 'BIMENSUELLE';
 export type SubscriptionDeliveryDay = 'MARDI' | 'VENDREDI' | 'SAMEDI';
 export type SubscriptionStatus = 'ACTIVE' | 'PAUSED' | 'CANCELLED' | 'EXPIRED';
@@ -18,6 +19,10 @@ export interface PlanConfig {
   vaseSpecs: string;
   recommendedFor: string;
   serviceCommitments: string[];
+  /** Rythmes proposés pour cette formule */
+  frequencies: SubscriptionFrequency[];
+  isActive: boolean;
+  sortOrder: number;
 }
 
 export interface SubscribePayload {
@@ -52,6 +57,8 @@ export interface CustomerSubscription {
   subscriptionNumber: string;
   userId?: string | null;
   plan: SubscriptionPlan;
+  /** Nom lisible de la formule (renvoyé par l'API) */
+  planName?: string | null;
   frequency: SubscriptionFrequency;
   deliveryDay: SubscriptionDeliveryDay;
   status: SubscriptionStatus;

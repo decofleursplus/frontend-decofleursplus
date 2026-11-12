@@ -24,7 +24,6 @@ export interface CustomerNotificationsPage {
 }
 
 export interface NotificationPreferences {
-  smsEnabled: boolean;
   whatsappEnabled: boolean;
   emailEnabled: boolean;
   orderUpdates: boolean;
