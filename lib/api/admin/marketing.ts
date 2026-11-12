@@ -37,6 +37,7 @@ export function transformAdminCoupon(raw: any): AdminCoupon {
     status,
     revenueGenerated: Number(raw.revenueGenerated ?? 0),
     description: raw.description || '',
+    isPublic: Boolean(raw.isPublic),
   };
 }
 
@@ -72,6 +73,7 @@ export async function createAdminCoupon(data: {
   endDate?: string;
   description?: string;
   maxUsagePerCustomer?: number;
+  isPublic?: boolean;
 }): Promise<AdminCoupon> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const res = await apiClient.post<any>('/admin/marketing/coupons', data, {

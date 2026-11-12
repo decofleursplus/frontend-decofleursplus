@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Mail, LockKeyhole, Eye, EyeOff, ArrowRight, Loader2, KeyRound } from 'lucide-react';
 import { FloralMotifIcon } from '@/components/icons';
 import { useAuth } from '@/components/auth-provider';
+import { readRememberedReferralCode } from '@/lib/api/rewards';
 import { ApiClientError } from '@/lib/api/client';
 import { EmailVerificationStep } from './email-verification-step';
 import { GoogleSignInButton } from './google-sign-in-button';
@@ -86,7 +87,8 @@ export function LoginForm() {
     setSocialLoading(true);
     setFeedback(null);
     try {
-      await loginWithGoogle(credential);
+      // Première connexion Google = inscription : le code de parrainage mémorisé est transmis
+      await loginWithGoogle(credential, readRememberedReferralCode() || undefined);
       goToTarget('Connecté avec Google ! Redirection…');
     } catch (err: unknown) {
       setFeedback({

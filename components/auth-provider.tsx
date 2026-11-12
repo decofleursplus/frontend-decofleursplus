@@ -24,7 +24,7 @@ export type User = {
   role?: string;
 };
 
-type RegisterData = { name: string; email: string; phone: string; password: string };
+type RegisterData = { name: string; email: string; phone: string; password: string; referralCode?: string };
 
 type AuthContextType = {
   user: User | null;
@@ -33,7 +33,7 @@ type AuthContextType = {
   /** Lève une ApiClientError `EMAIL_NOT_VERIFIED` si le compte attend encore son code */
   login: (identifier: string, password: string, remember?: boolean) => Promise<User>;
   /** `credential` = jeton d'identité renvoyé par Google Identity Services */
-  loginWithGoogle: (credential: string) => Promise<User>;
+  loginWithGoogle: (credential: string, referralCode?: string) => Promise<User>;
   /** Connexion sans mot de passe : valide le code reçu par email et ouvre la session */
   loginWithCode: (identifier: string, code: string, remember?: boolean) => Promise<User>;
   /** Étape 1 : crée le compte et envoie le code par email (aucune session ouverte) */
@@ -160,8 +160,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const loginWithGoogle = useCallback(
-    async (credential: string): Promise<User> => {
-      const authData = await apiLoginWithGoogle(credential);
+    async (credential: string, referralCode?: string): Promise<User> => {
+      const authData = await apiLoginWithGoogle(credential, referralCode);
       return openSession(authData.user);
     },
     [openSession],

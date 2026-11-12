@@ -184,6 +184,8 @@ export function SiteFooter() {
             </span>
             <span className="text-white/20">·</span>
             <Link href="/location" className="hover:text-[#f472b6] transition-colors">Location événementielle</Link>
+            <span className="text-white/20">·</span>
+            <Link href="/cartes-cadeaux" className="hover:text-[#f472b6] transition-colors">Cartes cadeaux</Link>
           </div>
         </div>
 

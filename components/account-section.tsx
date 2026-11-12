@@ -3,6 +3,9 @@
 import { AbonnementsSection } from '@/components/account/abonnements';
 import { AdressesSection } from '@/components/account/adresses';
 import { AvisSection } from '@/components/account/avis';
+import { CartesCadeauxSection } from '@/components/account/cartes-cadeaux';
+import { CouponsSection } from '@/components/account/coupons';
+import { ParrainageSection } from '@/components/account/parrainage';
 import { DevisSection } from '@/components/account/devis';
 import { FideliteSection } from '@/components/account/fidelite';
 import { InformationsSection } from '@/components/account/informations';
@@ -18,6 +21,12 @@ export function AccountSection({ section }: { section: AccountSectionKey }) {
       return <InformationsSection />;
     case 'fidelite':
       return <FideliteSection />;
+    case 'coupons':
+      return <CouponsSection />;
+    case 'parrainage':
+      return <ParrainageSection />;
+    case 'cartes-cadeaux':
+      return <CartesCadeauxSection />;
     case 'avis':
       return <AvisSection />;
     case 'notifications':

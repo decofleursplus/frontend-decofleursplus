@@ -1,8 +1,11 @@
 'use client';
 
-import { Crown, Gem, Sparkles, Star } from 'lucide-react';
-import { getMyLoyalty, type LoyaltyTier } from '@/lib/api/customer';
-import { ErrorState, LoadingState, SectionHeader, formatDate, useResource } from './shared';
+import { useState } from 'react';
+import Link from 'next/link';
+import { Crown, Gem, Gift, Loader2, Sparkles, Star } from 'lucide-react';
+import { getMyLoyalty, type LoyaltyOverview, type LoyaltyTier } from '@/lib/api/customer';
+import { redeemLoyaltyPoints } from '@/lib/api/rewards';
+import { ErrorState, LoadingState, Notice, SectionHeader, errorText, fcfa, formatDate, useResource } from './shared';
 
 const TIER_LABEL: Record<LoyaltyTier, string> = { Bronze: 'Bronze', Silver: 'Argent', Gold: 'Or', Platinum: 'Platine' };
 const TIER_ICON: Record<LoyaltyTier, typeof Star> = { Bronze: Star, Silver: Sparkles, Gold: Crown, Platinum: Gem };
@@ -50,10 +53,16 @@ export function FideliteSection() {
             )}
           </div>
 
+          <RedeemCard reward={data.reward} points={data.points} onRedeemed={reload} />
+
           <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4 text-sm text-neutral-700">
             <strong className="block mb-1">Comment gagner des points ?</strong>
             Chaque commande livrée (ou retirée en boutique) vous rapporte 1 point par tranche de {data.fcfaPerPoint.toLocaleString('fr-FR')} FCFA
-            payés. Les points sont crédités automatiquement dès la livraison.
+            payés. Les points sont crédités automatiquement dès la livraison. Parrainez vos proches pour en gagner davantage (
+            <Link href="/compte/parrainage" className="font-semibold text-[var(--pink)] underline">
+              mon parrainage
+            </Link>
+            ).
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -97,5 +106,66 @@ export function FideliteSection() {
         </div>
       ) : null}
     </section>
+  );
+}
+
+/** Échange de points contre un bon d'achat personnel (code envoyé par email et listé dans « Mes coupons »). */
+function RedeemCard({ reward, points, onRedeemed }: { reward: LoyaltyOverview['reward']; points: number; onRedeemed: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{ kind: 'success' | 'error'; text: string; code?: string } | null>(null);
+  const missing = Math.max(0, reward.pointsCost - points);
+
+  const redeem = () => {
+    setBusy(true);
+    setResult(null);
+    redeemLoyaltyPoints()
+      .then(({ coupon }) => {
+        setResult({ kind: 'success', text: `Votre bon de ${fcfa(reward.value)} est prêt :`, code: coupon.code });
+        onRedeemed();
+      })
+      .catch((err) => setResult({ kind: 'error', text: errorText(err, 'Échange impossible.') }))
+      .finally(() => setBusy(false));
+  };
+
+  return (
+    <div className="rounded-2xl border border-[#f1d6dd] bg-[#fdf6f8] p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <Gift size={22} className="mt-0.5 shrink-0 text-[var(--pink)]" />
+          <div className="text-sm">
+            <strong className="block text-neutral-900">
+              {reward.pointsCost.toLocaleString('fr-FR')} points = un bon de {fcfa(reward.value)}
+            </strong>
+            <span className="text-neutral-600">
+              Valable {reward.validityDays} jours sur votre prochaine commande, utilisable une fois avec votre compte.
+            </span>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={redeem}
+          disabled={busy || missing > 0}
+          className="inline-flex items-center gap-2 rounded-full bg-[var(--pink)] px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {busy && <Loader2 size={15} className="animate-spin" />}
+          {missing > 0 ? `Encore ${missing.toLocaleString('fr-FR')} points` : 'Échanger mes points'}
+        </button>
+      </div>
+      {result && (
+        <Notice kind={result.kind}>
+          {result.text}
+          {result.code && (
+            <>
+              {' '}
+              <strong className="font-mono tracking-wider">{result.code}</strong> — retrouvez-le dans{' '}
+              <Link href="/compte/coupons" className="font-semibold underline">
+                Mes coupons
+              </Link>
+              .
+            </>
+          )}
+        </Notice>
+      )}
+    </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Bell, CreditCard, Globe, RefreshCw, ShieldCheck, Store, Truck, Users } from 'lucide-react';
+import { Award, Bell, CreditCard, Globe, RefreshCw, ShieldCheck, Store, Truck, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getAdminUser } from '@/lib/api/auth-token';
 import {
@@ -14,6 +14,7 @@ import {
 } from '@/lib/api/admin/settings';
 import { BoutiqueTab } from './_components/boutique-tab';
 import { CollaborateursTab } from './_components/collaborateurs-tab';
+import { LoyaltyTab } from './_components/loyalty-tab';
 import { NotificationsTab } from './_components/notifications-tab';
 import { PaymentsTab } from './_components/payments-tab';
 import { RolesTab } from './_components/roles-tab';
@@ -21,7 +22,7 @@ import { SeoTab } from './_components/seo-tab';
 import { ZonesTab } from './_components/zones-tab';
 import { describeError, ErrorBlock, formatDateTime, isForbidden, LoadingBlock } from './_components/shared';
 
-type SettingsTab = 'boutique' | 'collaborateurs' | 'roles' | 'livraison' | 'paiement' | 'notifications' | 'seo';
+type SettingsTab = 'boutique' | 'collaborateurs' | 'roles' | 'livraison' | 'paiement' | 'fidelite' | 'notifications' | 'seo';
 
 const NAV_ITEMS: { key: SettingsTab; label: string; icon: typeof Store; desc: string }[] = [
   { key: 'boutique', label: 'Boutique', icon: Store, desc: 'Identité & coordonnées' },
@@ -29,6 +30,7 @@ const NAV_ITEMS: { key: SettingsTab; label: string; icon: typeof Store; desc: st
   { key: 'roles', label: 'Rôles & permissions', icon: ShieldCheck, desc: 'Droits par rôle' },
   { key: 'livraison', label: 'Zones de livraison', icon: Truck, desc: 'Tarifs & délais' },
   { key: 'paiement', label: 'Paiement', icon: CreditCard, desc: 'Moyens acceptés' },
+  { key: 'fidelite', label: 'Fidélité & parrainage', icon: Award, desc: 'Points, bons, parrainage' },
   { key: 'notifications', label: 'Notifications', icon: Bell, desc: 'Alertes & emails' },
   { key: 'seo', label: 'Réseaux & référencement', icon: Globe, desc: 'SEO & réseaux sociaux' },
 ];
@@ -132,6 +134,7 @@ export default function AdminParametresPage() {
         />
       );
     }
+    if (activeTab === 'fidelite') return <LoyaltyTab key={refreshKey} canEdit={canManageZones} />;
     return <ZonesTab key={refreshKey} canEdit={canManageZones} />;
   };
 

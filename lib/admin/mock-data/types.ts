@@ -206,6 +206,8 @@ export type AdminCoupon = {
   status: CouponStatus;
   revenueGenerated: number;
   description?: string;
+  /** Affiché dans « Mes coupons » de l'espace client */
+  isPublic?: boolean;
 };
 
 export type PromotionTargetType = 'all' | 'categories' | 'products';

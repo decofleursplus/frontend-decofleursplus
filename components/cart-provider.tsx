@@ -4,6 +4,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { Product, ProductVariant } from '@/lib/products';
 import { useAuth } from '@/components/auth-provider';
 import { clearMyCart, saveMyCart } from '@/lib/api/orders';
+import { addFavorite, removeFavorite, syncFavorites } from '@/lib/api/rewards';
+import { getProducts } from '@/lib/api/catalog';
 
 /** Ligne de panier : une variante précise d'un produit, avec ses options cadeau. */
 export type CartLine = {
@@ -64,6 +66,16 @@ function readJson<T>(key: string): T | null {
     return null;
   }
 }
+
+const toFavoriteItem = (p: FavoriteItem): FavoriteItem => ({
+  id: p.id,
+  slug: p.slug,
+  name: p.name,
+  image: p.image,
+  price: p.price,
+  oldPrice: p.oldPrice,
+  category: p.category,
+});
 
 function isValidLine(line: unknown): line is CartLine {
   const l = line as Partial<CartLine> | null;
@@ -131,6 +143,37 @@ export function CartProvider({ children }: Readonly<{ children: React.ReactNode 
     return () => window.clearTimeout(timer);
   }, [items, ready, isClient]);
 
+  // Client connecté : les favoris suivent le compte (fusion avec ceux du navigateur à la connexion)
+  const favoritesRef = useRef<FavoriteItem[]>([]);
+  useEffect(() => {
+    favoritesRef.current = favoriteItems;
+  }, [favoriteItems]);
+  const favoritesSyncedFor = useRef<string | null>(null);
+  const userId = user?.id ?? null;
+  useEffect(() => {
+    if (!ready || !isClient || !userId) {
+      favoritesSyncedFor.current = null;
+      return;
+    }
+    if (favoritesSyncedFor.current === userId) return;
+    favoritesSyncedFor.current = userId;
+    syncFavorites(favoritesRef.current.map((f) => f.id))
+      .then(async ({ productIds }) => {
+        const known = new Map(favoritesRef.current.map((f) => [f.id, f]));
+        const missing = productIds.filter((id) => !known.has(id));
+        if (missing.length > 0) {
+          // Favoris enregistrés depuis un autre appareil : fiches produit à jour depuis le catalogue
+          const page = await getProducts({ ids: missing, limit: Math.min(100, missing.length) });
+          for (const p of page.items) known.set(p.id, toFavoriteItem(p));
+        }
+        setFavoriteItems(productIds.map((id) => known.get(id)).filter((f): f is FavoriteItem => Boolean(f)));
+      })
+      .catch((err) => {
+        favoritesSyncedFor.current = null;
+        console.warn('[Favoris] Synchronisation avec le compte impossible :', err);
+      });
+  }, [ready, isClient, userId]);
+
   const add = useCallback((product: Product, variant: ProductVariant, quantity = 1, options: CartOptions = {}) => {
     const lineId = buildLineId(variant.id, options);
     setItems((current) => {
@@ -195,25 +238,19 @@ export function CartProvider({ children }: Readonly<{ children: React.ReactNode 
       replace: (lines) => setItems(lines.filter(isValidLine)),
       favorites: favoriteItems.map((f) => f.id),
       favoriteItems,
-      toggleFavorite: (product) =>
+      toggleFavorite: (product) => {
+        const removing = favoriteItems.some((f) => f.id === product.id);
         setFavoriteItems((current) =>
-          current.some((f) => f.id === product.id)
-            ? current.filter((f) => f.id !== product.id)
-            : [
-                ...current,
-                {
-                  id: product.id,
-                  slug: product.slug,
-                  name: product.name,
-                  image: product.image,
-                  price: product.price,
-                  oldPrice: product.oldPrice,
-                  category: product.category,
-                },
-              ],
-        ),
+          removing ? current.filter((f) => f.id !== product.id) : [...current.filter((f) => f.id !== product.id), toFavoriteItem(product)],
+        );
+        if (isClient) {
+          (removing ? removeFavorite(product.id) : addFavorite(product.id)).catch((err) =>
+            console.warn('[Favoris] Enregistrement sur le compte impossible :', err),
+          );
+        }
+      },
     }),
-    [items, favoriteItems, droppedLegacyLines, add],
+    [items, favoriteItems, droppedLegacyLines, add, isClient],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

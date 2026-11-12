@@ -31,6 +31,8 @@ export interface LoyaltyOverview {
   tiers: { tier: LoyaltyTier; minPoints: number }[];
   /** 1 point par tranche de `fcfaPerPoint` FCFA, crédité à la livraison */
   fcfaPerPoint: number;
+  /** Échange de points contre un bon (Paramètres › Fidélité) */
+  reward: { pointsCost: number; value: number; validityDays: number; canRedeem: boolean };
   history: { id: string; points: number; balance: number; reason: string; createdAt: string }[];
 }
 

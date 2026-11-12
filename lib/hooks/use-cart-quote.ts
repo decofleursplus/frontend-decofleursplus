@@ -20,6 +20,8 @@ export interface CartQuoteState {
   lineProblems: Record<string, LineProblem>;
   /** Le code promo saisi a été refusé ; le chiffrage affiché est fait sans lui */
   couponError: string | null;
+  /** La carte cadeau saisie a été refusée ; le chiffrage affiché est fait sans elle */
+  giftCardError: string | null;
   /** Champs refusés (ex. deliveryZoneId) */
   fieldErrors: Record<string, string>;
 }
@@ -29,6 +31,7 @@ interface Input {
   deliveryMode: DeliveryMode;
   deliveryZoneId?: string;
   couponCode?: string;
+  giftCardCode?: string;
   /** false : ne rien chiffrer (ex. en attendant une sélection) */
   enabled?: boolean;
 }
@@ -43,18 +46,19 @@ function toPayload(lines: CartLine[]) {
 }
 
 /** Chiffre le panier côté serveur à chaque changement (prix, options, promotions, coupon, livraison). */
-export function useCartQuote({ lines, deliveryMode, deliveryZoneId, couponCode, enabled = true }: Input): CartQuoteState {
+export function useCartQuote({ lines, deliveryMode, deliveryZoneId, couponCode, giftCardCode, enabled = true }: Input): CartQuoteState {
   const [state, setState] = useState<CartQuoteState>({
     quote: null,
     loading: false,
     error: null,
     lineProblems: {},
     couponError: null,
+    giftCardError: null,
     fieldErrors: {},
   });
   const requestId = useRef(0);
   const items = useMemo(() => toPayload(lines), [lines]);
-  const signature = JSON.stringify([items, deliveryMode, deliveryZoneId, couponCode, enabled]);
+  const signature = JSON.stringify([items, deliveryMode, deliveryZoneId, couponCode, giftCardCode, enabled]);
 
   useEffect(() => {
     if (!enabled || items.length === 0) {
@@ -67,22 +71,33 @@ export function useCartQuote({ lines, deliveryMode, deliveryZoneId, couponCode, 
 
     const run = async () => {
       const base = { items, deliveryMode, deliveryZoneId: deliveryMode === 'PICKUP' ? undefined : deliveryZoneId };
-      const code = couponCode?.trim() || undefined;
+      let code = couponCode?.trim() || undefined;
+      let card = giftCardCode?.trim() || undefined;
       let couponError: string | null = null;
+      let giftCardError: string | null = null;
       try {
-        let quote: CartQuote;
-        try {
-          quote = await quoteOrder({ ...base, couponCode: code });
-        } catch (err) {
-          const couponDetail =
-            code && err instanceof ApiClientError ? err.details?.find((d) => d.path === 'couponCode') : undefined;
-          if (!couponDetail) throw err;
-          // Code refusé : on chiffre sans lui et on affiche le motif
-          couponError = couponDetail.message;
-          quote = await quoteOrder(base);
+        let quote: CartQuote | null = null;
+        // Code promo ou carte refusés : on chiffre sans eux et on affiche le motif
+        for (let attempt = 0; quote === null; attempt++) {
+          try {
+            quote = await quoteOrder({ ...base, couponCode: code, giftCardCode: card });
+          } catch (err) {
+            const details = err instanceof ApiClientError ? (err.details ?? []) : [];
+            const couponDetail = code ? details.find((d) => d.path === 'couponCode') : undefined;
+            const cardDetail = card ? details.find((d) => d.path === 'giftCardCode') : undefined;
+            if (attempt >= 2 || (!couponDetail && !cardDetail)) throw err;
+            if (couponDetail) {
+              couponError = couponDetail.message;
+              code = undefined;
+            }
+            if (cardDetail) {
+              giftCardError = cardDetail.message;
+              card = undefined;
+            }
+          }
         }
         if (id === requestId.current) {
-          setState({ quote, loading: false, error: null, lineProblems: {}, couponError, fieldErrors: {} });
+          setState({ quote, loading: false, error: null, lineProblems: {}, couponError, giftCardError, fieldErrors: {} });
         }
       } catch (err) {
         if (id !== requestId.current) return;
@@ -101,6 +116,7 @@ export function useCartQuote({ lines, deliveryMode, deliveryZoneId, couponCode, 
           error: Object.keys(lineProblems).length > 0 ? null : err instanceof Error ? err.message : 'Chiffrage impossible.',
           lineProblems,
           couponError,
+          giftCardError,
           fieldErrors,
         });
       }

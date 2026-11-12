@@ -10,6 +10,7 @@ import {
   Calendar,
   Check,
   Clock,
+  Gift,
   Loader2,
   LockKeyhole,
   MapPin,
@@ -88,6 +89,9 @@ export default function CheckoutPage() {
   const [orderError, setOrderError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [placed, setPlaced] = useState(false);
+  // Carte cadeau : code saisi puis appliqué (le serveur valide et calcule le montant prélevé)
+  const [giftCardInput, setGiftCardInput] = useState('');
+  const [giftCardCode, setGiftCardCode] = useState('');
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated && items.length > 0 && !placed) router.push('/connexion?redirect=/commande');
@@ -119,11 +123,20 @@ export default function CheckoutPage() {
   const zone = zones.find((z) => z.id === prefs.deliveryZoneId) ?? null;
   const needsZone = mode !== 'PICKUP';
 
-  const { quote, loading: quoting, error: quoteError, lineProblems, couponError, fieldErrors: quoteFieldErrors } = useCartQuote({
+  const {
+    quote,
+    loading: quoting,
+    error: quoteError,
+    lineProblems,
+    couponError,
+    giftCardError,
+    fieldErrors: quoteFieldErrors,
+  } = useCartQuote({
     lines: items,
     deliveryMode: mode,
     deliveryZoneId: prefs.deliveryZoneId || undefined,
     couponCode: prefs.couponCode || undefined,
+    giftCardCode: giftCardCode || undefined,
     enabled: prefsReady && (!needsZone || Boolean(prefs.deliveryZoneId)),
   });
 
@@ -223,6 +236,7 @@ export default function CheckoutPage() {
         deliveryMode: mode,
         deliveryZoneId: needsZone ? prefs.deliveryZoneId : undefined,
         couponCode: quote?.appliedCoupon?.code,
+        giftCardCode: quote?.appliedGiftCard?.code,
         paymentMethod: payment as OrderPaymentMethod,
         phone: contactPhone.trim() || undefined,
         recipientName: forSomeoneElse ? recipientName.trim() : undefined,
@@ -648,10 +662,23 @@ export default function CheckoutPage() {
                       <span>{mode === 'PICKUP' ? 'Retrait en boutique' : `Livraison (${quote.deliveryZone?.name ?? '—'})`}</span>
                       <span>{quote.deliveryFee === 0 ? 'Offerte' : formatPrice(quote.deliveryFee)}</span>
                     </div>
+                    {quote.appliedGiftCard && (
+                      <div className="cost-row text-emerald-700">
+                        <span className="flex items-center gap-1">
+                          <Gift size={13} /> Carte cadeau {quote.appliedGiftCard.code}
+                        </span>
+                        <span>−{formatPrice(quote.appliedGiftCard.amount)}</span>
+                      </div>
+                    )}
                     <div className="cost-row total-row">
-                      <strong>Total à payer</strong>
+                      <strong>{quote.appliedGiftCard ? 'Reste à payer' : 'Total à payer'}</strong>
                       <strong className="total-amount-highlight">{formatPrice(quote.totalAmount)}</strong>
                     </div>
+                    {quote.appliedGiftCard && (
+                      <p className="text-[11px] text-neutral-500">
+                        Solde de la carte après cette commande : {formatPrice(quote.appliedGiftCard.remainingBalance)}
+                      </p>
+                    )}
                   </>
                 ) : needsZone && !prefs.deliveryZoneId ? (
                   <p className="text-sm text-neutral-600">Choisissez votre zone de livraison pour afficher le total.</p>
@@ -671,6 +698,50 @@ export default function CheckoutPage() {
                 {couponError && (
                   <p className="text-xs text-red-600 mt-1">
                     Code « {prefs.couponCode} » non appliqué : {couponError}
+                  </p>
+                )}
+              </div>
+
+              <div className="rounded-xl border border-[#ece5da] bg-[#fcfaf7] p-3">
+                <label htmlFor="checkout-gift-card" className="flex items-center gap-1.5 text-xs font-semibold text-neutral-700">
+                  <Gift size={14} className="text-[#c1647a]" /> Vous avez une carte cadeau ?
+                </label>
+                {giftCardCode && !giftCardError ? (
+                  <div className="mt-2 flex items-center justify-between gap-2 text-xs">
+                    <span className="font-mono font-bold tracking-wider text-[#173f22]">{giftCardCode}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGiftCardCode('');
+                        setGiftCardInput('');
+                      }}
+                      className="font-semibold text-neutral-500 underline"
+                    >
+                      Retirer
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      id="checkout-gift-card"
+                      value={giftCardInput}
+                      onChange={(e) => setGiftCardInput(e.target.value.toUpperCase())}
+                      placeholder="DFP-XXXX-XXXX"
+                      className="min-w-0 flex-1 rounded-lg border border-[#e7e4dd] bg-white px-3 py-2 font-mono text-xs uppercase tracking-wider outline-none focus:border-[#c1647a]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setGiftCardCode(giftCardInput.trim())}
+                      disabled={!giftCardInput.trim()}
+                      className="rounded-lg bg-[#173f22] px-3 py-2 text-xs font-semibold text-white disabled:opacity-40"
+                    >
+                      Appliquer
+                    </button>
+                  </div>
+                )}
+                {giftCardError && giftCardCode && (
+                  <p className="mt-1 text-xs text-red-600" role="alert">
+                    Carte « {giftCardCode} » non appliquée : {giftCardError}
                   </p>
                 )}
               </div>
@@ -700,7 +771,9 @@ export default function CheckoutPage() {
                     <span>
                       {!quote
                         ? 'Commander'
-                        : payment === 'CASH_ON_DELIVERY' || !payment
+                        : quote.totalAmount === 0
+                          ? 'Confirmer la commande (réglée par carte cadeau)'
+                          : payment === 'CASH_ON_DELIVERY' || !payment
                           ? `Confirmer la commande (${formatPrice(quote.totalAmount)})`
                           : `Payer ${formatPrice(quote.totalAmount)}`}
                     </span>

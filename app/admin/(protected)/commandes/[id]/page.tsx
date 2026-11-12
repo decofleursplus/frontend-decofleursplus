@@ -232,8 +232,14 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               <span>Livraison</span>
               <span>{order.deliveryFee ? fcfa(order.deliveryFee) : 'Offerte'}</span>
             </div>
+            {(order.giftCardAmount ?? 0) > 0 && (
+              <div className="flex justify-between text-emerald-700">
+                <span>Carte cadeau</span>
+                <span>−{fcfa(order.giftCardAmount ?? 0)}</span>
+              </div>
+            )}
             <div className="flex justify-between border-t border-[#f0ede6] pt-2 text-sm font-bold">
-              <span>Total</span>
+              <span>{(order.giftCardAmount ?? 0) > 0 ? 'Reste à payer' : 'Total'}</span>
               <span>{fcfa(order.totalAmount)}</span>
             </div>
           </div>

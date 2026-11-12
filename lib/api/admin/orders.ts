@@ -97,6 +97,8 @@ export interface AdminOrderDetail {
   discountAmount: number;
   couponCode: string | null;
   deliveryFee: number;
+  /** Montant réglé par carte cadeau ; totalAmount = reste à payer */
+  giftCardAmount?: number;
   totalAmount: number;
   paymentStatus: BackendPaymentStatus;
   paymentMethod: string;

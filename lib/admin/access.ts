@@ -24,6 +24,7 @@ const RULES: { prefix: string; roles: StaffRole[] }[] = [
   { prefix: '/admin/paysagisme', roles: ['ADMIN', 'MANAGER', 'SALES'] },
   { prefix: '/admin/livraisons', roles: ['ADMIN', 'MANAGER', 'SALES'] },
   { prefix: '/admin/marketing', roles: ['ADMIN', 'MANAGER', 'SALES'] },
+  { prefix: '/admin/cartes-cadeaux', roles: ['ADMIN', 'MANAGER', 'SALES', 'ACCOUNTANT'] },
   { prefix: '/admin/messages', roles: ['ADMIN', 'MANAGER', 'SALES'] },
   { prefix: '/admin/blog', roles: ['ADMIN', 'MANAGER', 'FLORIST', 'SALES'] },
   { prefix: '/admin/rapports', roles: ['ADMIN', 'MANAGER', 'SALES'] },
