@@ -61,9 +61,9 @@ export default function PaysagismePage() {
           <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/25 pointer-events-none" />
 
           <div className="relative z-10 max-w-xl text-white">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 text-amber-200 border border-amber-400/40 text-xs font-semibold mb-3 backdrop-blur-md">
-              <span className="w-2 h-2 rounded-full bg-amber-400" />
-              Service en ligne &amp; catalogue complet à venir
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-100 border border-emerald-300/40 text-xs font-semibold mb-3 backdrop-blur-md">
+              <span className="w-2 h-2 rounded-full bg-emerald-300" />
+              Conception · Aménagement · Entretien
             </div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-white tracking-tight leading-tight mb-3 drop-shadow-sm">
               Paysagisme &amp; Aménagement Vert

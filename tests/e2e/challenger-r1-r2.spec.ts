@@ -1,7 +1,7 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type BrowserContext, type Page, type Route } from '@playwright/test';
 
 // Helper to set admin session cookies
-async function setAdminSession(context: any) {
+async function setAdminSession(context: BrowserContext) {
   await context.addCookies([
     {
       name: 'admin_auth',
@@ -33,7 +33,7 @@ async function setAdminSession(context: any) {
 }
 
 // Helper to mock client session
-async function setClientSession(page: any, context: any) {
+async function setClientSession(page: Page, context: BrowserContext) {
   const clientUser = {
     id: 'user-client-emp-01',
     name: 'Awa Diop',
@@ -44,7 +44,7 @@ async function setClientSession(page: any, context: any) {
   };
 
   // Intercept backend auth check if triggered
-  await page.route('**/api/v1/auth/me', async (route: any) => {
+  await page.route('**/api/v1/auth/me', async (route: Route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -64,7 +64,7 @@ async function setClientSession(page: any, context: any) {
     },
   ]);
 
-  await page.addInitScript((userObj: any) => {
+  await page.addInitScript((userObj: typeof clientUser) => {
     localStorage.setItem('df_auth_token', 'mock-client-jwt-token-2026');
     localStorage.setItem('decofleur_user_session', JSON.stringify(userObj));
   }, clientUser);
@@ -425,7 +425,7 @@ test.describe('R2. Admin Mobile Logout (Topbar & Mobile Drawer)', () => {
 
     // Verify cookies removed
     const cookies = await context.cookies();
-    const adminAuth = cookies.find((c: any) => c.name === 'admin_auth');
+    const adminAuth = cookies.find((c) => c.name === 'admin_auth');
     expect(adminAuth).toBeUndefined();
   });
 
