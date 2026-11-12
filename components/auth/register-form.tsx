@@ -1,17 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { User as UserIcon, Mail, Phone, LockKeyhole, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
+import { User as UserIcon, Mail, Phone, LockKeyhole, Eye, EyeOff, ArrowRight, Loader2, Gift } from 'lucide-react';
 import { FloralMotifIcon } from '@/components/icons';
 import { useAuth } from '@/components/auth-provider';
 import { ApiClientError } from '@/lib/api/client';
 import { PASSWORD_MIN_LENGTH } from '@/lib/api/auth';
 import type { PendingVerificationData } from '@/lib/api/types';
+import { forgetReferralCode, readRememberedReferralCode } from '@/lib/api/rewards';
 import { EmailVerificationStep } from './email-verification-step';
 import { GoogleSignInButton } from './google-sign-in-button';
 import { RegistrationSuccess } from './registration-success';
+
+const noSubscription = () => () => {};
 
 export function RegisterForm() {
   const searchParams = useSearchParams();
@@ -34,6 +37,10 @@ export function RegisterForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [socialLoading, setSocialLoading] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  // Code de parrainage : lien /parrain/CODE (?parrain=) ou code mémorisé dans le navigateur ; modifiable
+  const rememberedCode = useSyncExternalStore(noSubscription, readRememberedReferralCode, () => '');
+  const [referralInput, setReferralInput] = useState<string | null>(null);
+  const referralCode = referralInput ?? (searchParams.get('parrain') || rememberedCode);
 
   // Étapes : formulaire → code reçu par email → écran de succès
   const [pending, setPending] = useState<PendingVerificationData | null>(null);
@@ -55,7 +62,7 @@ export function RegisterForm() {
     setFeedback(null);
 
     try {
-      setPending(await register({ name, email, phone, password }));
+      setPending(await register({ name, email, phone, password, referralCode }));
     } catch (err: unknown) {
       const fieldError = err instanceof ApiClientError ? err.details?.[0]?.message : undefined;
       setFeedback(
@@ -70,7 +77,8 @@ export function RegisterForm() {
     setSocialLoading(true);
     setFeedback(null);
     try {
-      await loginWithGoogle(credential);
+      await loginWithGoogle(credential, referralCode);
+      forgetReferralCode();
       router.push(redirectTarget);
     } catch (err: unknown) {
       setFeedback(err instanceof Error ? err.message : 'L’inscription avec Google a échoué.');
@@ -88,7 +96,10 @@ export function RegisterForm() {
         email={pending.email}
         initialCooldown={pending.resendAvailableInSeconds}
         expiresInMinutes={pending.expiresInMinutes}
-        onVerified={() => setIsSuccess(true)}
+        onVerified={() => {
+          forgetReferralCode();
+          setIsSuccess(true);
+        }}
         onBack={() => setPending(null)}
       />
     );
@@ -208,6 +219,31 @@ export function RegisterForm() {
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
+        </div>
+
+        {/* Referral code (optional) */}
+        <div className="auth-field-group">
+          <label htmlFor="reg-referral" className="auth-label">
+            Code de parrainage <span className="text-[11px] font-normal text-gray-500">(facultatif)</span>
+          </label>
+          <div className="auth-input-wrapper">
+            <span className="auth-input-icon" aria-hidden="true">
+              <Gift size={16} />
+            </span>
+            <input
+              id="reg-referral"
+              type="text"
+              autoComplete="off"
+              placeholder="ex : MARIAMA-7K2P"
+              value={referralCode}
+              onChange={(e) => setReferralInput(e.target.value.toUpperCase())}
+              maxLength={20}
+              className="auth-input uppercase"
+            />
+          </div>
+          {referralCode && (
+            <p className="mt-1 text-[11px] text-[#24582d]">Votre bon de bienvenue sera envoyé par email dès la confirmation de votre compte.</p>
+          )}
         </div>
 
         {/* Terms and conditions */}

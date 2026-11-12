@@ -1,9 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { Heart, Share2, Check } from 'lucide-react';
 import { WhatsAppIcon, FacebookIcon } from '@/components/icons';
 import { likeBlogArticle } from '@/lib/api/blog';
+
+const noSubscription = () => () => {};
+const readPageUrl = () => window.location.href;
 
 interface ArticleInteractionsProps {
   slug: string;
@@ -36,7 +39,8 @@ export function ArticleInteractions({ slug, initialLikes, title }: ArticleIntera
   };
 
   const encodedTitle = encodeURIComponent(title);
-  const currentUrl = typeof window !== 'undefined' ? encodeURIComponent(window.location.href) : '';
+  // Adresse de la page lue après l'hydratation (vide au rendu serveur) : pas d'écart serveur/navigateur
+  const currentUrl = encodeURIComponent(useSyncExternalStore(noSubscription, readPageUrl, () => ''));
 
   return (
     <div className="flex items-center justify-between border-t border-b border-neutral-100 py-4 my-8">

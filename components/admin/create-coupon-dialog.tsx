@@ -19,6 +19,8 @@ export interface NewCouponInput {
   startDate: string;
   endDate: string;
   description?: string;
+  /** Affiché dans « Mes coupons » de tous les clients */
+  isPublic?: boolean;
 }
 
 interface CreateCouponDialogProps {
@@ -51,6 +53,7 @@ function CouponDrawer({ isOpen, onOpenChange, onCreate }: CreateCouponDialogProp
   const [startDate, setStartDate] = useState(() => isoDay(0));
   const [endDate, setEndDate] = useState(() => isoDay(30));
   const [description, setDescription] = useState('');
+  const [isPublic, setIsPublic] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
@@ -92,6 +95,7 @@ function CouponDrawer({ isOpen, onOpenChange, onCreate }: CreateCouponDialogProp
       startDate,
       endDate,
       description: description.trim() || undefined,
+      isPublic,
     });
     setSaving(false);
     if (ok) onOpenChange(false);
@@ -230,16 +234,26 @@ function CouponDrawer({ isOpen, onOpenChange, onCreate }: CreateCouponDialogProp
 
         <div className="space-y-1.5">
           <Label htmlFor="coupon-description" className="font-semibold text-gray-700 text-xs">
-            Description / note interne
+            Description
           </Label>
           <Input
             id="coupon-description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Ex : Partenariat presse, remise abonnés…"
+            placeholder="Ex : -10 % sur toute la boutique pour la fête des mères"
             className="text-xs h-10 bg-white"
           />
         </div>
+
+        <label className="flex items-start gap-2.5 rounded-xl border border-[#e7e4dd] bg-[#fcfaf7] p-3 cursor-pointer">
+          <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#c1647a]" />
+          <span>
+            <span className="block font-semibold text-gray-800">Afficher dans « Mes coupons » des clients</span>
+            <span className="text-[11px] text-gray-500">
+              Les clients connectés voient ce code (et sa description) dans leur espace tant qu’il est actif.
+            </span>
+          </span>
+        </label>
       </form>
     </AdminDrawer>
   );

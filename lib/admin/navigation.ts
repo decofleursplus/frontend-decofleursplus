@@ -19,6 +19,7 @@ import {
   Repeat,
   Mail,
   Route,
+  Gift,
 } from 'lucide-react';
 
 export interface AdminNavItem {
@@ -74,6 +75,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     title: 'Communication',
     items: [
       { label: 'Marketing', mobileLabel: 'Marketing & promos', href: '/admin/marketing', icon: Megaphone },
+      { label: 'Cartes cadeaux', href: '/admin/cartes-cadeaux', icon: Gift },
       { label: 'Blog & Contenu', href: '/admin/blog', icon: FileText },
     ],
   },

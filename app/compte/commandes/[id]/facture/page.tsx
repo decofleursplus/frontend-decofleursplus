@@ -145,8 +145,14 @@ export default function OrderInvoicePage({ params }: { params: Promise<{ id: str
             <span>Livraison</span>
             <span>{formatPrice(order.deliveryFee)}</span>
           </div>
+          {(order.giftCardAmount ?? 0) > 0 && (
+            <div className="flex justify-between">
+              <span>Réglé par carte cadeau</span>
+              <span>−{formatPrice(order.giftCardAmount ?? 0)}</span>
+            </div>
+          )}
           <div className="flex justify-between border-t border-neutral-300 pt-2 text-sm font-bold">
-            <span>Total</span>
+            <span>{(order.giftCardAmount ?? 0) > 0 ? 'Reste à payer' : 'Total'}</span>
             <span>{formatPrice(order.totalAmount)}</span>
           </div>
           <p className="pt-2 text-[11px] text-neutral-500">Règlement : {PAYMENT_METHOD_LABELS[order.paymentMethod]}.</p>

@@ -14,6 +14,8 @@ export interface RegisterPayload {
   email: string;
   phone: string;
   password: string;
+  /** Code de parrainage (lien /parrain/CODE) : bon de bienvenue à l'activation du compte */
+  referralCode?: string;
 }
 
 export interface LoginPayload {
@@ -49,6 +51,7 @@ export async function registerUser(payload: RegisterPayload): Promise<PendingVer
     email: payload.email.trim().toLowerCase(),
     phone: payload.phone.trim(),
     password: payload.password,
+    ...(payload.referralCode?.trim() ? { referralCode: payload.referralCode.trim().toUpperCase() } : {}),
   });
 }
 
@@ -98,8 +101,12 @@ export async function loginUser(payload: LoginPayload): Promise<AuthResponseData
  * Connexion / inscription via Google : `credential` est le jeton d'identité
  * renvoyé par Google Identity Services, vérifié côté serveur.
  */
-export async function loginWithGoogle(credential: string): Promise<AuthResponseData> {
-  const data = await apiClient.post<AuthResponseData>('/auth/google', { credential });
+export async function loginWithGoogle(credential: string, referralCode?: string): Promise<AuthResponseData> {
+  const data = await apiClient.post<AuthResponseData>('/auth/google', {
+    credential,
+    // Pris en compte uniquement à la création du compte
+    ...(referralCode?.trim() ? { referralCode: referralCode.trim().toUpperCase() } : {}),
+  });
 
   if (data?.token) {
     setAuthToken(data.token);

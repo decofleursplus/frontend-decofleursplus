@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { RelatedProductsPicker } from '@/components/admin/related-products-picker';
 import {
   Sheet,
   SheetContent,
@@ -112,6 +113,8 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
   const [readTime, setReadTime] = useState(initialArticle?.readTime || '4 min de lecture');
   const [excerpt, setExcerpt] = useState(initialArticle?.excerpt || '');
   const [content, setContent] = useState(initialArticle?.content || '');
+  // Créations du catalogue proposées sous l'article (« Créations associées »)
+  const [relatedProductIds, setRelatedProductIds] = useState<string[]>(initialArticle?.relatedProductIds || []);
 
   // Rubriques et auteurs du blog (et non les catégories de produits)
   useEffect(() => {
@@ -303,7 +306,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
       tags: tagsArray.length > 0 ? tagsArray : ['Fleurs', 'Décofleur Plus'],
       seoTitle: initialArticle?.seoTitle || `${title.trim()} | Blog Décofleur Plus`,
       seoDescription: initialArticle?.seoDescription || excerpt.trim().slice(0, 160),
-      relatedProductIds: initialArticle?.relatedProductIds || [],
+      relatedProductIds,
     };
 
     if (!categoryId) {
@@ -836,6 +839,18 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
                 <span>{wordCount} mots</span>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-[#ece8e1] shadow-xs">
+          <CardContent className="p-5">
+            <RelatedProductsPicker
+              value={relatedProductIds}
+              onChange={setRelatedProductIds}
+              max={4}
+              title="Créations associées à l’article"
+              hint="Affichées sous l’article avec un bouton d’achat : choisissez les bouquets ou compositions dont parle l’article."
+            />
           </CardContent>
         </Card>
       </div>
