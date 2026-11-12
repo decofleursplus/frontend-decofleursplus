@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Armchair, Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
@@ -39,52 +39,31 @@ type Errors = Partial<Record<string, string>>;
 const inputClass =
   'w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs';
 
-export function EquipmentDrawer({ isOpen, equipment, onClose, onSaved }: EquipmentDrawerProps) {
-  const [name, setName] = useState('');
-  const [category, setCategory] = useState('mobilier');
-  const [pricePerDay, setPricePerDay] = useState('');
-  const [depositAmount, setDepositAmount] = useState('');
-  const [totalQuantity, setTotalQuantity] = useState('1');
-  const [dimensions, setDimensions] = useState('');
-  const [description, setDescription] = useState('');
-  const [images, setImages] = useState<string[]>([]);
-  const [primaryImage, setPrimaryImage] = useState('');
-  const [status, setStatus] = useState<RentalItemAdminStatus>('AVAILABLE');
+function initialGallery(equipment: RentalEquipment | null): string[] {
+  if (!equipment) return [];
+  return equipment.images.length > 0 ? equipment.images : equipment.image ? [equipment.image] : [];
+}
+
+/** Le formulaire est remonté (key) à chaque ouverture : il repart toujours de l'équipement édité. */
+export function EquipmentDrawer(props: EquipmentDrawerProps) {
+  return <EquipmentDrawerForm key={props.isOpen ? `ouvert-${props.equipment?.id ?? 'nouveau'}` : 'ferme'} {...props} />;
+}
+
+function EquipmentDrawerForm({ isOpen, equipment, onClose, onSaved }: EquipmentDrawerProps) {
+  const [name, setName] = useState(equipment?.name ?? '');
+  const [category, setCategory] = useState(equipment?.category ?? 'mobilier');
+  const [pricePerDay, setPricePerDay] = useState(equipment ? String(equipment.pricePerDay) : '');
+  const [depositAmount, setDepositAmount] = useState(equipment ? String(equipment.deposit) : '');
+  const [totalQuantity, setTotalQuantity] = useState(equipment ? String(equipment.totalStock) : '1');
+  const [dimensions, setDimensions] = useState(equipment?.dimensions ?? '');
+  const [description, setDescription] = useState(equipment?.description ?? '');
+  const [images, setImages] = useState<string[]>(() => initialGallery(equipment));
+  const [primaryImage, setPrimaryImage] = useState(() => equipment?.image ?? initialGallery(equipment)[0] ?? '');
+  const [status, setStatus] = useState<RentalItemAdminStatus>(
+    equipment?.itemStatus === 'MAINTENANCE' || equipment?.itemStatus === 'UNAVAILABLE' ? equipment.itemStatus : 'AVAILABLE',
+  );
   const [errors, setErrors] = useState<Errors>({});
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    setErrors({});
-    if (equipment) {
-      setName(equipment.name);
-      setCategory(equipment.category);
-      setPricePerDay(String(equipment.pricePerDay));
-      setDepositAmount(String(equipment.deposit));
-      setTotalQuantity(String(equipment.totalStock));
-      setDimensions(equipment.dimensions ?? '');
-      setDescription(equipment.description);
-      const gallery = equipment.images.length > 0 ? equipment.images : equipment.image ? [equipment.image] : [];
-      setImages(gallery);
-      setPrimaryImage(equipment.image ?? gallery[0] ?? '');
-      setStatus(
-        equipment.itemStatus === 'MAINTENANCE' || equipment.itemStatus === 'UNAVAILABLE'
-          ? equipment.itemStatus
-          : 'AVAILABLE',
-      );
-    } else {
-      setName('');
-      setCategory('mobilier');
-      setPricePerDay('');
-      setDepositAmount('');
-      setTotalQuantity('1');
-      setDimensions('');
-      setDescription('');
-      setImages([]);
-      setPrimaryImage('');
-      setStatus('AVAILABLE');
-    }
-  }, [isOpen, equipment]);
 
   const validate = (): Errors => {
     const next: Errors = {};

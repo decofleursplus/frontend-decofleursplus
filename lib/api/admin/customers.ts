@@ -28,7 +28,7 @@ export function transformAdminCustomer(raw: any): AdminCustomer {
   else if (rawSegment.includes('entreprise') || rawSegment.includes('b2b') || rawSegment.includes('pro')) segment = 'entreprise';
 
   const defaultAddr = Array.isArray(raw.addresses)
-    ? raw.addresses.find((a: any) => a.isDefault) || raw.addresses[0]
+    ? raw.addresses.find((a: { isDefault?: boolean }) => a.isDefault) || raw.addresses[0]
     : raw.address;
 
   const addressStr = typeof defaultAddr === 'string'
@@ -53,6 +53,7 @@ export function transformAdminCustomer(raw: any): AdminCustomer {
     loyaltyTier: raw.loyaltyTier,
     loyaltyPoints: raw.loyaltyPoints ? Number(raw.loyaltyPoints) : 0,
     notes: raw.notes || '',
+    internalRating: raw.internalRating ? Number(raw.internalRating) : undefined,
     recentOrders: Array.isArray(raw.recentOrders) ? raw.recentOrders.map(transformAdminOrder) : [],
   };
 }
@@ -143,15 +144,23 @@ export async function updateAdminCustomer(
   body: Partial<{
     name: string;
     phone: string;
-    address: string;
-    avatar: string;
-    segment: string;
-    status: string;
-  }>
+    address: string | null;
+    segment: 'PARTICULIER' | 'ENTREPRISE' | 'VIP';
+    loyaltyPoints: number;
+    isActive: boolean;
+    notes: string | null;
+    internalRating: number;
+  }>,
 ): Promise<AdminCustomer> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const res = await apiClient.patch<any>(`/admin/customers/${id}`, body, {
-    useAdminToken: true,
-  });
+  const res = await apiClient.patch<any>(`/admin/customers/${id}`, body, { useAdminToken: true });
   return transformAdminCustomer(res);
+}
+
+/** Envoie un email au client depuis le back-office (POST /admin/customers/:id/email). */
+export async function sendAdminCustomerEmail(
+  customerId: string,
+  body: { subject: string; message: string; sendCopy?: boolean },
+): Promise<void> {
+  await apiClient.post(`/admin/customers/${customerId}/email`, body, { useAdminToken: true });
 }

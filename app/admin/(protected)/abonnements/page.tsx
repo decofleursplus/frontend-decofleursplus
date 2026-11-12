@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Repeat,
   Search,
@@ -187,7 +187,6 @@ export default function AdminAbonnementsPage() {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
 
@@ -227,44 +226,66 @@ export default function AdminAbonnementsPage() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  const requestSeq = useRef(0);
-  const loadData = useCallback(
-    async (mode: 'initial' | 'refresh' = 'initial') => {
-      const seq = ++requestSeq.current;
-      if (mode === 'refresh') setRefreshing(true);
-      else setLoading(true);
-
-      try {
-        const res = await getAdminSubscriptions({
-          page,
-          limit: PAGE_SIZE,
-          search: search || undefined,
-          status: statusFilter !== 'ALL' ? statusFilter : undefined,
-          plan: planFilter !== 'ALL' ? planFilter : undefined,
-          frequency: frequencyFilter !== 'ALL' ? frequencyFilter : undefined,
-        });
-        if (seq !== requestSeq.current) return;
-        setSubscriptions(res.items);
-        setStats(res.stats);
-        setTotal(res.total);
-        setTotalPages(res.totalPages);
-        setListError(null);
-      } catch (err) {
-        if (seq !== requestSeq.current) return;
-        setListError(errorMessage(err, 'Impossible de charger les abonnements.'));
-      } finally {
-        if (seq === requestSeq.current) {
-          setLoading(false);
-          setRefreshing(false);
-        }
-      }
-    },
+  const fetchList = useCallback(
+    () =>
+      getAdminSubscriptions({
+        page,
+        limit: PAGE_SIZE,
+        search: search || undefined,
+        status: statusFilter !== 'ALL' ? statusFilter : undefined,
+        plan: planFilter !== 'ALL' ? planFilter : undefined,
+        frequency: frequencyFilter !== 'ALL' ? frequencyFilter : undefined,
+      }),
     [page, search, statusFilter, planFilter, frequencyFilter]
   );
 
+  const applyList = (res: Awaited<ReturnType<typeof getAdminSubscriptions>>) => {
+    setSubscriptions(res.items);
+    setStats(res.stats);
+    setTotal(res.total);
+    setTotalPages(res.totalPages);
+    setListError(null);
+  };
+
+  // Chargement dérivé : tant que la requête courante (filtres + essai) n'est pas terminée, on affiche le chargement.
+  const [retry, setRetry] = useState(0);
+  const listKey = JSON.stringify([page, search, statusFilter, planFilter, frequencyFilter, retry]);
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const loading = loadedKey !== listKey;
+
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    let cancelled = false;
+    fetchList()
+      .then((res) => {
+        if (!cancelled) applyList(res);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setListError(errorMessage(err, 'Impossible de charger les abonnements.'));
+      })
+      .finally(() => {
+        if (!cancelled) setLoadedKey(listKey);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchList, listKey]);
+
+  /** 'initial' relance un chargement complet (bouton Réessayer) ; 'refresh' recharge en arrière-plan. */
+  const loadData = async (mode: 'initial' | 'refresh' = 'initial') => {
+    if (mode === 'initial') {
+      setListError(null);
+      setRetry((n) => n + 1);
+      return;
+    }
+    setRefreshing(true);
+    try {
+      applyList(await fetchList());
+    } catch (err) {
+      setListError(errorMessage(err, 'Impossible de charger les abonnements.'));
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const loadDetail = useCallback(async (id: string, silent = false) => {
     if (!silent) {

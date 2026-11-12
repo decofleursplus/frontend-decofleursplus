@@ -9,24 +9,27 @@ import { ProductGrid } from '@/components/product-grid';
  * Si le catalogue est indisponible, un message l'indique au lieu d'une grille vide.
  */
 export async function LiveProductGrid({ filters = {}, limit = 4 }: { filters?: ProductFilterParams; limit?: number }) {
-  try {
-    const { items } = await getProducts({ sort: 'popular', ...filters, limit });
-    if (items.length === 0) {
-      return (
-        <p className="text-sm text-neutral-600">
-          Notre sélection est en cours de renouvellement. <Link href="/boutique" className="underline">Voir toute la boutique</Link>
-        </p>
-      );
-    }
-    return <ProductGrid products={items} />;
-  } catch (error) {
-    console.error('[Vitrine] Catalogue indisponible :', error);
+  const items = await getProducts({ sort: 'popular', ...filters, limit })
+    .then((res) => res.items)
+    .catch((error) => {
+      console.error('[Vitrine] Catalogue indisponible :', error);
+      return null;
+    });
+  if (items === null) {
     return (
       <p className="text-sm text-neutral-600">
         Le catalogue est momentanément indisponible. <Link href="/boutique" className="underline">Réessayer depuis la boutique</Link>
       </p>
     );
   }
+  if (items.length === 0) {
+    return (
+      <p className="text-sm text-neutral-600">
+        Notre sélection est en cours de renouvellement. <Link href="/boutique" className="underline">Voir toute la boutique</Link>
+      </p>
+    );
+  }
+  return <ProductGrid products={items} />;
 }
 
 export async function loadZones(): Promise<DeliveryZone[] | null> {

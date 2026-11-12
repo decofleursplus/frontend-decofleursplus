@@ -10,12 +10,20 @@ import type {
 } from '@/lib/admin/mock-data/types';
 import {
   getAdminBlogArticles,
+  getAdminBlogCategories,
+  getAdminBlogAuthors,
   deleteAdminBlogArticle,
   updateAdminBlogArticle,
+  duplicateAdminBlogArticle,
+  createAdminBlogCategory,
+  updateAdminBlogCategory,
+  deleteAdminBlogCategory,
+  createAdminBlogAuthor,
+  updateAdminBlogAuthor,
+  deleteAdminBlogAuthor,
 } from '@/lib/api/admin/blog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import {
   Sheet,
@@ -46,13 +54,8 @@ import {
   Clock,
   Calendar,
   Heart,
-  TrendingUp,
   BookOpen,
-  Sparkles,
   CheckCircle,
-  AlertCircle,
-  Settings,
-  Share2,
   ShoppingBag,
   RefreshCw,
   Loader2,
@@ -73,24 +76,36 @@ export default function AdminBlogPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadArticles = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
+  // Chargement en chaîne de promesses : les setState n'ont lieu que dans les callbacks (jamais pendant l'effet).
+  const fetchBlog = useCallback(
+    () =>
+      Promise.all([getAdminBlogArticles({ limit: 100 }), getAdminBlogCategories(), getAdminBlogAuthors()])
+        .then(([arts, cats, auths]) => {
+          setArticles(arts);
+          setCategories(cats);
+          setAuthors(auths);
+        })
+        .catch((err: unknown) => {
+          toast.error(err instanceof Error ? err.message : 'Erreur lors du chargement du blog');
+        })
+        .finally(() => {
+          setLoading(false);
+          setRefreshing(false);
+        }),
+    []
+  );
 
-    try {
-      const res = await getAdminBlogArticles();
-      if (res && Array.isArray(res)) setArticles(res);
-    } catch {
-      toast.error('Erreur lors du chargement des articles de blog');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
+  const loadArticles = useCallback(
+    (isRefresh = false) => {
+      if (isRefresh) setRefreshing(true);
+      return fetchBlog();
+    },
+    [fetchBlog]
+  );
 
   useEffect(() => {
-    loadArticles();
-  }, [loadArticles]);
+    fetchBlog();
+  }, [fetchBlog]);
 
   // Filters state for articles tab
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -234,58 +249,37 @@ export default function AdminBlogPage() {
 
   const handleDeleteArticle = async (id: string, title: string) => {
     if (confirm(`Confirmez-vous la suppression définitive de l'article « ${title} » ?`)) {
-      setArticles((prev) => prev.filter((a) => a.id !== id));
-      toast.success(`Article « ${title} » supprimé.`);
       try {
         await deleteAdminBlogArticle(id);
-      } catch {
-        // optimistic
+        setArticles((prev) => prev.filter((a) => a.id !== id));
+        toast.success(`Article « ${title} » supprimé.`);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Suppression impossible.');
       }
     }
   };
 
   const handleToggleStatus = async (art: BlogArticle) => {
     const nextStatus: BlogArticleStatus = art.status === 'publie' ? 'brouillon' : 'publie';
-    setArticles((prev) =>
-      prev.map((a) =>
-        a.id === art.id
-          ? {
-              ...a,
-              status: nextStatus,
-              publishedAt: nextStatus === 'publie' ? (a.publishedAt || new Date().toISOString()) : a.publishedAt,
-            }
-          : a
-      )
-    );
-    toast.info(
-      nextStatus === 'publie'
-        ? `L'article « ${art.title} » est maintenant publié en ligne.`
-        : `L'article « ${art.title} » a été basculé en brouillon.`
-    );
-
     try {
-      await updateAdminBlogArticle(art.id, {
-        status: nextStatus,
-      });
-    } catch {
-      // optimistic
+      const updated = await updateAdminBlogArticle(art.id, { status: nextStatus });
+      setArticles((prev) => prev.map((a) => (a.id === art.id ? updated : a)));
+      toast.success(
+        nextStatus === 'publie' ? `L'article « ${art.title} » est maintenant publié.` : `L'article « ${art.title} » a été repassé en brouillon.`,
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Changement de statut impossible.');
     }
   };
 
-  const handleDuplicateArticle = (art: BlogArticle) => {
-    const dup: BlogArticle = {
-      ...art,
-      id: `art-${Date.now()}`,
-      title: `${art.title} (Copie)`,
-      slug: `${art.slug}-copie-${Math.floor(Math.random() * 1000)}`,
-      status: 'brouillon',
-      viewsCount: 0,
-      likesCount: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setArticles((prev) => [dup, ...prev]);
-    toast.success(`Copie créée en brouillon : « ${dup.title} »`);
+  const handleDuplicateArticle = async (art: BlogArticle) => {
+    try {
+      const dup = await duplicateAdminBlogArticle(art.id);
+      setArticles((prev) => [dup, ...prev]);
+      toast.success(`Copie créée en brouillon : « ${dup.title} »`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Duplication impossible.');
+    }
   };
 
   // Category Actions
@@ -299,14 +293,17 @@ export default function AdminBlogPage() {
     setIsCategoryModalOpen(true);
   };
 
-  const handleSaveCategory = (cat: BlogCategory) => {
-    setCategories((prev) => {
-      const exists = prev.some((c) => c.id === cat.id);
-      if (exists) {
-        return prev.map((c) => (c.id === cat.id ? cat : c));
-      }
-      return [...prev, cat];
-    });
+  const handleSaveCategory = async (cat: BlogCategory): Promise<boolean> => {
+    const payload = { name: cat.name, slug: cat.slug, description: cat.description, color: cat.color, coverImage: cat.coverImage };
+    try {
+      const exists = categories.some((c) => c.id === cat.id);
+      const saved = exists ? await updateAdminBlogCategory(cat.id, payload) : await createAdminBlogCategory(payload);
+      setCategories((prev) => (exists ? prev.map((c) => (c.id === cat.id ? saved : c)) : [...prev, saved]));
+      return true;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Enregistrement de la catégorie impossible.');
+      return false;
+    }
   };
 
   const handleDeleteCategory = (catId: string, catName: string) => {
@@ -316,8 +313,12 @@ export default function AdminBlogPage() {
       return;
     }
     if (confirm(`Supprimer la catégorie « ${catName} » ?`)) {
-      setCategories((prev) => prev.filter((c) => c.id !== catId));
-      toast.success(`Catégorie « ${catName} » supprimée.`);
+      deleteAdminBlogCategory(catId)
+        .then(() => {
+          setCategories((prev) => prev.filter((c) => c.id !== catId));
+          toast.success(`Catégorie « ${catName} » supprimée.`);
+        })
+        .catch((err) => toast.error(err instanceof Error ? err.message : 'Suppression impossible.'));
     }
   };
 
@@ -332,14 +333,28 @@ export default function AdminBlogPage() {
     setIsAuthorModalOpen(true);
   };
 
-  const handleSaveAuthor = (auth: BlogAuthor) => {
-    setAuthors((prev) => {
-      const exists = prev.some((a) => a.id === auth.id);
-      if (exists) {
-        return prev.map((a) => (a.id === auth.id ? auth : a));
-      }
-      return [...prev, auth];
-    });
+  const handleSaveAuthor = async (auth: BlogAuthor): Promise<boolean> => {
+    const payload = { name: auth.name, role: auth.role, avatar: auth.avatar, bio: auth.bio };
+    try {
+      const exists = authors.some((a) => a.id === auth.id);
+      const saved = exists ? await updateAdminBlogAuthor(auth.id, payload) : await createAdminBlogAuthor(payload);
+      setAuthors((prev) => (exists ? prev.map((a) => (a.id === auth.id ? saved : a)) : [...prev, saved]));
+      return true;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Enregistrement de l'auteur impossible.");
+      return false;
+    }
+  };
+
+  const handleDeleteAuthor = async (auth: BlogAuthor) => {
+    if (!confirm(`Supprimer l'auteur « ${auth.name} » ?`)) return;
+    try {
+      await deleteAdminBlogAuthor(auth.id);
+      setAuthors((prev) => prev.filter((a) => a.id !== auth.id));
+      toast.success(`Auteur « ${auth.name} » supprimé.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Suppression impossible.');
+    }
   };
 
   return (
@@ -706,7 +721,7 @@ export default function AdminBlogPage() {
                       <div className="space-y-2.5">
                         <label className="text-xs font-bold text-[#333] uppercase tracking-wider flex items-center gap-1.5">
                           <ArrowUpDown size={13} />
-                          Ordre d'affichage
+                          Ordre d’affichage
                         </label>
                         <select
                           value={draftSort}
@@ -1250,14 +1265,27 @@ export default function AdminBlogPage() {
                       <span>•</span>
                       <span><strong>{authorViews.toLocaleString('fr-FR')}</strong> lectures</span>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleOpenEditAuthor(auth)}
-                      className="h-7 px-2 text-xs text-[#24582d] hover:bg-[#edf8ef]"
-                    >
-                      <Edit3 size={12} className="mr-1" /> Profil
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleOpenEditAuthor(auth)}
+                        className="h-7 px-2 text-xs text-[#24582d] hover:bg-[#edf8ef]"
+                      >
+                        <Edit3 size={12} className="mr-1" /> Profil
+                      </Button>
+                      {authorArticles.length === 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => void handleDeleteAuthor(auth)}
+                          className="h-7 px-2 text-xs text-red-600 hover:bg-red-50"
+                          aria-label={`Supprimer ${auth.name}`}
+                        >
+                          Supprimer
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

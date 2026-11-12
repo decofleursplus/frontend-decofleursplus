@@ -1,25 +1,28 @@
 import { apiClient } from '../client';
 
+/** Les variations (%) valent null quand la période précédente est vide (comparaison impossible). */
 export interface DashboardKpis {
   revenue: number;
-  revenueDelta: number;
+  revenueDelta: number | null;
   orders: number;
-  ordersDelta: number;
+  ordersDelta: number | null;
   customers: number;
-  customersDelta: number;
+  newCustomers: number;
+  customersDelta: number | null;
   products: number;
-  productsDelta: number;
+  newProducts: number;
 }
 
 export interface DashboardChartPoint {
   label: string;
   sales: number;
   orders: number;
-  date?: string;
+  date: string;
 }
 
 export interface DashboardOrderDistribution {
   name: string;
+  /** Part en pourcentage */
   value: number;
   color: string;
   count: number;
@@ -34,13 +37,16 @@ export interface DashboardRecentOrder {
   date: string;
 }
 
+export type DashboardStockLevel = 'EN_STOCK' | 'STOCK_FAIBLE' | 'RUPTURE';
+
 export interface DashboardTopProduct {
   id: string;
   name: string;
   sales: number;
   revenue: number;
-  stock: string;
-  image: string;
+  stockQuantity: number;
+  stockStatus: DashboardStockLevel;
+  image: string | null;
 }
 
 export interface DashboardData {
@@ -51,48 +57,26 @@ export interface DashboardData {
   topProducts: DashboardTopProduct[];
 }
 
+export const STOCK_LEVEL_LABELS: Record<DashboardStockLevel, string> = {
+  EN_STOCK: 'En stock',
+  STOCK_FAIBLE: 'Stock faible',
+  RUPTURE: 'Rupture',
+};
+
 /**
- * Récupère les données agrégées pour le tableau de bord administrateur
- * Endpoint: GET /api/v1/admin/dashboard
+ * Données agrégées du tableau de bord (mois en cours vs même période du mois précédent).
+ * Endpoint: GET /api/v1/admin/dashboard — lève une ApiClientError en cas d'échec.
  */
 export async function getAdminDashboard(): Promise<DashboardData> {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const res = await apiClient.get<any>('/admin/dashboard', {
-      useAdminToken: true,
-      cache: 'no-store',
-    });
-
-    const dataObj = res?.data ?? res;
-
-    if (dataObj && dataObj.kpis) {
-      return {
-        kpis: dataObj.kpis,
-        salesChart: Array.isArray(dataObj.salesChart) ? dataObj.salesChart : [],
-        orderDistribution: Array.isArray(dataObj.orderDistribution) ? dataObj.orderDistribution : [],
-        recentOrders: Array.isArray(dataObj.recentOrders) ? dataObj.recentOrders : [],
-        topProducts: Array.isArray(dataObj.topProducts) ? dataObj.topProducts : [],
-      };
-    }
-    throw new Error('Données incomplètes');
-  } catch (error) {
-    console.warn('[Admin Dashboard] Erreur ou dashboard vide:', error);
-    
-    return {
-      kpis: {
-        revenue: 0,
-        revenueDelta: 0,
-        orders: 0,
-        ordersDelta: 0,
-        customers: 0,
-        customersDelta: 0,
-        products: 0,
-        productsDelta: 0,
-      },
-      salesChart: [],
-      orderDistribution: [],
-      recentOrders: [],
-      topProducts: [],
-    };
-  }
+  const data = await apiClient.get<DashboardData>('/admin/dashboard', {
+    useAdminToken: true,
+    cache: 'no-store',
+  });
+  return {
+    kpis: data.kpis,
+    salesChart: Array.isArray(data.salesChart) ? data.salesChart : [],
+    orderDistribution: Array.isArray(data.orderDistribution) ? data.orderDistribution : [],
+    recentOrders: Array.isArray(data.recentOrders) ? data.recentOrders : [],
+    topProducts: Array.isArray(data.topProducts) ? data.topProducts : [],
+  };
 }

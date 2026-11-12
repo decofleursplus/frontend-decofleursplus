@@ -29,18 +29,20 @@ export function transformBlogArticle(raw: any): BlogArticle {
     id: raw.id,
     title: raw.title,
     slug: raw.slug,
-    categoryId: raw.categoryId || raw.category?.id || 'bcat-1',
-    categoryName: raw.category?.name || raw.categoryName || 'Conseils Fleurs',
+    categoryId: raw.categoryId || raw.category?.id || '',
+    categoryName: raw.category?.name || raw.categoryName || 'Sans catégorie',
     categoryColor: raw.category?.color || raw.categoryColor || '#d65d7a',
-    authorId: raw.authorId || raw.author?.id || 'author-1',
-    authorName: raw.author?.name || raw.authorName || 'Fatou Diop',
+    authorId: raw.authorId || raw.author?.id || '',
+    authorName: raw.author?.name || raw.authorName || 'Équipe Décofleur Plus',
     authorAvatar: raw.author?.avatar || raw.authorAvatar || 'FD',
     authorRole: raw.author?.role || raw.authorRole || 'Artisan Fleuriste',
+    authorBio: raw.author?.bio || raw.authorBio || '',
     coverImage: raw.coverImage || raw.image || '/images/bouquet-detail.jpg',
     coverImageCaption: raw.coverImageCaption || '',
     excerpt: raw.excerpt || '',
     content: raw.content || '',
-    readTime: raw.readTime ? `${raw.readTime} min de lecture` : '3 min de lecture',
+    // Le backend renvoie déjà « 4 min de lecture » : ne pas rajouter le suffixe à chaque sauvegarde.
+    readTime: raw.readTime ? (/^\d+$/.test(String(raw.readTime)) ? `${raw.readTime} min de lecture` : String(raw.readTime)) : '',
     status,
     publishedAt: raw.publishedAt || raw.createdAt,
     createdAt: raw.createdAt,
@@ -108,9 +110,8 @@ export async function getAdminBlogArticles(params?: GetAdminBlogArticlesParams):
     if (Array.isArray(dataObj?.items)) return dataObj.items.map(transformBlogArticle);
     if (Array.isArray(dataObj?.articles)) return dataObj.articles.map(transformBlogArticle);
   } catch (err) {
-    console.warn('[AdminBlogAPI] Erreur de récupération des articles:', err);
+    throw err instanceof Error ? err : new Error('Articles indisponibles');
   }
-
   return [];
 }
 
@@ -250,4 +251,25 @@ export async function deleteAdminBlogAuthor(id: string): Promise<boolean> {
     useAdminToken: true,
   });
   return true;
+}
+
+/** Duplique un article (copie en brouillon, slug unique) — POST /admin/blog/articles/:id/duplicate. */
+export async function duplicateAdminBlogArticle(id: string): Promise<BlogArticle> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const res = await apiClient.post<any>(`/admin/blog/articles/${id}/duplicate`, undefined, { useAdminToken: true });
+  return transformBlogArticle(res?.data ?? res);
+}
+
+/** Catégories du blog avec leur nombre d'articles. */
+export async function getAdminBlogCategories(): Promise<BlogCategory[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const res = await apiClient.get<any[]>('/blog/categories', { cache: 'no-store' });
+  return res.map(transformBlogCategory);
+}
+
+/** Auteurs du blog. */
+export async function getAdminBlogAuthors(): Promise<BlogAuthor[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const res = await apiClient.get<any[]>('/blog/authors', { cache: 'no-store' });
+  return res.map(transformBlogAuthor);
 }

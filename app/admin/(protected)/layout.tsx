@@ -7,6 +7,7 @@ import { AdminTopbar } from '@/components/admin/admin-topbar';
 import { AdminSidebarProvider } from '@/components/admin/admin-sidebar-context';
 import { AdminMobileTabBar } from '@/components/admin/admin-mobile-tab-bar';
 import { AdminMobileDrawer } from '@/components/admin/admin-mobile-drawer';
+import { AdminRouteGuard } from '@/components/admin/admin-route-guard';
 
 export default async function ProtectedAdminLayout({
   children,
@@ -29,7 +30,9 @@ export default async function ProtectedAdminLayout({
       <AdminSidebar initialUser={initialUser} />
       <div className="admin-main-area">
         <AdminTopbar initialUser={initialUser} />
-        <main className="admin-content">{children}</main>
+        <main className="admin-content">
+          <AdminRouteGuard initialUser={initialUser}>{children}</AdminRouteGuard>
+        </main>
         <AdminMobileTabBar />
       </div>
       <AdminMobileDrawer initialUser={initialUser} />

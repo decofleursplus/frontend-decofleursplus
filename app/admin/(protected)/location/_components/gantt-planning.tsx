@@ -67,13 +67,15 @@ export function GanttPlanning({ refreshKey, onOpenReservation }: GanttPlanningPr
   const [mobileView, setMobileView] = useState<'agenda' | 'gantt'>('agenda');
 
   const [data, setData] = useState<GanttCalendar | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  // Chargement dérivé : la requête courante n'est pas encore celle qui a été chargée.
+  const requestKey = JSON.stringify([month, year, category, refreshKey, retryKey]);
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const loading = loadedKey !== requestKey;
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     getAdminRentalGantt({ month, year, category })
       .then((res) => {
         if (cancelled) return;
@@ -85,12 +87,12 @@ export function GanttPlanning({ refreshKey, onOpenReservation }: GanttPlanningPr
         setError(err instanceof ApiClientError ? err.message : 'Impossible de charger le planning.');
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setLoadedKey(requestKey);
       });
     return () => {
       cancelled = true;
     };
-  }, [month, year, category, refreshKey, retryKey]);
+  }, [month, year, category, requestKey]);
 
   const daysInMonth = data?.daysInMonth ?? new Date(year, month + 1, 0).getDate();
 

@@ -121,50 +121,52 @@ export function SubscriptionForm({
   const [submitError, setSubmitError] = useState('');
   const [createdSubscription, setCreatedSubscription] = useState<CustomerSubscription | null>(null);
 
-  const loadReferenceData = useCallback(async () => {
+  // Chaîne de promesses : les setState n'ont lieu que dans les callbacks, jamais pendant l'effet.
+  const fetchReferenceData = useCallback(
+    () =>
+      Promise.all([getSubscriptionPlans(), getSubscriptionDeliveryZones(), getSubscriptionPaymentOptions()])
+        .then(([plansRes, zonesRes, paymentsRes]) => {
+          setPlans(plansRes);
+          setZones(zonesRes);
+          setPaymentOptions(paymentsRes);
+          setSelectedPlanId((prev) => (plansRes.some((p) => p.id === prev) ? prev : (plansRes[0]?.id ?? prev)));
+          setFormData((prev) => ({
+            ...prev,
+            location: zonesRes.some((z) => z.name === prev.location) ? prev.location : (zonesRes[0]?.name ?? ''),
+          }));
+          setLoadState('ready');
+        })
+        .catch((err: unknown) => {
+          setLoadError(
+            err instanceof ApiClientError ? err.message : 'Impossible de charger les formules d’abonnement pour le moment.'
+          );
+          setLoadState('error');
+        }),
+    []
+  );
+
+  const loadReferenceData = () => {
     setLoadState('loading');
     setLoadError('');
-    try {
-      const [plansRes, zonesRes, paymentsRes] = await Promise.all([
-        getSubscriptionPlans(),
-        getSubscriptionDeliveryZones(),
-        getSubscriptionPaymentOptions(),
-      ]);
-      setPlans(plansRes);
-      setZones(zonesRes);
-      setPaymentOptions(paymentsRes);
-      setSelectedPlanId((prev) =>
-        plansRes.some((p) => p.id === prev) ? prev : (plansRes[0]?.id ?? prev)
-      );
-      setFormData((prev) => ({
-        ...prev,
-        location: zonesRes.some((z) => z.name === prev.location) ? prev.location : (zonesRes[0]?.name ?? ''),
-      }));
-      setLoadState('ready');
-    } catch (err) {
-      setLoadError(
-        err instanceof ApiClientError
-          ? err.message
-          : 'Impossible de charger les formules d’abonnement pour le moment.'
-      );
-      setLoadState('error');
-    }
-  }, []);
+    return fetchReferenceData();
+  };
 
   useEffect(() => {
-    loadReferenceData();
-  }, [loadReferenceData]);
+    fetchReferenceData();
+  }, [fetchReferenceData]);
 
-  useEffect(() => {
-    if (user) {
-      setFormData((prev) => ({
-        ...prev,
-        name: prev.name || user.name || '',
-        email: prev.email || user.email || '',
-        phone: prev.phone || user.phone || '',
-      }));
-    }
-  }, [user]);
+  // Pré-remplissage avec le compte connecté, une seule fois par utilisateur (ajustement d'état pendant le rendu).
+  const [prefilledFor, setPrefilledFor] = useState<string | null>(null);
+  const userKey = user?.id ?? null;
+  if (user && userKey !== prefilledFor) {
+    setPrefilledFor(userKey);
+    setFormData((prev) => ({
+      ...prev,
+      name: prev.name || user.name || '',
+      email: prev.email || user.email || '',
+      phone: prev.phone || user.phone || '',
+    }));
+  }
 
   // Modes de règlement réellement proposés : ceux activés dans les paramètres de la boutique.
   const availablePayments: PaymentChoice[] = paymentOptions

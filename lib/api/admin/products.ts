@@ -2,6 +2,8 @@ import { apiClient, ApiClientError } from '../client';
 import type { AdminProduct } from '@/lib/admin/mock-data/types';
 
 export interface ProductFilterParams {
+  /** Niveau de stock (ok, low, out) */
+  stock?: 'ok' | 'low' | 'out';
   page?: number;
   limit?: number;
   category?: string;
@@ -106,12 +108,8 @@ function mapBackendToAdminProduct(p: BackendProductResponse): AdminProduct {
   const firstSku = p.variants?.[0]?.sku || `PRD-${(p.id || '').slice(0, 6).toUpperCase()}`;
   const displayPrice = p.basePrice ?? p.price ?? p.variants?.[0]?.price ?? 0;
 
-  let mappedStatus: 'actif' | 'inactif' | 'rupture' = 'actif';
-  if (p.status === 'HIDDEN' || p.status === 'inactif') {
-    mappedStatus = 'inactif';
-  } else if (totalStock <= 0 || p.status === 'OUT_OF_STOCK' || p.status === 'rupture') {
-    mappedStatus = 'rupture';
-  }
+  // Statut du catalogue (le niveau de stock est affiché à part)
+  const mappedStatus = (['ACTIVE', 'PROMO', 'ON_QUOTE', 'HIDDEN'].includes(String(p.status)) ? p.status : 'ACTIVE') as 'ACTIVE' | 'PROMO' | 'ON_QUOTE' | 'HIDDEN';
 
   // Tarification : compareAtPrice (ou oldPrice) est l'ancien prix barré, basePrice est le prix d'achat effectif
   let price = displayPrice;
@@ -184,6 +182,7 @@ export async function getAdminProducts(
         minPrice: params.minPrice,
         maxPrice: params.maxPrice,
         sort: params.sort,
+        stock: params.stock,
       },
       isAdmin: true,
     });
@@ -198,8 +197,7 @@ export async function getAdminProducts(
       total,
     };
   } catch (error) {
-    console.warn('[Admin Products] Erreur lors de la récupération des produits:', error);
-    return { items: [], total: 0 };
+    throw error instanceof Error ? error : new Error('Produits indisponibles');
   }
 }
 

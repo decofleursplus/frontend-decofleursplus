@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { BlogCategory } from '@/lib/admin/mock-data/types';
 import {
   Dialog,
@@ -20,7 +20,8 @@ interface CreateBlogCategoryDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   category?: BlogCategory | null;
-  onSave: (category: BlogCategory) => void;
+  /** Résout à true si l'API a enregistré la catégorie (la fenêtre se ferme alors). */
+  onSave: (category: BlogCategory) => Promise<boolean>;
 }
 
 const COLOR_PRESETS = [
@@ -32,17 +33,22 @@ const COLOR_PRESETS = [
   { label: 'Corail Chaud', hex: '#ea580c' },
 ];
 
-export function CreateBlogCategoryDialog({
+/** Le formulaire est remonté (key) à chaque ouverture : il repart toujours de la catégorie éditée. */
+export function CreateBlogCategoryDialog(props: CreateBlogCategoryDialogProps) {
+  return <CreateBlogCategoryForm key={props.isOpen ? `ouvert-${props.category?.id ?? 'nouvelle'}` : 'ferme'} {...props} />;
+}
+
+function CreateBlogCategoryForm({
   isOpen,
   onOpenChange,
   category,
   onSave,
 }: CreateBlogCategoryDialogProps) {
-  const [name, setName] = useState('');
-  const [slug, setSlug] = useState('');
-  const [description, setDescription] = useState('');
-  const [color, setColor] = useState('#d65d7a');
-  const [coverImage, setCoverImage] = useState('/images/bouquet-detail.jpg');
+  const [name, setName] = useState(category?.name ?? '');
+  const [slug, setSlug] = useState(category?.slug ?? '');
+  const [description, setDescription] = useState(category?.description ?? '');
+  const [color, setColor] = useState(category?.color || '#d65d7a');
+  const coverImage = category?.coverImage || '/images/bouquet-detail.jpg';
 
   const generateSlug = (text: string) => {
     return text
@@ -54,22 +60,6 @@ export function CreateBlogCategoryDialog({
       .replace(/^-+|-+$/g, '');
   };
 
-  useEffect(() => {
-    if (category) {
-      setName(category.name);
-      setSlug(category.slug);
-      setDescription(category.description);
-      setColor(category.color || '#d65d7a');
-      setCoverImage(category.coverImage || '/images/bouquet-detail.jpg');
-    } else {
-      setName('');
-      setSlug('');
-      setDescription('');
-      setColor('#d65d7a');
-      setCoverImage('/images/bouquet-detail.jpg');
-    }
-  }, [category, isOpen]);
-
   const handleNameChange = (val: string) => {
     setName(val);
     if (!category) {
@@ -77,7 +67,7 @@ export function CreateBlogCategoryDialog({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       toast.error('Veuillez renseigner un nom de catégorie.');
@@ -94,7 +84,7 @@ export function CreateBlogCategoryDialog({
       coverImage,
     };
 
-    onSave(savedCategory);
+    if (!(await onSave(savedCategory))) return;
     onOpenChange(false);
     toast.success(
       category

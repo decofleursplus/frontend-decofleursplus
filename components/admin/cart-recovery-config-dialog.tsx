@@ -14,13 +14,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Sliders, Clock, Gift, CheckCircle2 } from 'lucide-react';
-import { toast } from 'sonner';
 
 interface CartRecoveryConfigDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   settings: CartRecoverySettings;
-  onSave: (settings: CartRecoverySettings) => void;
+  /** Résout à true si l'API a enregistré les réglages (la fenêtre se ferme alors). */
+  onSave: (settings: CartRecoverySettings) => Promise<boolean>;
 }
 
 export function CartRecoveryConfigDialog({
@@ -36,9 +36,9 @@ export function CartRecoveryConfigDialog({
   const [discountCode, setDiscountCode] = useState(settings.discountCode);
   const [discountValue, setDiscountValue] = useState(settings.discountValue);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({
+    const ok = await onSave({
       autoEnabled,
       delayHours1: parseInt(delay1, 10) || 2,
       delayHours2: parseInt(delay2, 10) || 24,
@@ -46,8 +46,7 @@ export function CartRecoveryConfigDialog({
       discountCode: discountCode.trim().toUpperCase(),
       discountValue: discountValue.trim(),
     });
-    toast.success('Paramètres de relance automatique enregistrés');
-    onOpenChange(false);
+    if (ok) onOpenChange(false);
   };
 
   return (

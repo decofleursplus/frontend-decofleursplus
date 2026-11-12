@@ -26,7 +26,10 @@ import {
   Trees,
   Repeat,
   Camera,
+  Mail,
+  Truck as TruckIcon,
 } from 'lucide-react';
+import { canAccessAdminPath } from '@/lib/admin/access';
 import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
 import { logoutAdmin } from '@/app/admin/connexion/actions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -41,16 +44,18 @@ type InstallPromptEvent = Event & {
 
 // Seuls les modules n'apparaissant pas dans le bottom navbar (Dashboard, Commandes, Produits, Livraisons)
 const drawerMenuItems = [
+  { label: 'Mes livraisons', href: '/admin/mes-livraisons', icon: TruckIcon },
   { label: 'Abonnements', href: '/admin/abonnements', icon: Repeat },
-  { label: 'Fournisseurs', href: '/admin/fournisseurs', icon: Building2, badge: 'À venir' },
-  { label: 'Approvisionnements', href: '/admin/approvisionnements', icon: Boxes, badge: 'À venir' },
+  { label: 'Fournisseurs', href: '/admin/fournisseurs', icon: Building2 },
+  { label: 'Approvisionnements', href: '/admin/approvisionnements', icon: Boxes },
   { label: 'Gestion du Stock', href: '/admin/stock', icon: Package },
   { label: 'Clients & CRM', href: '/admin/clients', icon: Users },
   { label: 'Demandes de Devis', href: '/admin/devis', icon: FileSpreadsheet },
   { label: 'Location de Matériel', href: '/admin/location', icon: Armchair },
-  { label: 'Paysagisme & Projets', href: '/admin/paysagisme', icon: Trees, badge: 'À venir' },
+  { label: 'Paysagisme & Projets', href: '/admin/paysagisme', icon: Trees },
   { label: 'Catégories', href: '/admin/categories', icon: FolderTree },
   { label: 'Marketing & Promos', href: '/admin/marketing', icon: Megaphone },
+  { label: 'Messages & newsletter', href: '/admin/messages', icon: Mail },
   { label: 'Blog & Articles', href: '/admin/blog', icon: FileText },
   { label: 'Rapports & Finances', href: '/admin/rapports', icon: BarChart3 },
   { label: 'Paramètres & Équipe', href: '/admin/parametres', icon: Settings },
@@ -282,7 +287,7 @@ export function AdminMobileDrawer({ initialUser }: { initialUser?: AdminSessionU
         {/* Liste des modules */}
         <div className="flex-1 overflow-y-auto px-3 py-2">
           <ul className="space-y-1">
-            {drawerMenuItems.map((item) => {
+            {drawerMenuItems.filter((item) => canAccessAdminPath(currentUser?.role ?? 'ADMIN', item.href)).map((item) => {
               const isActive =
                 pathname === item.href ||
                 (item.href !== '/admin/tableau-de-bord' && pathname.startsWith(item.href + '/'));
@@ -306,11 +311,6 @@ export function AdminMobileDrawer({ initialUser }: { initialUser?: AdminSessionU
                       strokeWidth={isActive ? 2.2 : 1.8}
                     />
                     <span className="flex-1 truncate">{item.label}</span>
-                    {item.badge && (
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                        {item.badge}
-                      </span>
-                    )}
                     {isActive && (
                       <span className="h-1.5 w-1.5 rounded-full bg-[#ff5c8a]" />
                     )}

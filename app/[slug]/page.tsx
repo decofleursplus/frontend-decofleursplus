@@ -15,7 +15,6 @@ import {
   Sparkles,
   Star,
   Truck,
-  BookOpen,
   Calculator,
   Sprout,
   CheckCircle2,
@@ -25,7 +24,9 @@ import {
 } from 'lucide-react';
 import { formatPrice } from '@/lib/products';
 import { getCategories } from '@/lib/api/catalog';
-import { getPublicSettings } from '@/lib/api/settings';
+import { getPublicSettings, type PublicShopSettings } from '@/lib/api/settings';
+import { telHref, whatsappHref } from '@/lib/shop-contact';
+import { SITE_CONFIG } from '@/lib/seo/config';
 import { LiveProductGrid, loadZones } from '@/components/storefront/live-data';
 import { CatalogClient } from '@/components/catalog-client';
 import { SiteFooter } from '@/components/site-footer';
@@ -204,7 +205,7 @@ export default async function ContentPage({ params }: { params: Promise<{ slug: 
   }
   if (slug === 'livraison') return <DeliveryPage />;
   if (slug === 'a-propos') return <AboutPage />;
-  if (slug === 'contact') return <ContactPage />;
+  if (slug === 'contact') return <ContactPage settings={await getPublicSettings().catch(() => null)} />;
   if (slug === 'conditions' || slug === 'confidentialite') {
     return (
       <>
@@ -306,9 +307,10 @@ async function DeliveryPage() {
     },
   ];
 
-  const whatsappSpecialUrl =
-    'https://wa.me/221779417860?text=' +
-    encodeURIComponent('Bonjour DécoFleur Plus, je souhaite organiser une livraison sur mesure ou hors zone.');
+  const whatsappSpecialUrl = whatsappHref(
+    settings?.boutique.whatsappNumber ?? SITE_CONFIG.phoneDakar,
+    'Bonjour, je souhaite organiser une livraison sur mesure ou hors zone.',
+  );
 
   return (
     <>
@@ -642,10 +644,26 @@ function AboutPage() {
   );
 }
 
-function ContactPage() {
-  const whatsappUrl =
-    'https://wa.me/221779417860?text=' +
-    encodeURIComponent('Bonjour DécoFleur Plus, je souhaite un renseignement ou un devis personnalisé.');
+const PAYMENT_LABELS: [keyof Omit<PublicShopSettings['payments'], 'cashMaxAmount'>, string][] = [
+  ['wave', 'Wave'],
+  ['orangeMoney', 'Orange Money'],
+  ['card', 'Carte bancaire'],
+  ['cash', 'Espèces à la livraison'],
+];
+
+/** Coordonnées issues de Paramètres › Boutique ; repli sur la configuration du site si l'API ne répond pas. */
+function ContactPage({ settings }: { settings: PublicShopSettings | null }) {
+  const shop = settings?.boutique;
+  const address = shop?.address ?? SITE_CONFIG.address.streetAddress;
+  const phones = [shop?.phoneSaly ?? SITE_CONFIG.phoneSaly, shop?.phoneDakar ?? SITE_CONFIG.phoneDakar].filter(
+    (p, i, all) => p && all.indexOf(p) === i,
+  );
+  const whatsapp = whatsappHref(
+    shop?.whatsappNumber ?? SITE_CONFIG.phoneDakar,
+    'Bonjour, je souhaite un renseignement ou un devis personnalisé.',
+  );
+  const hours = (shop?.openingHours ?? '').split('|').map((h) => h.trim()).filter(Boolean);
+  const payments = settings ? PAYMENT_LABELS.filter(([key]) => settings.payments[key]).map(([, label]) => label) : [];
 
   return (
     <>
@@ -655,7 +673,7 @@ function ContactPage() {
           <span className="eyebrow">
             <MessageCircle size={16} /> Écoute, conseil &amp; atelier
           </span>
-          <h1>Contactez la Maison DécoFleur Plus</h1>
+          <h1>Contactez la Maison {shop?.shopName ?? 'DécoFleur Plus'}</h1>
           <p>
             Une question sur un bouquet, une commande en cours, ou un projet événementiel sur mesure à Saly ou sur la Petite Côte ?
             Notre équipe vous répond avec attention et réactivité.
@@ -671,13 +689,10 @@ function ContactPage() {
                 Formulaire en ligne
               </span>
               <h2 id="contact-form-title">Envoyez-nous un message</h2>
-              <p>Remplissez ce formulaire et notre équipe vous recontactera sous 2 heures ouvrées.</p>
+              <p>Remplissez ce formulaire : votre message est transmis directement à notre équipe, qui vous répond par email ou par téléphone.</p>
             </div>
             <ContactForm />
             <div className="contact-reassurance-row">
-              <span className="reassurance-pill">
-                <CheckCircle2 size={13} className="text-emerald-600" /> Réponse rapide sous 2h
-              </span>
               <span className="reassurance-pill">
                 <CheckCircle2 size={13} className="text-emerald-600" /> Devis gratuit &amp; sans engagement
               </span>
@@ -689,54 +704,70 @@ function ContactPage() {
 
           {/* Colonne droite : Coordonnées boutique & Carte interactive */}
           <aside className="contact-sidebar-column">
-            {/* Carte 1 : Coordonnées & Statut direct */}
+            {/* Carte 1 : Coordonnées */}
             <div className="contact-boutique-card">
 
-              <h3 className="boutique-title">Atelier &amp; Boutique à Saly</h3>
+              <h3 className="boutique-title">Atelier &amp; Boutique</h3>
               <p className="boutique-address">
                 <MapPin size={17} className="text-[#246e38] shrink-0 mt-0.5" />
-                <span>Route de la Plage (face aux Résidences), Saly Portudal, Petite Côte, Sénégal</span>
+                <span>{address}</span>
               </p>
 
               {/* Boutons d'actions directs dans la colonne boutique */}
               <div className="boutique-actions">
-
-                <a
-                  href="tel:+221779417860"
-                  className="boutique-btn boutique-btn-phone"
-                >
-                  <Phone size={16} />
-                  <span>Appeler au +221 77 941 78 60</span>
-                </a>
+                {phones.map((phone) => (
+                  <a key={phone} href={telHref(phone)} className="boutique-btn boutique-btn-phone">
+                    <Phone size={16} />
+                    <span>Appeler au {phone}</span>
+                  </a>
+                ))}
+                {whatsapp && (
+                  <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="boutique-btn boutique-btn-whatsapp">
+                    <MessageCircle size={16} />
+                    <span>Écrire sur WhatsApp</span>
+                  </a>
+                )}
               </div>
 
               <div className="boutique-meta-grid">
-                <div className="boutique-meta-item">
-                  <Clock size={15} className="text-emerald-700 shrink-0 mt-0.5" />
-                  <div>
-                    <strong>Horaires semaine</strong>
-                    <span>Lundi au Samedi : 08h00 à 19h30</span>
+                {hours.length > 0 && (
+                  <div className="boutique-meta-item">
+                    <Clock size={15} className="text-emerald-700 shrink-0 mt-0.5" />
+                    <div>
+                      <strong>Horaires d’ouverture</strong>
+                      {hours.map((h) => (
+                        <span key={h} className="block">
+                          {h}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-                <div className="boutique-meta-item">
-                  <Clock size={15} className="text-emerald-700 shrink-0 mt-0.5" />
-                  <div>
-                    <strong>Horaires dimanche</strong>
-                    <span>Dimanche : 09h00 à 14h00</span>
+                )}
+                {shop?.contactEmail && (
+                  <div className="boutique-meta-item">
+                    <MessageCircle size={15} className="text-emerald-700 shrink-0 mt-0.5" />
+                    <div>
+                      <strong>Email</strong>
+                      <a href={`mailto:${shop.contactEmail}`} className="underline">
+                        {shop.contactEmail}
+                      </a>
+                    </div>
                   </div>
-                </div>
-                <div className="boutique-meta-item">
-                  <ShieldCheck size={15} className="text-emerald-700 shrink-0 mt-0.5" />
-                  <div>
-                    <strong>Paiement accepté</strong>
-                    <span>Wave, Orange Money, Espèces, CB</span>
+                )}
+                {payments.length > 0 && (
+                  <div className="boutique-meta-item">
+                    <ShieldCheck size={15} className="text-emerald-700 shrink-0 mt-0.5" />
+                    <div>
+                      <strong>Paiements acceptés</strong>
+                      <span>{payments.join(', ')}</span>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
 
             {/* Carte 2 : Carte interactive avec repère et itinéraire */}
-            <ContactMap />
+            <ContactMap address={address} />
           </aside>
         </div>
       </main>

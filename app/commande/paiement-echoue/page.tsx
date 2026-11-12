@@ -6,12 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
   CircleAlert,
   RotateCw,
-  ExternalLink,
   Loader2,
-  Calendar,
-  MapPin,
-  CreditCard,
-  ShoppingBag,
   ArrowLeft,
   XCircle,
 } from 'lucide-react';

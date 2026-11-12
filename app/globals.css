@@ -9815,3 +9815,11 @@ body:has(.mobile-drawer-overlay) .floating-whatsapp-btn {
     padding: 0;
   }
 }
+
+/* ── Impression d'une fiche commande du back-office ── */
+@media print {
+  body:has(.admin-order-print) .admin-sidebar,
+  body:has(.admin-order-print) .admin-topbar {
+    display: none !important;
+  }
+}

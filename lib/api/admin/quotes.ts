@@ -104,8 +104,8 @@ export function transformAdminQuote(raw: any): LandscapeQuote {
     clientPhone,
     company: raw.company || raw.organization || '',
     prestationType: raw.eventType || raw.prestationType || 'Événement Floral',
-    spaceType: raw.spaceType || (raw.estimatedGuests ? `${raw.estimatedGuests} convives` : 'Espace de réception'),
-    surfaceArea: raw.surfaceArea ? String(raw.surfaceArea) : (raw.estimatedGuests ? `${raw.estimatedGuests} pers.` : 'N/C'),
+    spaceType: raw.estimatedGuests ? `${raw.estimatedGuests} invités` : '',
+    surfaceArea: '',
     desiredDate: raw.eventDate ? raw.eventDate.split('T')[0] : (raw.desiredDate || ''),
     location: raw.eventLocation || raw.location || 'Saly / Dakar',
     description: raw.details || raw.description || '',
@@ -253,4 +253,30 @@ export async function updateAdminQuoteStatus(
   }
 
   return transformAdminQuote(res?.data || res);
+}
+
+/** Transitions de statut autorisées par le backend (l'envoi de la proposition passe par `sendAdminQuoteProposal`). */
+export const QUOTE_NEXT_STATUSES: Record<string, QuoteStatus[]> = {
+  nouvelle: ['en_cours', 'refusee'],
+  en_cours: ['refusee'],
+  devis_envoye: ['acceptee', 'refusee', 'en_cours'],
+  acceptee: [],
+  refusee: [],
+  terminee: [],
+};
+
+/** Enregistre les lignes chiffrées (le montant est recalculé côté serveur) et les notes internes. */
+export async function saveAdminQuoteProposal(
+  id: string,
+  body: { items: { description: string; quantity: number; unitPrice: number }[]; adminNotes: string | null },
+): Promise<LandscapeQuote> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return transformAdminQuote(await apiClient.patch<any>(`/admin/quotes/${id}`, body, { useAdminToken: true }));
+}
+
+/** Envoie la proposition au client (email + notification dans son espace). */
+export async function sendAdminQuoteProposal(id: string, message?: string): Promise<LandscapeQuote & { emailSent?: boolean }> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const res = await apiClient.post<any>(`/admin/quotes/${id}/send`, { message: message || undefined }, { useAdminToken: true });
+  return { ...transformAdminQuote(res), emailSent: res?.emailSent };
 }

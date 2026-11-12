@@ -1,354 +1,152 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import type { AdminCampaign, CampaignChannel } from '@/lib/admin/mock-data/types';
-import { getAdminCustomers } from '@/lib/api/admin/customers';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { useEffect, useState } from 'react';
+import type { CampaignChannel } from '@/lib/admin/mock-data/types';
+import { getCampaignAudiences, type CampaignAudience } from '@/lib/api/admin/marketing';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Megaphone,
-  Smartphone,
-  Mail,
-  Users,
-  Send,
-  Calendar,
-  Sparkles,
-} from 'lucide-react';
+import { Loader2, Mail, MessageSquare, Megaphone } from 'lucide-react';
 import { WhatsAppColorIcon } from '@/components/icons';
 import { toast } from 'sonner';
+
+export interface NewCampaignInput {
+  name: string;
+  channel: CampaignChannel;
+  /** Code d'audience : all, newsletter, vip, entreprise, inactive */
+  audience: string;
+  messageContent: string;
+}
 
 interface CreateCampaignDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreate: (campaign: AdminCampaign) => void;
+  /** Résout à true si l'API a enregistré la campagne (la fenêtre se ferme alors). */
+  onCreate: (campaign: NewCampaignInput) => Promise<boolean>;
 }
 
-const baseAudiences = [
-  'Tous les clients',
-  'Clients VIP',
-  'Clients réguliers',
-  'Clients inactifs (> 30 jours)',
-  'Zone Saly & Mbour uniquement',
+const CHANNELS: { value: CampaignChannel; label: string; icon: React.ReactNode }[] = [
+  { value: 'email', label: 'Email', icon: <Mail className="h-4 w-4" /> },
+  { value: 'whatsapp', label: 'WhatsApp', icon: <WhatsAppColorIcon size={16} /> },
+  { value: 'sms', label: 'SMS', icon: <MessageSquare className="h-4 w-4" /> },
 ];
 
-export function CreateCampaignDialog({
-  isOpen,
-  onOpenChange,
-  onCreate,
-}: CreateCampaignDialogProps) {
+/**
+ * Nouvelle campagne (enregistrée en brouillon, envoyée ensuite depuis la liste).
+ * Audiences et nombres de destinataires réels ; variables {prenom} et {lien_boutique} remplacées à l'envoi.
+ */
+export function CreateCampaignDialog({ isOpen, onOpenChange, onCreate }: CreateCampaignDialogProps) {
+  if (!isOpen) return null;
+  return <CampaignForm onOpenChange={onOpenChange} onCreate={onCreate} />;
+}
+
+function CampaignForm({ onOpenChange, onCreate }: Omit<CreateCampaignDialogProps, 'isOpen'>) {
   const [name, setName] = useState('');
-  const [channel, setChannel] = useState<CampaignChannel>('whatsapp');
-  const [selectedAudience, setSelectedAudience] = useState(baseAudiences[0]);
-  const [scheduleMode, setScheduleMode] = useState<'immediate' | 'scheduled'>('immediate');
-  const [scheduledDateTime, setScheduledDateTime] = useState('');
+  const [channel, setChannel] = useState<CampaignChannel>('email');
+  const [audiences, setAudiences] = useState<CampaignAudience[] | null>(null);
+  const [audience, setAudience] = useState('all');
   const [message, setMessage] = useState('');
-  const [totalCustomerCount, setTotalCustomerCount] = useState<number>(0);
+  const [saving, setSaving] = useState(false);
+  const [audienceError, setAudienceError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isOpen) return;
-    let isMounted = true;
-    async function fetchCount() {
-      try {
-        const res = await getAdminCustomers({ limit: 1 });
-        if (isMounted) {
-          setTotalCustomerCount(res.total ?? 0);
-        }
-      } catch (err) {
-        console.warn('Erreur chargement clients:', err);
-      }
-    }
-    fetchCount();
-    return () => {
-      isMounted = false;
-    };
-  }, [isOpen]);
+    getCampaignAudiences()
+      .then(setAudiences)
+      .catch((err) => setAudienceError(err instanceof Error ? err.message : 'Audiences indisponibles.'));
+  }, []);
 
-  const currentAudienceCount = totalCustomerCount;
+  const selected = audiences?.find((a) => a.code === audience);
 
-  const insertVariable = (variable: string) => {
-    setMessage((prev) => `${prev} ${variable}`);
-  };
-
-  const getPreviewText = () => {
-    if (!message.trim()) {
-      return 'Votre message apparaîtra ici avec les variables dynamiques remplacées...';
-    }
-    return message
-      .replace(/{prenom}/g, 'Awa')
-      .replace(/{code_promo}/g, 'PRINTEMPS15')
-      .replace(/{lien_boutique}/g, 'decofleurplus.sn');
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
-      toast.error('Veuillez renseigner le nom de la campagne');
-      return;
-    }
-
-    if (!message.trim()) {
-      toast.error('Veuillez rédiger le contenu du message');
-      return;
-    }
-
-    const nowFormatted = `Aujourd'hui à ${new Date().toLocaleTimeString('fr-FR', {
-      hour: '2-digit',
-      minute: '2-digit',
-    })}`;
-
-    const newCampaign: AdminCampaign = {
-      id: `CMP-${Date.now().toString().slice(-4)}`,
-      name: name.trim(),
-      channel,
-      audience: `${selectedAudience} (${currentAudienceCount} contacts)`,
-      recipientCount: currentAudienceCount,
-      sentAt: scheduleMode === 'immediate' ? nowFormatted : undefined,
-      scheduledAt: scheduleMode === 'scheduled' ? scheduledDateTime : undefined,
-      status: scheduleMode === 'immediate' ? 'envoyee' : 'programmee',
-      openRate: scheduleMode === 'immediate' ? (channel === 'whatsapp' ? 95.0 : 88.0) : 0,
-      clickRate: scheduleMode === 'immediate' ? 32.5 : 0,
-      conversionCount: 0,
-      revenueGenerated: 0,
-      messageContent: message.trim(),
-    };
-
-    onCreate(newCampaign);
-    if (scheduleMode === 'immediate') {
-      toast.success(
-        `Campagne ${channel.toUpperCase()} envoyée à ${currentAudienceCount} contacts !`
-      );
-    } else {
-      toast.success(
-        `Campagne ${channel.toUpperCase()} programmée pour le ${scheduledDateTime} !`
-      );
-    }
-    onOpenChange(false);
-
-    // Reset
-    setName('');
-    setMessage('');
+    if (name.trim().length < 3) return toast.error('Donnez un nom (objet) à la campagne.');
+    if (message.trim().length < 10) return toast.error('Rédigez le message (10 caractères minimum).');
+    setSaving(true);
+    const ok = await onCreate({ name: name.trim(), channel, audience, messageContent: message.trim() });
+    setSaving(false);
+    if (ok) onOpenChange(false);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[94vw] max-w-2xl max-h-[90vh] overflow-y-auto p-5 sm:p-8 custom-modal-scroll [&_[data-slot=dialog-close]]:top-5 [&_[data-slot=dialog-close]]:right-5 sm:[&_[data-slot=dialog-close]]:top-8 sm:[&_[data-slot=dialog-close]]:right-8">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader className="space-y-1.5 pb-2">
-            <DialogTitle className="text-xl font-bold text-[#1e2a1f] flex items-center gap-2.5">
-              <Megaphone className="h-5 w-5 text-[#c1647a]" />
-              Créer une campagne marketing
+    <Dialog open onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-xl bg-white">
+        <form onSubmit={submit} className="space-y-4">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Megaphone className="h-5 w-5 text-[#c1647a]" /> Nouvelle campagne
             </DialogTitle>
-            <DialogDescription className="text-xs text-gray-500">
-              Diffusez vos annonces et offres promotionnelles via WhatsApp, SMS ou Email.
-            </DialogDescription>
+            <DialogDescription className="text-xs">La campagne est enregistrée en brouillon ; vous l’envoyez ensuite depuis la liste.</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-5 py-4 text-xs">
-            {/* Nom */}
-            <div className="space-y-1.5">
-              <Label className="font-semibold text-gray-700 text-xs whitespace-nowrap block">Nom de la campagne *</Label>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ex: Saint-Valentin 2024, Vente Flash Roses"
-                className="text-xs h-10 bg-white"
-                required
-              />
-            </div>
-
-            {/* Canal */}
-            <div className="space-y-1.5">
-              <Label className="font-semibold text-gray-700 text-xs whitespace-nowrap block">Canal de diffusion *</Label>
-              <div className="grid grid-cols-3 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setChannel('whatsapp')}
-                  className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
-                    channel === 'whatsapp'
-                      ? 'border-[#25D366] bg-[#dcfce7] text-[#166534] font-bold shadow-xs'
-                      : 'border-[#e7e4dd] bg-white text-gray-600 hover:bg-[#faf8f4]'
-                  }`}
-                >
-                  <WhatsAppColorIcon size={22} className="shrink-0" />
-                  <span className="text-xs font-semibold whitespace-nowrap">WhatsApp</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setChannel('sms')}
-                  className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
-                    channel === 'sms'
-                      ? 'border-[#3d5a99] bg-[#e5eaff] text-[#3d5a99] font-bold shadow-xs'
-                      : 'border-[#e7e4dd] bg-white text-gray-600 hover:bg-[#faf8f4]'
-                  }`}
-                >
-                  <Smartphone className="h-4 w-4 text-[#3d5a99]" />
-                  <span className="text-xs font-semibold whitespace-nowrap">SMS Direct</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setChannel('email')}
-                  className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
-                    channel === 'email'
-                      ? 'border-[#c1647a] bg-[#fdf2f4] text-[#c1647a] font-bold shadow-xs'
-                      : 'border-[#e7e4dd] bg-white text-gray-600 hover:bg-[#faf8f4]'
-                  }`}
-                >
-                  <Mail className="h-4 w-4 text-[#c1647a]" />
-                  <span className="text-xs font-semibold whitespace-nowrap">Email</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Audience */}
-            <div className="space-y-1.5">
-              <Label className="font-semibold text-gray-700 text-xs flex items-center justify-between whitespace-nowrap">
-                <span>Audience ciblée</span>
-                <span className="text-gray-400 font-normal">
-                  {currentAudienceCount.toLocaleString('fr-FR')} destinataires
-                </span>
-              </Label>
-              <select
-                value={selectedAudience}
-                onChange={(e) => setSelectedAudience(e.target.value)}
-                className="w-full h-10 rounded-lg border border-[#e7e4dd] bg-white px-3 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#c1647a]"
-              >
-                {baseAudiences.map((aud) => (
-                  <option key={aud} value={aud}>
-                    {aud}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Message & Variables */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label className="font-semibold text-gray-700 text-xs whitespace-nowrap block">Contenu du message *</Label>
-                <div className="flex items-center gap-1.5 text-[11px]">
-                  <span className="text-gray-400">Insérer variable :</span>
-                  <button
-                    type="button"
-                    onClick={() => insertVariable('{prenom}')}
-                    className="px-2 py-0.5 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
-                  >
-                    {'{prenom}'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertVariable('{code_promo}')}
-                    className="px-2 py-0.5 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
-                  >
-                    {'{code_promo}'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertVariable('{lien_boutique}')}
-                    className="px-2 py-0.5 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
-                  >
-                    {'{lien_boutique}'}
-                  </button>
-                </div>
-              </div>
-              <textarea
-                rows={3}
-                value={message}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setMessage(e.target.value)}
-                className="w-full rounded-xl border border-[#e7e4dd] p-3 text-xs bg-white resize-none focus:outline-none focus:ring-1 focus:ring-[#c1647a] custom-modal-scroll"
-                required
-              />
-            </div>
-
-            {/* Aperçu mobile direct */}
-            <div className="space-y-1.5">
-              <Label className="text-gray-500 font-medium text-xs flex items-center gap-1.5 whitespace-nowrap">
-                <Sparkles className="h-3.5 w-3.5 text-[#c1647a]" />
-                Aperçu du rendu client ({channel.toUpperCase()})
-              </Label>
-              <div
-                className={`p-3.5 rounded-xl border text-xs leading-relaxed ${
-                  channel === 'whatsapp'
-                    ? 'bg-[#e7f8ee] border-[#bbf7d0] text-gray-900 shadow-xs'
-                    : channel === 'sms'
-                    ? 'bg-[#f4f7fb] border-[#d8e2ee] text-gray-900'
-                    : 'bg-white border-[#e7e4dd] text-gray-800'
-                }`}
-              >
-                <div className="flex items-center gap-2 mb-1.5 text-[11px] text-gray-500 border-b border-black/5 pb-1">
-                  {channel === 'whatsapp' && <WhatsAppColorIcon size={14} className="shrink-0" />}
-                  <span className="font-bold text-gray-800">Décofleur Plus</span>
-                  <span>•</span>
-                  <span>Aujourd’hui</span>
-                </div>
-                <p className="whitespace-pre-wrap">{getPreviewText()}</p>
-              </div>
-            </div>
-
-            {/* Envoi Immédiat ou Programmé */}
-            <div className="space-y-2 pt-2 border-t border-[#f0ede6]">
-              <Label className="font-semibold text-gray-700 text-xs whitespace-nowrap block">Moment d&apos;envoi</Label>
-              <div className="flex items-center gap-5">
-                <label className="flex items-center gap-2 cursor-pointer text-xs">
-                  <input
-                    type="radio"
-                    name="schedule"
-                    checked={scheduleMode === 'immediate'}
-                    onChange={() => setScheduleMode('immediate')}
-                    className="text-[#c1647a] focus:ring-[#c1647a]"
-                  />
-                  <span className="font-medium text-gray-800">Envoi immédiat</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer text-xs">
-                  <input
-                    type="radio"
-                    name="schedule"
-                    checked={scheduleMode === 'scheduled'}
-                    onChange={() => setScheduleMode('scheduled')}
-                    className="text-[#c1647a] focus:ring-[#c1647a]"
-                  />
-                  <span className="font-medium text-gray-800">Programmer pour plus tard</span>
-                </label>
-              </div>
-
-              {scheduleMode === 'scheduled' && (
-                <div className="pt-2">
-                  <Input
-                    type="datetime-local"
-                    value={scheduledDateTime}
-                    onChange={(e) => setScheduledDateTime(e.target.value)}
-                    className="text-xs h-10 bg-white"
-                    required={scheduleMode === 'scheduled'}
-                  />
-                </div>
-              )}
-            </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="campaign-name" className="text-xs font-semibold">
+              Nom / objet de l’email *
+            </Label>
+            <Input id="campaign-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex : Offre spéciale Saint-Valentin" />
           </div>
 
-          <DialogFooter className="pt-4 border-t border-[#f0ede6] gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="text-xs h-10 px-4 border-[#e7e4dd]"
-            >
+          <div className="space-y-1.5">
+            <span className="text-xs font-semibold">Canal</span>
+            <div className="grid grid-cols-3 gap-2">
+              {CHANNELS.map((c) => (
+                <button
+                  key={c.value}
+                  type="button"
+                  onClick={() => setChannel(c.value)}
+                  aria-pressed={channel === c.value}
+                  className={`flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold ${
+                    channel === c.value ? 'border-[#c1647a] bg-[#fdf2f4] text-[#c1647a]' : 'border-[#e7e4dd]'
+                  }`}
+                >
+                  {c.icon} {c.label}
+                </button>
+              ))}
+            </div>
+            {channel !== 'email' && (
+              <p className="rounded-lg bg-amber-50 border border-amber-200 p-2 text-[11px] text-amber-900">
+                Aucun fournisseur {channel === 'whatsapp' ? 'WhatsApp' : 'SMS'} n’est encore configuré : la campagne sera enregistrée mais ne pourra pas être envoyée automatiquement.
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="campaign-audience" className="text-xs font-semibold">
+              Audience
+            </Label>
+            <select id="campaign-audience" value={audience} onChange={(e) => setAudience(e.target.value)} className="w-full h-10 rounded-md border border-[#e7e4dd] px-3 text-sm bg-white">
+              {(audiences ?? []).map((a) => (
+                <option key={a.code} value={a.code}>
+                  {a.label} ({a.count})
+                </option>
+              ))}
+              {!audiences && <option value="all">Chargement…</option>}
+            </select>
+            {audienceError && <p className="text-[11px] text-red-700">{audienceError}</p>}
+            {selected && selected.count === 0 && <p className="text-[11px] text-amber-700">Aucun destinataire dans cette audience pour le moment.</p>}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="campaign-message" className="text-xs font-semibold">
+              Message *
+            </Label>
+            <textarea
+              id="campaign-message"
+              rows={6}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Bonjour {prenom}, découvrez notre nouvelle collection… {lien_boutique}"
+              className="w-full rounded-md border border-[#e7e4dd] p-3 text-sm"
+            />
+            <p className="text-[11px] text-gray-500">Variables : {'{prenom}'} (prénom du client), {'{lien_boutique}'} (lien vers la boutique).</p>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Annuler
             </Button>
-            <Button
-              type="submit"
-              className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold h-10 px-5 gap-1.5"
-            >
-              <Send className="h-3.5 w-3.5" />
-              {scheduleMode === 'immediate' ? 'Diffuser la campagne' : 'Programmer l’envoi'}
+            <Button type="submit" disabled={saving} className="bg-[#c1647a] hover:bg-[#a85266] text-white">
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />} Enregistrer la campagne
             </Button>
           </DialogFooter>
         </form>

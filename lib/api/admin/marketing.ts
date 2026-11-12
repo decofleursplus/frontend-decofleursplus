@@ -1,7 +1,4 @@
 import { apiClient } from '../client';
-import {
-  defaultCartRecoverySettings,
-} from '@/lib/admin/mock-data/marketing';
 import type {
   AdminCoupon,
   AdminPromotion,
@@ -59,9 +56,8 @@ export async function getAdminCoupons(params?: { status?: string; search?: strin
     if (res && Array.isArray(res.coupons)) return res.coupons.map(transformAdminCoupon);
     if (res && Array.isArray(res.data)) return res.data.map(transformAdminCoupon);
   } catch (err) {
-    console.warn('[AdminMarketingAPI] Erreur coupons:', err);
+    throw err instanceof Error ? err : new Error('Données marketing indisponibles');
   }
-
   return [];
 }
 
@@ -74,6 +70,7 @@ export async function createAdminCoupon(data: {
   startDate?: string;
   endDate?: string;
   description?: string;
+  maxUsagePerCustomer?: number;
 }): Promise<AdminCoupon> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const res = await apiClient.post<any>('/admin/marketing/coupons', data, {
@@ -114,6 +111,7 @@ export function transformAdminPromotion(raw: any): AdminPromotion {
     name: raw.name || raw.title || 'Promotion',
     targetType: raw.targetType || 'all',
     targetNames: Array.isArray(raw.targetNames) ? raw.targetNames : [],
+    targetIds: Array.isArray(raw.targetIds) ? raw.targetIds : [],
     discountPercentage: Number(raw.discountPercentage ?? raw.discount ?? 10),
     startDate: raw.startDate ? raw.startDate.split('T')[0] : '2024-01-01',
     endDate: raw.endDate ? raw.endDate.split('T')[0] : '2025-12-31',
@@ -141,9 +139,8 @@ export async function getAdminPromotions(params?: { status?: string; search?: st
     if (res && Array.isArray(res.promotions)) return res.promotions.map(transformAdminPromotion);
     if (res && Array.isArray(res.data)) return res.data.map(transformAdminPromotion);
   } catch (err) {
-    console.warn('[AdminMarketingAPI] Erreur promotions:', err);
+    throw err instanceof Error ? err : new Error('Données marketing indisponibles');
   }
-
   return [];
 }
 
@@ -155,6 +152,7 @@ export async function createAdminPromotion(data: {
   badgeText?: string;
   targetType?: string;
   targetNames?: string[];
+  targetIds?: string[];
 }): Promise<AdminPromotion> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const res = await apiClient.post<any>('/admin/marketing/promotions', data, {
@@ -192,11 +190,11 @@ export function transformAdminCampaign(raw: any): AdminCampaign {
     recipientCount: Number(raw.recipientCount ?? 0),
     sentAt: raw.sentAt,
     scheduledAt: raw.scheduledAt,
-    openRate: raw.openRate ? Number(raw.openRate) : undefined,
-    clickRate: raw.clickRate ? Number(raw.clickRate) : undefined,
+    openRate: raw.openRate != null ? Number(raw.openRate) : undefined,
+    clickRate: raw.clickRate != null ? Number(raw.clickRate) : undefined,
     conversionCount: Number(raw.conversionCount ?? 0),
     revenueGenerated: Number(raw.revenueGenerated ?? 0),
-    status: raw.status || 'envoyee',
+    status: raw.status || 'brouillon',
     messageContent: raw.messageContent || raw.content || '',
   };
 }
@@ -218,9 +216,8 @@ export async function getAdminCampaigns(params?: { channel?: string; search?: st
     if (res && Array.isArray(res.campaigns)) return res.campaigns.map(transformAdminCampaign);
     if (res && Array.isArray(res.data)) return res.data.map(transformAdminCampaign);
   } catch (err) {
-    console.warn('[AdminMarketingAPI] Erreur campagnes:', err);
+    throw err instanceof Error ? err : new Error('Données marketing indisponibles');
   }
-
   return [];
 }
 
@@ -267,9 +264,8 @@ export async function getAdminAbandonedCarts(): Promise<AdminAbandonedCart[]> {
     if (res && Array.isArray(res.carts)) return res.carts;
     if (res && Array.isArray(res.data)) return res.data;
   } catch (err) {
-    console.warn('[AdminMarketingAPI] Erreur paniers abandonnés:', err);
+    throw err instanceof Error ? err : new Error('Données marketing indisponibles');
   }
-
   return [];
 }
 
@@ -289,10 +285,9 @@ export async function getCartRecoverySettings(): Promise<CartRecoverySettings> {
     });
     if (res) return res;
   } catch (err) {
-    console.warn('[AdminMarketingAPI] Falling back to default cart settings:', err);
+    throw err instanceof Error ? err : new Error('Réglages de relance indisponibles');
   }
-
-  return defaultCartRecoverySettings;
+  throw new Error('Réglages de relance indisponibles');
 }
 
 export async function updateCartRecoverySettings(settings: CartRecoverySettings): Promise<CartRecoverySettings> {
@@ -301,4 +296,31 @@ export async function updateCartRecoverySettings(settings: CartRecoverySettings)
     useAdminToken: true,
   });
   return res || settings;
+}
+
+/** Audiences de campagne (codes) avec le nombre réel de destinataires. */
+export interface CampaignAudience {
+  code: 'all' | 'newsletter' | 'vip' | 'entreprise' | 'inactive';
+  label: string;
+  count: number;
+}
+
+export async function getCampaignAudiences(): Promise<CampaignAudience[]> {
+  return apiClient.get<CampaignAudience[]>('/admin/marketing/audiences', { useAdminToken: true, cache: 'no-store' });
+}
+
+export async function setAdminAbandonedCartStatus(id: string, status: 'recupere' | 'expire'): Promise<void> {
+  await apiClient.patch(`/admin/marketing/abandoned-carts/${id}/status`, { status }, { useAdminToken: true });
+}
+
+export interface MarketingSummary {
+  totalRevenue: number;
+  activeCouponsCount: number;
+  activePromosCount: number;
+  recoveredRevenue: number;
+  recoveryRate: number;
+}
+
+export async function getMarketingSummary(): Promise<MarketingSummary> {
+  return apiClient.get<MarketingSummary>('/admin/marketing/summary', { useAdminToken: true, cache: 'no-store' });
 }

@@ -6,9 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Check,
   Flower2,
-  Package,
   Truck,
-  ArrowRight,
   ExternalLink,
   Loader2,
   Calendar,
@@ -16,7 +14,6 @@ import {
   CreditCard,
   RotateCw,
   Banknote,
-  ShieldCheck,
   CheckCircle2,
   Clock,
   AlertCircle,

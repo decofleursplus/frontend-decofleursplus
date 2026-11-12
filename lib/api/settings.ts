@@ -8,6 +8,8 @@ export interface PublicShopSettings {
     contactEmail: string;
     phoneDakar: string;
     phoneSaly: string;
+    /** Numéro WhatsApp de la boutique (format libre, ex. « +221 77 941 78 60 ») */
+    whatsappNumber: string;
     address: string;
     logoUrl: string;
     openingHours: string;

@@ -77,9 +77,11 @@ const errorMessage = (err: unknown, fallback: string) => (err instanceof ApiClie
 
 export function ReservationDrawer({ reservationId, onClose, onChanged }: ReservationDrawerProps) {
   const [reservation, setReservation] = useState<RentalReservation | null>(null);
-  const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  // Le parent remonte ce composant (key) à chaque réservation ouverte : l'état repart de zéro.
+  const [loadedKey, setLoadedKey] = useState<number | null>(null);
+  const loading = reservationId !== null && loadedKey !== reloadKey;
 
   const [adminNotes, setAdminNotes] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
@@ -89,10 +91,6 @@ export function ReservationDrawer({ reservationId, onClose, onChanged }: Reserva
   useEffect(() => {
     if (!reservationId) return;
     let cancelled = false;
-    setLoading(true);
-    setLoadError(null);
-    setCancelMode(false);
-    setCancelReason('');
     getAdminRentalReservation(reservationId)
       .then((res) => {
         if (cancelled) return;
@@ -103,7 +101,7 @@ export function ReservationDrawer({ reservationId, onClose, onChanged }: Reserva
         if (!cancelled) setLoadError(errorMessage(err, 'Impossible de charger la réservation.'));
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setLoadedKey(reloadKey);
       });
     return () => {
       cancelled = true;
@@ -193,7 +191,10 @@ export function ReservationDrawer({ reservationId, onClose, onChanged }: Reserva
           <p>{loadError}</p>
           <button
             type="button"
-            onClick={() => setReloadKey((k) => k + 1)}
+            onClick={() => {
+              setLoadError(null);
+              setReloadKey((k) => k + 1);
+            }}
             className="px-4 py-2 rounded-xl bg-[#193e23] text-white font-semibold"
           >
             Réessayer

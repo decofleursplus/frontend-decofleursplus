@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import type { AdminCustomer } from '@/lib/admin/mock-data/types';
-import { getAdminCustomers, updateAdminCustomer } from '@/lib/api/admin/customers';
+import { getAdminCustomers } from '@/lib/api/admin/customers';
 import { ApiClientError } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,8 +46,6 @@ import {
   X,
   RotateCcw,
   Check,
-  TrendingDown,
-  ArrowUpDown,
   RefreshCw,
   Loader2,
 } from 'lucide-react';
@@ -62,25 +60,34 @@ export default function AdminCustomersPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const loadCustomers = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
+  // Chaîne de promesses : les setState n'ont lieu que dans les callbacks, jamais pendant l'effet.
+  const fetchCustomers = useCallback(
+    () =>
+      getAdminCustomers()
+        .then((res) => {
+          if (res?.customers) setCustomers(res.customers);
+        })
+        .catch((err: unknown) => {
+          toast.error(err instanceof ApiClientError ? err.message : 'Erreur lors du chargement des clients');
+        })
+        .finally(() => {
+          setLoading(false);
+          setRefreshing(false);
+        }),
+    []
+  );
 
-    try {
-      const res = await getAdminCustomers();
-      if (res?.customers) setCustomers(res.customers);
-    } catch (err) {
-      const msg = err instanceof ApiClientError ? err.message : 'Erreur lors du chargement des clients';
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
+  const loadCustomers = useCallback(
+    (isRefresh = false) => {
+      if (isRefresh) setRefreshing(true);
+      return fetchCustomers();
+    },
+    [fetchCustomers]
+  );
 
   useEffect(() => {
-    loadCustomers();
-  }, [loadCustomers]);
+    fetchCustomers();
+  }, [fetchCustomers]);
 
   // Segment Pill Filter: 'all' | 'vip' | 'entreprise' | 'particulier' | 'inactif'
   const [segmentFilter, setSegmentFilter] = useState<
@@ -533,17 +540,17 @@ export default function AdminCustomersPage() {
                     Statut du compte
                   </label>
                   <div className="grid grid-cols-3 gap-2">
-                    {[
+                    {([
                       { label: 'Tous', value: 'all' },
                       { label: 'Actif', value: 'actif' },
                       { label: 'Inactif', value: 'inactif' },
-                    ].map((item) => {
+                    ] as const).map((item) => {
                       const isSelected = draftStatus === item.value;
                       return (
                         <button
                           key={item.value}
                           type="button"
-                          onClick={() => setDraftStatus(item.value as any)}
+                          onClick={() => setDraftStatus(item.value)}
                           className={`py-2 px-3 text-xs font-medium rounded-lg border text-center transition-all ${
                             isSelected
                               ? 'border-[#24582d] bg-[#edf8ef] text-[#24582d] font-semibold'
@@ -595,18 +602,18 @@ export default function AdminCustomersPage() {
                     Trier par
                   </label>
                   <div className="space-y-2">
-                    {[
+                    {([
                       { label: 'Dépenses décroissantes (LTV)', value: 'spent_desc' },
                       { label: 'Nombre de commandes décroissant', value: 'orders_desc' },
                       { label: 'Dernière commande récente', value: 'recent_order' },
                       { label: 'Nom alphabétique (A-Z)', value: 'name_asc' },
-                    ].map((item) => {
+                    ] as const).map((item) => {
                       const isSelected = draftSort === item.value;
                       return (
                         <button
                           key={item.value}
                           type="button"
-                          onClick={() => setDraftSort(item.value as any)}
+                          onClick={() => setDraftSort(item.value)}
                           className={`w-full py-2.5 px-3 text-xs font-medium rounded-lg border flex items-center justify-between transition-all ${
                             isSelected
                               ? 'border-[#24582d] bg-[#edf8ef] text-[#24582d] font-semibold'

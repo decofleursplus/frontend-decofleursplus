@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -61,7 +61,8 @@ export default function LocationEvenementiellePage() {
   const [categories, setCategories] = useState<RentalCategory[]>([]);
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
   const [equipment, setEquipment] = useState<RentalEquipment[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Chargement dérivé : la requête courante n'est pas encore celle qui a été chargée.
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -76,23 +77,31 @@ export default function LocationEvenementiellePage() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  const loadCategories = useCallback(async () => {
-    try {
-      setCategories(await getRentalCategories());
-      setCategoriesError(null);
-    } catch (err) {
-      setCategoriesError(errorMessage(err, 'Impossible de charger les catégories.'));
-    }
-  }, []);
+  const [categoriesRetry, setCategoriesRetry] = useState(0);
+  const loadCategories = () => setCategoriesRetry((n) => n + 1);
 
   useEffect(() => {
-    loadCategories();
-  }, [loadCategories, reloadKey]);
+    let cancelled = false;
+    getRentalCategories()
+      .then((items) => {
+        if (cancelled) return;
+        setCategories(items);
+        setCategoriesError(null);
+      })
+      .catch((err) => {
+        if (!cancelled) setCategoriesError(errorMessage(err, 'Impossible de charger les catégories.'));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey, categoriesRetry]);
+
+  const requestKey = JSON.stringify([selectedCategory, search, usePeriod, periodStart, periodEnd, reloadKey]);
+  const loading = periodValid && loadedKey !== requestKey;
 
   useEffect(() => {
     if (!periodValid) return;
     let cancelled = false;
-    setLoading(true);
     getRentals({
       category: selectedCategory,
       search: search || undefined,
@@ -109,12 +118,12 @@ export default function LocationEvenementiellePage() {
         setLoadError(errorMessage(err, 'Impossible de charger le catalogue de location.'));
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setLoadedKey(requestKey);
       });
     return () => {
       cancelled = true;
     };
-  }, [selectedCategory, search, usePeriod, periodStart, periodEnd, periodValid, reloadKey]);
+  }, [selectedCategory, search, usePeriod, periodStart, periodEnd, periodValid, requestKey]);
 
   const displayedEquipment = useMemo(() => {
     let result = [...equipment];

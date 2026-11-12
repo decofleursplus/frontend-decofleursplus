@@ -18,7 +18,8 @@ import { toast } from 'sonner';
 interface AddDriverDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onAddDriver: (driver: DeliveryDriver) => void;
+  /** Résout à true si l'API a créé le livreur (la fenêtre se ferme alors). */
+  onAddDriver: (driver: { name: string; phone: string; vehicle: DeliveryDriver['vehicle']; vehiclePlate?: string; available: boolean }) => Promise<boolean>;
 }
 
 export function AddDriverDialog({
@@ -31,8 +32,9 @@ export function AddDriverDialog({
   const [vehicle, setVehicle] = useState<DeliveryDriver['vehicle']>('Moto');
   const [vehiclePlate, setVehiclePlate] = useState('');
   const [status, setStatus] = useState<DeliveryDriver['status']>('disponible');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       toast.error('Le nom du livreur est requis');
@@ -43,26 +45,16 @@ export function AddDriverDialog({
       return;
     }
 
-    const newDriver: DeliveryDriver = {
-      id: `drv-${Date.now().toString().slice(-4)}`,
+    setSubmitting(true);
+    const ok = await onAddDriver({
       name: name.trim(),
       phone: phone.trim(),
       vehicle,
       vehiclePlate: vehiclePlate.trim() || undefined,
-      status,
-      activeDeliveriesCount: 0,
-      rating: 5.0,
-      avatar: name
-        .trim()
-        .split(' ')
-        .map((p) => p[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase(),
-    };
-
-    onAddDriver(newDriver);
-    toast.success(`Livreur ${newDriver.name} ajouté à la flotte`);
+      available: status !== 'indisponible',
+    });
+    setSubmitting(false);
+    if (!ok) return;
     onOpenChange(false);
 
     // Reset form
@@ -178,6 +170,7 @@ export function AddDriverDialog({
             </Button>
             <Button
               type="submit"
+              disabled={submitting}
               className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold px-4"
             >
               Enregistrer le livreur

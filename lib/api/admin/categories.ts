@@ -1,11 +1,14 @@
 import { apiClient } from '../client';
 import type { AdminCategory } from '@/lib/admin/mock-data/types';
 
+const admin = { useAdminToken: true as const, cache: 'no-store' as const };
+
 export interface CreateCategoryPayload {
   name: string;
   slug?: string;
   description?: string;
-  imageUrl?: string;
+  imageUrl?: string | null;
+  isActive?: boolean;
 }
 
 export interface CreateSubcategoryPayload {
@@ -15,160 +18,65 @@ export interface CreateSubcategoryPayload {
   description?: string;
 }
 
-export interface BackendCategory {
+interface BackendCategory {
   id: string;
   name: string;
   slug: string;
   description?: string | null;
   imageUrl?: string | null;
-  subCategories?: Array<{
-    id: string;
-    name: string;
-    slug: string;
-    description?: string | null;
-  }>;
-  _count?: {
-    products?: number;
-  };
+  isActive?: boolean;
+  productCount?: number;
+  totalProductCount?: number;
+  subCategories?: { id: string; name: string; slug: string; description?: string | null }[];
 }
 
-/**
- * Récupère la liste de toutes les catégories avec leurs statistiques
- * Endpoint: GET /api/v1/categories
- */
+const toAdminCategory = (c: BackendCategory): AdminCategory => ({
+  id: c.id,
+  name: c.name,
+  slug: c.slug,
+  description: c.description || '',
+  productCount: c.productCount ?? 0,
+  totalProductCount: c.totalProductCount ?? c.productCount ?? 0,
+  status: c.isActive === false ? 'inactif' : 'actif',
+  imageUrl: c.imageUrl || undefined,
+  subCategories: c.subCategories ?? [],
+});
+
+/** Toutes les catégories du back-office (inactives comprises) avec leurs sous-catégories et compteurs. */
 export async function getAdminCategories(): Promise<AdminCategory[]> {
-  try {
-    const data = await apiClient.get<BackendCategory[]>('/categories');
-    if (Array.isArray(data)) {
-      return data.map((c) => ({
-        id: c.id,
-        name: c.name,
-        slug: c.slug,
-        description: c.description || '',
-        productCount: c._count?.products ?? 0,
-        status: 'actif',
-        imageUrl: c.imageUrl || undefined,
-      }));
-    }
-    return [];
-  } catch (error) {
-    console.warn('[Admin Categories] Erreur de récupération des catégories:', error);
-    return [];
-  }
+  return (await apiClient.get<BackendCategory[]>('/admin/categories', admin)).map(toAdminCategory);
 }
 
-/**
- * Créer une nouvelle catégorie
- * Endpoint: POST /api/v1/admin/categories
- */
 export async function createAdminCategory(payload: CreateCategoryPayload): Promise<AdminCategory> {
-  const slug =
-    payload.slug ||
-    payload.name
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '') ||
-    `cat-${Date.now()}`;
-
-  const cleanImageUrl =
-    typeof payload.imageUrl === 'string' && payload.imageUrl.trim().length > 0
-      ? payload.imageUrl.trim()
-      : null;
-
-  const data = await apiClient.post<BackendCategory>(
-    '/admin/categories',
-    {
-      name: payload.name.trim(),
-      slug,
-      description: payload.description?.trim() || null,
-      imageUrl: cleanImageUrl,
-    },
-    { isAdmin: true }
+  return toAdminCategory(
+    await apiClient.post<BackendCategory>(
+      '/admin/categories',
+      { ...payload, description: payload.description?.trim() || null, imageUrl: payload.imageUrl || null },
+      admin,
+    ),
   );
-
-  return {
-    id: data.id,
-    name: data.name,
-    description: data.description || '',
-    productCount: 0,
-    status: 'actif',
-    imageUrl: data.imageUrl || cleanImageUrl || undefined,
-  };
 }
 
-/**
- * Mettre à jour une catégorie existante
- * Endpoint: PATCH /api/v1/admin/categories/{id}
- */
-export async function updateAdminCategory(
-  id: string,
-  payload: Partial<CreateCategoryPayload>
-): Promise<AdminCategory> {
-  const updatePayload: Record<string, unknown> = {};
-
-  if (payload.name !== undefined) {
-    updatePayload.name = payload.name.trim();
-  }
-  if (payload.slug !== undefined) {
-    updatePayload.slug = payload.slug.trim();
-  }
-  if (payload.description !== undefined) {
-    updatePayload.description = payload.description.trim() || null;
-  }
-  if (payload.imageUrl !== undefined) {
-    updatePayload.imageUrl =
-      typeof payload.imageUrl === 'string' && payload.imageUrl.trim().length > 0
-        ? payload.imageUrl.trim()
-        : null;
-  }
-
-  const data = await apiClient.patch<BackendCategory>(`/admin/categories/${id}`, updatePayload, {
-    isAdmin: true,
-  });
-
-  return {
-    id: data.id,
-    name: data.name,
-    description: data.description || '',
-    productCount: data._count?.products ?? 0,
-    status: 'actif',
-    imageUrl: data.imageUrl || (updatePayload.imageUrl as string | undefined) || undefined,
-  };
+export async function updateAdminCategory(id: string, payload: Partial<CreateCategoryPayload>): Promise<AdminCategory> {
+  const body: Record<string, unknown> = { ...payload };
+  if (payload.description !== undefined) body.description = payload.description.trim() || null;
+  if (payload.imageUrl !== undefined) body.imageUrl = payload.imageUrl || null;
+  return toAdminCategory(await apiClient.patch<BackendCategory>(`/admin/categories/${id}`, body, admin));
 }
 
-/**
- * Supprimer une catégorie
- * Endpoint: DELETE /api/v1/admin/categories/{id}
- */
-export async function deleteAdminCategory(id: string): Promise<boolean> {
-  try {
-    await apiClient.delete(`/admin/categories/${id}`, { isAdmin: true });
-    return true;
-  } catch {
-    return false;
-  }
+/** Refusée (409) si la catégorie contient encore des produits, même masqués. */
+export async function deleteAdminCategory(id: string): Promise<void> {
+  await apiClient.delete(`/admin/categories/${id}`, admin);
 }
 
-/**
- * Créer une nouvelle sous-catégorie
- * Endpoint: POST /api/v1/admin/subcategories
- */
-export async function createAdminSubcategory(payload: CreateSubcategoryPayload): Promise<any> {
-  const slug = payload.slug || payload.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-  return apiClient.post('/admin/subcategories', { ...payload, slug }, { isAdmin: true });
+export async function createAdminSubcategory(payload: CreateSubcategoryPayload) {
+  return apiClient.post<{ id: string; name: string; slug: string }>('/admin/subcategories', payload, admin);
 }
 
-/**
- * Supprimer une sous-catégorie
- * Endpoint: DELETE /api/v1/admin/subcategories/{id}
- */
-export async function deleteAdminSubcategory(id: string): Promise<boolean> {
-  try {
-    await apiClient.delete(`/admin/subcategories/${id}`, { isAdmin: true });
-    return true;
-  } catch {
-    return false;
-  }
+export async function updateAdminSubcategory(id: string, payload: { name?: string; description?: string | null }) {
+  return apiClient.patch<{ id: string; name: string; slug: string }>(`/admin/subcategories/${id}`, payload, admin);
+}
+
+export async function deleteAdminSubcategory(id: string): Promise<void> {
+  await apiClient.delete(`/admin/subcategories/${id}`, admin);
 }

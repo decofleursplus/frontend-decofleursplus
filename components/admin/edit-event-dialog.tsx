@@ -31,18 +31,19 @@ import { uploadAdminMedia } from '@/lib/api/admin/uploads';
 import { WhatsAppColorIcon } from '@/components/icons';
 import type { Product } from '@/lib/products';
 import { getProducts } from '@/lib/api/catalog';
-import {
-  type SeasonalEvent,
-  type EventThemeColor,
-  stripEmojis,
-} from '@/lib/events-data';
+import { stripEmojis } from '@/lib/events-data';
+import type { EventThemeColor, SeasonalEventInput } from '@/lib/api/events';
+
+/** Événement en cours d'édition (`id` absent pour une création). */
+export type EventDraft = SeasonalEventInput & { id?: string };
 
 interface EditEventDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  event: SeasonalEvent | null;
+  event: EventDraft | null;
   isLive: boolean;
-  onSave: (updatedEvent: SeasonalEvent, activateImmediately?: boolean) => void;
+  /** Résout à true si l'enregistrement a réussi (la fenêtre se ferme alors). */
+  onSave: (event: EventDraft, activateImmediately?: boolean) => Promise<boolean>;
 }
 
 const themeOptions: {
@@ -86,7 +87,7 @@ const categorySuggestions = [
 
 export function EditEventDialog(props: EditEventDialogProps) {
   if (!props.open || !props.event) return null;
-  return <EditEventDialogInner key={props.event.id} {...props} event={props.event} />;
+  return <EditEventDialogInner key={props.event.id ?? 'nouveau'} {...props} event={props.event} />;
 }
 
 function EditEventDialogInner({
@@ -95,8 +96,9 @@ function EditEventDialogInner({
   event,
   isLive,
   onSave,
-}: EditEventDialogProps & { event: SeasonalEvent }) {
-  const [formData, setFormData] = useState<SeasonalEvent>(event);
+}: EditEventDialogProps & { event: EventDraft }) {
+  const [formData, setFormData] = useState<EventDraft>(event);
+  const [saving, setSaving] = useState(false);
   const [productSearch, setProductSearch] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -137,7 +139,7 @@ function EditEventDialogInner({
   }, []);
 
   // Produits sélectionnés
-  const selectedProductIds = formData.featuredProductIds || [];
+  const selectedProductIds = formData.featuredProductIds;
   const selectedProducts = useMemo(() => {
     return allProducts.filter(
       (p) => selectedProductIds.includes(p.id) || selectedProductIds.includes(p.slug)
@@ -171,20 +173,20 @@ function EditEventDialogInner({
     setFormData({ ...formData, featuredProductIds: nextIds });
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData) {
-      const sanitized: SeasonalEvent = {
-        ...formData,
-        name: stripEmojis(formData.name),
-        badge: '',
-        categoryLabel: stripEmojis(formData.categoryLabel),
-        headline: stripEmojis(formData.headline),
-        headlineHighlight: stripEmojis(formData.headlineHighlight),
-      };
-      onSave(sanitized, false);
-      onOpenChange(false);
-    }
+    const sanitized: EventDraft = {
+      ...formData,
+      name: stripEmojis(formData.name),
+      badge: '',
+      categoryLabel: stripEmojis(formData.categoryLabel),
+      headline: stripEmojis(formData.headline),
+      headlineHighlight: stripEmojis(formData.headlineHighlight),
+    };
+    setSaving(true);
+    const ok = await onSave(sanitized, false);
+    setSaving(false);
+    if (ok) onOpenChange(false);
   };
 
   const currentTheme =
@@ -663,9 +665,10 @@ function EditEventDialogInner({
           <Button
             type="submit"
             form="edit-event-form"
+            disabled={saving || isUploading}
             className="bg-[#193e23] hover:bg-[#122e1a] text-white text-xs font-semibold px-6 h-9 shadow-xs"
           >
-            Enregistrer
+            {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />} {saving ? 'Enregistrement…' : 'Enregistrer'}
           </Button>
         </div>
       </DialogContent>

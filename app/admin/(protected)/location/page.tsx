@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ApiClientError } from '@/lib/api/client';
-import { getAdminUser } from '@/lib/api/auth-token';
+import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
 import {
   deleteAdminRentalEquipment,
   getAdminRentalEquipment,
@@ -51,7 +51,8 @@ const errorMessage = (err: unknown, fallback: string) => (err instanceof ApiClie
 
 export default function AdminLocationPage() {
   const [activeTab, setActiveTab] = useState<Tab>('calendrier');
-  const [canManageEquipment, setCanManageEquipment] = useState(false);
+  const { currentUser } = useAdminSidebar();
+  const canManageEquipment = MANAGER_ROLES.includes(currentUser?.role ?? '');
 
   // Rafraîchissement croisé (planning + liste) après chaque modification
   const [refreshKey, setRefreshKey] = useState(0);
@@ -63,7 +64,8 @@ export default function AdminLocationPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [reservations, setReservations] = useState<AdminRentalReservationList | null>(null);
-  const [reservationsLoading, setReservationsLoading] = useState(true);
+  // Le chargement est dérivé : on compare la requête affichée à la dernière requête terminée.
+  const [loadedReservationsKey, setLoadedReservationsKey] = useState<string | null>(null);
   const [reservationsError, setReservationsError] = useState<string | null>(null);
   const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null);
 
@@ -71,16 +73,12 @@ export default function AdminLocationPage() {
   const [equipment, setEquipment] = useState<RentalEquipment[]>([]);
   const [equipmentStatus, setEquipmentStatus] = useState<'all' | RentalItemAdminStatus>('all');
   const [equipmentCategory, setEquipmentCategory] = useState('all');
-  const [equipmentLoading, setEquipmentLoading] = useState(true);
+  const [loadedEquipmentKey, setLoadedEquipmentKey] = useState<string | null>(null);
   const [equipmentError, setEquipmentError] = useState<string | null>(null);
   const [equipmentDrawerOpen, setEquipmentDrawerOpen] = useState(false);
   const [editingEquipment, setEditingEquipment] = useState<RentalEquipment | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<RentalEquipment | null>(null);
   const [deleting, setDeleting] = useState(false);
-
-  useEffect(() => {
-    setCanManageEquipment(MANAGER_ROLES.includes(getAdminUser()?.role ?? ''));
-  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -90,9 +88,11 @@ export default function AdminLocationPage() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
+  const reservationsKey = JSON.stringify([statusFilter, search, page, refreshKey]);
+  const reservationsLoading = loadedReservationsKey !== reservationsKey;
+
   useEffect(() => {
     let cancelled = false;
-    setReservationsLoading(true);
     getAdminRentalReservations({
       status: statusFilter === 'all' ? undefined : statusFilter,
       search: search || undefined,
@@ -108,32 +108,39 @@ export default function AdminLocationPage() {
         if (!cancelled) setReservationsError(errorMessage(err, 'Impossible de charger les réservations.'));
       })
       .finally(() => {
-        if (!cancelled) setReservationsLoading(false);
+        if (!cancelled) setLoadedReservationsKey(reservationsKey);
       });
     return () => {
       cancelled = true;
     };
-  }, [statusFilter, search, page, refreshKey]);
+  }, [statusFilter, search, page, reservationsKey]);
 
-  const loadEquipment = useCallback(async () => {
-    setEquipmentLoading(true);
-    try {
-      const items = await getAdminRentalEquipment({
-        status: equipmentStatus === 'all' ? undefined : equipmentStatus,
-        category: equipmentCategory,
-      });
-      setEquipment(items);
-      setEquipmentError(null);
-    } catch (err) {
-      setEquipmentError(errorMessage(err, 'Impossible de charger le catalogue de location.'));
-    } finally {
-      setEquipmentLoading(false);
-    }
-  }, [equipmentStatus, equipmentCategory]);
+  const [equipmentRetry, setEquipmentRetry] = useState(0);
+  const equipmentKey = JSON.stringify([equipmentStatus, equipmentCategory, refreshKey, equipmentRetry]);
+  const equipmentLoading = loadedEquipmentKey !== equipmentKey;
+  const loadEquipment = () => setEquipmentRetry((n) => n + 1);
 
   useEffect(() => {
-    loadEquipment();
-  }, [loadEquipment, refreshKey]);
+    let cancelled = false;
+    getAdminRentalEquipment({
+      status: equipmentStatus === 'all' ? undefined : equipmentStatus,
+      category: equipmentCategory,
+    })
+      .then((items) => {
+        if (cancelled) return;
+        setEquipment(items);
+        setEquipmentError(null);
+      })
+      .catch((err) => {
+        if (!cancelled) setEquipmentError(errorMessage(err, 'Impossible de charger le catalogue de location.'));
+      })
+      .finally(() => {
+        if (!cancelled) setLoadedEquipmentKey(equipmentKey);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [equipmentStatus, equipmentCategory, equipmentKey]);
 
   const counts = reservations?.counts;
   const countFor = (value: 'all' | RentalReservationStatus): number | null => {
@@ -499,6 +506,7 @@ export default function AdminLocationPage() {
       )}
 
       <ReservationDrawer
+        key={selectedReservationId ?? 'ferme'}
         reservationId={selectedReservationId}
         onClose={() => setSelectedReservationId(null)}
         onChanged={refreshAll}

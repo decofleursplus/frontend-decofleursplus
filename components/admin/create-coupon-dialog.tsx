@@ -19,7 +19,8 @@ import { toast } from 'sonner';
 interface CreateCouponDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreate: (coupon: AdminCoupon) => void;
+  /** Résout à true si l'API a créé le code (la fenêtre se ferme alors). */
+  onCreate: (coupon: AdminCoupon) => Promise<boolean>;
 }
 
 export function CreateCouponDialog({
@@ -33,10 +34,10 @@ export function CreateCouponDialog({
   const [minOrder, setMinOrder] = useState('');
   const [maxUsageTotal, setMaxUsageTotal] = useState('');
   const [maxUsagePerCustomer, setMaxUsagePerCustomer] = useState('1');
-  const [startDate, setStartDate] = useState(
+  const [startDate, setStartDate] = useState(() =>
     new Date().toISOString().split('T')[0]
   );
-  const [endDate, setEndDate] = useState(
+  const [endDate, setEndDate] = useState(() =>
     new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   );
   const [description, setDescription] = useState('');
@@ -49,7 +50,7 @@ export function CreateCouponDialog({
     toast.info('Code promotionnel généré automatiquement');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!code.trim()) {
       toast.error('Veuillez renseigner un code promotionnel');
@@ -78,8 +79,7 @@ export function CreateCouponDialog({
       description: description.trim() || undefined,
     };
 
-    onCreate(newCoupon);
-    toast.success(`Code promo ${newCoupon.code} créé avec succès !`);
+    if (!(await onCreate(newCoupon))) return;
     onOpenChange(false);
 
     // Reset

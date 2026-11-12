@@ -5,14 +5,10 @@ import {
   Truck,
   Clock,
   MapPin,
-  ShieldCheck,
-  CheckCircle2,
   Phone,
   HelpCircle,
   ArrowRight,
   Sparkles,
-  Building2,
-  Calendar,
 } from 'lucide-react';
 import { SiteFooter } from '@/components/site-footer';
 import { BotanicalCorners } from '@/components/botanical-corners';

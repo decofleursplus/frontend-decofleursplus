@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
+import { canAccessAdminPath } from '@/lib/admin/access';
 
 const directTabs = [
   {
@@ -37,7 +38,7 @@ const directTabs = [
 
 export function AdminMobileTabBar() {
   const pathname = usePathname();
-  const { isMobileDrawerOpen, toggleMobileDrawer } = useAdminSidebar();
+  const { isMobileDrawerOpen, toggleMobileDrawer, currentUser } = useAdminSidebar();
 
   return (
     <nav
@@ -45,7 +46,7 @@ export function AdminMobileTabBar() {
       aria-label="Navigation principale mobile du back-office"
     >
       <div className="admin-mobile-tabbar-grid">
-        {directTabs.map((tab) => {
+        {directTabs.filter((tab) => canAccessAdminPath(currentUser?.role ?? 'ADMIN', tab.href)).map((tab) => {
           const isActive =
             pathname === tab.href ||
             (tab.href !== '/admin/tableau-de-bord' && pathname.startsWith(tab.href + '/'));

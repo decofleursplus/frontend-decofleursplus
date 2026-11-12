@@ -1,32 +1,12 @@
-export type EventThemeColor =
-  | 'emerald'
-  | 'ruby'
-  | 'gold'
-  | 'rose'
-  | 'amber'
-  | 'purple'
-  | 'festive'
-  | 'standard';
+import type { EventThemeColor, SeasonalEventInput } from '@/lib/api/events';
 
-export interface SeasonalEvent {
+export type { EventThemeColor };
+
+/** Modèle d'événement proposé à l'import dans le back-office (données d'origine de l'atelier). */
+interface EventTemplateSource extends Omit<SeasonalEventInput, 'discountNote'> {
   id: string;
-  name: string;
-  categoryLabel: string;
-  datesLabel: string;
-  headline: string;
-  headlineHighlight: string;
-  subheadline: string;
-  badge: string;
-  ctaText: string;
-  ctaLink: string;
-  whatsappMessage: string;
-  themeColor: EventThemeColor;
-  bgImage: string;
   isActive: boolean;
-  collectionTitle: string;
-  collectionDesc: string;
   discountNote?: string;
-  featuredProductIds: string[];
 }
 
 export function stripEmojis(str: string): string {
@@ -34,7 +14,7 @@ export function stripEmojis(str: string): string {
   return str.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}]/gu, '').trim();
 }
 
-export const initialSeasonalEvents: SeasonalEvent[] = [
+const templateSources: EventTemplateSource[] = [
   {
     id: 'tabaski',
     name: 'Tabaski (Aïd el-Kébir)',
@@ -282,194 +262,18 @@ export const initialSeasonalEvents: SeasonalEvent[] = [
   },
 ];
 
-export const standardBoutiqueEvent: SeasonalEvent = {
-  id: 'standard',
-  name: 'Boutique Standard (Hors Événement)',
-  categoryLabel: 'Boutique Standard',
-  datesLabel: 'Toute l’année',
-  headline: 'Des fleurs, des fruits, des idées,',
-  headlineHighlight: 'des émotions !',
-  subheadline:
-    'Artisan fleuriste à Saly Portudal. Bouquets de saison, scénographie d’exception et abonnements floraux pour villas, hôtels et particuliers.',
-  badge: 'Maison d’Art Floral & Végétal',
-  ctaText: 'Voir tout le catalogue',
-  ctaLink: '/boutique',
-  whatsappMessage:
-    'Bonjour DécoFleur Plus, je souhaite un renseignement ou passer une commande.',
-  themeColor: 'standard',
-  bgImage: '/images/hero.jpg',
-  isActive: false,
-  collectionTitle: 'Nos créations phares',
-  collectionDesc:
-    'Découvrez les pièces signatures de notre atelier de création florale à Saly Portudal.',
-  featuredProductIds: [
-    'bouquet-elegance-rose',
-    'panier-fruits-tropicaux',
-    'bouquet-passion',
-    'composition-orchidee-blanche',
-  ],
-};
-
-const STORAGE_KEY = 'decofleur_seasonal_events_v3';
-const ACTIVE_EVENT_STORAGE_KEY = 'decofleur_active_event_id_v3';
-
-function sanitizeEvent(ev: SeasonalEvent): SeasonalEvent {
-  if (!ev || typeof ev !== 'object') return ev;
+/**
+ * Événements types (Tabaski, Saint-Valentin, Korité…) que l'équipe peut importer d'un clic dans
+ * Marketing › Événements. Les produits mis en avant sont à choisir dans le catalogue réel.
+ */
+export const EVENT_TEMPLATES: SeasonalEventInput[] = templateSources.map((source) => {
+  const rest: Partial<EventTemplateSource> = { ...source };
+  delete rest.id;
+  delete rest.isActive;
   return {
-    ...ev,
-    badge: stripEmojis(ev.badge || ''),
-    categoryLabel: stripEmojis(ev.categoryLabel || ''),
-    name: stripEmojis(ev.name || ''),
+    ...(rest as Omit<EventTemplateSource, 'id' | 'isActive'>),
+    ctaLink: source.ctaLink.split('?')[0] || '/boutique',
+    discountNote: source.discountNote ?? null,
+    featuredProductIds: [],
   };
-}
-
-/**
- * Charge tous les événements depuis le stockage local (avec repli garanti sur les événements par défaut)
- */
-export function getStoredSeasonalEvents(): SeasonalEvent[] {
-  if (typeof window === 'undefined') {
-    return initialSeasonalEvents;
-  }
-  try {
-    let raw = localStorage.getItem(STORAGE_KEY);
-    // Migration v2 -> v3
-    if (!raw) {
-      const v2Raw = localStorage.getItem('decofleur_seasonal_events_v2');
-      if (v2Raw) {
-        raw = v2Raw;
-      }
-    }
-
-    if (!raw) {
-      return initialSeasonalEvents;
-    }
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) {
-      // Filtrer les entrées valides (ignorer un éventuel standard enregistré par erreur)
-      const validItems = parsed
-        .filter((e) => e && typeof e === 'object' && e.id && e.id !== 'standard')
-        .map(sanitizeEvent);
-
-      // Garantir que toutes les célébrations par défaut sont TOUJOURS présentes
-      const combined = [...validItems];
-      for (const initEv of initialSeasonalEvents) {
-        if (!combined.some((e) => e.id === initEv.id)) {
-          combined.push(initEv);
-        }
-      }
-
-      if (combined.length > 0) {
-        return combined;
-      }
-    }
-    return initialSeasonalEvents;
-  } catch {
-    return initialSeasonalEvents;
-  }
-}
-
-/**
- * Récupère l'événement actif actuel
- */
-export function getActiveSeasonalEvent(): SeasonalEvent {
-  if (typeof window === 'undefined') {
-    return initialSeasonalEvents.find((e) => e.isActive) || standardBoutiqueEvent;
-  }
-  try {
-    let activeId = localStorage.getItem(ACTIVE_EVENT_STORAGE_KEY);
-    if (!activeId) {
-      activeId = localStorage.getItem('decofleur_active_event_id_v2');
-    }
-    const events = getStoredSeasonalEvents();
-    if (activeId === 'standard') {
-      return standardBoutiqueEvent;
-    }
-    if (activeId) {
-      const found = events.find((e) => e.id === activeId);
-      if (found) return sanitizeEvent(found);
-    }
-    const foundActive = events.find((e) => e.isActive);
-    if (foundActive) return sanitizeEvent(foundActive);
-    return standardBoutiqueEvent;
-  } catch {
-    return standardBoutiqueEvent;
-  }
-}
-
-/**
- * Active un événement spécifique par son ID (ou 'standard')
- */
-export function setActiveSeasonalEvent(eventId: string): void {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(ACTIVE_EVENT_STORAGE_KEY, eventId);
-    const events = getStoredSeasonalEvents();
-    const updated = events.map((ev) => ({
-      ...ev,
-      isActive: ev.id === eventId,
-    }));
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    window.dispatchEvent(new CustomEvent('decofleur-event-changed', { detail: { eventId } }));
-  } catch (err) {
-    console.error('Erreur lors de la sauvegarde de l’événement actif :', err);
-  }
-}
-
-/**
- * Met à jour un événement dans la liste
- */
-export function saveSeasonalEvents(events: SeasonalEvent[]): void {
-  if (typeof window === 'undefined') return;
-  try {
-    const sanitized = events.map(sanitizeEvent);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
-    const active = sanitized.find((e) => e.isActive);
-    if (active) {
-      localStorage.setItem(ACTIVE_EVENT_STORAGE_KEY, active.id);
-    }
-    window.dispatchEvent(new CustomEvent('decofleur-event-changed', { detail: { events: sanitized } }));
-  } catch (err) {
-    console.error('Erreur lors de la sauvegarde des événements :', err);
-  }
-}
-
-/**
- * Duplique un événement existant
- */
-export function duplicateSeasonalEvent(eventId: string): SeasonalEvent | null {
-  const events = getStoredSeasonalEvents();
-  const source = events.find((e) => e.id === eventId);
-  if (!source) return null;
-
-  const newId = `event-${Date.now()}`;
-  const duplicated: SeasonalEvent = {
-    ...source,
-    id: newId,
-    name: `${source.name} (Copie)`,
-    isActive: false,
-  };
-
-  const nextEvents = [duplicated, ...events];
-  saveSeasonalEvents(nextEvents);
-  return duplicated;
-}
-
-/**
- * Supprime un événement personnalisé
- */
-export function deleteSeasonalEvent(eventId: string): boolean {
-  const events = getStoredSeasonalEvents();
-  // Ne pas supprimer si c'est le dernier événement ou si actif
-  const target = events.find((e) => e.id === eventId);
-  if (!target) return false;
-
-  const nextEvents = events.filter((e) => e.id !== eventId);
-  saveSeasonalEvents(nextEvents);
-
-  if (target.isActive) {
-    setActiveSeasonalEvent('standard');
-  }
-
-  return true;
-}
-
+});

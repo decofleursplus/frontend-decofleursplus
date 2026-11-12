@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
@@ -18,6 +18,8 @@ export interface AdminDrawerProps {
   size?: AdminDrawerSize;
   maxWidthClass?: string;
 }
+
+const noopSubscribe = () => () => {};
 
 const SIZE_CLASSES: Record<AdminDrawerSize, string> = {
   sm: 'max-w-md',      // ~448px
@@ -40,11 +42,12 @@ export function AdminDrawer({
   size = 'md',
   maxWidthClass,
 }: AdminDrawerProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // Vrai uniquement côté navigateur (createPortal a besoin de document.body), sans rendu en cascade.
+  const mounted = useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false
+  );
 
   // Bloquer le scroll d'arrière-plan de la page, gérer le padding pour éviter le layout shift, et écouter la touche Échap
   useEffect(() => {

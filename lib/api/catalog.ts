@@ -77,6 +77,8 @@ export interface ProductFilterParams {
   newOnly?: boolean;
   onSale?: boolean;
   sort?: ProductSort;
+  /** Ids ou slugs précis (ex. sélection d'un événement) */
+  ids?: string[];
   page?: number;
   limit?: number;
 }
@@ -144,6 +146,7 @@ export async function getProducts(filters: ProductFilterParams = {}): Promise<Pa
       minPrice: filters.minPrice,
       maxPrice: filters.maxPrice,
       sort: filters.sort,
+      ids: filters.ids?.length ? filters.ids.join(',') : undefined,
       page: filters.page || 1,
       limit: filters.limit || 20,
     },
@@ -216,4 +219,18 @@ export async function addProductReview(productId: string, payload: AddProductRev
     userName: payload.userName.trim(),
     ...(payload.userEmail?.trim() ? { userEmail: payload.userEmail.trim() } : {}),
   });
+}
+
+/** Témoignage de l'accueil : avis réel 4-5 étoiles (nom abrégé côté serveur). */
+export interface FeaturedReview {
+  id: string;
+  authorName: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  product: { name: string; slug: string };
+}
+
+export async function getFeaturedReviews(limit = 6): Promise<FeaturedReview[]> {
+  return apiClient.get<FeaturedReview[]>('/reviews/featured', { params: { limit } });
 }

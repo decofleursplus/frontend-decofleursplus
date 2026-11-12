@@ -5,28 +5,17 @@ import Image from 'next/image';
 import {
   FileSpreadsheet,
   Search,
-  Filter,
-  CheckCircle2,
-  Clock,
   Send,
   Eye,
-  FileCheck,
-  X,
   Plus,
   Trash2,
-  MapPin,
-  Calendar,
-  Phone,
-  Mail,
-  User,
-  Building,
   RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
 import { Button } from '@/components/ui/button';
 import { LandscapeQuote, QuoteStatus } from '@/lib/admin/mock-data/types';
-import { getAdminQuotes, updateAdminQuote, updateAdminQuoteStatus } from '@/lib/api/admin/quotes';
+import { QUOTE_NEXT_STATUSES, getAdminQuotes, saveAdminQuoteProposal, sendAdminQuoteProposal, updateAdminQuoteStatus } from '@/lib/api/admin/quotes';
 import { ApiClientError } from '@/lib/api/client';
 import { Loader2 } from 'lucide-react';
 
@@ -43,27 +32,34 @@ export default function AdminDevisPage() {
   // Quote editing/creation within modal
   const [quoteItems, setQuoteItems] = useState<{ description: string; qty: number; unitPrice: number; total: number }[]>([]);
 
-  const loadQuotes = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
+  // Chaîne de promesses : les setState n'ont lieu que dans les callbacks, jamais pendant l'effet.
+  const fetchQuotes = useCallback(
+    () =>
+      getAdminQuotes()
+        .then((res) => {
+          if (res?.quotes) setQuotes(res.quotes);
+        })
+        .catch((err: unknown) => {
+          toast.error(err instanceof ApiClientError ? err.message : 'Erreur lors du chargement des devis');
+        })
+        .finally(() => {
+          setLoading(false);
+          setRefreshing(false);
+        }),
+    []
+  );
 
-    try {
-      const res = await getAdminQuotes();
-      if (res?.quotes) {
-        setQuotes(res.quotes);
-      }
-    } catch (err) {
-      const msg = err instanceof ApiClientError ? err.message : 'Erreur lors du chargement des devis';
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
+  const loadQuotes = useCallback(
+    (isRefresh = false) => {
+      if (isRefresh) setRefreshing(true);
+      return fetchQuotes();
+    },
+    [fetchQuotes]
+  );
 
   useEffect(() => {
-    loadQuotes();
-  }, [loadQuotes]);
+    fetchQuotes();
+  }, [fetchQuotes]);
 
   const openQuoteDetail = (quote: LandscapeQuote) => {
     setSelectedQuote(quote);
@@ -71,21 +67,19 @@ export default function AdminDevisPage() {
     setQuoteItems(quote.quoteItems || []);
   };
 
+  const applyUpdated = (updated: LandscapeQuote) => {
+    setQuotes((prev) => prev.map((q) => (q.id === updated.id ? updated : q)));
+    setSelectedQuote(updated);
+    setQuoteItems(updated.quoteItems || []);
+  };
+
   const updateQuoteStatus = async (newStatus: QuoteStatus) => {
     if (!selectedQuote) return;
-    const previous = { ...selectedQuote };
-    const updated = { ...selectedQuote, status: newStatus };
-    setQuotes((prev) => prev.map((q) => (q.id === selectedQuote.id ? updated : q)));
-    setSelectedQuote(updated);
-
     try {
-      await updateAdminQuoteStatus(selectedQuote.id, { status: newStatus });
-      toast.success(`Statut du devis ${selectedQuote.quoteNumber || selectedQuote.id} mis à jour : ${newStatus}`);
+      applyUpdated(await updateAdminQuoteStatus(selectedQuote.id, { status: newStatus }));
+      toast.success(`Devis ${selectedQuote.quoteNumber || ''} : statut mis à jour.`);
     } catch (err) {
-      setQuotes((prev) => prev.map((q) => (q.id === selectedQuote.id ? previous : q)));
-      setSelectedQuote(previous);
-      const msg = err instanceof ApiClientError ? err.message : 'Erreur lors de la mise à jour du statut';
-      toast.error(msg);
+      toast.error(err instanceof ApiClientError ? err.message : 'Erreur lors de la mise à jour du statut');
     }
   };
 
@@ -102,33 +96,44 @@ export default function AdminDevisPage() {
 
   const totalQuoteAmount = quoteItems.reduce((acc, item) => acc + item.total, 0);
 
-  const saveCommercialProposal = async () => {
+  const proposalPayload = () => ({
+    items: quoteItems
+      .filter((it) => it.description.trim().length >= 2)
+      .map((it) => ({ description: it.description.trim(), quantity: Math.max(1, Math.round(it.qty)), unitPrice: Math.max(0, it.unitPrice) })),
+    adminNotes: adminNotes.trim() || null,
+  });
+
+  /** Enregistre les lignes et les notes (sans envoyer). */
+  const saveProposalDraft = async () => {
     if (!selectedQuote) return;
     setIsSubmitting(true);
-    const updated: LandscapeQuote = {
-      ...selectedQuote,
-      quoteAmount: totalQuoteAmount,
-      quoteItems: quoteItems,
-      notes: adminNotes,
-      status: 'devis_envoye',
-    };
-
     try {
-      await updateAdminQuoteStatus(selectedQuote.id, {
-        status: 'devis_envoye',
-        quotedAmount: totalQuoteAmount,
-      });
-      if (adminNotes !== selectedQuote.notes) {
-        await updateAdminQuote(selectedQuote.id, { adminNotes });
-      }
-      setQuotes((prev) => prev.map((q) => (q.id === selectedQuote.id ? updated : q)));
-      setSelectedQuote(updated);
+      applyUpdated(await saveAdminQuoteProposal(selectedQuote.id, proposalPayload()));
+      toast.success('Proposition enregistrée.');
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : 'Enregistrement impossible.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  /** Enregistre puis envoie la proposition au client (email + espace client). */
+  const saveCommercialProposal = async () => {
+    if (!selectedQuote) return;
+    if (proposalPayload().items.length === 0) {
+      toast.error('Ajoutez au moins une ligne chiffrée avant d’envoyer la proposition.');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await saveAdminQuoteProposal(selectedQuote.id, proposalPayload());
+      const sent = await sendAdminQuoteProposal(selectedQuote.id);
+      applyUpdated(sent);
       toast.success(
-        `Proposition commerciale chiffrée (${totalQuoteAmount.toLocaleString('fr-FR')} FCFA) enregistrée et statut passé à "Devis envoyé" !`
+        `Proposition de ${totalQuoteAmount.toLocaleString('fr-FR')} FCFA envoyée${sent.emailSent === false ? ' (email non délivré : le client la verra dans son espace)' : ' au client'}.`,
       );
     } catch (err) {
-      const msg = err instanceof ApiClientError ? err.message : 'Erreur lors de l\'enregistrement de la proposition';
-      toast.error(msg);
+      toast.error(err instanceof ApiClientError ? err.message : 'Erreur lors de l’envoi de la proposition');
     } finally {
       setIsSubmitting(false);
     }
@@ -300,7 +305,7 @@ export default function AdminDevisPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Espace</span>
-                  <span className="text-foreground">{quote.spaceType} ({quote.surfaceArea} m²)</span>
+                  {quote.spaceType && <span className="text-foreground">{quote.spaceType}</span>}
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Lieu</span>
@@ -373,7 +378,7 @@ export default function AdminDevisPage() {
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="font-medium text-foreground">{quote.prestationType}</div>
-                      <div className="text-xs text-muted-foreground">{quote.spaceType} ({quote.surfaceArea} m²)</div>
+                      {quote.spaceType && <div className="text-xs text-muted-foreground">{quote.spaceType}</div>}
                     </td>
                     <td className="py-3.5 px-4 text-muted-foreground">
                       {quote.location}
@@ -428,16 +433,18 @@ export default function AdminDevisPage() {
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">Changer le statut :</span>
                 <select
-                  value={selectedQuote.status}
-                  onChange={(e) => updateQuoteStatus(e.target.value as QuoteStatus)}
-                  className="px-3 py-1.5 rounded-lg border border-border bg-white text-xs font-medium outline-none cursor-pointer"
+                  value=""
+                  onChange={(e) => e.target.value && void updateQuoteStatus(e.target.value as QuoteStatus)}
+                  disabled={(QUOTE_NEXT_STATUSES[selectedQuote.status] ?? []).length === 0}
+                  aria-label="Changer le statut du devis"
+                  className="px-3 py-1.5 rounded-lg border border-border bg-white text-xs font-medium outline-none cursor-pointer disabled:opacity-50"
                 >
-                  <option value="nouvelle">Nouvelle</option>
-                  <option value="en_cours">En cours</option>
-                  <option value="devis_envoye">Devis envoyé</option>
-                  <option value="acceptee">Acceptée</option>
-                  <option value="refusee">Refusée</option>
-                  <option value="terminee">Terminée</option>
+                  <option value="">{(QUOTE_NEXT_STATUSES[selectedQuote.status] ?? []).length ? 'Choisir…' : 'Aucun changement possible'}</option>
+                  {(QUOTE_NEXT_STATUSES[selectedQuote.status] ?? []).map((st) => (
+                    <option key={st} value={st}>
+                      {{ nouvelle: 'Nouvelle', en_cours: 'En cours d’étude', devis_envoye: 'Devis envoyé', acceptee: 'Acceptée', refusee: 'Refusée', terminee: 'Terminée' }[st]}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -452,7 +459,15 @@ export default function AdminDevisPage() {
                 <button
                   type="button"
                   disabled={isSubmitting}
-                  onClick={saveCommercialProposal}
+                  onClick={() => void saveProposalDraft()}
+                  className="px-4 py-2 rounded-xl border border-border text-xs font-semibold hover:bg-muted disabled:opacity-50"
+                >
+                  Enregistrer
+                </button>
+                <button
+                  type="button"
+                  disabled={isSubmitting || selectedQuote.status === 'acceptee' || selectedQuote.status === 'refusee'}
+                  onClick={() => void saveCommercialProposal()}
                   className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-xs font-semibold shadow-sm transition-colors cursor-pointer disabled:opacity-50"
                 >
                   {isSubmitting ? (
@@ -460,7 +475,7 @@ export default function AdminDevisPage() {
                   ) : (
                     <Send size={14} />
                   )}
-                  Enregistrer la proposition
+                  Envoyer au client
                 </button>
               </div>
             </div>
@@ -484,7 +499,7 @@ export default function AdminDevisPage() {
               <div>
                 <span className="text-muted-foreground block text-xs">Chantier :</span>
                 <span className="font-semibold text-foreground">{selectedQuote.location}</span>
-                <span className="block text-xs text-muted-foreground">{selectedQuote.prestationType} · {selectedQuote.surfaceArea} m²</span>
+                <span className="block text-xs text-muted-foreground">{selectedQuote.prestationType}{selectedQuote.spaceType ? ` · ${selectedQuote.spaceType}` : ''}</span>
               </div>
             </div>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
 import { ApiClientError } from '@/lib/api/client';
@@ -61,62 +61,56 @@ export function RentalBookingForm({
   const [eventLocation, setEventLocation] = useState('');
   const [notes, setNotes] = useState('');
 
-  const [availability, setAvailability] = useState<RentalAvailability | null>(null);
-  const [checking, setChecking] = useState(false);
-  const [availabilityError, setAvailabilityError] = useState<string | null>(null);
   const [recheck, setRecheck] = useState(0);
+  // Dernier résultat du serveur, associé à la saisie qui l'a produit
+  const [checked, setChecked] = useState<{ key: string; availability: RentalAvailability | null; error: string | null } | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [reservation, setReservation] = useState<RentalReservation | null>(null);
 
-  // Pré-remplissage avec le compte connecté (une seule fois, sans écraser une saisie)
-  const prefilled = useRef(false);
-  useEffect(() => {
-    if (!user || prefilled.current) return;
-    prefilled.current = true;
+  // Pré-remplissage avec le compte connecté (une fois par utilisateur, sans écraser une saisie)
+  const [prefilledFor, setPrefilledFor] = useState<string | null>(null);
+  if (user && user.id !== prefilledFor) {
+    setPrefilledFor(user.id);
     setClientName((v) => v || user.name || '');
     setClientPhone((v) => v || user.phone || '');
     setClientEmail((v) => v || user.email || '');
-  }, [user]);
+  }
 
   const localPeriodError = periodError(startDate, endDate);
+  const validInput = !localPeriodError && Number.isInteger(quantity) && quantity >= 1;
+  const availabilityKey = JSON.stringify([equipment.id, quantity, startDate, endDate, recheck]);
+  const current = validInput && checked?.key === availabilityKey ? checked : null;
+  const availability = current?.availability ?? null;
+  const availabilityError = current?.error ?? null;
+  const checking = validInput && !reservation && !current;
 
   // Disponibilité et montant calculés par le serveur à chaque changement de période ou de quantité
   useEffect(() => {
-    if (reservation) return;
-    if (localPeriodError || !Number.isInteger(quantity) || quantity < 1) {
-      setAvailability(null);
-      setAvailabilityError(null);
-      setChecking(false);
-      return;
-    }
-
+    if (reservation || !validInput) return;
     let cancelled = false;
-    setChecking(true);
-    const timer = setTimeout(async () => {
-      try {
-        const result = await checkRentalAvailability({ equipmentId: equipment.id, quantity, startDate, endDate });
-        if (cancelled) return;
-        setAvailability(result);
-        setAvailabilityError(null);
-      } catch (err) {
-        if (cancelled) return;
-        setAvailability(null);
-        setAvailabilityError(
-          err instanceof ApiClientError ? err.message : 'Impossible de vérifier la disponibilité.',
-        );
-      } finally {
-        if (!cancelled) setChecking(false);
-      }
+    const timer = setTimeout(() => {
+      checkRentalAvailability({ equipmentId: equipment.id, quantity, startDate, endDate })
+        .then((result) => {
+          if (!cancelled) setChecked({ key: availabilityKey, availability: result, error: null });
+        })
+        .catch((err: unknown) => {
+          if (cancelled) return;
+          setChecked({
+            key: availabilityKey,
+            availability: null,
+            error: err instanceof ApiClientError ? err.message : 'Impossible de vérifier la disponibilité.',
+          });
+        });
     }, 350);
 
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [equipment.id, quantity, startDate, endDate, localPeriodError, reservation, recheck]);
+  }, [equipment.id, quantity, startDate, endDate, validInput, reservation, availabilityKey]);
 
   const checkedItem = availability?.items[0];
   const stockOnPeriod = checkedItem?.availableStock;

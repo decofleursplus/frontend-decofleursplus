@@ -12,6 +12,7 @@ import { ArrowLeft, Mail, Phone, MapPin, Calendar, Star, ShoppingBag, Gift, Load
 import Link from 'next/link';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SendEmailDialog } from '@/components/admin/send-email-dialog';
+import { CustomerCrmCard } from '@/components/admin/customer-crm-card';
 import { toast } from 'sonner';
 
 export default function CustomerProfilePage({ params }: { params: Promise<{ id: string }> }) {
@@ -265,15 +266,10 @@ export default function CustomerProfilePage({ params }: { params: Promise<{ id: 
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-[#1e2a1f]">Notes internes CRM</CardTitle>
+              <CardTitle className="text-[#1e2a1f]">Fiche CRM</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="bg-[#faf8f4] p-4 rounded-md border border-[#e7e4dd] text-sm text-gray-600">
-                {customer.segment === 'vip' 
-                  ? "Client très fidèle. Offrir une carte de remerciement personnalisée avec chaque commande."
-                  : "Pas de notes spécifiques pour ce client."}
-              </div>
-              <Button variant="outline" className="mt-4 text-xs h-8">Ajouter une note</Button>
+              <CustomerCrmCard key={customer.id} customer={customer} onSaved={(c) => setCustomer((prev) => (prev ? { ...prev, ...c, recentOrders: prev.recentOrders } : c))} />
             </CardContent>
           </Card>
         </div>

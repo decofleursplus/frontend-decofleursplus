@@ -1,31 +1,57 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, Eye, Heart, X, MapPin, Tag } from 'lucide-react';
-import { initialLandscapeProjects } from '@/lib/admin/mock-data/landscaping';
+import { ArrowRight, Eye, Heart, X, MapPin, Tag, Loader2 } from 'lucide-react';
+import { getLandscapeProjects, likeLandscapeProject } from '@/lib/api/landscaping';
 import { LandscapeProject, LandscapeProjectCategory } from '@/lib/admin/mock-data/types';
 import { BotanicalCorners } from '@/components/botanical-corners';
 import { SiteFooter } from '@/components/site-footer';
 
 type FilterType = 'all' | LandscapeProjectCategory;
 
+const LIKES_KEY = 'decofleur_landscape_likes';
+
 export default function RealisationsPage() {
   const [filter, setFilter] = useState<FilterType>('all');
   const [activeProject, setActiveProject] = useState<LandscapeProject | null>(null);
-  const [likedProjects, setLikedProjects] = useState<Record<string, boolean>>({
-    'villa-almadies': true,
+  // Réalisations publiées depuis le back-office ; les « j'aime » du visiteur sont retenus par son navigateur.
+  const [projects, setProjects] = useState<LandscapeProject[] | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const [likedProjects, setLikedProjects] = useState<Record<string, boolean>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      return JSON.parse(localStorage.getItem(LIKES_KEY) ?? '{}') as Record<string, boolean>;
+    } catch {
+      return {};
+    }
   });
 
-  const filteredProjects = initialLandscapeProjects.filter((p) => {
-    if (filter === 'all') return true;
-    return p.category === filter;
-  });
+  useEffect(() => {
+    getLandscapeProjects()
+      .then(setProjects)
+      .catch(() => setLoadError(true));
+  }, []);
 
-  const toggleLike = (id: string, e: React.MouseEvent) => {
+  const filteredProjects = (projects ?? []).filter((p) => filter === 'all' || p.category === filter);
+
+  const toggleLike = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setLikedProjects((prev) => ({ ...prev, [id]: !prev[id] }));
+    const liked = !likedProjects[id];
+    try {
+      const likesCount = await likeLandscapeProject(id, liked);
+      const next = { ...likedProjects, [id]: liked };
+      setLikedProjects(next);
+      setProjects((prev) => prev?.map((p) => (p.id === id ? { ...p, likesCount } : p)) ?? prev);
+      try {
+        localStorage.setItem(LIKES_KEY, JSON.stringify(next));
+      } catch {
+        /* stockage indisponible : le compteur serveur reste à jour */
+      }
+    } catch {
+      /* compteur indicatif : l'échec n'empêche pas la navigation */
+    }
   };
 
   return (
@@ -40,12 +66,9 @@ export default function RealisationsPage() {
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-[#173f22] tracking-tight">
                 Nos réalisations
               </h1>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
-                À venir
-              </span>
             </div>
             <p className="text-xs sm:text-sm text-[#526655] font-medium mt-1">
-              Découvrez quelques-uns de nos projets récents (galerie en cours de numérisation)
+              Découvrez quelques-uns de nos projets récents
             </p>
           </div>
 
@@ -128,7 +151,11 @@ export default function RealisationsPage() {
         </div>
 
         {/* ── Galerie Mosaïque avec Flou Protecteur sur les Textes (Image copy 2) ── */}
-        {filteredProjects.length > 0 ? (
+        {projects === null && !loadError ? (
+          <div className="flex justify-center py-16" aria-busy="true">
+            <Loader2 className="animate-spin text-[#173f22]" />
+          </div>
+        ) : filteredProjects.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProjects.map((project, idx) => {
               const isFirst = idx === 0 && filter === 'all';
@@ -154,16 +181,20 @@ export default function RealisationsPage() {
                     <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
                       <button
                         type="button"
-                        onClick={(e) => toggleLike(project.id, e)}
+                        onClick={(e) => void toggleLike(project.id, e)}
                         className={`p-2 rounded-full backdrop-blur-md transition-colors ${
                           likedProjects[project.id]
                             ? 'bg-[#c8436e] text-white'
                             : 'bg-white/75 hover:bg-white text-gray-800'
                         }`}
-                        aria-label="Ajouter aux favoris"
+                        aria-label={likedProjects[project.id] ? `Je n’aime plus ${project.title}` : `J’aime ${project.title}`}
+                        aria-pressed={Boolean(likedProjects[project.id])}
                       >
                         <Heart size={16} fill={likedProjects[project.id] ? 'currentColor' : 'none'} />
                       </button>
+                      {(project.likesCount ?? 0) > 0 && (
+                        <span className="px-2 py-1 rounded-full bg-white/80 text-[11px] font-semibold text-gray-800">{project.likesCount}</span>
+                      )}
                       <div className="p-2 rounded-full bg-white/75 hover:bg-white text-gray-800 backdrop-blur-md transition-colors">
                         <Eye size={16} />
                       </div>
@@ -195,17 +226,19 @@ export default function RealisationsPage() {
           </div>
         ) : (
           <div className="text-center py-16 px-6 bg-[#fbfdfb] rounded-3xl border border-[#e8efe9] mb-16 max-w-2xl mx-auto space-y-4">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
-              Portfolio en ligne à venir
-            </span>
+            {loadError && (
+              <p role="alert" className="text-xs text-red-700">
+                La galerie est momentanément indisponible.
+              </p>
+            )}
             <h2 className="text-xl font-serif font-bold text-[#173f22]">
-              Portfolio en cours de mise à jour
+              {filter === 'all' ? 'Aucune réalisation publiée pour le moment' : 'Aucune réalisation dans cette catégorie'}
             </h2>
             <p className="text-sm text-[#526655] leading-relaxed">
-              Nos chantiers et créations paysagères récentes seront bientôt disponibles en photos haute définition. Vous pouvez nous confier votre projet directement.
+              Vous pouvez nous confier votre projet directement : nos paysagistes vous proposent une étude personnalisée.
             </p>
             <Link
-              href="/devis"
+              href="/devis?type=paysagisme"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#173f22] text-white text-sm font-medium hover:bg-[#12311a] transition-colors"
             >
               <span>Demander une étude paysagère</span>

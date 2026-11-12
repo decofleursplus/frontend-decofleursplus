@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { AdminDelivery, DeliveryDriver } from '@/lib/admin/mock-data/types';
+import { DELIVERY_TIME_SLOTS } from '@/lib/api/admin/deliveries';
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,8 @@ interface AssignDriverDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   drivers: DeliveryDriver[];
-  onAssign: (deliveryId: string, driverId: string, timeSlot: string, notes?: string) => void;
+  /** Résout à true si l'API a accepté l'assignation (la fenêtre se ferme alors). */
+  onAssign: (deliveryId: string, driverId: string, timeSlot: string, notes?: string) => Promise<boolean>;
 }
 
 export function AssignDriverDialog({
@@ -31,29 +33,25 @@ export function AssignDriverDialog({
   drivers,
   onAssign,
 }: AssignDriverDialogProps) {
-  const [selectedDriverId, setSelectedDriverId] = useState<string>('');
-  const [timeSlot, setTimeSlot] = useState<string>('');
-  const [customNote, setCustomNote] = useState<string>('');
-
-  useEffect(() => {
-    if (delivery) {
-      setSelectedDriverId(delivery.driverId || '');
-      setTimeSlot(delivery.timeSlot || '');
-      setCustomNote(delivery.notes || '');
-    }
-  }, [delivery]);
+  // Le parent remonte ce composant (key) à chaque livraison : l'état part des valeurs de la livraison.
+  const [selectedDriverId, setSelectedDriverId] = useState<string>(delivery?.driverId ?? '');
+  const [submitting, setSubmitting] = useState(false);
+  const [timeSlot, setTimeSlot] = useState<string>(
+    delivery && (DELIVERY_TIME_SLOTS as readonly string[]).includes(delivery.timeSlot) ? delivery.timeSlot : '',
+  );
+  const [customNote, setCustomNote] = useState<string>(delivery?.notes ?? '');
 
   if (!delivery) return null;
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!selectedDriverId) {
       toast.error('Veuillez sélectionner un livreur');
       return;
     }
-    const chosenDriver = drivers.find((d) => d.id === selectedDriverId);
-    onAssign(delivery.id, selectedDriverId, timeSlot, customNote);
-    onOpenChange(false);
-    toast.success(`Livraison assignée à ${chosenDriver?.name ?? 'Livreur'}`);
+    setSubmitting(true);
+    const ok = await onAssign(delivery.id, selectedDriverId, timeSlot, customNote);
+    setSubmitting(false);
+    if (ok) onOpenChange(false);
   };
 
   const getVehicleIcon = (vehicle: DeliveryDriver['vehicle']) => {
@@ -78,7 +76,7 @@ export function AssignDriverDialog({
           </DialogTitle>
           <DialogDescription className="text-gray-500 text-xs">
             Sélectionnez le livreur en charge d&apos;acheminer la livraison{' '}
-            <span className="font-semibold text-gray-800">{delivery.id}</span> (Commande{' '}
+            <span className="font-semibold text-gray-800">{delivery.deliveryNumber}</span> (Commande{' '}
             {delivery.orderRef}).
           </DialogDescription>
         </DialogHeader>
@@ -186,12 +184,18 @@ export function AssignDriverDialog({
               <Clock className="h-3.5 w-3.5 text-gray-400" />
               Créneau horaire prévu
             </label>
-            <Input
+            <select
               value={timeSlot}
               onChange={(e) => setTimeSlot(e.target.value)}
-              placeholder="Ex: 14:30 - 15:30"
-              className="text-xs h-10 bg-white"
-            />
+              className="w-full h-10 rounded-md border border-[#e7e4dd] bg-white px-3 text-xs text-gray-900"
+            >
+              <option value="">Créneau de la commande</option>
+              {DELIVERY_TIME_SLOTS.map((slot) => (
+                <option key={slot} value={slot}>
+                  {slot}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-1.5">
@@ -220,7 +224,7 @@ export function AssignDriverDialog({
           <Button
             type="button"
             onClick={handleConfirm}
-            disabled={!selectedDriverId}
+            disabled={!selectedDriverId || submitting}
             className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold h-10 px-5"
           >
             Confirmer l&apos;assignation

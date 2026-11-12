@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
+
+import { Suspense, useState, useMemo, useEffect } from 'react';
 import type { AdminProduct, AdminCategory } from '@/lib/admin/mock-data/types';
 import { getAdminProducts, deleteAdminProduct } from '@/lib/api/admin/products';
 import { getAdminCategories } from '@/lib/api/admin/categories';
@@ -56,6 +58,15 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 
 export default function AdminProductsPage() {
+  return (
+    <Suspense fallback={null}>
+      <ProductsScreen />
+    </Suspense>
+  );
+}
+
+function ProductsScreen() {
+  const searchParams = useSearchParams();
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [apiCategories, setApiCategories] = useState<AdminCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,7 +74,8 @@ export default function AdminProductsPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Applied filters state
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  // ?categorie=<slug> (lien « Voir les produits » depuis Catégories)
+  const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('categorie') || 'all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedStock, setSelectedStock] = useState<string>('all');
   const [selectedSort, setSelectedSort] = useState<string>('default');
@@ -87,10 +99,11 @@ export default function AdminProductsPage() {
         search: searchQuery || undefined,
         category: selectedCategory !== 'all' ? selectedCategory : undefined,
         status: selectedStatus !== 'all' ? selectedStatus : undefined,
+        limit: 100,
       });
       setProducts(res.items);
-    } catch {
-      toast.error('Erreur lors du chargement des produits');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur lors du chargement des produits');
     } finally {
       setRefreshing(false);
     }
@@ -104,12 +117,13 @@ export default function AdminProductsPage() {
           search: searchQuery || undefined,
           category: selectedCategory !== 'all' ? selectedCategory : undefined,
           status: selectedStatus !== 'all' ? selectedStatus : undefined,
+          limit: 100,
         });
         if (active) {
           setProducts(res.items);
         }
-      } catch {
-        toast.error('Erreur lors du chargement des produits');
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Erreur lors du chargement des produits');
       } finally {
         if (active) {
           setLoading(false);
@@ -182,17 +196,29 @@ export default function AdminProductsPage() {
     }).format(amount);
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'actif':
-        return <Badge className="bg-[#e8f4ea] text-[#166534] hover:bg-[#d5ebd8] border-none font-medium">Actif</Badge>;
-      case 'brouillon':
-        return <Badge className="bg-gray-100 text-gray-700 hover:bg-gray-200 border-none font-medium">Brouillon</Badge>;
-      case 'rupture':
-        return <Badge className="bg-[#fef2f2] text-[#991b1b] hover:bg-[#fee2e2] border-none font-medium">Rupture</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
-    }
+  const getStatusBadge = (status: string, stock?: number) => {
+    const base = (() => {
+      switch (status) {
+        case 'ACTIVE':
+          return <Badge className="bg-[#e8f4ea] text-[#166534] hover:bg-[#d5ebd8] border-none font-medium">En vente</Badge>;
+        case 'PROMO':
+          return <Badge className="bg-[#fdf2f4] text-[#c1647a] border-none font-medium">Promotion</Badge>;
+        case 'ON_QUOTE':
+          return <Badge className="bg-[#e5eaff] text-[#3d5a99] border-none font-medium">Sur devis</Badge>;
+        case 'HIDDEN':
+          return <Badge className="bg-gray-100 text-gray-700 hover:bg-gray-200 border-none font-medium">Masqué</Badge>;
+        default:
+          return <Badge>{status}</Badge>;
+      }
+    })();
+    return stock === 0 && status !== 'ON_QUOTE' ? (
+      <span className="inline-flex items-center gap-1">
+        {base}
+        <Badge className="bg-[#fef2f2] text-[#991b1b] border-none font-medium">Rupture</Badge>
+      </span>
+    ) : (
+      base
+    );
   };
 
   const categories = useMemo(() => {
@@ -250,10 +276,11 @@ export default function AdminProductsPage() {
     if (!productToDelete) return;
     try {
       await deleteAdminProduct(productToDelete.id);
-      setProducts((prev) => prev.filter((p) => p.id !== productToDelete.id));
-      toast.success(`Le produit "${productToDelete.name}" a été supprimé`);
-    } catch {
-      toast.error('Impossible de supprimer le produit');
+      // Suppression « douce » côté serveur : le produit est masqué de la boutique
+      setProducts((prev) => prev.map((p) => (p.id === productToDelete.id ? { ...p, status: 'HIDDEN' } : p)));
+      toast.success(`Le produit « ${productToDelete.name} » est masqué de la boutique.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Impossible de masquer le produit');
     } finally {
       setProductToDelete(null);
     }
@@ -261,9 +288,10 @@ export default function AdminProductsPage() {
 
   const statuses = [
     { label: 'Tous les statuts', value: 'all' },
-    { label: 'Actif', value: 'actif' },
-    { label: 'Brouillon', value: 'brouillon' },
-    { label: 'Rupture', value: 'rupture' },
+    { label: 'En vente', value: 'ACTIVE' },
+    { label: 'En promotion', value: 'PROMO' },
+    { label: 'Sur devis', value: 'ON_QUOTE' },
+    { label: 'Masqués', value: 'HIDDEN' },
   ];
 
   const stockLevels = [
@@ -638,7 +666,7 @@ export default function AdminProductsPage() {
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="cursor-pointer font-medium py-1.5 px-2.5 rounded-lg text-xs text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef]"
-                          render={<Link href={`/boutique/${product.id}`} target="_blank" />}
+                          render={<Link href={`/produits/${product.slug ?? product.id}`} target="_blank" />}
                         >
                           <Eye className="mr-2 h-3.5 w-3.5 text-gray-500" />
                           Voir sur la boutique
@@ -669,7 +697,7 @@ export default function AdminProductsPage() {
                 </div>
 
                 <div className="flex items-center gap-2 mt-1.5">
-                  {getStatusBadge(product.status)}
+                  {getStatusBadge(product.status, product.stock)}
                   <span
                     className={`text-[11px] font-semibold px-2 py-0.5 rounded-md ${
                       product.stock === 0
@@ -803,7 +831,7 @@ export default function AdminProductsPage() {
                   </span>
                 </TableCell>
 
-                <TableCell>{getStatusBadge(product.status)}</TableCell>
+                <TableCell>{getStatusBadge(product.status, product.stock)}</TableCell>
 
                 {/* Actions Cell with Redesigned Dropdown Menu */}
                 <TableCell className="text-right">

@@ -94,13 +94,4 @@ export {
   type LandscapeQuote,
   type QuoteStatus,
 } from './types';
-export {
-  initialSuppliers,
-  initialSupplierOrders,
-  initialSupplierInvoices,
-} from './suppliers';
-export {
-  initialLandscapePrestations,
-  initialLandscapeProjects,
-} from './landscaping';
 export { initialQuotes } from './quotes';

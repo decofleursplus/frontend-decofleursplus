@@ -36,68 +36,40 @@ export interface QuoteItem {
   createdAt: string;
 }
 
-export interface UploadQuoteImagesResult {
-  urls: string[];
+interface UploadQuoteImagesResult {
+  files: { key: string; url: string; contentType: string; size: number }[];
 }
 
 /**
- * Uploader des photos d'inspiration pour le devis
- * Endpoint: POST /api/v1/quotes/uploads
+ * Envoie les photos d'inspiration (champ multipart `files`) et renvoie leurs URL publiques.
+ * Endpoint : POST /api/v1/quotes/uploads
  */
 export async function uploadQuoteImages(files: File[]): Promise<string[]> {
-  if (!files || files.length === 0) return [];
-
+  if (files.length === 0) return [];
   const formData = new FormData();
-  files.forEach((file) => {
-    formData.append('images', file);
-  });
-
+  files.forEach((file) => formData.append('files', file));
   const res = await apiClient.upload<UploadQuoteImagesResult>('/quotes/uploads', formData);
-  return res?.urls || [];
+  return res.files.map((f) => f.url);
 }
 
 /**
- * Soumettre une demande de devis sur mesure (invité ou connecté)
- * Endpoint: POST /api/v1/quotes
+ * Soumettre une demande de devis sur mesure (invité ou connecté) — POST /quotes.
+ * Les champs vides sont omis (validateur strict) ; l'erreur de l'API remonte telle quelle.
  */
-export async function submitQuote(payload: SubmitQuotePayload): Promise<{
-  success: boolean;
-  quote?: QuoteItem;
-  error?: string;
-}> {
-  try {
-    // Nettoyer les champs vides pour satisfaire le validateur backend
-    const body: Record<string, any> = {
-      eventType: payload.eventType.trim(),
-      location: payload.location.trim(),
-      name: payload.name.trim(),
-      phone: payload.phone.trim(),
-    };
-
-    if (payload.eventDate?.trim()) {
-      body.eventDate = payload.eventDate.trim();
-    }
-    if (payload.budget?.trim()) {
-      body.budget = payload.budget.trim();
-    }
-    if (payload.email?.trim()) {
-      body.email = payload.email.trim();
-    }
-    if (payload.notes?.trim()) {
-      body.notes = payload.notes.trim();
-    }
-    if (payload.estimatedGuests) {
-      body.estimatedGuests = Number(payload.estimatedGuests);
-    }
-    if (payload.inspirationImages && payload.inspirationImages.length > 0) {
-      body.inspirationImages = payload.inspirationImages;
-    }
-
-    const quote = await apiClient.post<QuoteItem>('/quotes', body);
-    return { success: true, quote };
-  } catch (err: any) {
-    return { success: false, error: err.message || 'Impossible de soumettre le devis' };
-  }
+export async function submitQuote(payload: SubmitQuotePayload): Promise<QuoteItem> {
+  const body: Record<string, unknown> = {
+    eventType: payload.eventType.trim(),
+    location: payload.location.trim(),
+    name: payload.name.trim(),
+    phone: payload.phone.trim(),
+  };
+  if (payload.eventDate?.trim()) body.eventDate = payload.eventDate.trim();
+  if (payload.budget?.trim()) body.budget = payload.budget.trim();
+  if (payload.email?.trim()) body.email = payload.email.trim();
+  if (payload.notes?.trim()) body.notes = payload.notes.trim();
+  if (payload.estimatedGuests) body.estimatedGuests = Number(payload.estimatedGuests);
+  if (payload.inspirationImages?.length) body.inspirationImages = payload.inspirationImages;
+  return apiClient.post<QuoteItem>('/quotes', body);
 }
 
 /**
