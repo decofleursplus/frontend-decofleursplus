@@ -9823,3 +9823,9 @@ body:has(.mobile-drawer-overlay) .floating-whatsapp-btn {
     display: none !important;
   }
 }
+
+/* Menu principal : resserré sur les écrans intermédiaires (tablettes, petits portables) pour ne pas déborder */
+@media (max-width: 1180px) {
+  .main-nav-inner { gap: clamp(14px, 2.2vw, 40px); }
+  .nav-link { font-size: 13.5px; }
+}

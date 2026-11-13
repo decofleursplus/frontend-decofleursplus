@@ -13,8 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Camera, Upload, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { uploadAdminMedia } from '@/lib/api/admin/uploads';
-import { updateAdminStaffUser } from '@/lib/api/admin/settings';
+import { updateMyStaffProfile, uploadMyStaffAvatar, type StaffProfile } from '@/lib/api/admin/staff-profile';
 import { getAdminUser, setAdminUser, AdminSessionUser } from '@/lib/api/auth-token';
 
 interface AdminProfileDialogProps {
@@ -25,6 +24,18 @@ interface AdminProfileDialogProps {
 }
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
+
+/** Session admin mise à jour à partir du profil renvoyé par le serveur (source de vérité). */
+function toSessionUser(profile: StaffProfile, current: AdminSessionUser | null): AdminSessionUser {
+  return {
+    ...current,
+    id: profile.id,
+    name: profile.name || current?.name || profile.email,
+    email: profile.email,
+    role: profile.role,
+    avatar: profile.avatar,
+  };
+}
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 Mo
 
 function AdminProfileDialogInner({
@@ -80,33 +91,9 @@ function AdminProfileDialogInner({
     setErrorMessage(null);
 
     try {
-      // 1. Téléverser le fichier sur Cloudflare R2 via l'API backend
-      const uploadedUrls = await uploadAdminMedia([selectedFile], 'products');
-      const uploadedUrl = uploadedUrls[0];
-
-      if (!uploadedUrl) {
-        throw new Error('Aucune URL renvoyée pour le fichier téléversé.');
-      }
-
-      const user = activeUser || getAdminUser();
-
-      // 2. Mettre à jour l'utilisateur staff côté backend si un identifiant est disponible
-      if (user?.id) {
-        try {
-          await updateAdminStaffUser(user.id, { avatar: uploadedUrl });
-        } catch (backendErr) {
-          console.warn('[AdminProfileDialog] Échec mise à jour profil backend, persistance session locale:', backendErr);
-        }
-      }
-
-      // 3. Mettre à jour la session (cookie + localStorage + custom event)
-      const updatedUser: AdminSessionUser = {
-        id: user?.id || 'admin',
-        name: user?.name || 'Administrateur',
-        email: user?.email || 'admin@decofleursplus.com',
-        role: user?.role || 'ADMIN',
-        avatar: uploadedUrl,
-      };
+      // Envoi et enregistrement sur le profil en un seul appel (route ouverte à tous les rôles de l'équipe)
+      const profile = await uploadMyStaffAvatar(selectedFile);
+      const updatedUser = toSessionUser(profile, activeUser || getAdminUser());
 
       setAdminUser(updatedUser);
       setActiveUser(updatedUser);
@@ -128,23 +115,8 @@ function AdminProfileDialogInner({
     setErrorMessage(null);
 
     try {
-      const user = activeUser || getAdminUser();
-
-      if (user?.id) {
-        try {
-          await updateAdminStaffUser(user.id, { avatar: '' });
-        } catch (backendErr) {
-          console.warn('[AdminProfileDialog] Erreur suppression avatar backend:', backendErr);
-        }
-      }
-
-      const updatedUser: AdminSessionUser = {
-        id: user?.id || 'admin',
-        name: user?.name || 'Administrateur',
-        email: user?.email || 'admin@decofleursplus.com',
-        role: user?.role || 'ADMIN',
-        avatar: null,
-      };
+      const profile = await updateMyStaffProfile({ avatar: null });
+      const updatedUser = toSessionUser(profile, activeUser || getAdminUser());
 
       setAdminUser(updatedUser);
       setActiveUser(updatedUser);
