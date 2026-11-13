@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, DragEvent, ChangeEvent } from 'react';
-import { Upload, X, Star, Loader2 } from 'lucide-react';
+import { Upload, X, Star, Loader2, ImageOff, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { uploadAdminMedia } from '@/lib/api/admin/uploads';
@@ -22,6 +22,25 @@ export interface ImageUploaderProps {
 }
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
+
+/**
+ * Aperçu d'une image enregistrée. Une image illisible (lien cassé, stockage mal configuré)
+ * est signalée clairement au lieu d'être remplacée par une photo de démonstration.
+ */
+function StoredImagePreview({ url, alt, className }: { url: string; alt: string; className: string }) {
+  const [brokenUrl, setBrokenUrl] = useState<string | null>(null);
+  if (brokenUrl === url) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-red-50 p-2 text-center text-red-700">
+        <ImageOff size={18} />
+        <span className="text-[11px] font-semibold leading-tight">Image introuvable</span>
+        <span className="text-[10px] leading-tight text-red-600/80">Supprimez-la et envoyez-la à nouveau</span>
+      </div>
+    );
+  }
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={url} alt={alt} className={className} onError={() => setBrokenUrl(url)} />;
+}
 
 export function ImageUploader({
   value = [],
@@ -146,8 +165,10 @@ export function ImageUploader({
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      handleFiles(e.target.files);
+      handleFiles(Array.from(e.target.files));
     }
+    // Permet de choisir à nouveau le même fichier (ex. après une erreur)
+    e.target.value = '';
   };
 
   const handleRemove = (urlToRemove: string) => {
@@ -181,6 +202,16 @@ export function ImageUploader({
         </div>
       )}
 
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={ALLOWED_TYPES.join(',')}
+        multiple={multiple}
+        onChange={handleInputChange}
+        disabled={disabled || isUploading}
+        className="hidden"
+      />
+
       {/* Galerie des images existantes */}
       {images.length > 0 && (
         <div className={`grid gap-3 ${multiple ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-1'}`}>
@@ -189,18 +220,14 @@ export function ImageUploader({
             return (
               <div
                 key={`${url}-${idx}`}
-                className={`relative group rounded-xl overflow-hidden border bg-white shadow-2xs aspect-square flex items-center justify-center ${
+                className={`relative group rounded-xl overflow-hidden border bg-white shadow-2xs ${multiple ? 'aspect-square' : 'aspect-video'} flex items-center justify-center ${
                   isPrimary ? 'border-[#c1647a] ring-2 ring-[#c1647a]/20' : 'border-[#e7e4dd]'
                 }`}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={url}
+                <StoredImagePreview
+                  url={url}
                   alt={`Aperçu ${idx + 1}`}
                   className="object-cover w-full h-full transition-transform duration-200 group-hover:scale-105"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/images/bouquet-passion.jpg';
-                  }}
                 />
 
                 {/* Badge Principale */}
@@ -211,8 +238,8 @@ export function ImageUploader({
                   </span>
                 )}
 
-                {/* Overlay d'actions au survol */}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
+                {/* Actions : toujours visibles sur écran tactile, au survol sur ordinateur */}
+                <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-center justify-center gap-2 bg-black/40 p-2 transition-opacity sm:inset-0 sm:flex-col sm:opacity-0 sm:group-hover:opacity-100">
                   {!isPrimary && multiple && onPrimaryChange && (
                     <Button
                       type="button"
@@ -223,6 +250,19 @@ export function ImageUploader({
                     >
                       <Star size={12} className="mr-1 text-amber-500" />
                       Principale
+                    </Button>
+                  )}
+                  {!multiple && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={disabled || isUploading}
+                      className="text-[11px] h-7 bg-white/90 hover:bg-white text-gray-800 shadow-xs"
+                    >
+                      {isUploading ? <Loader2 size={12} className="mr-1 animate-spin" /> : <RefreshCw size={12} className="mr-1" />}
+                      Remplacer
                     </Button>
                   )}
                   <Button
@@ -257,16 +297,6 @@ export function ImageUploader({
               : 'border-[#e7e4dd] hover:border-[#c1647a]/50 hover:bg-[#faf8f4]'
           }`}
         >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={ALLOWED_TYPES.join(',')}
-            multiple={multiple}
-            onChange={handleInputChange}
-            disabled={disabled || isUploading}
-            className="hidden"
-          />
-
           <div className="w-10 h-10 rounded-full bg-[#f5f3ef] flex items-center justify-center text-gray-500">
             {isUploading ? (
               <Loader2 size={20} className="animate-spin text-[#c1647a]" />
