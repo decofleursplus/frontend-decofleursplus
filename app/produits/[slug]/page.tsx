@@ -24,12 +24,25 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 
   const priceFormatted = `${product.price.toLocaleString('fr-FR')} FCFA`;
+  const primaryImage = product.image || (product.images && product.images[0]);
+  const productImages = product.images && product.images.length > 0 ? product.images : (primaryImage ? [primaryImage] : []);
+
   return constructMetadata({
-    title: `${product.name} | ${product.category || 'Fleuriste'} Saly & Dakar (${priceFormatted})`,
-    description: `${product.description} Prix : ${priceFormatted}.`,
-    image: product.image,
+    title: `${product.name} · ${priceFormatted} | Déco Fleurs Plus`,
+    description: `${product.name} disponible chez Déco Fleurs Plus. ${product.description || 'Création florale de prestige confectionnée avec soin.'} Prix : ${priceFormatted}. Livraison express à Saly, Dakar et Petite-Côte.`,
+    image: primaryImage,
+    images: productImages,
     canonical: `/produits/${product.slug}`,
-    keywords: [product.name.toLowerCase(), product.category.toLowerCase(), 'fleuriste saly', 'livraison fleurs dakar'],
+    keywords: [
+      product.name.toLowerCase(),
+      product.category.toLowerCase(),
+      'bouquets',
+      'fleurs fraîches',
+      'fleuriste saly',
+      'livraison fleurs dakar',
+      'deco fleurs saly',
+      'decoration florale',
+    ],
   });
 }
 
