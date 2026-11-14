@@ -14,7 +14,7 @@ export const SITE_CONFIG = {
   tagline: 'Nature en Élégance',
   url: SITE_URL,
   description:
-    'Artisan fleuriste et magasin de décoration de prestige à Saly Portudal et Dakar. Bouquets de roses fraîches, décoration florale événementielle, objets déco, paysagisme et cadeaux livrés à Saly, Dakar, Somone et Mbour.',
+    'Artisan fleuriste, magasin de décoration & wedding planner au Sénégal. Bouquets de roses fraîches, décoration florale de mariage, scénographie événementielle, vases design et cadeaux livrés à Saly Portudal, Dakar, Somone et Mbour.',
   email: 'contact@decofleursplus.sn',
   phoneSaly: '+221 33 957 88 99',
   phoneDakar: '+221 77 941 78 60',
@@ -23,7 +23,7 @@ export const SITE_CONFIG = {
   currency: 'XOF',
   currencySymbol: 'FCFA',
   priceRange: '$$',
-  defaultOgImage: '/images/og-decofleur.jpg',
+  defaultOgImage: '/images/og-decofleur.png',
   
   address: {
     streetAddress: 'Rue des Palmiers, Saly Portudal',

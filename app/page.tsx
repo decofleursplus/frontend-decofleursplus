@@ -22,9 +22,9 @@ import { SITE_URL, SITE_CONFIG } from '@/lib/seo/config';
 export const revalidate = 3600;
 
 export const metadata: Metadata = constructMetadata({
-  title: 'Décofleur Plus | Fleuriste & Magasin de Décoration à Saly, Dakar & Petite-Côte',
+  title: 'Décofleur Plus | Fleuriste, Décoration & Wedding Planner à Saly & Dakar',
   description:
-    'Déco Fleurs Plus (Déco-Fleurs) : artisan fleuriste et magasin de décoration à Saly-Portudal et Dakar. Bouquets de roses fraîches, décoration événementielle, vases d’art, paysagisme et livraison express.',
+    'Déco Fleurs Plus (Déco-Fleurs) : artisan fleuriste, magasin de décoration & wedding planner à Saly-Portudal et Dakar. Bouquets de roses fraîches, décoration florale de mariage, scénographie événementielle, vases d’art et livraison express.',
   canonical: '/',
   keywords: [
     'deco fleurs saly',
@@ -33,9 +33,22 @@ export const metadata: Metadata = constructMetadata({
     'Déco Fleurs',
     'fleuriste à Saly',
     'fleuriste saly',
+    'fleuriste dakar',
+    'decoration',
+    'decoration mariage senegal',
+    'decoration mariage saly',
     'Magasins de décoration à SALY-PORTUDAL',
     'Magasins de décoration',
     'magasin de décoration saly',
+    'wedding planner',
+    'wedding planner senegal',
+    'wedding planner dakar',
+    'wedding planner saly',
+    'bouquets',
+    'bouquet de fleurs dakar',
+    'bouquet de roses',
+    'arche florale mariage',
+    'location materiel evenementiel',
   ],
 });
 

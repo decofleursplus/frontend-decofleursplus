@@ -85,11 +85,22 @@ export async function generateMetadata({
   switch (slug) {
     case 'evenements':
       return constructMetadata({
-        title: 'Événements & Décoration Florale | Mariages, Banquets & Cérémonies à Saly & Dakar',
-        description: 'Scénographie florale haut de gamme, arches de mariage, centres de table et décors monumentaux pour vos événements de prestige au Sénégal.',
+        title: 'Événements, Wedding Planner & Décoration Florale | Mariages à Saly & Dakar',
+        description: 'Scénographie florale haut de gamme, wedding planner, arches de mariage, centres de table et décors monumentaux pour vos événements de prestige au Sénégal.',
         canonical: '/evenements',
-        image: '/images/mariage.jpg',
-        keywords: ['decoration mariage dakar', 'arche florale saly', 'fleuriste evenementiel senegal', 'centre de table banquet'],
+        image: '/images/evenements/hero-event.webp',
+        keywords: [
+          'wedding planner senegal',
+          'wedding planner dakar',
+          'wedding planner saly',
+          'decoration',
+          'decoration mariage dakar',
+          'decoration mariage saly',
+          'arche florale saly',
+          'fleuriste evenementiel senegal',
+          'centre de table banquet',
+          'location mobilier evenementiel',
+        ],
       });
     case 'livraison':
       return constructMetadata({

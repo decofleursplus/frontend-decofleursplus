@@ -23,9 +23,9 @@ import { SITE_CONFIG } from '@/lib/seo/config';
 export const revalidate = 3600;
 
 export const metadata: Metadata = constructMetadata({
-  title: 'Fleuriste à Saly & Magasin de Décoration à Saly-Portudal | Déco Fleurs Plus',
+  title: 'Fleuriste à Saly, Magasin de Décoration & Wedding Planner | Déco Fleurs Plus',
   description:
-    'Déco Fleurs Plus (Déco Fleurs / Déco-Fleurs), artisan fleuriste et magasin de décoration à Saly-Portudal (Rue des Palmiers). Bouquets de roses fraîches, vases design, décoration d’intérieur pour villas et événements, livraison express en 2h.',
+    'Déco Fleurs Plus (Déco Fleurs / Déco-Fleurs), artisan fleuriste, magasin de décoration & wedding planner à Saly-Portudal (Rue des Palmiers). Bouquets de roses fraîches, vases design, décoration d’intérieur et scénographie de mariages, livraison express en 2h.',
   canonical: '/fleuriste-saly',
   keywords: [
     'deco fleurs saly',
@@ -38,11 +38,15 @@ export const metadata: Metadata = constructMetadata({
     'Magasins de décoration à SALY-PORTUDAL',
     'Magasins de décoration',
     'magasin de décoration saly',
+    'wedding planner saly',
+    'wedding planner senegal',
+    'decoration',
+    'decoration mariage saly',
+    'bouquets',
     'livraison fleurs saly',
     'boutique fleurs saly',
     'bouquet roses saly',
     'fleuriste niakh niakhal',
-    'decoration mariage saly',
     'fleuriste petite cote',
   ],
 });

@@ -66,13 +66,17 @@ Requêtes ciblant le catalogue de vente en ligne et les types de produits recher
 
 ---
 
-## 4. Cluster 3 : Décoration Florale & Mariages Événementiels
+## 4. Cluster 3 : Décoration Florale, Wedding Planner & Événements
 
-Requêtes à haute valeur panier ciblant les futurs mariés, les agences d'event planning et les entreprises.
+Requêtes à haute valeur panier ciblant les futurs mariés, les agences d'event planning, les particuliers et les entreprises.
 
 | Mot-Clé / Requête Cible | Intention | URL Cible | Zone Géographique | Priorité |
 | :--- | :---: | :--- | :--- | :---: |
-| **décoration florale mariage dakar**| C / T | `/devis` | Dakar | **P1** |
+| **wedding planner senegal** | C / T | `/evenements` | National / Diaspora | **P1** |
+| **wedding planner dakar** | C / T | `/evenements` | Dakar | **P1** |
+| **wedding planner saly** | C / T | `/evenements` / `/fleuriste-saly` | Saly / Petite-Côte | **P1** |
+| **decoration mariage senegal**| C / T | `/evenements` / `/devis` | Sénégal | **P1** |
+| **decoration florale mariage dakar**| C / T | `/devis` | Dakar | **P1** |
 | **décorateur floral mariage saly** | C / T | `/fleuriste-saly` | Saly / Somone | **P1** |
 | **arche fleurie mariage sénégal** | C / T | `/devis` | Petite-Côte / Dakar | **P1** |
 | **centre de table fleuri mariage dakar**| C | `/devis` | Dakar | **P2** |

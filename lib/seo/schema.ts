@@ -52,7 +52,7 @@ export function getFloristSchema() {
     telephone: SITE_CONFIG.phoneSaly,
     email: SITE_CONFIG.email,
     priceRange: SITE_CONFIG.priceRange,
-    image: `${SITE_URL}/images/hero.jpg`,
+    image: `${SITE_URL}/images/og-decofleur.png`,
     logo: `${SITE_URL}/logo_decofleur.png`,
     parentOrganization: {
       '@id': `${SITE_URL}/#organization`,
@@ -88,7 +88,7 @@ export function getFloristSchema() {
       itemListElement: [
         {
           '@type': 'OfferCatalog',
-          name: 'Bouquets & Fleurs fraîches',
+          name: 'Bouquets de fleurs fraîches & Roses de prestige',
         },
         {
           '@type': 'OfferCatalog',
@@ -96,15 +96,15 @@ export function getFloristSchema() {
         },
         {
           '@type': 'OfferCatalog',
-          name: 'Décoration événementielle & Mariages à Saly et Dakar',
+          name: 'Wedding planner, scénographie & décoration de mariages à Saly et Dakar',
         },
         {
           '@type': 'OfferCatalog',
-          name: 'Paysagisme & Espaces verts',
+          name: 'Paysagisme & Espaces verts pour villas',
         },
         {
           '@type': 'OfferCatalog',
-          name: 'Location de matériel et mobilier événementiel',
+          name: 'Location de matériel et mobilier événementiel (chaises Chiavari, chapiteaux)',
         },
         {
           '@type': 'OfferCatalog',
