@@ -2,6 +2,12 @@ import { apiClient } from './client';
 
 export interface SubmitQuotePayload {
   eventType: string;
+  /** Choix « Prestation souhaitée » et « Type de lieu » du formulaire */
+  prestationType?: string;
+  spaceType?: string;
+  /** Surface approximative (projets paysagers), ex. « 150 m² » */
+  surfaceArea?: string;
+  company?: string;
   eventDate?: string;
   location: string;
   budget?: string;
@@ -20,7 +26,11 @@ export interface QuoteItem {
   id: string;
   quoteNumber: string;
   status: QuoteStatus;
+  company: string | null;
   eventType: string;
+  prestationType: string | null;
+  spaceType: string | null;
+  surfaceArea: string | null;
   eventDate: string | null;
   eventLocation: string;
   budgetRange: string | null;
@@ -67,6 +77,10 @@ export async function submitQuote(payload: SubmitQuotePayload): Promise<QuoteIte
   if (payload.budget?.trim()) body.budget = payload.budget.trim();
   if (payload.email?.trim()) body.email = payload.email.trim();
   if (payload.notes?.trim()) body.notes = payload.notes.trim();
+  for (const key of ['prestationType', 'spaceType', 'surfaceArea', 'company'] as const) {
+    const value = payload[key]?.trim();
+    if (value) body[key] = value;
+  }
   if (payload.estimatedGuests) body.estimatedGuests = Number(payload.estimatedGuests);
   if (payload.inspirationImages?.length) body.inspirationImages = payload.inspirationImages;
   return apiClient.post<QuoteItem>('/quotes', body);

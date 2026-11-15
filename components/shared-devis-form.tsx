@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { submitQuote, uploadQuoteImages } from '@/lib/api/quotes';
 import { useAuth } from '@/components/auth-provider';
+import { usePublicSettings } from '@/lib/hooks/use-public-settings';
 
 const MAX_PHOTOS = 10;
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
@@ -30,6 +31,74 @@ interface PhotoDraft {
 }
 
 export type DevisServiceType = 'paysagisme' | 'evenements';
+
+/** Choix de la liste correspondant à `value` (casse et espaces ignorés), sinon null. */
+function matchChoice(choices: string[], value: string): string | null {
+  const key = value.trim().toLocaleLowerCase('fr');
+  return key ? (choices.find((c) => c.toLocaleLowerCase('fr') === key) ?? null) : null;
+}
+
+const FIELD_CLASS =
+  'w-full px-3 py-2 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:border-[#173f22] outline-none text-xs sm:text-sm';
+
+/**
+ * Liste déroulante alimentée par Paramètres › Formulaire de devis. Tant que la liste charge, le champ est
+ * désactivé ; si elle est indisponible, un champ libre permet quand même d'envoyer la demande.
+ */
+function ChoiceField({
+  id,
+  label,
+  value,
+  choices,
+  onChange,
+  placeholder,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  /** null = chargement ; 'free' = saisie libre */
+  choices: string[] | null | 'free';
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-gray-700 mb-1" htmlFor={id}>
+        {label} <span className="text-[#c8436e]">*</span>
+      </label>
+      {choices === 'free' ? (
+        <input
+          id={id}
+          type="text"
+          required
+          maxLength={100}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={FIELD_CLASS}
+        />
+      ) : (
+        <select
+          id={id}
+          value={choices ? value : ''}
+          disabled={!choices}
+          onChange={(e) => onChange(e.target.value)}
+          className={`${FIELD_CLASS} disabled:opacity-60`}
+        >
+          {choices ? (
+            choices.map((choice) => (
+              <option key={choice} value={choice}>
+                {choice}
+              </option>
+            ))
+          ) : (
+            <option value="">Chargement…</option>
+          )}
+        </select>
+      )}
+    </div>
+  );
+}
 
 interface SharedDevisFormProps {
   initialServiceType?: DevisServiceType;
@@ -71,11 +140,29 @@ export function SharedDevisForm({
     setPhone((v) => (v.trim() && v.trim() !== '+221' ? v : user.phone || v));
   }
 
-  // Étape 2 : Détails du Projet
-  const [prestationType, setPrestationType] = useState(
-    initialPrestation || (initialServiceType === 'paysagisme' ? 'Conception de jardins' : 'Mariage & Cérémonie')
-  );
-  const [spaceType, setSpaceType] = useState(initialServiceType === 'paysagisme' ? 'Villa' : 'Salle de réception');
+  // Étape 2 : Détails du Projet. Les choix « Prestation souhaitée » et « Type de lieu » viennent du
+  // back-office (Paramètres › Formulaire de devis) ; une saisie vide désigne le premier choix de la liste.
+  const { settings, error: settingsError } = usePublicSettings();
+  const projectOptions = settings?.quoteForm?.[serviceType] ?? null;
+  const choicesUnavailable = Boolean(settingsError) || (settings !== null && !projectOptions);
+  const [prestationChoice, setPrestationChoice] = useState(initialPrestation);
+  const [spaceChoice, setSpaceChoice] = useState('');
+
+  // Une prestation citée par le lien (ex. fiche « Nos prestations ») reste proposée même si elle
+  // ne figure pas dans la liste, pour conserver le choix du client.
+  const basePrestations = projectOptions?.prestations ?? [];
+  const keepLinkedPrestation =
+    Boolean(initialPrestation.trim()) &&
+    serviceType === initialServiceType &&
+    projectOptions !== null &&
+    !matchChoice(basePrestations, initialPrestation);
+  const prestationChoices = keepLinkedPrestation ? [initialPrestation.trim().slice(0, 80), ...basePrestations] : basePrestations;
+  const spaceChoices = projectOptions?.lieux ?? [];
+
+  const prestationType = choicesUnavailable
+    ? prestationChoice
+    : (matchChoice(prestationChoices, prestationChoice) ?? prestationChoices[0] ?? '');
+  const spaceType = choicesUnavailable ? spaceChoice : (matchChoice(spaceChoices, spaceChoice) ?? spaceChoices[0] ?? '');
   const [metricValue, setMetricValue] = useState('');
   const [desiredDate, setDesiredDate] = useState('');
   const [location, setLocation] = useState('Saly Portudal');
@@ -96,13 +183,9 @@ export function SharedDevisForm({
 
   const handleServiceChange = (type: DevisServiceType) => {
     setServiceType(type);
-    if (type === 'paysagisme') {
-      setPrestationType('Conception de jardins');
-      setSpaceType('Villa');
-    } else {
-      setPrestationType('Mariage & Cérémonie');
-      setSpaceType('Salle de réception');
-    }
+    // Retour au premier choix des listes du nouveau type de projet
+    setPrestationChoice(type === initialServiceType ? initialPrestation : '');
+    setSpaceChoice('');
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -139,6 +222,9 @@ export function SharedDevisForm({
 
   const handleNextFromStep2 = (e: React.FormEvent) => {
     e.preventDefault();
+    if (prestationType.trim().length < 2 || spaceType.trim().length < 2) {
+      return setStepError('Précisez la prestation souhaitée et le type de lieu.');
+    }
     if (location.trim().length < 2 || !description.trim()) {
       return setStepError('Renseignez la localisation et une brève description de votre projet.');
     }
@@ -157,26 +243,23 @@ export function SharedDevisForm({
     try {
       const inspirationImages = photos.length ? await uploadQuoteImages(photos.map((p) => p.file)) : [];
       const guests = serviceType === 'evenements' && metricValue ? Number.parseInt(metricValue, 10) : NaN;
-      const notes = [
-        description.trim(),
-        `Type de lieu : ${spaceType}`,
-        serviceType === 'paysagisme' && metricValue ? `Surface approximative : ${metricValue} m²` : null,
-        company.trim() ? `Société : ${company.trim()}` : null,
-      ]
-        .filter(Boolean)
-        .join('\n');
+      const surface = serviceType === 'paysagisme' ? Number.parseInt(metricValue, 10) : NaN;
 
       const quote = await submitQuote({
         name: fullName.trim(),
         email: email.trim() || undefined,
         phone: phone.trim(),
-        eventType: `${serviceType === 'paysagisme' ? 'Paysagisme' : 'Événement'} — ${prestationType}`,
+        company: company.trim() || undefined,
+        eventType: `${serviceType === 'paysagisme' ? 'Paysagisme' : 'Événement'} — ${prestationType.trim()}`,
+        prestationType: prestationType.trim(),
+        spaceType: spaceType.trim(),
+        surfaceArea: Number.isFinite(surface) && surface > 0 ? `${surface} m²` : undefined,
         location: location.trim(),
         budget: budget || undefined,
         eventDate: desiredDate || undefined,
         estimatedGuests: Number.isFinite(guests) && guests > 0 ? guests : undefined,
         inspirationImages,
-        notes,
+        notes: description.trim(),
       });
       setSubmittedRef(quote.quoteNumber);
       setCurrentStep(4);
@@ -392,68 +475,23 @@ export function SharedDevisForm({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1" htmlFor="prestationType">
-                  Prestation souhaitée <span className="text-[#c8436e]">*</span>
-                </label>
-                <select
-                  id="prestationType"
-                  value={prestationType}
-                  onChange={(e) => setPrestationType(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:border-[#173f22] outline-none text-xs sm:text-sm"
-                >
-                  {serviceType === 'paysagisme' ? (
-                    <>
-                      <option value="Conception de jardins">Conception de jardins</option>
-                      <option value="Terrasses et balcons">Terrasses et balcons</option>
-                      <option value="Espaces extérieurs (villas)">Espaces extérieurs (villas)</option>
-                      <option value="Décoration végétale intérieure">Décoration végétale intérieure</option>
-                      <option value="Espaces professionnels">Espaces professionnels (hôtels, restos)</option>
-                      <option value="Entretien régulier">Entretien des espaces verts</option>
-                    </>
-                  ) : (
-                    <>
-                      <option value="Mariage & Cérémonie">Mariage &amp; Cérémonie</option>
-                      <option value="Fête & Anniversaire privé">Fête &amp; Anniversaire privé</option>
-                      <option value="Hôtel & Restaurant">Hôtel &amp; Restaurant de plage</option>
-                      <option value="Soirée d'entreprise">Soirée d&apos;entreprise</option>
-                      <option value="Décoration de villa">Décoration florale de villa</option>
-                      <option value="Autre événement">Autre projet sur mesure</option>
-                    </>
-                  )}
-                </select>
-              </div>
+              <ChoiceField
+                id="prestationType"
+                label="Prestation souhaitée"
+                value={prestationType}
+                choices={choicesUnavailable ? 'free' : projectOptions ? prestationChoices : null}
+                onChange={setPrestationChoice}
+                placeholder={serviceType === 'paysagisme' ? 'Ex : Conception de jardins' : 'Ex : Mariage & Cérémonie'}
+              />
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1" htmlFor="spaceType">
-                  Type de lieu <span className="text-[#c8436e]">*</span>
-                </label>
-                <select
-                  id="spaceType"
-                  value={spaceType}
-                  onChange={(e) => setSpaceType(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:border-[#173f22] outline-none text-xs sm:text-sm"
-                >
-                  {serviceType === 'paysagisme' ? (
-                    <>
-                      <option value="Villa">Villa privée</option>
-                      <option value="Jardin">Jardin résidentiel</option>
-                      <option value="Terrasse">Terrasse ou balcon</option>
-                      <option value="Hôtel">Hôtel ou lodge</option>
-                      <option value="Restaurant">Restaurant</option>
-                      <option value="Bureaux">Bureaux d&apos;entreprise</option>
-                    </>
-                  ) : (
-                    <>
-                      <option value="Salle de réception">Salle de réception</option>
-                      <option value="Plage / Plein air">Bord de mer / Plage</option>
-                      <option value="Hôtel / Domaine">Hôtel / Domaine</option>
-                      <option value="Villa privée">Villa privée</option>
-                      <option value="Jardin">Jardin / Domaine extérieur</option>
-                    </>
-                  )}
-                </select>
-              </div>
+              <ChoiceField
+                id="spaceType"
+                label="Type de lieu"
+                value={spaceType}
+                choices={choicesUnavailable ? 'free' : projectOptions ? spaceChoices : null}
+                onChange={setSpaceChoice}
+                placeholder={serviceType === 'paysagisme' ? 'Ex : Villa privée' : 'Ex : Salle de réception'}
+              />
 
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1" htmlFor="metricValue">

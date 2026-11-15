@@ -447,8 +447,14 @@ export default function AdminDevisPage() {
                   <span className="text-muted-foreground">Prestation</span>
                   <span className="font-semibold text-foreground">{quote.prestationType}</span>
                 </div>
+                {quote.spaceType && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Type de lieu</span>
+                    <span className="text-foreground">{quote.spaceType}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Lieu</span>
+                  <span className="text-muted-foreground">Localisation</span>
                   <span className="text-foreground">{quote.location}</span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -481,7 +487,7 @@ export default function AdminDevisPage() {
                 <th className="py-3.5 px-4">Référence</th>
                 <th className="py-3.5 px-4">Client</th>
                 <th className="py-3.5 px-4">Prestation</th>
-                <th className="py-3.5 px-4">Lieu</th>
+                <th className="py-3.5 px-4">Localisation</th>
                 <th className="py-3.5 px-4">Reçue le</th>
                 <th className="py-3.5 px-4 text-right">Montant</th>
                 <th className="py-3.5 px-4">Statut</th>
@@ -684,14 +690,26 @@ export default function AdminDevisPage() {
 
             {/* Informations du projet (éditables) */}
             <section className="space-y-3">
-              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Projet : {selectedQuote.prestationType}</h4>
+              <div className="space-y-1">
+                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Projet : {selectedQuote.prestationType}</h4>
+                {(selectedQuote.spaceType || selectedQuote.surfaceArea) && (
+                  <p className="text-xs text-foreground">
+                    {[
+                      selectedQuote.spaceType && `Type de lieu : ${selectedQuote.spaceType}`,
+                      selectedQuote.surfaceArea && `Surface : ${selectedQuote.surfaceArea}`,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </p>
+                )}
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <label className="space-y-1">
                   <span className="font-semibold text-muted-foreground">Date souhaitée</span>
                   <input type="date" disabled={locked} value={draft.eventDate} onChange={(e) => setDraft({ ...draft, eventDate: e.target.value })} className={inputCls} />
                 </label>
                 <label className="space-y-1">
-                  <span className="font-semibold text-muted-foreground">Lieu</span>
+                  <span className="font-semibold text-muted-foreground">Localisation</span>
                   <input type="text" disabled={locked} value={draft.location} onChange={(e) => setDraft({ ...draft, location: e.target.value })} className={inputCls} />
                 </label>
                 <label className="space-y-1">
