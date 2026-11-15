@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { FileSpreadsheet, Search, Send, Eye, Plus, Trash2, RefreshCw, Loader2, Check, X, Lock, Save } from 'lucide-react';
@@ -577,7 +579,7 @@ export default function AdminDevisPage() {
               <span className={`text-xs ${dirty ? 'text-amber-700 font-semibold' : 'text-muted-foreground'}`}>
                 {locked ? 'Devis clôturé : lecture seule' : dirty ? 'Modifications non enregistrées' : 'Tout est enregistré'}
               </span>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => closeDrawer()}
@@ -585,6 +587,14 @@ export default function AdminDevisPage() {
                 >
                   Fermer
                 </button>
+                {(selectedQuote.quoteItems?.length ?? 0) > 0 && !dirty && (
+                  <Link
+                    href={`/admin/devis/${selectedQuote.id}/document`}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[#c1647a]/40 bg-[#fdf3f5] text-[#a8455c] text-xs font-semibold hover:bg-[#fbe8ec]"
+                  >
+                    Devis PDF
+                  </Link>
+                )}
                 {!locked && (
                   <button
                     type="button"

@@ -273,3 +273,27 @@ export async function sendAdminQuoteProposal(id: string, message?: string): Prom
   const res = await apiClient.post<any>(`/admin/quotes/${id}/send`, { message: message || undefined }, { useAdminToken: true });
   return { ...transformAdminQuote(res), emailSent: res?.emailSent };
 }
+
+/** Devis tel que renvoyé par l'API (GET /admin/quotes/:id), pour l'édition du document imprimable. */
+export interface AdminQuoteRecord {
+  id: string;
+  quoteNumber: string;
+  customerName: string;
+  customerEmail: string | null;
+  customerPhone: string;
+  company?: string | null;
+  eventType: string;
+  eventDate: string | null;
+  eventLocation: string;
+  estimatedGuests: number | null;
+  status: 'NEW' | 'UNDER_REVIEW' | 'SENT' | 'ACCEPTED' | 'REFUSED' | 'CONVERTED_TO_ORDER';
+  items: { description: string; quantity: number; unitPrice: number }[];
+  quotedAmount: number | null;
+  sentAt: string | null;
+  respondedAt: string | null;
+  createdAt: string;
+}
+
+export function getAdminQuoteRecord(id: string): Promise<AdminQuoteRecord> {
+  return apiClient.get<AdminQuoteRecord>(`/admin/quotes/${encodeURIComponent(id)}`, { useAdminToken: true });
+}

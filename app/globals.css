@@ -9829,3 +9829,46 @@ body:has(.mobile-drawer-overlay) .floating-whatsapp-btn {
   .main-nav-inner { gap: clamp(14px, 2.2vw, 40px); }
   .nav-link { font-size: 13.5px; }
 }
+
+/* ── Documents commerciaux (factures, devis, reçus) : impression A4 en couleurs, seule la feuille est imprimée ── */
+@media print {
+  @page { size: A4; margin: 10mm; }
+  body:has(.invoice-document) { background: #fff !important; }
+  body:has(.invoice-document) .admin-sidebar,
+  body:has(.invoice-document) .admin-topbar,
+  body:has(.invoice-document) .admin-mobile-tabbar,
+  body:has(.invoice-document) .mobile-bottom-bar,
+  body:has(.invoice-document) .pwa-install-banner,
+  body:has(.invoice-document) .floating-whatsapp-btn,
+  body:has(.invoice-document) .invoice-actions { display: none !important; }
+  body:has(.invoice-document) .admin-main-area,
+  body:has(.invoice-document) .admin-content { display: block; margin: 0 !important; padding: 0 !important; }
+  .invoice-document {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    max-width: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+  html:has(.invoice-document),
+  body:has(.invoice-document),
+  body:has(.invoice-document) .admin-shell,
+  body:has(.invoice-document) .admin-main-area,
+  body:has(.invoice-document) .admin-content,
+  body:has(.invoice-document) .account-layout,
+  body:has(.invoice-document) main {
+    background: #fff !important;
+    background-image: none !important;
+  }
+  body:has(.invoice-document) .admin-shell::before,
+  body:has(.invoice-document) .admin-shell::after,
+  body:has(.invoice-document) .admin-content::before,
+  body:has(.invoice-document) .admin-content::after { display: none !important; }
+  /* Les colonnes quantité / prix unitaire restent visibles sur la feuille A4 */
+  .invoice-document th.hidden,
+  .invoice-document td.hidden { display: table-cell !important; }
+  .invoice-document td p.sm\:hidden { display: none !important; }
+  .invoice-document tr,
+  .invoice-document .invoice-grand-total { break-inside: avoid; }
+}

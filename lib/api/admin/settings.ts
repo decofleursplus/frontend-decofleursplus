@@ -18,6 +18,9 @@ export interface BoutiqueSettings {
   timezone: string;
   openingHours: string;
   orderPrefix: string;
+  /** Mentions légales imprimées sur les factures, devis et reçus */
+  ninea: string;
+  rccm: string;
 }
 
 export interface NotificationSettings {

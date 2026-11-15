@@ -374,6 +374,14 @@ function GiftCardDrawer({ cardId, onClose, onChanged }: { cardId: string | null;
 
   const footer = card ? (
     <div className="flex flex-wrap justify-end gap-2">
+      {card.status !== 'PENDING_PAYMENT' && card.activatedAt && (
+        <Link
+          href={`/admin/cartes-cadeaux/${card.id}/recu`}
+          className="inline-flex h-9 items-center rounded-md border border-[#c1647a]/40 bg-[#fdf3f5] px-3 text-xs font-semibold text-[#a8455c] hover:bg-[#fbe8ec]"
+        >
+          Reçu (PDF)
+        </Link>
+      )}
       {card.status === 'ACTIVE' && (
         <Button
           type="button"
