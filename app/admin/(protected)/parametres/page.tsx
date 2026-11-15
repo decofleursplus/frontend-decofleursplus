@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Award, Bell, CreditCard, Globe, RefreshCw, ShieldCheck, Store, Truck, Users } from 'lucide-react';
+import { Award, Bell, ClipboardList, CreditCard, Globe, RefreshCw, ShieldCheck, Store, Truck, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getAdminUser } from '@/lib/api/auth-token';
 import {
@@ -17,12 +17,22 @@ import { CollaborateursTab } from './_components/collaborateurs-tab';
 import { LoyaltyTab } from './_components/loyalty-tab';
 import { NotificationsTab } from './_components/notifications-tab';
 import { PaymentsTab } from './_components/payments-tab';
+import { QuoteFormTab } from './_components/quote-form-tab';
 import { RolesTab } from './_components/roles-tab';
 import { SeoTab } from './_components/seo-tab';
 import { ZonesTab } from './_components/zones-tab';
 import { describeError, ErrorBlock, formatDateTime, isForbidden, LoadingBlock } from './_components/shared';
 
-type SettingsTab = 'boutique' | 'collaborateurs' | 'roles' | 'livraison' | 'paiement' | 'fidelite' | 'notifications' | 'seo';
+type SettingsTab =
+  | 'boutique'
+  | 'collaborateurs'
+  | 'roles'
+  | 'livraison'
+  | 'paiement'
+  | 'fidelite'
+  | 'devis'
+  | 'notifications'
+  | 'seo';
 
 const NAV_ITEMS: { key: SettingsTab; label: string; icon: typeof Store; desc: string }[] = [
   { key: 'boutique', label: 'Boutique', icon: Store, desc: 'Identité & coordonnées' },
@@ -31,12 +41,13 @@ const NAV_ITEMS: { key: SettingsTab; label: string; icon: typeof Store; desc: st
   { key: 'livraison', label: 'Zones de livraison', icon: Truck, desc: 'Tarifs & délais' },
   { key: 'paiement', label: 'Paiement', icon: CreditCard, desc: 'Moyens acceptés' },
   { key: 'fidelite', label: 'Fidélité & parrainage', icon: Award, desc: 'Points, bons, parrainage' },
+  { key: 'devis', label: 'Formulaire de devis', icon: ClipboardList, desc: 'Prestations & types de lieu' },
   { key: 'notifications', label: 'Notifications', icon: Bell, desc: 'Alertes & emails' },
   { key: 'seo', label: 'Réseaux & référencement', icon: Globe, desc: 'SEO & réseaux sociaux' },
 ];
 
 /** Sections qui dépendent de GET /admin/settings (les autres chargent leurs propres données). */
-const SETTINGS_TABS: SettingsTab[] = ['boutique', 'paiement', 'notifications', 'seo'];
+const SETTINGS_TABS: SettingsTab[] = ['boutique', 'paiement', 'devis', 'notifications', 'seo'];
 
 export default function AdminParametresPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('boutique');
@@ -103,6 +114,8 @@ export default function AdminParametresPage() {
         return <PaymentsTab key={key} settings={settings} canEdit={isAdmin} onSave={saveSettings} />;
       case 'notifications':
         return <NotificationsTab key={key} settings={settings} canEdit={isAdmin} onSave={saveSettings} />;
+      case 'devis':
+        return <QuoteFormTab key={key} settings={settings} canEdit={isAdmin} onSave={saveSettings} />;
       case 'seo':
         return <SeoTab key={key} settings={settings} canEdit={isAdmin} onSave={saveSettings} />;
       default:

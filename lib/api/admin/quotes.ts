@@ -106,8 +106,9 @@ export function transformAdminQuote(raw: any): LandscapeQuote {
     clientPhone,
     company: raw.company || raw.organization || '',
     prestationType: raw.eventType || raw.prestationType || 'Événement Floral',
-    spaceType: raw.estimatedGuests ? `${raw.estimatedGuests} invités` : '',
-    surfaceArea: '',
+    // Choix du formulaire (« Type de lieu », surface) ; absents des demandes plus anciennes
+    spaceType: raw.spaceType || '',
+    surfaceArea: raw.surfaceArea || '',
     desiredDate: raw.eventDate ? raw.eventDate.split('T')[0] : (raw.desiredDate || ''),
     location: raw.eventLocation || raw.location || 'Saly / Dakar',
     description: raw.details || raw.description || '',
@@ -281,8 +282,11 @@ export interface AdminQuoteRecord {
   customerName: string;
   customerEmail: string | null;
   customerPhone: string;
-  company?: string | null;
+  company: string | null;
   eventType: string;
+  prestationType: string | null;
+  spaceType: string | null;
+  surfaceArea: string | null;
   eventDate: string | null;
   eventLocation: string;
   estimatedGuests: number | null;

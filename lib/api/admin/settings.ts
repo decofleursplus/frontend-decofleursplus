@@ -1,4 +1,7 @@
 import { apiClient } from '../client';
+import type { QuoteFormSettings } from '../settings';
+
+export type { QuoteFormSettings, QuoteProjectOptions, QuoteProjectType } from '../settings';
 
 /**
  * Paramètres du back-office : boutique, notifications, paiement, SEO, collaborateurs, rôles.
@@ -59,6 +62,8 @@ export interface AdminShopSettings {
   notifications: NotificationSettings;
   payments: PaymentSettings;
   seo: SeoSettings;
+  /** Choix « Prestation souhaitée » et « Type de lieu » du formulaire de devis, par type de projet */
+  quoteForm: QuoteFormSettings;
   /** État réel de l'agrégateur de paiement en ligne côté serveur. */
   paymentGateway: { provider: string; configured: boolean };
   updatedAt: string;
@@ -69,6 +74,8 @@ export interface UpdateShopSettingsPayload {
   notifications?: Partial<NotificationSettings>;
   payments?: PaymentSettings;
   seo?: Partial<SeoSettings>;
+  /** Listes complètes d'un ou des deux types de projet (le type absent est conservé) */
+  quoteForm?: Partial<QuoteFormSettings>;
 }
 
 export async function getAdminShopSettings(): Promise<AdminShopSettings> {
