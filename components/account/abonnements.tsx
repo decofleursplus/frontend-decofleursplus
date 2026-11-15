@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { Calendar, ChevronDown, ChevronUp, Pause, Play, XCircle } from 'lucide-react';
+import { Calendar, ChevronDown, ChevronUp, FileText, Pause, Play, XCircle } from 'lucide-react';
 import {
   cancelMySubscription,
   getMySubscription,
@@ -100,6 +100,12 @@ function SubscriptionCard({ sub, onChanged }: { sub: CustomerSubscription; onCha
             <strong className="text-base text-[#173f22]">{fcfa(sub.monthlyAmount)}</strong>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href={`/compte/documents/abonnement/${encodeURIComponent(sub.subscriptionNumber)}`}
+              className="button button-outline button-small"
+            >
+              <FileText size={13} /> Récapitulatif
+            </Link>
             {sub.status === 'ACTIVE' && (
               <button type="button" disabled={busy} onClick={() => run(() => pauseMySubscription(sub.subscriptionNumber), 'Abonnement mis en pause.')} className="button button-outline button-small">
                 <Pause size={13} /> Pause

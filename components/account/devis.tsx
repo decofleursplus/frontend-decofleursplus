@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
-import { Check, ChevronDown, ChevronUp, Plus, Sparkles, X } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, FileText, Plus, Sparkles, X } from 'lucide-react';
 import { getMyQuotes, respondToQuote, type QuoteItem, type QuoteStatus } from '@/lib/api/quotes';
 import { ErrorState, LoadingState, Notice, SectionHeader, errorText, fcfa, formatDate, useResource } from './shared';
 
@@ -128,6 +128,12 @@ function QuoteCard({ quote, onUpdated }: { quote: QuoteItem; onUpdated: (q: Quot
                   </tr>
                 </tfoot>
               </table>
+              <Link
+                href={`/compte/documents/devis/${encodeURIComponent(quote.id)}`}
+                className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-[#c1647a] hover:underline"
+              >
+                <FileText size={14} /> Voir le devis (PDF)
+              </Link>
             </div>
           ) : (
             quote.status !== 'SENT' &&

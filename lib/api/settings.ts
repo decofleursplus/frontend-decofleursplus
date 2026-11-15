@@ -13,6 +13,9 @@ export interface PublicShopSettings {
     address: string;
     logoUrl: string;
     openingHours: string;
+    /** Mentions légales des documents commerciaux (vides si non renseignées) */
+    ninea?: string;
+    rccm?: string;
   };
   social: { instagramUrl: string; facebookUrl: string; tiktokUrl: string };
   /** Moyens de paiement acceptés par la boutique */

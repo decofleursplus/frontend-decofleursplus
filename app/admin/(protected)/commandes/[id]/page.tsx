@@ -3,7 +3,7 @@
 import { use, useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, Printer, Truck, MapPin, CreditCard, User, Loader2, History, StickyNote, Save, Package } from 'lucide-react';
+import { ArrowLeft, Printer, Truck, MapPin, CreditCard, User, Loader2, History, StickyNote, Save, Package, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   DELIVERY_MODE_LABELS,
@@ -144,8 +144,16 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         </div>
         <div className="flex flex-wrap gap-2 print:hidden">
           <button type="button" onClick={() => window.print()} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#e7e4dd] text-xs font-semibold hover:bg-gray-50">
-            <Printer className="h-3.5 w-3.5" /> Imprimer
+            <Printer className="h-3.5 w-3.5" /> Imprimer la fiche
           </button>
+          {order.orderStatus !== 'CANCELLED' && (
+            <Link
+              href={`/admin/commandes/${order.id}/facture`}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#c1647a]/40 bg-[#fdf3f5] text-[#a8455c] text-xs font-semibold hover:bg-[#fbe8ec]"
+            >
+              <FileText className="h-3.5 w-3.5" /> Facture
+            </Link>
+          )}
           {order.allowedTransitions.map((to) => (
             <button
               key={to}
