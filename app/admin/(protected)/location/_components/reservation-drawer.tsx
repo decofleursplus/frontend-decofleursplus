@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { AlertCircle, CalendarClock, Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
@@ -172,13 +173,23 @@ export function ReservationDrawer({ reservationId, onClose, onChanged }: Reserva
       icon={<CalendarClock size={20} />}
       headerExtra={reservation ? <ReservationStatusBadge status={reservation.status} /> : undefined}
       footer={
-        <button
-          type="button"
-          onClick={onClose}
-          className="px-4 py-2.5 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
-        >
-          Fermer
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
+          >
+            Fermer
+          </button>
+          {reservation && reservation.status !== 'CANCELLED' && (
+            <Link
+              href={`/admin/location/reservations/${reservation.id}/bon`}
+              className="px-4 py-2.5 rounded-xl border border-[#c1647a]/40 bg-[#fdf3f5] text-[#a8455c] text-xs font-semibold hover:bg-[#fbe8ec]"
+            >
+              Bon de location (PDF)
+            </Link>
+          )}
+        </div>
       }
     >
       {loading && !reservation ? (

@@ -13,7 +13,7 @@ import { describeError, FieldError, fieldErrorsOf, InfoNote, ReadOnlyNote } from
 
 type BoutiqueDraft = Pick<
   BoutiqueSettings,
-  'shopName' | 'tagline' | 'contactEmail' | 'phoneDakar' | 'phoneSaly' | 'address' | 'logoUrl' | 'openingHours'
+  'shopName' | 'tagline' | 'contactEmail' | 'phoneDakar' | 'phoneSaly' | 'address' | 'logoUrl' | 'openingHours' | 'ninea' | 'rccm'
 >;
 
 function toDraft(b: BoutiqueSettings): BoutiqueDraft {
@@ -26,6 +26,8 @@ function toDraft(b: BoutiqueSettings): BoutiqueDraft {
     address: b.address,
     logoUrl: b.logoUrl,
     openingHours: b.openingHours,
+    ninea: b.ninea ?? '',
+    rccm: b.rccm ?? '',
   };
 }
 
@@ -277,6 +279,38 @@ export function BoutiqueTab({
           </div>
           <FieldError message={errors['boutique.openingHours']} />
         </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="ninea" className="font-semibold text-gray-700">
+              NINEA
+            </Label>
+            <Input
+              id="ninea"
+              value={draft.ninea}
+              disabled={!canEdit}
+              onChange={(e) => set({ ninea: e.target.value })}
+              placeholder="ex : 012345678 2G3"
+              className="h-9 text-xs"
+            />
+            <FieldError message={errors['boutique.ninea']} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="rccm" className="font-semibold text-gray-700">
+              RCCM
+            </Label>
+            <Input
+              id="rccm"
+              value={draft.rccm}
+              disabled={!canEdit}
+              onChange={(e) => set({ rccm: e.target.value })}
+              placeholder="ex : SN-THS-2024-B-1234"
+              className="h-9 text-xs"
+            />
+            <FieldError message={errors['boutique.rccm']} />
+          </div>
+        </div>
+        <p className="-mt-2 text-[11px] text-gray-500">Imprimés en bas des factures, devis, bons de location et reçus.</p>
       </CardContent>
     </Card>
   );

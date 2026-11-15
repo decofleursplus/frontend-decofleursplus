@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useState, useEffect, useCallback } from 'react';
 import {
   Repeat,
@@ -902,6 +904,12 @@ export default function AdminAbonnementsPage() {
                     ? ` · compte client ${detail.user.firstName} ${detail.user.lastName}`
                     : ' · sans compte client'}
                 </SheetDescription>
+                <Link
+                  href={`/admin/abonnements/${detail.id}/recapitulatif`}
+                  className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-lg border border-[#c1647a]/40 bg-[#fdf3f5] px-3 py-1.5 text-xs font-semibold text-[#a8455c] hover:bg-[#fbe8ec]"
+                >
+                  Récapitulatif (PDF)
+                </Link>
               </SheetHeader>
 
               {detail.status === 'PAUSED' && (
