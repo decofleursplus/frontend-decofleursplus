@@ -22,6 +22,9 @@ export interface QuoteDocumentSource {
   eventDate: string | null;
   eventLocation: string;
   estimatedGuests: number | null;
+  /** Absents des devis antérieurs au formulaire structuré */
+  spaceType?: string | null;
+  surfaceArea?: string | null;
   items: { description: string; quantity: number; unitPrice: number }[];
   quotedAmount: number | null;
   sentAt: string | null;
@@ -71,7 +74,8 @@ export function buildQuoteDocument(
         lines: [
           quote.eventType,
           quote.eventDate ? `Le ${formatDocumentDate(quote.eventDate)}` : null,
-          quote.eventLocation,
+          [quote.spaceType, quote.eventLocation].filter(Boolean).join(' — '),
+          quote.surfaceArea ? `Surface : ${quote.surfaceArea}` : null,
           quote.estimatedGuests ? `${quote.estimatedGuests} invités` : null,
         ],
       },

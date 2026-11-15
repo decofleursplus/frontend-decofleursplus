@@ -1,5 +1,18 @@
 import { apiClient } from './client';
 
+/** Types de projet du formulaire de demande de devis. */
+export type QuoteProjectType = 'paysagisme' | 'evenements';
+
+/** Choix proposés pour un type de projet (gérés dans Paramètres › Formulaire de devis). */
+export interface QuoteProjectOptions {
+  /** « Prestation souhaitée », dans l'ordre d'affichage (au moins un choix) */
+  prestations: string[];
+  /** « Type de lieu », dans l'ordre d'affichage (au moins un choix) */
+  lieux: string[];
+}
+
+export type QuoteFormSettings = Record<QuoteProjectType, QuoteProjectOptions>;
+
 /** Paramètres de la boutique visibles par la vitrine (GET /settings/public, sans authentification). */
 export interface PublicShopSettings {
   boutique: {
@@ -22,6 +35,8 @@ export interface PublicShopSettings {
   payments: { wave: boolean; orangeMoney: boolean; card: boolean; cash: boolean; cashMaxAmount: number | null };
   /** Tarifs des options cadeau, par ligne de commande (FCFA) */
   orderOptions: { giftWrapFee: number; cardMessageFee: number };
+  /** Choix du formulaire de demande de devis, par type de projet */
+  quoteForm: QuoteFormSettings;
 }
 
 export async function getPublicSettings(): Promise<PublicShopSettings> {
