@@ -9858,8 +9858,8 @@ body:has(.mobile-drawer-overlay) .floating-whatsapp-btn {
 
 /* ── Documents commerciaux (factures, devis, reçus) : impression A4 en couleurs, seule la feuille est imprimée ── */
 @media print {
-  @page { size: A4; margin: 10mm; }
-  body:has(.invoice-document) { background: #fff !important; }
+  /* Marge nulle : le navigateur n'imprime ni le titre de l'onglet ni l'adresse de la page (la feuille a ses propres marges) */
+  @page { size: A4; margin: 0; }
   body:has(.invoice-document) .admin-sidebar,
   body:has(.invoice-document) .admin-topbar,
   body:has(.invoice-document) .admin-mobile-tabbar,
@@ -9878,13 +9878,17 @@ body:has(.mobile-drawer-overlay) .floating-whatsapp-btn {
     box-shadow: none !important;
   }
   html:has(.invoice-document),
-  body:has(.invoice-document),
+  body:has(.invoice-document) {
+    background: #fdf3f7 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
   body:has(.invoice-document) .admin-shell,
   body:has(.invoice-document) .admin-main-area,
   body:has(.invoice-document) .admin-content,
   body:has(.invoice-document) .account-layout,
   body:has(.invoice-document) main {
-    background: #fff !important;
+    background: transparent !important;
     background-image: none !important;
   }
   body:has(.invoice-document) .admin-shell::before,

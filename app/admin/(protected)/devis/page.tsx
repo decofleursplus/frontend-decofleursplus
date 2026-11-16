@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
-import { FileSpreadsheet, Search, Send, Eye, Plus, Trash2, RefreshCw, Loader2, Check, X, Lock, Save, ShoppingBag } from 'lucide-react';
+import { FileSpreadsheet, Search, Send, Eye, Plus, Trash2, RefreshCw, Loader2, Check, X, Lock, Save, ShoppingBag, Link2, FilePlus2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
 import { AdminPagination } from '@/components/admin/admin-pagination';
@@ -14,6 +14,7 @@ import type { LandscapeQuote, QuoteStatus } from '@/lib/admin/mock-data/types';
 import {
   QUOTE_NEXT_STATUSES,
   convertAdminQuoteToOrder,
+  deleteAdminQuote,
   getAdminQuotes,
   saveAdminQuoteProposal,
   sendAdminQuoteProposal,
@@ -31,6 +32,7 @@ import {
 } from '@/lib/api/orders';
 import { ApiClientError } from '@/lib/api/client';
 import { useAdminCan } from '@/components/admin/admin-sidebar-context';
+import { CreateQuoteDialog } from '@/components/admin/create-quote-dialog';
 
 type QuoteLine = { description: string; qty: number; unitPrice: number; total: number };
 
@@ -263,7 +265,10 @@ function ConvertQuoteDialog({
 export default function AdminDevisPage() {
   const can = useAdminCan();
   const canWrite = can('devis', 'write');
+  const canDelete = can('devis', 'delete');
   const canReadOrders = can('commandes', 'read');
+  const [createOpen, setCreateOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [quotes, setQuotes] = useState<LandscapeQuote[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -372,6 +377,33 @@ export default function AdminDevisPage() {
     setConvertOpen(false);
     setSelectedQuote(null);
     setDraft(null);
+  };
+
+  /** Suppression d'une demande (doublon, spam…) : droit « supprimer » du module Devis. */
+  const removeQuote = async () => {
+    if (!selectedQuote) return;
+    if (!window.confirm(`Supprimer définitivement la demande de devis ${selectedQuote.quoteNumber} de ${selectedQuote.clientName} ?`)) return;
+    setDeleting(true);
+    try {
+      await deleteAdminQuote(selectedQuote.id);
+      toast.success(`Devis ${selectedQuote.quoteNumber} supprimé`);
+      closeDrawer(true);
+      await reloadList();
+    } catch (err) {
+      toast.error(errorMessage(err, 'Suppression impossible.'));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const copyClientLink = async (token: string) => {
+    const url = `${window.location.origin}/devis/${token}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success('Lien du client copié');
+    } catch {
+      window.prompt('Lien personnel du client :', url);
+    }
   };
 
   const applyUpdated = (updated: LandscapeQuote, keepDraft = false) => {
@@ -523,16 +555,27 @@ export default function AdminDevisPage() {
             Suivez chaque demande de sa réception à la réponse du client : étude, proposition chiffrée, acceptation ou refus.
           </p>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={reloadList}
-          disabled={loading || refreshing}
-          className="h-10 text-xs text-gray-700 bg-white border-[#e7e4dd] hover:bg-gray-50"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? 'animate-spin text-[#c1647a]' : ''}`} />
-          Actualiser
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={reloadList}
+            disabled={loading || refreshing}
+            className="h-10 text-xs text-gray-700 bg-white border-[#e7e4dd] hover:bg-gray-50"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? 'animate-spin text-[#c1647a]' : ''}`} />
+            Actualiser
+          </Button>
+          <Button
+            type="button"
+            hidden={!canWrite}
+            onClick={() => setCreateOpen(true)}
+            className="h-10 bg-[#c8436e] hover:bg-[#b5355e] text-white text-xs font-semibold"
+          >
+            <FilePlus2 className="h-4 w-4 mr-1.5" />
+            Nouveau devis
+          </Button>
+        </div>
       </div>
 
       {/* ── Filtres par statut (compteurs serveur) ── */}
@@ -733,6 +776,16 @@ export default function AdminDevisPage() {
       />
 
       {/* ── Fiche de traitement ── */}
+      <CreateQuoteDialog
+        isOpen={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={(quote) => {
+          setCreateOpen(false);
+          void reloadList();
+          openQuoteDetail(quote);
+        }}
+      />
+
       <AdminDrawer
         isOpen={!!selectedQuote}
         onClose={() => closeDrawer()}
@@ -761,6 +814,27 @@ export default function AdminDevisPage() {
                 >
                   Fermer
                 </button>
+                {canDelete && selectedQuote.status !== 'terminee' && !selectedQuote.convertedOrderId && (
+                  <button
+                    type="button"
+                    disabled={deleting}
+                    onClick={() => void removeQuote()}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-red-200 text-red-600 text-xs font-semibold hover:bg-red-50 disabled:opacity-50"
+                  >
+                    {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                    Supprimer
+                  </button>
+                )}
+                {selectedQuote.publicToken && (
+                  <button
+                    type="button"
+                    onClick={() => void copyClientLink(selectedQuote.publicToken!)}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-border text-xs font-semibold hover:bg-muted"
+                    title="Lien personnel envoyé au client : il y consulte et accepte son devis"
+                  >
+                    <Link2 size={14} /> Lien du client
+                  </button>
+                )}
                 {(selectedQuote.quoteItems?.length ?? 0) > 0 && !dirty && (
                   <Link
                     href={`/admin/devis/${selectedQuote.id}/document`}

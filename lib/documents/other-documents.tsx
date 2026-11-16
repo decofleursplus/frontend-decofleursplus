@@ -85,8 +85,8 @@ export function buildQuoteDocument(
     notes: (
       <div className="space-y-1.5">
         <p>
-          <span className="font-semibold text-[#173f22]">Pour accepter ce devis :</span> répondez depuis votre espace client (Mes devis) ou
-          contactez-nous par téléphone ou WhatsApp.
+          <span className="font-semibold text-[#173f22]">Pour accepter ce devis :</span> cliquez sur « Voir et accepter mon devis » dans
+          l’email reçu, répondez depuis votre espace client (Mes devis) ou contactez-nous par téléphone ou WhatsApp.
         </p>
         <p className="text-[11.5px] text-[#8a837c]">Prix en francs CFA. Les fleurs fraîches sont choisies selon la saison et les arrivages.</p>
       </div>
