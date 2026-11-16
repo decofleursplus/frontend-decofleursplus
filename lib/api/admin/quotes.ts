@@ -124,6 +124,7 @@ export function transformAdminQuote(raw: any): LandscapeQuote {
     budgetRange: raw.budgetRange ?? null,
     convertedOrderId: raw.convertedOrderId ?? null,
     convertedOrderNumber: raw.convertedOrderNumber ?? null,
+    publicToken: raw.publicToken ?? null,
   };
 }
 
@@ -300,6 +301,34 @@ export async function convertAdminQuoteToOrder(
     order: { id: string; orderNumber: string };
   }>(`/admin/quotes/${encodeURIComponent(id)}/convert`, body, { useAdminToken: true });
   return { quote: transformAdminQuote(res.quote), order: res.order };
+}
+
+/** Devis préparé par l'équipe pour un client, inscrit ou non (POST /admin/quotes). */
+export interface StaffQuotePayload {
+  customerName: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  company?: string;
+  eventType: string;
+  eventDate?: string;
+  eventLocation?: string;
+  details?: string;
+  adminNotes?: string;
+  items: { description: string; quantity: number; unitPrice: number }[];
+  /** true : envoyé aussitôt par email avec le lien personnel du client */
+  send?: boolean;
+  message?: string;
+}
+
+export async function createAdminQuote(body: StaffQuotePayload): Promise<{ quote: LandscapeQuote; emailSent: boolean }> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const res = await apiClient.post<any>('/admin/quotes', body, { useAdminToken: true });
+  return { quote: transformAdminQuote(res), emailSent: Boolean(res.emailSent) };
+}
+
+/** Supprime une demande de devis (un devis converti en commande est conservé). */
+export async function deleteAdminQuote(id: string): Promise<void> {
+  await apiClient.delete(`/admin/quotes/${encodeURIComponent(id)}`, { useAdminToken: true });
 }
 
 /** Devis tel que renvoyé par l'API (GET /admin/quotes/:id), pour l'édition du document imprimable. */

@@ -736,4 +736,6 @@ export type LandscapeQuote = {
   /** Commande créée depuis ce devis (devis converti) */
   convertedOrderId?: string | null;
   convertedOrderNumber?: string | null;
+  /** Jeton du lien personnel du client (/devis/<jeton>), créé au premier envoi */
+  publicToken?: string | null;
 };
