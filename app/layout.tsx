@@ -4,7 +4,7 @@ import './globals.css';
 import { RootShell } from '@/components/root-shell';
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
-import { SITE_CONFIG, SITE_URL } from '@/lib/seo/config';
+import { APP_NAME, SITE_CONFIG, SITE_URL } from '@/lib/seo/config';
 import { getFloristSchema, getOrganizationSchema } from '@/lib/seo/schema';
 import { JsonLd } from '@/components/seo/json-ld';
 
@@ -47,9 +47,9 @@ export const metadata: Metadata = {
     'livraison fleurs saly',
     'paysagiste saly',
   ],
-  applicationName: SITE_CONFIG.name,
+  applicationName: APP_NAME,
   manifest: '/manifest.webmanifest',
-  appleWebApp: { capable: true, statusBarStyle: 'default', title: SITE_CONFIG.name },
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: APP_NAME },
   formatDetection: { telephone: false },
   icons: {
     icon: [

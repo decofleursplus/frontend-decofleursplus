@@ -1,10 +1,12 @@
 import type { MetadataRoute } from 'next';
+import { APP_NAME } from '@/lib/seo/config';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: '/',
-    name: 'Décofleur Plus · Nature en élégance',
-    short_name: 'Décofleur',
+    // Nom affiché sous l'icône et sur l'écran de démarrage : celui du logo
+    name: APP_NAME,
+    short_name: APP_NAME,
     description: 'Bouquets, plantes, cadeaux et décoration florale à Saly et Mbour.',
     start_url: '/',
     scope: '/',

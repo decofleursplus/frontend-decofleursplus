@@ -1,5 +1,8 @@
 export const SITE_URL = 'https://www.decofleursplus.com';
 
+/** Nom de l'application installée (écran d'accueil, démarrage), tel qu'écrit dans le logo. */
+export const APP_NAME = 'Décofleur Plus';
+
 export const SITE_CONFIG = {
   name: 'Décofleurs Plus',
   legalName: 'Décofleurs Plus SARL',
