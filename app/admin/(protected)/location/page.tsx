@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ApiClientError } from '@/lib/api/client';
-import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import {
   deleteAdminRentalEquipment,
   getAdminRentalEquipment,
@@ -45,14 +45,13 @@ const STATUS_TABS: { value: 'all' | RentalReservationStatus; label: string }[] =
 ];
 
 const PAGE_SIZE = 20;
-const MANAGER_ROLES = ['ADMIN', 'MANAGER'];
 
 const errorMessage = (err: unknown, fallback: string) => (err instanceof ApiClientError ? err.message : fallback);
 
 export default function AdminLocationPage() {
   const [activeTab, setActiveTab] = useState<Tab>('calendrier');
-  const { currentUser } = useAdminSidebar();
-  const canManageEquipment = MANAGER_ROLES.includes(currentUser?.role ?? '');
+  // Fiches du matériel : droit « Modifier » du module Matériel de location
+  const canManageEquipment = useAdminCan()('materiel-location', 'write');
 
   // Rafraîchissement croisé (planning + liste) après chaque modification
   const [refreshKey, setRefreshKey] = useState(0);

@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Award, Bell, ClipboardList, CreditCard, Globe, RefreshCw, ShieldCheck, Store, Truck, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getAdminUser } from '@/lib/api/auth-token';
+import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
+import { can, type AdminAccess } from '@/lib/admin/access';
 import {
   getAdminRoles,
   getAdminShopSettings,
@@ -49,10 +50,23 @@ const NAV_ITEMS: { key: SettingsTab; label: string; icon: typeof Store; desc: st
 /** Sections qui dépendent de GET /admin/settings (les autres chargent leurs propres données). */
 const SETTINGS_TABS: SettingsTab[] = ['boutique', 'paiement', 'devis', 'notifications', 'seo'];
 
+/** Onglet visible si le compte peut au moins consulter le module correspondant (Rôles : tout le personnel). */
+function tabVisible(tab: SettingsTab, access: AdminAccess | null): boolean {
+  if (!access || tab === 'roles') return true;
+  if (SETTINGS_TABS.includes(tab)) return can(access, 'parametres', 'read');
+  if (tab === 'collaborateurs') return can(access, 'collaborateurs', 'read');
+  if (tab === 'livraison') return can(access, 'zones', 'read');
+  if (tab === 'fidelite') return can(access, 'fidelite', 'read');
+  return true;
+}
+
 export default function AdminParametresPage() {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('boutique');
-  // Lu après le montage : la session admin est stockée côté navigateur
-  const [currentUser, setCurrentUser] = useState<ReturnType<typeof getAdminUser>>(null);
+  const { currentUser, access } = useAdminSidebar();
+  const visibleItems = NAV_ITEMS.filter((item) => tabVisible(item.key, access));
+  const [selectedTab, setActiveTab] = useState<SettingsTab | null>(null);
+  // Onglet choisi s'il reste visible, sinon le premier onglet autorisé
+  const activeTab: SettingsTab =
+    selectedTab && visibleItems.some((i) => i.key === selectedTab) ? selectedTab : (visibleItems[0]?.key ?? 'roles');
 
   const [settings, setSettings] = useState<AdminShopSettings | null>(null);
   const [settingsError, setSettingsError] = useState<unknown>(null);
@@ -61,25 +75,29 @@ export default function AdminParametresPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
-  const role = currentUser?.role?.toUpperCase() ?? '';
-  const isAdmin = role === 'ADMIN';
-  const canManageZones = role === 'ADMIN' || role === 'MANAGER';
+  const isAdmin = (access?.role ?? currentUser?.role)?.toUpperCase() === 'ADMIN';
+  const canReadSettings = !access || can(access, 'parametres', 'read');
+  const canEditSettings = can(access, 'parametres', 'write');
 
   const load = useCallback(async () => {
     setRefreshing(true);
     setSettingsError(null);
     setRolesError(null);
-    const [settingsRes, rolesRes] = await Promise.allSettled([getAdminShopSettings(), getAdminRoles()]);
+    // Paramètres de la boutique : seulement si le compte peut les consulter (sinon 403 inutile)
+    const [settingsRes, rolesRes] = await Promise.allSettled([
+      canReadSettings ? getAdminShopSettings() : Promise.resolve(null),
+      getAdminRoles(),
+    ]);
     if (settingsRes.status === 'fulfilled') setSettings(settingsRes.value);
     else setSettingsError(settingsRes.reason);
     if (rolesRes.status === 'fulfilled') setRoles(rolesRes.value);
     else setRolesError(rolesRes.reason);
     setRefreshing(false);
-  }, []);
+  }, [canReadSettings]);
 
   useEffect(() => {
+    // Chargement initial (et après un changement de droits) : les états sont mis à jour à la résolution
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCurrentUser(getAdminUser());
     void load();
   }, [load]);
 
@@ -109,15 +127,15 @@ export default function AdminParametresPage() {
     const key = `${activeTab}-${settings.updatedAt}-${refreshKey}`;
     switch (activeTab) {
       case 'boutique':
-        return <BoutiqueTab key={key} settings={settings} canEdit={isAdmin} onSave={saveSettings} />;
+        return <BoutiqueTab key={key} settings={settings} canEdit={canEditSettings} onSave={saveSettings} />;
       case 'paiement':
-        return <PaymentsTab key={key} settings={settings} canEdit={isAdmin} onSave={saveSettings} />;
+        return <PaymentsTab key={key} settings={settings} canEdit={canEditSettings} onSave={saveSettings} />;
       case 'notifications':
-        return <NotificationsTab key={key} settings={settings} canEdit={isAdmin} onSave={saveSettings} />;
+        return <NotificationsTab key={key} settings={settings} canEdit={canEditSettings} onSave={saveSettings} />;
       case 'devis':
-        return <QuoteFormTab key={key} settings={settings} canEdit={isAdmin} onSave={saveSettings} />;
+        return <QuoteFormTab key={key} settings={settings} canEdit={canEditSettings} onSave={saveSettings} />;
       case 'seo':
-        return <SeoTab key={key} settings={settings} canEdit={isAdmin} onSave={saveSettings} />;
+        return <SeoTab key={key} settings={settings} canEdit={canEditSettings} onSave={saveSettings} />;
       default:
         return null;
     }
@@ -137,7 +155,7 @@ export default function AdminParametresPage() {
       }
       if (!roles) return <LoadingBlock label="Chargement des rôles…" />;
       return activeTab === 'roles' ? (
-        <RolesTab data={roles} />
+        <RolesTab data={roles} canEdit={isAdmin} onSaved={setRoles} />
       ) : (
         <CollaborateursTab
           key={refreshKey}
@@ -147,8 +165,8 @@ export default function AdminParametresPage() {
         />
       );
     }
-    if (activeTab === 'fidelite') return <LoyaltyTab key={refreshKey} canEdit={canManageZones} />;
-    return <ZonesTab key={refreshKey} canEdit={canManageZones} />;
+    if (activeTab === 'fidelite') return <LoyaltyTab key={refreshKey} canEdit={can(access, 'fidelite', 'write')} />;
+    return <ZonesTab key={refreshKey} canEdit={can(access, 'zones', 'write')} />;
   };
 
   const lastUpdate = settings ? formatDateTime(settings.updatedAt) : null;
@@ -175,9 +193,9 @@ export default function AdminParametresPage() {
       </div>
 
       {/* Onglets mobiles */}
-      <div className="md:hidden overflow-x-auto no-scrollbar -mx-4 px-4 py-1 border-b border-gray-200">
+      <div className="md:hidden overflow-x-auto no-scrollbar py-1 border-b border-gray-200">
         <div className="flex items-center gap-2 min-w-max pb-1">
-          {NAV_ITEMS.map((item) => {
+          {visibleItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.key;
             return (
@@ -200,7 +218,7 @@ export default function AdminParametresPage() {
       <div className="grid grid-cols-12 gap-6 items-start">
         <aside className="hidden md:block md:col-span-4 lg:col-span-3 sticky top-6 self-start z-10 space-y-4">
           <nav className="rounded-xl border border-gray-200 bg-white p-2 shadow-2xs space-y-1" aria-label="Sections des paramètres">
-            {NAV_ITEMS.map((item) => {
+            {visibleItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.key;
               return (
@@ -235,7 +253,9 @@ export default function AdminParametresPage() {
                 'Les modifications prennent effet dès leur enregistrement.'
               )}
             </p>
-            {!isAdmin && currentUser && <p>Seul un administrateur peut modifier ces réglages.</p>}
+            {access && canReadSettings && !canEditSettings && (
+              <p>Vos droits permettent de consulter ces réglages, pas de les modifier.</p>
+            )}
           </div>
         </aside>
 

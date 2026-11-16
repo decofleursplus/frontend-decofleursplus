@@ -1,12 +1,24 @@
 'use client';
 
-import { useActionState } from 'react';
+import { Suspense, useActionState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { loginAdmin } from './actions';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { AuthPageLayout } from '@/components/auth/auth-page-layout';
+
+/** Session refusée par l'API (compte désactivé ou supprimé, jeton expiré). */
+function SessionNotice() {
+  const params = useSearchParams();
+  if (params.get('session') !== 'expiree') return null;
+  return (
+    <div className="p-3 text-sm text-amber-900 bg-amber-50 border border-amber-200 rounded-md text-center">
+      Votre session n&apos;est plus valide : reconnectez-vous. Si votre compte a été désactivé, contactez un administrateur.
+    </div>
+  );
+}
 
 export default function AdminLoginPage() {
   const [state, formAction, isPending] = useActionState(loginAdmin, undefined);
@@ -21,6 +33,11 @@ export default function AdminLoginPage() {
       </div>
 
       <form action={formAction} className="space-y-5">
+        {!state?.error && (
+          <Suspense fallback={null}>
+            <SessionNotice />
+          </Suspense>
+        )}
         {state?.error && (
           <div className="p-3 text-sm text-[#c1647a] bg-[#fdf5f7] border border-[#f9e1e6] rounded-md text-center">
             {state.error}

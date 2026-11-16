@@ -26,7 +26,7 @@ export async function loginAdmin(_prevState: unknown, formData: FormData) {
 
     let data: {
       success?: boolean;
-      data?: { user: { id: string; name?: string; firstName?: string; lastName?: string; email: string; role: string; avatar?: string | null }; token: string };
+      data?: { user: { id: string; name?: string; firstName?: string; lastName?: string; email: string; role: string; avatar?: string | null; mustChangePassword?: boolean }; token: string };
       error?: { message?: string; code?: string };
       message?: string;
     } | null = null;
@@ -78,7 +78,8 @@ export async function loginAdmin(_prevState: unknown, formData: FormData) {
         cookieOptions
       );
 
-      redirect(adminHomeForRole(user.role));
+      // Mot de passe temporaire donné par l'administrateur : il faut d'abord en choisir un nouveau
+      redirect(user.mustChangePassword ? '/admin/mot-de-passe' : adminHomeForRole(user.role));
     }
 
     const errorMsg =

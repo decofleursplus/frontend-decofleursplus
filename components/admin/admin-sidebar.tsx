@@ -10,12 +10,13 @@ import type { AdminSessionUser } from '@/lib/api/auth-token';
 import { AdminProfileDialog } from '@/components/admin/admin-profile-dialog';
 import { LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { canAccessAdminPath } from '@/lib/admin/access';
+import { canAccessAdminPath, firstAccessiblePath } from '@/lib/admin/access';
 import { ADMIN_NAV_GROUPS, isAdminNavActive } from '@/lib/admin/navigation';
 
 export function AdminSidebar({ initialUser }: { initialUser?: AdminSessionUser | null } = {}) {
   const pathname = usePathname();
-  const { isCollapsed, toggleSidebar, currentUser: contextUser, setCurrentUser } = useAdminSidebar();
+  const { isCollapsed, toggleSidebar, currentUser: contextUser, setCurrentUser, access } = useAdminSidebar();
+  const homeHref = firstAccessiblePath(access);
   const currentUser = contextUser ?? initialUser ?? null;
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
 
@@ -32,7 +33,7 @@ export function AdminSidebar({ initialUser }: { initialUser?: AdminSessionUser |
       {isCollapsed ? (
         <div className="flex flex-col items-center gap-2 py-3 px-2 border-b border-white/10">
           <Link
-            href="/admin/tableau-de-bord"
+            href={homeHref}
             className="flex items-center justify-center py-1 hover:opacity-85 transition-opacity"
             title="Décofleur Plus - Tableau de bord"
           >
@@ -59,7 +60,7 @@ export function AdminSidebar({ initialUser }: { initialUser?: AdminSessionUser |
       ) : (
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 gap-2">
           <Link
-            href="/admin/tableau-de-bord"
+            href={homeHref}
             className="flex items-center justify-center flex-1 py-1 hover:opacity-85 transition-opacity"
             title="Décofleur Plus"
           >
@@ -89,7 +90,7 @@ export function AdminSidebar({ initialUser }: { initialUser?: AdminSessionUser |
       <nav className="admin-sidebar-nav">
         {ADMIN_NAV_GROUPS.map((group) => ({
           ...group,
-          items: group.items.filter((item) => canAccessAdminPath(currentUser?.role ?? 'ADMIN', item.href)),
+          items: group.items.filter((item) => canAccessAdminPath(access, item.href)),
         }))
           .filter((group) => group.items.length > 0)
           .map((group, gi) => (
