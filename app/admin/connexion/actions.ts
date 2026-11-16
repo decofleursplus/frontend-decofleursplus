@@ -14,7 +14,8 @@ export async function loginAdmin(_prevState: unknown, formData: FormData) {
   }
 
   try {
-    const res = await fetch(`${API_BASE_URL}/auth/login`, {
+    // Formulaire du back-office : le serveur n’ouvre ici que les comptes de l’équipe
+    const res = await fetch(`${API_BASE_URL}/auth/login?portal=admin`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

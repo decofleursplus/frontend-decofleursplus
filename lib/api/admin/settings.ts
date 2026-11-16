@@ -1,5 +1,5 @@
 import { apiClient } from '../client';
-import type { QuoteFormSettings } from '../settings';
+import type { AnnouncementBar, QuoteFormSettings } from '../settings';
 
 export type { QuoteFormSettings, QuoteProjectOptions, QuoteProjectType } from '../settings';
 
@@ -228,4 +228,14 @@ export async function updateRolePermissions(
 /** Revient aux droits par défaut de tous les rôles (administrateur). */
 export async function resetRolePermissions(): Promise<RolesAndPermissions> {
   return apiClient.post<RolesAndPermissions>('/admin/roles/permissions/reset', undefined, { useAdminToken: true });
+}
+
+/** Bandeau d'annonce du site (droit « voir » du module Annonces). */
+export async function getAnnouncementBar(): Promise<AnnouncementBar> {
+  return apiClient.get<AnnouncementBar>('/admin/settings/announcement-bar', { useAdminToken: true, cache: 'no-store' });
+}
+
+/** Modifie le bandeau d'annonce du site (droit « envoyer » du module Annonces). */
+export async function updateAnnouncementBar(bar: AnnouncementBar): Promise<AnnouncementBar> {
+  return apiClient.put<AnnouncementBar>('/admin/settings/announcement-bar', bar, { useAdminToken: true });
 }

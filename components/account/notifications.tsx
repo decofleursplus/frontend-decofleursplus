@@ -19,7 +19,8 @@ const PAGE_SIZE = 20;
 
 /** Préférences réellement prises en compte par le serveur (email + catégories). */
 const PREFERENCE_ITEMS: { key: keyof NotificationPreferences; label: string; desc: string }[] = [
-  { key: 'emailEnabled', label: 'Recevoir aussi par email', desc: 'Suivi de livraison (en route, livrée) envoyé à votre adresse email.' },
+  { key: 'emailEnabled', label: 'Recevoir aussi par email', desc: 'Suivi de livraison (en route, livrée) et annonces de la boutique envoyés à votre adresse email.' },
+  { key: 'promotions', label: 'Annonces de la boutique par email', desc: 'Nouveautés, fêtes et offres ; elles restent visibles dans vos notifications.' },
   { key: 'orderUpdates', label: 'Suivi de mes commandes', desc: 'Confirmation, préparation, paiement, annulation.' },
   { key: 'deliveryUpdates', label: 'Suivi de mes livraisons', desc: 'Livreur en route, livraison effectuée ou échouée.' },
 ];

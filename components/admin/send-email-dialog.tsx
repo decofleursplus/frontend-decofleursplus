@@ -212,7 +212,7 @@ function SendEmailDialogInner({
                 onChange={(e) => setSendCopy(e.target.checked)}
                 className="rounded border-[#e7e4dd] text-[#24582d] focus:ring-[#24582d]/20 accent-[#24582d]"
               />
-              <span>M&apos;envoyer une copie en CCI (contact@decofleurplus.com)</span>
+              <span>M&apos;envoyer une copie en CCI (contact@decofleursplus.com)</span>
             </label>
           </div>
 

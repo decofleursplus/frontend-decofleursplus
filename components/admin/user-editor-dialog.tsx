@@ -284,7 +284,7 @@ function UserEditorForm({
               value={email}
               disabled={isEditing}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="nom@decofleurplus.sn"
+              placeholder="nom@decofleursplus.com"
               className="pl-9 text-xs h-9"
             />
           </div>

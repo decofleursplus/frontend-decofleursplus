@@ -91,7 +91,8 @@ export interface PlaceOrderPayload extends QuoteCartPayload {
 
 export interface CustomerOrderItem {
   id: string;
-  productId: string;
+  /** null : ligne libre (commande créée depuis un devis), sans produit du catalogue */
+  productId: string | null;
   variantId: string | null;
   productName: string;
   variantName: string | null;
