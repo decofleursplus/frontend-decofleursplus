@@ -7,10 +7,12 @@ import { ArrowLeft, Save, Loader2, Plus, Trash2, Copy, EyeOff } from 'lucide-rea
 import { toast } from 'sonner';
 import { ApiClientError } from '@/lib/api/client';
 import { ImageUploader } from '@/components/admin/image-uploader';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import {
   PRODUCT_STATUS_LABELS,
   duplicateAdminProduct,
   getCategoryOptions,
+  hideAdminProduct,
   removeAdminProduct,
   saveAdminProduct,
   type AdminProductDto,
@@ -44,6 +46,10 @@ const errorMessage = (err: unknown) =>
  */
 export function ProductForm({ product }: { product?: AdminProductDto }) {
   const router = useRouter();
+  // Dupliquer et masquer : droit « Modifier » ; suppression définitive : droit « Supprimer »
+  const can = useAdminCan();
+  const canWrite = can('produits', 'write');
+  const canDelete = can('produits', 'delete');
   const [categories, setCategories] = useState<CategoryOption[] | null>(null);
   const [name, setName] = useState(product?.name ?? '');
   const [description, setDescription] = useState(product?.description ?? '');
@@ -125,14 +131,23 @@ export function ProductForm({ product }: { product?: AdminProductDto }) {
     }
   };
 
-  const hideOrDelete = async (permanent: boolean) => {
+  const hide = async () => {
     if (!product) return;
-    const question = permanent
-      ? `Supprimer définitivement « ${product.name} » ? (impossible s'il a déjà été commandé)`
-      : `Masquer « ${product.name} » de la boutique ?`;
-    if (!window.confirm(question)) return;
+    if (!window.confirm(`Masquer « ${product.name} » de la boutique ?`)) return;
     try {
-      const res = await removeAdminProduct(product.id, permanent);
+      await hideAdminProduct(product.id);
+      toast.success('Produit masqué de la boutique.');
+      router.push('/admin/produits');
+    } catch (err) {
+      toast.error(errorMessage(err));
+    }
+  };
+
+  const remove = async () => {
+    if (!product) return;
+    if (!window.confirm(`Supprimer définitivement « ${product.name} » ? (impossible s'il a déjà été commandé)`)) return;
+    try {
+      const res = await removeAdminProduct(product.id, true);
       toast.success(res.deleted ? 'Produit supprimé définitivement.' : 'Produit masqué de la boutique.');
       router.push('/admin/produits');
     } catch (err) {
@@ -163,15 +178,15 @@ export function ProductForm({ product }: { product?: AdminProductDto }) {
         <div className="flex flex-wrap gap-2">
           {product && (
             <>
-              <button type="button" onClick={() => void duplicate()} className="inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border border-[#e7e4dd] text-xs font-semibold">
+              <button type="button" hidden={!canWrite} onClick={() => void duplicate()} className="inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border border-[#e7e4dd] text-xs font-semibold">
                 <Copy className="h-3.5 w-3.5" /> Dupliquer
               </button>
-              {product.status !== 'HIDDEN' && (
-                <button type="button" onClick={() => void hideOrDelete(false)} className="inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border border-[#e7e4dd] text-xs font-semibold">
+              {product.status !== 'HIDDEN' && canWrite && (
+                <button type="button" onClick={() => void hide()} className="inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border border-[#e7e4dd] text-xs font-semibold">
                   <EyeOff className="h-3.5 w-3.5" /> Masquer
                 </button>
               )}
-              <button type="button" onClick={() => void hideOrDelete(true)} className="inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border border-red-200 text-red-600 text-xs font-semibold">
+              <button type="button" hidden={!canDelete} onClick={() => void remove()} className="inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border border-red-200 text-red-600 text-xs font-semibold">
                 <Trash2 className="h-3.5 w-3.5" /> Supprimer
               </button>
             </>

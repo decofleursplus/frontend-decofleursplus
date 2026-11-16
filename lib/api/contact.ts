@@ -71,3 +71,18 @@ export async function getNewsletterSubscribers(params: { search?: string; active
     },
   });
 }
+
+/** Supprime définitivement un message (droit Messages › Supprimer). */
+export async function deleteContactMessage(id: string): Promise<void> {
+  await apiClient.delete(`/admin/contact-messages/${id}`, admin);
+}
+
+/** Désinscrit (false) ou réinscrit (true) un abonné à la newsletter (droit Messages › Modifier). */
+export async function setNewsletterSubscriberActive(id: string, isActive: boolean): Promise<NewsletterSubscriber> {
+  return apiClient.patch<NewsletterSubscriber>(`/admin/newsletter/subscribers/${id}`, { isActive }, admin);
+}
+
+/** Supprime définitivement un abonné, pour une demande d'effacement (droit Messages › Supprimer). */
+export async function deleteNewsletterSubscriber(id: string): Promise<void> {
+  await apiClient.delete(`/admin/newsletter/subscribers/${id}`, admin);
+}

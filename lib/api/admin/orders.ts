@@ -1,4 +1,6 @@
-import { apiClient } from '../client';
+import { ApiClientError, apiClient } from '../client';
+import { API_BASE_URL } from '../config';
+import { getAdminAuthToken } from '../auth-token';
 import type { AdminOrder, OrderStatus } from '@/lib/admin/mock-data/types';
 
 const admin = { useAdminToken: true as const, cache: 'no-store' as const };
@@ -152,6 +154,57 @@ export async function getAdminOrders(filters: AdminOrdersFilters = {}): Promise<
       sort: filters.sort,
     },
   });
+}
+
+export interface AdminOrdersCsvExport {
+  blob: Blob;
+  filename: string;
+  /** Nombre de commandes exportées (en-tête X-Total-Count) */
+  count: number;
+}
+
+/**
+ * Export CSV des commandes (GET /admin/orders/export) avec les mêmes filtres que la liste, sans pagination.
+ * La réponse n'est pas l'enveloppe JSON habituelle : on la lit en Blob avec le jeton du back-office.
+ */
+export async function exportAdminOrdersCsv(filters: Omit<AdminOrdersFilters, 'page' | 'limit'> = {}): Promise<AdminOrdersCsvExport> {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries({
+    status: filters.status,
+    paymentStatus: filters.paymentStatus,
+    deliveryMode: filters.deliveryMode,
+    search: filters.search,
+    from: filters.from,
+    to: filters.to,
+    sort: filters.sort,
+  })) {
+    if (value) params.append(key, value);
+  }
+  const query = params.toString();
+  const token = getAdminAuthToken();
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/admin/orders/export${query ? `?${query}` : ''}`, {
+      headers: { Accept: 'text/csv', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      cache: 'no-store',
+    });
+  } catch {
+    throw new ApiClientError('Impossible de contacter le serveur DécoFleur Plus. Veuillez vérifier votre connexion.', 'NETWORK_ERROR', 0);
+  }
+
+  if (!response.ok) {
+    const json = (await response.json().catch(() => null)) as { error?: { message?: string; code?: string } } | null;
+    throw new ApiClientError(
+      json?.error?.message ?? `Export impossible (${response.status})`,
+      json?.error?.code ?? 'EXPORT_FAILED',
+      response.status,
+    );
+  }
+
+  const disposition = response.headers.get('Content-Disposition') ?? '';
+  const filename = /filename="?([^";]+)"?/.exec(disposition)?.[1] ?? `commandes-${new Date().toISOString().slice(0, 10)}.csv`;
+  return { blob: await response.blob(), filename, count: Number(response.headers.get('X-Total-Count') ?? 0) };
 }
 
 /** Détail ; null si la commande n'existe pas (404). */

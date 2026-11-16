@@ -50,8 +50,10 @@ const errorMessage = (err: unknown, fallback: string) => (err instanceof ApiClie
 
 export default function AdminLocationPage() {
   const [activeTab, setActiveTab] = useState<Tab>('calendrier');
-  // Fiches du matériel : droit « Modifier » du module Matériel de location
-  const canManageEquipment = useAdminCan()('materiel-location', 'write');
+  // Fiches du matériel : droits « Modifier » et « Supprimer » du module Matériel de location
+  const can = useAdminCan();
+  const canManageEquipment = can('materiel-location', 'write');
+  const canDeleteEquipment = can('materiel-location', 'delete');
 
   // Rafraîchissement croisé (planning + liste) après chaque modification
   const [refreshKey, setRefreshKey] = useState(0);
@@ -486,14 +488,18 @@ export default function AdminLocationPage() {
                     >
                       {eq.itemStatus === 'AVAILABLE' ? 'En catalogue' : eq.itemStatus === 'MAINTENANCE' ? 'En maintenance' : 'Retiré du catalogue'}
                     </span>
-                    {canManageEquipment && (
+                    {(canManageEquipment || canDeleteEquipment) && (
                       <div className="flex items-center gap-1.5">
-                        <button type="button" onClick={() => openEquipmentDrawer(eq)} className="p-1.5 rounded-lg border border-border hover:bg-muted text-gray-700 cursor-pointer" title="Modifier l'équipement" aria-label={`Modifier ${eq.name}`}>
-                          <Pencil size={14} />
-                        </button>
-                        <button type="button" onClick={() => setDeleteTarget(eq)} className="p-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 cursor-pointer" title="Supprimer du catalogue" aria-label={`Supprimer ${eq.name}`}>
-                          <Trash2 size={14} />
-                        </button>
+                        {canManageEquipment && (
+                          <button type="button" onClick={() => openEquipmentDrawer(eq)} className="p-1.5 rounded-lg border border-border hover:bg-muted text-gray-700 cursor-pointer" title="Modifier l'équipement" aria-label={`Modifier ${eq.name}`}>
+                            <Pencil size={14} />
+                          </button>
+                        )}
+                        {canDeleteEquipment && (
+                          <button type="button" onClick={() => setDeleteTarget(eq)} className="p-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 cursor-pointer" title="Supprimer du catalogue" aria-label={`Supprimer ${eq.name}`}>
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>

@@ -90,11 +90,15 @@ export async function updateAdminCoupon(id: string, data: Partial<AdminCoupon>):
   return transformAdminCoupon(res);
 }
 
-export async function deleteAdminCoupon(id: string): Promise<boolean> {
-  await apiClient.delete(`/admin/marketing/coupons/${id}`, {
+/**
+ * Supprime un code jamais utilisé ; un code qui a déjà servi est seulement désactivé
+ * (commandes et statistiques conservées) : `{ deleted: false, deactivated: true }`.
+ */
+export async function deleteAdminCoupon(id: string): Promise<{ deleted: boolean; deactivated: boolean }> {
+  const res = await apiClient.delete<{ deleted?: boolean; deactivated?: boolean }>(`/admin/marketing/coupons/${id}`, {
     useAdminToken: true,
   });
-  return true;
+  return { deleted: res?.deleted !== false, deactivated: Boolean(res?.deactivated) };
 }
 
 // ==========================================

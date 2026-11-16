@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Search, RefreshCw, Loader2, ShoppingBag, Eye } from 'lucide-react';
+import { Search, RefreshCw, Loader2, ShoppingBag, Eye, Download } from 'lucide-react';
 import { AdminPagination } from '@/components/admin/admin-pagination';
 import { toast } from 'sonner';
 import {
@@ -13,6 +13,7 @@ import {
   PAYMENT_METHOD_LABELS,
   PAYMENT_STATUS_LABELS,
   changeAdminOrderStatus,
+  exportAdminOrdersCsv,
   getAdminOrders,
   type AdminOrderDetail,
   type AdminOrdersFilters,
@@ -34,6 +35,7 @@ export default function AdminOrdersPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const [status, setStatus] = useState<BackendOrderStatus | 'all'>('all');
   const [deliveryMode, setDeliveryMode] = useState<AdminOrdersFilters['deliveryMode'] | 'all'>('all');
@@ -94,6 +96,32 @@ export default function AdminOrdersPage() {
     }
   };
 
+  /** Export CSV de toutes les commandes correspondant aux filtres affichés (sans pagination). */
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const { blob, filename, count } = await exportAdminOrdersCsv({
+        status: status === 'all' ? undefined : status,
+        deliveryMode: deliveryMode === 'all' ? undefined : deliveryMode,
+        search: search || undefined,
+        sort,
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success(`${count} commande${count > 1 ? 's' : ''} exportée${count > 1 ? 's' : ''}.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Export impossible.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const allCount = counts ? Object.values(counts).reduce((a, b) => a + b, 0) : 0;
   /** Action principale proposée dans la liste (l'annulation, qui demande un motif, se fait depuis le détail). */
   const nextStep = (o: AdminOrderDetail) =>
@@ -106,14 +134,25 @@ export default function AdminOrdersPage() {
           <h1 className="admin-page-title text-[#1e2a1f] font-bold">Gestion des commandes</h1>
           <p className="admin-page-subtitle text-gray-500 mt-1">Suivez et traitez les commandes de vos clients.</p>
         </div>
-        <button
-          type="button"
-          onClick={refresh}
-          disabled={refreshing}
-          className="inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border border-[#e7e4dd] bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} /> Actualiser
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => void exportCsv()}
+            disabled={exporting}
+            title="Exporte toutes les commandes correspondant aux filtres affichés"
+            className="inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border border-[#e7e4dd] bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+          >
+            {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />} Exporter (CSV)
+          </button>
+          <button
+            type="button"
+            onClick={refresh}
+            disabled={refreshing}
+            className="inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border border-[#e7e4dd] bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} /> Actualiser
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-1">
