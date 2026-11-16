@@ -101,3 +101,18 @@ export async function respondToQuote(id: string, decision: 'ACCEPTED' | 'REFUSED
     ...(comment?.trim() ? { comment: comment.trim() } : {}),
   });
 }
+
+/** Devis consulté depuis le lien personnel reçu par email (client inscrit ou non). */
+export type SharedQuote = QuoteItem & { customerName: string };
+
+export async function getSharedQuote(token: string): Promise<SharedQuote> {
+  return apiClient.get<SharedQuote>(`/quotes/shared/${encodeURIComponent(token)}`, { cache: 'no-store' });
+}
+
+/** Accepter ou refuser depuis le lien personnel (sans compte). */
+export async function respondToSharedQuote(token: string, decision: 'ACCEPTED' | 'REFUSED', comment?: string): Promise<SharedQuote> {
+  return apiClient.post<SharedQuote>(`/quotes/shared/${encodeURIComponent(token)}/respond`, {
+    decision,
+    ...(comment?.trim() ? { comment: comment.trim() } : {}),
+  });
+}
