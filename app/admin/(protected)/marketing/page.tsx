@@ -261,10 +261,10 @@ export default function AdminMarketingPage() {
   };
 
   /** Exécute une action serveur puis recharge les données ; aucune mise à jour locale en cas d'échec. */
-  const runAction = async (action: () => Promise<unknown>, success: string): Promise<boolean> => {
+  const runAction = async <T,>(action: () => Promise<T>, success: string | ((result: T) => string)): Promise<boolean> => {
     try {
-      await action();
-      toast.success(success);
+      const result = await action();
+      toast.success(typeof success === 'function' ? success(result) : success);
       await loadData(true);
       return true;
     } catch (err) {
@@ -292,8 +292,15 @@ export default function AdminMarketingPage() {
 
   const handleDeleteCoupon = async (couponId: string) => {
     const cp = coupons.find((c) => c.id === couponId);
-    if (!window.confirm(`Supprimer le code ${cp?.code ?? ''} ?`)) return;
-    await runAction(() => deleteAdminCoupon(couponId), 'Code promotionnel supprimé.');
+    const used = (cp?.currentUsageCount ?? 0) > 0;
+    const question = used
+      ? `Le code ${cp?.code ?? ''} a déjà servi : il sera désactivé et son historique conservé. Continuer ?`
+      : `Supprimer le code ${cp?.code ?? ''} ?`;
+    if (!window.confirm(question)) return;
+    await runAction(
+      () => deleteAdminCoupon(couponId),
+      (res) => (res.deactivated ? 'Code désactivé : il a déjà servi, son historique est conservé.' : 'Code promotionnel supprimé.'),
+    );
   };
 
   const handleTogglePromotionStatus = async (promoId: string) => {

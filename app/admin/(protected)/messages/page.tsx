@@ -1,12 +1,24 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Mail, Search, Loader2, RefreshCw, Archive, MailOpen, Reply, Download, Users } from 'lucide-react';
+import { Mail, Search, Loader2, RefreshCw, Archive, MailOpen, Reply, Download, Users, Trash2, BellOff, BellRing } from 'lucide-react';
 import { toast } from 'sonner';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import {
+  deleteContactMessage,
+  deleteNewsletterSubscriber,
   getContactMessages,
   getNewsletterSubscribers,
   setContactMessageStatus,
+  setNewsletterSubscriberActive,
   type ContactMessage,
   type ContactMessageStatus,
   type NewsletterSubscriber,
@@ -15,6 +27,57 @@ import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 
 const STATUS_LABELS: Record<ContactMessageStatus, string> = { NEW: 'Non lus', READ: 'Lus', ARCHIVED: 'Archivés' };
 const dateTime = (iso: string) => new Date(iso).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+/** Action sensible en attente de confirmation (suppression, désinscription). */
+interface PendingAction {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  danger: boolean;
+  /** Exécute l'action ; une erreur est affichée et la fenêtre reste ouverte. */
+  run: () => Promise<void>;
+}
+
+/** L'action reste affichée pendant l'animation de fermeture : seul `open` repasse à false. */
+function ConfirmActionDialog({ action, open, onClose }: { action: PendingAction | null; open: boolean; onClose: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const confirm = async () => {
+    if (!action) return;
+    setBusy(true);
+    try {
+      await action.run();
+      onClose();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Action impossible.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Dialog open={open && action !== null} onOpenChange={(next) => !next && !busy && onClose()}>
+      <DialogContent className="grid-cols-1 sm:max-w-md bg-white border border-[#e7e4dd] p-6 rounded-2xl shadow-xl">
+        <DialogHeader>
+          <DialogTitle className="text-lg font-bold text-gray-900">{action?.title}</DialogTitle>
+          <DialogDescription className="text-sm text-gray-600">{action?.description}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="-mx-6 -mb-6 px-6 rounded-b-2xl border-[#f0ede6] gap-2">
+          <Button type="button" variant="outline" onClick={onClose} disabled={busy} className="border-[#e7e4dd]">
+            Annuler
+          </Button>
+          <Button
+            type="button"
+            onClick={() => void confirm()}
+            disabled={busy}
+            className={`${action?.danger ? 'bg-rose-600 hover:bg-rose-700' : 'bg-[#24582d] hover:bg-[#1d4724]'} text-white gap-1.5`}
+          >
+            {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {action?.confirmLabel}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 /** Messages du formulaire de contact et inscrits à la lettre d'information. */
 export default function AdminMessagesPage() {
@@ -46,6 +109,13 @@ export default function AdminMessagesPage() {
 function MessagesTab() {
   const can = useAdminCan();
   const canWrite = can('messages', 'write');
+  const canDelete = can('messages', 'delete');
+  const [pending, setPendingAction] = useState<PendingAction | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const setPending = (action: PendingAction) => {
+    setPendingAction(action);
+    setConfirmOpen(true);
+  };
   const [status, setStatus] = useState<ContactMessageStatus | 'all'>('NEW');
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -82,6 +152,20 @@ function MessagesTab() {
       toast.error(err instanceof Error ? err.message : 'Action impossible.');
     }
   };
+
+  const askDelete = (m: ContactMessage) =>
+    setPending({
+      title: 'Supprimer ce message ?',
+      description: `Le message de ${m.name} (${m.email}) sera définitivement effacé, par exemple à la suite d’une demande de suppression de ses données. Pour simplement le ranger, utilisez « Archiver ».`,
+      confirmLabel: 'Supprimer le message',
+      danger: true,
+      run: async () => {
+        await deleteContactMessage(m.id);
+        toast.success('Message supprimé.');
+        setOpenId(null);
+        await load();
+      },
+    });
 
   const open = (m: ContactMessage) => {
     setOpenId(openId === m.id ? null : m.id);
@@ -159,6 +243,9 @@ function MessagesTab() {
                         <Archive className="h-3.5 w-3.5" /> Archiver
                       </button>
                     )}
+                    <button type="button" onClick={() => askDelete(m)} hidden={!canDelete} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-rose-200 text-rose-700 font-semibold hover:bg-rose-50">
+                      <Trash2 className="h-3.5 w-3.5" /> Supprimer
+                    </button>
                   </div>
                 </div>
               )}
@@ -166,11 +253,21 @@ function MessagesTab() {
           ))}
         </ul>
       )}
+      <ConfirmActionDialog action={pending} open={confirmOpen} onClose={() => setConfirmOpen(false)} />
     </div>
   );
 }
 
 function NewsletterTab() {
+  const can = useAdminCan();
+  const canWrite = can('messages', 'write');
+  const canDelete = can('messages', 'delete');
+  const [pending, setPendingAction] = useState<PendingAction | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const setPending = (action: PendingAction) => {
+    setPendingAction(action);
+    setConfirmOpen(true);
+  };
   const [active, setActive] = useState<'true' | 'false' | 'all'>('true');
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -196,6 +293,34 @@ function NewsletterTab() {
     const timer = window.setTimeout(() => setSearch(searchInput.trim()), 300);
     return () => window.clearTimeout(timer);
   }, [searchInput]);
+
+  const askSetActive = (sub: NewsletterSubscriber, isActive: boolean) =>
+    setPending({
+      title: isActive ? 'Réinscrire cette adresse ?' : 'Désinscrire cette adresse ?',
+      description: isActive
+        ? `${sub.email} recevra de nouveau la newsletter. À faire uniquement à la demande de la personne.`
+        : `${sub.email} ne recevra plus la newsletter ni les offres par email liées à son compte client. L’inscription reste visible dans la liste des désinscrits.`,
+      confirmLabel: isActive ? 'Réinscrire' : 'Désinscrire',
+      danger: false,
+      run: async () => {
+        await setNewsletterSubscriberActive(sub.id, isActive);
+        toast.success(isActive ? 'Adresse réinscrite.' : 'Adresse désinscrite.');
+        await load();
+      },
+    });
+
+  const askDelete = (sub: NewsletterSubscriber) =>
+    setPending({
+      title: 'Supprimer cet abonné ?',
+      description: `${sub.email} sera définitivement effacée de la liste (demande d’effacement des données) et les offres par email de son compte client seront coupées.`,
+      confirmLabel: 'Supprimer l’abonné',
+      danger: true,
+      run: async () => {
+        await deleteNewsletterSubscriber(sub.id);
+        toast.success('Abonné supprimé.');
+        await load();
+      },
+    });
 
   const exportCsv = (rows: NewsletterSubscriber[]) => {
     const csv = ['email;inscrit_le;source;actif', ...rows.map((r) => `${r.email};${r.createdAt.slice(0, 10)};${r.source};${r.isActive ? 'oui' : 'non'}`)].join('\n');
@@ -242,13 +367,16 @@ function NewsletterTab() {
         <div className="bg-white rounded-2xl border border-[#e7e4dd] p-10 text-center text-xs text-gray-500">Aucun inscrit pour ces critères.</div>
       ) : (
         <div className="bg-white rounded-2xl border border-[#e7e4dd] overflow-x-auto">
-          <table className="w-full text-left text-xs min-w-[520px]">
+          <table className="w-full text-left text-xs min-w-[640px]">
             <thead className="bg-[#faf8f4] border-b border-[#e7e4dd] font-bold">
               <tr>
                 <th className="px-4 py-3">Email</th>
                 <th className="px-4 py-3">Inscrit le</th>
                 <th className="px-4 py-3">Source</th>
                 <th className="px-4 py-3">Statut</th>
+                <th className="px-4 py-3 text-right" hidden={!canWrite && !canDelete}>
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#f0ede6]">
@@ -258,12 +386,34 @@ function NewsletterTab() {
                   <td className="px-4 py-3">{new Date(s.createdAt).toLocaleDateString('fr-FR')}</td>
                   <td className="px-4 py-3">{s.source}</td>
                   <td className="px-4 py-3">{s.isActive ? 'Actif' : `Désinscrit${s.unsubscribedAt ? ` le ${new Date(s.unsubscribedAt).toLocaleDateString('fr-FR')}` : ''}`}</td>
+                  <td className="px-4 py-3" hidden={!canWrite && !canDelete}>
+                    <div className="flex justify-end gap-1.5">
+                      <button
+                        type="button"
+                        hidden={!canWrite}
+                        onClick={() => askSetActive(s, !s.isActive)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[#e7e4dd] font-semibold whitespace-nowrap hover:bg-[#faf8f4]"
+                      >
+                        {s.isActive ? <BellOff className="h-3.5 w-3.5" /> : <BellRing className="h-3.5 w-3.5" />}
+                        {s.isActive ? 'Désinscrire' : 'Réinscrire'}
+                      </button>
+                      <button
+                        type="button"
+                        hidden={!canDelete}
+                        onClick={() => askDelete(s)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-rose-200 text-rose-700 font-semibold whitespace-nowrap hover:bg-rose-50"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" /> Supprimer
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
+      <ConfirmActionDialog action={pending} open={confirmOpen} onClose={() => setConfirmOpen(false)} />
     </div>
   );
 }

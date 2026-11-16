@@ -43,6 +43,7 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -184,8 +185,12 @@ function PlanBadge({ plan, plans }: { plan: SubscriptionPlan; plans: AdminSubscr
 
 export default function AdminAbonnementsPage() {
   const [view, setView] = useState<'abonnements' | 'formules'>('abonnements');
-  // Formules : droit « Modifier » du module Formules d'abonnement
-  const canEditPlans = useAdminCan()('formules-abonnement', 'write');
+  // Droits de la matrice : formules (modifier / supprimer), statut des abonnements, passages
+  const can = useAdminCan();
+  const canEditPlans = can('formules-abonnement', 'write');
+  const canDeletePlans = can('formules-abonnement', 'delete');
+  const canEditStatus = can('abonnements', 'write');
+  const canEditDeliveries = can('tournees-abonnement', 'write');
 
   // ── Catalogue des formules (libellés, filtre, gestion) ──
   const [plans, setPlans] = useState<AdminSubscriptionPlan[] | null>(null);
@@ -557,6 +562,7 @@ export default function AdminAbonnementsPage() {
           plans={plans}
           loadError={plansError}
           canEdit={canEditPlans}
+          canDelete={canDeletePlans}
           onChanged={reloadPlans}
           onRetry={() => setPlansRetry((n) => n + 1)}
         />
@@ -804,13 +810,16 @@ export default function AdminAbonnementsPage() {
                         <MoreHorizontal className="w-4 h-4" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="text-xs">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => openDetail(sub.id)}>
-                          <Eye className="w-3.5 h-3.5 mr-2 text-stone-500" />
-                          Consulter la fiche
-                        </DropdownMenuItem>
-                        {(sub.status === 'ACTIVE' || sub.status === 'PAUSED') && <DropdownMenuSeparator />}
-                        {renderStatusActions(sub, 'menu')}
+                        {/* Base UI : le libellé doit être dans un groupe, sinon le menu fait planter la page */}
+                        <DropdownMenuGroup>
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => openDetail(sub.id)}>
+                            <Eye className="w-3.5 h-3.5 mr-2 text-stone-500" />
+                            Consulter la fiche
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                        {canEditStatus && (sub.status === 'ACTIVE' || sub.status === 'PAUSED') && <DropdownMenuSeparator />}
+                        {canEditStatus && renderStatusActions(sub, 'menu')}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -1046,7 +1055,7 @@ export default function AdminAbonnementsPage() {
                               >
                                 {DELIVERY_STATUS_LABELS[delivery.status]}
                               </span>
-                              {!isEditing && (
+                              {!isEditing && canEditDeliveries && (
                                 <button
                                   type="button"
                                   aria-label={`Modifier le passage du ${formatDate(delivery.scheduledDate)}`}
@@ -1174,13 +1183,15 @@ export default function AdminAbonnementsPage() {
                 )}
               </div>
 
-              {/* Statut */}
-              <div className="space-y-2 pt-4 border-t border-stone-200">
-                <h4 className="text-xs font-semibold text-stone-900 uppercase tracking-wider mb-2">
-                  Gestion du statut
-                </h4>
-                {renderStatusActions(detail, 'buttons')}
-              </div>
+              {/* Statut : droit « Modifier » du module Abonnements */}
+              {canEditStatus && (
+                <div className="space-y-2 pt-4 border-t border-stone-200">
+                  <h4 className="text-xs font-semibold text-stone-900 uppercase tracking-wider mb-2">
+                    Gestion du statut
+                  </h4>
+                  {renderStatusActions(detail, 'buttons')}
+                </div>
+              )}
             </div>
           )}
         </SheetContent>

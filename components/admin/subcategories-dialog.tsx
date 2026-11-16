@@ -5,6 +5,7 @@ import { Loader2, Plus, Trash2, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import type { AdminCategory } from '@/lib/admin/mock-data/types';
 import { createAdminSubcategory, deleteAdminSubcategory, updateAdminSubcategory } from '@/lib/api/admin/categories';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 
 /** Sous-catégories d'une catégorie : ajout, renommage, suppression (via l'API). */
 export function SubcategoriesDialog({ category, onClose, onChanged }: { category: AdminCategory; onClose: () => void; onChanged: () => Promise<unknown> }) {
@@ -13,6 +14,8 @@ export function SubcategoriesDialog({ category, onClose, onChanged }: { category
     Object.fromEntries((category.subCategories ?? []).map((s) => [s.id, s.name])),
   );
   const [busy, setBusy] = useState<string | null>(null);
+  // Suppression : droit « Supprimer » du module Catégories (l'API refuse sinon)
+  const canDelete = useAdminCan()('categories', 'delete');
 
   const run = async (key: string, action: () => Promise<unknown>, success: string) => {
     setBusy(key);
@@ -67,6 +70,7 @@ export function SubcategoriesDialog({ category, onClose, onChanged }: { category
               </button>
               <button
                 type="button"
+                hidden={!canDelete}
                 disabled={busy !== null}
                 onClick={() => window.confirm(`Supprimer « ${s.name} » ?`) && void run(s.id, () => deleteAdminSubcategory(s.id), 'Sous-catégorie supprimée.')}
                 className="p-2 rounded-lg border border-red-200 text-red-600 disabled:opacity-40"

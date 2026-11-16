@@ -96,6 +96,10 @@ export type AdminCustomer = {
   notes?: string;
   internalRating?: number;
   recentOrders?: AdminOrder[];
+  /** Compte de connexion lié à la fiche CRM (null : fiche sans compte) */
+  userId?: string | null;
+  /** Adresse saisie sur la fiche CRM (hors carnet d'adresses du compte) */
+  crmAddress?: string;
 };
 
 export type AdminCategory = {
@@ -183,6 +187,8 @@ export type AdminDelivery = {
   driverVehicle?: string;
   status: DeliveryStatus;
   scheduledDate: string;
+  /** Date prévue au format AAAA-MM-JJ (champ date du formulaire de replanification), null si non planifiée */
+  scheduledDateIso?: string | null;
   timeSlot: string;
   deliveredAt?: string;
   recipientName?: string;

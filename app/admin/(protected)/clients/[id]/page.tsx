@@ -8,13 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Mail, Phone, MapPin, Calendar, Star, ShoppingBag, Gift, Loader2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, MapPin, Calendar, Star, ShoppingBag, Gift, Loader2, Trash2, Pencil, UserCheck } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SendEmailDialog } from '@/components/admin/send-email-dialog';
 import { CustomerCrmCard } from '@/components/admin/customer-crm-card';
 import { DeleteCustomerDialog } from '@/components/admin/delete-customer-dialog';
+import { CustomerFormDialog } from '@/components/admin/customer-form-dialog';
 import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import { toast } from 'sonner';
 
@@ -28,6 +29,9 @@ export default function CustomerProfilePage({ params }: { params: Promise<{ id: 
   const [loading, setLoading] = useState(true);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  // Modification de l'identité et des coordonnées ; la clé remonte le formulaire à chaque ouverture
+  const [editFormKey, setEditFormKey] = useState(0);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -170,17 +174,35 @@ export default function CustomerProfilePage({ params }: { params: Promise<{ id: 
           </Card>
 
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between gap-2">
               <CardTitle className="text-[#1e2a1f] text-base">Coordonnées</CardTitle>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                hidden={!canWrite}
+                onClick={() => {
+                  setEditFormKey((k) => k + 1);
+                  setIsEditModalOpen(true);
+                }}
+                className="h-8 text-xs border-[#e7e4dd] text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef]"
+              >
+                <Pencil className="mr-1.5 h-3.5 w-3.5 text-[#24582d]" />
+                Modifier
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
-              <div className="flex items-center gap-3 text-gray-600">
-                <Mail className="h-4 w-4 text-gray-400" />
-                <a href={`mailto:${customer.email}`} className="hover:text-blue-600">{customer.email}</a>
+              <div className="flex items-center gap-3 text-gray-600 min-w-0">
+                <Mail className="h-4 w-4 text-gray-400 shrink-0" />
+                <a href={`mailto:${customer.email}`} className="hover:text-blue-600 break-all">{customer.email}</a>
               </div>
               <div className="flex items-center gap-3 text-gray-600">
                 <Phone className="h-4 w-4 text-gray-400" />
-                <a href={`tel:${customer.phone}`} className="hover:text-blue-600">{customer.phone}</a>
+                {customer.phone ? (
+                  <a href={`tel:${customer.phone}`} className="hover:text-blue-600">{customer.phone}</a>
+                ) : (
+                  <span className="text-gray-400">Téléphone non renseigné</span>
+                )}
               </div>
               <div className="flex items-start gap-3 text-gray-600">
                 <MapPin className="h-4 w-4 text-gray-400 mt-0.5" />
@@ -189,6 +211,10 @@ export default function CustomerProfilePage({ params }: { params: Promise<{ id: 
               <div className="flex items-center gap-3 text-gray-600 pt-3 border-t border-[#f0eee8]">
                 <Calendar className="h-4 w-4 text-gray-400" />
                 <span>Client depuis {formatDate(customer.joinedAt)}</span>
+              </div>
+              <div className="flex items-center gap-3 text-gray-600">
+                <UserCheck className="h-4 w-4 text-gray-400" />
+                <span>{customer.userId ? 'Compte client en ligne' : 'Fiche sans compte de connexion'}</span>
               </div>
             </CardContent>
           </Card>
@@ -299,6 +325,18 @@ export default function CustomerProfilePage({ params }: { params: Promise<{ id: 
         open={isEmailModalOpen}
         onOpenChange={setIsEmailModalOpen}
         customer={customer}
+      />
+
+      {/* Identité et coordonnées (droit Clients › Modifier) */}
+      <CustomerFormDialog
+        key={editFormKey}
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        customer={customer}
+        onSaved={(updated) => {
+          setCustomer((prev) => (prev ? { ...prev, ...updated, recentOrders: prev.recentOrders } : updated));
+          toast.success('Coordonnées enregistrées.');
+        }}
       />
 
       {/* Suppression (ou anonymisation si historique) puis retour à la liste */}

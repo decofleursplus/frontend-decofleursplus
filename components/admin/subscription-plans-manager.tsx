@@ -38,12 +38,14 @@ interface Props {
   plans: AdminSubscriptionPlan[] | null;
   loadError: string | null;
   canEdit: boolean;
+  /** Droit « Supprimer » du module Formules d'abonnement */
+  canDelete: boolean;
   onChanged: () => Promise<void> | void;
   onRetry: () => void;
 }
 
 /** Catalogue des formules d'abonnement : création, modification, activation, ordre d'affichage. */
-export function SubscriptionPlansManager({ plans, loadError, canEdit, onChanged, onRetry }: Props) {
+export function SubscriptionPlansManager({ plans, loadError, canEdit, canDelete, onChanged, onRetry }: Props) {
   const [editing, setEditing] = useState<AdminSubscriptionPlan | 'new' | null>(null);
   const [busyCode, setBusyCode] = useState<string | null>(null);
   const [toDelete, setToDelete] = useState<AdminSubscriptionPlan | null>(null);
@@ -169,9 +171,9 @@ export function SubscriptionPlansManager({ plans, loadError, canEdit, onChanged,
                 </ul>
               )}
 
-              {canEdit && (
+              {(canEdit || canDelete) && (
                 <footer className="mt-auto flex flex-wrap items-center gap-1.5 border-t border-stone-100 pt-3">
-                  <Button type="button" size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={() => setEditing(plan)}>
+                  <Button type="button" size="sm" variant="outline" className="h-8 text-xs gap-1" hidden={!canEdit} onClick={() => setEditing(plan)}>
                     <Edit className="h-3.5 w-3.5" /> Modifier
                   </Button>
                   <Button
@@ -179,6 +181,7 @@ export function SubscriptionPlansManager({ plans, loadError, canEdit, onChanged,
                     size="sm"
                     variant="outline"
                     className="h-8 text-xs gap-1"
+                    hidden={!canEdit}
                     disabled={busyCode !== null}
                     onClick={() =>
                       run(
@@ -195,6 +198,7 @@ export function SubscriptionPlansManager({ plans, loadError, canEdit, onChanged,
                     <button
                       type="button"
                       className="p-1.5 rounded-md border border-stone-200 disabled:opacity-30"
+                      hidden={!canEdit}
                       disabled={index === 0 || busyCode !== null}
                       onClick={() => move(index, -1)}
                       aria-label={`Monter ${plan.name}`}
@@ -204,6 +208,7 @@ export function SubscriptionPlansManager({ plans, loadError, canEdit, onChanged,
                     <button
                       type="button"
                       className="p-1.5 rounded-md border border-stone-200 disabled:opacity-30"
+                      hidden={!canEdit}
                       disabled={index === (plans?.length ?? 0) - 1 || busyCode !== null}
                       onClick={() => move(index, 1)}
                       aria-label={`Descendre ${plan.name}`}
@@ -213,6 +218,7 @@ export function SubscriptionPlansManager({ plans, loadError, canEdit, onChanged,
                     <button
                       type="button"
                       className="p-1.5 rounded-md border border-red-100 text-red-600 hover:bg-red-50 disabled:opacity-30"
+                      hidden={!canDelete}
                       disabled={busyCode !== null || plan.subscriptionsCount > 0}
                       title={plan.subscriptionsCount > 0 ? 'Des abonnements utilisent cette formule : désactivez-la plutôt' : 'Supprimer la formule'}
                       onClick={() => setToDelete(plan)}

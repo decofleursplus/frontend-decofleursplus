@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import type { AdminDelivery, DeliveryStatus } from '@/lib/admin/mock-data/types';
+import { DELIVERY_TIME_SLOTS, type DeliveryTimeSlot } from '@/lib/api/admin/deliveries';
 import {
   Sheet,
   SheetContent,
@@ -23,6 +25,8 @@ import {
   Bike,
   Package,
   Calendar,
+  CalendarClock,
+  Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -36,6 +40,14 @@ interface DeliveryDetailSheetProps {
   onOpenComplete?: (delivery: AdminDelivery) => void;
   /** Compte sans droit de modification des livraisons : fiche consultable, sans bouton d'action. */
   readOnly?: boolean;
+  /** Replanification (date, créneau) et consignes ; renvoie true si l'enregistrement a réussi. */
+  onReschedule?: (deliveryId: string, body: DeliveryRescheduleBody) => Promise<boolean>;
+}
+
+export interface DeliveryRescheduleBody {
+  scheduledDate?: string | null;
+  timeSlot?: DeliveryTimeSlot | null;
+  notes?: string | null;
 }
 
 export function DeliveryDetailSheet({
@@ -46,8 +58,14 @@ export function DeliveryDetailSheet({
   onOpenAssignDriver,
   onOpenComplete,
   readOnly = false,
+  onReschedule,
 }: DeliveryDetailSheetProps) {
+  // Formulaire « Replanifier / notes » ouvert pour cette livraison
+  const [rescheduleFor, setRescheduleFor] = useState<string | null>(null);
+
   if (!delivery) return null;
+  const canReschedule = !readOnly && Boolean(onReschedule) && delivery.status !== 'livree';
+  const rescheduling = canReschedule && rescheduleFor === delivery.id;
 
   const getStatusBadge = (status: DeliveryStatus) => {
     switch (status) {
@@ -200,6 +218,18 @@ export function DeliveryDetailSheet({
               </Button>
             )}
 
+            {canReschedule && !rescheduling && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setRescheduleFor(delivery.id)}
+                className="text-xs h-8 border-[#e7e4dd] text-gray-700 hover:bg-[#faf8f4] gap-1.5 font-medium"
+              >
+                <CalendarClock className="h-3.5 w-3.5" />
+                Replanifier / notes
+              </Button>
+            )}
+
             <Button
               size="sm"
               variant="outline"
@@ -214,6 +244,19 @@ export function DeliveryDetailSheet({
 
         {/* Content Body */}
         <div className="p-6 space-y-6 flex-1 text-xs">
+          {rescheduling && onReschedule && (
+            <RescheduleForm
+              key={`${delivery.id}-${delivery.scheduledDateIso ?? ''}-${delivery.timeSlot}-${delivery.notes ?? ''}`}
+              delivery={delivery}
+              onCancel={() => setRescheduleFor(null)}
+              onSave={async (body) => {
+                const ok = await onReschedule(delivery.id, body);
+                if (ok) setRescheduleFor(null);
+                return ok;
+              }}
+            />
+          )}
+
           {/* Tracking Stepper */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
@@ -361,6 +404,7 @@ export function DeliveryDetailSheet({
                 </div>
                 <Button
                   size="sm"
+                  hidden={readOnly}
                   onClick={() => onOpenAssignDriver(delivery)}
                   className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs h-7 font-medium shrink-0"
                 >
@@ -426,5 +470,105 @@ export function DeliveryDetailSheet({
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+const todayInput = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+/** Date prévue, créneau et consignes de la livraison (seuls les champs modifiés sont envoyés). */
+function RescheduleForm({
+  delivery,
+  onCancel,
+  onSave,
+}: {
+  delivery: AdminDelivery;
+  onCancel: () => void;
+  onSave: (body: DeliveryRescheduleBody) => Promise<boolean>;
+}) {
+  const initialDate = delivery.scheduledDateIso ?? '';
+  const initialSlot = (DELIVERY_TIME_SLOTS as readonly string[]).includes(delivery.timeSlot) ? delivery.timeSlot : '';
+  const initialNotes = delivery.notes ?? '';
+  const [date, setDate] = useState(initialDate);
+  const [slot, setSlot] = useState(initialSlot);
+  const [notes, setNotes] = useState(initialNotes);
+  const [saving, setSaving] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const body: DeliveryRescheduleBody = {};
+    if (date !== initialDate) {
+      if (date && date < todayInput()) {
+        toast.error('Choisissez une date à partir d’aujourd’hui.');
+        return;
+      }
+      body.scheduledDate = date || null;
+    }
+    if (slot !== initialSlot) body.timeSlot = (slot || null) as DeliveryTimeSlot | null;
+    if (notes.trim() !== initialNotes.trim()) body.notes = notes.trim() || null;
+    if (Object.keys(body).length === 0) {
+      toast.info('Aucune modification à enregistrer.');
+      return;
+    }
+    setSaving(true);
+    await onSave(body);
+    setSaving(false);
+  };
+
+  return (
+    <form onSubmit={submit} className="space-y-3 rounded-xl border border-[#c1647a]/30 bg-[#fdf3f5]/50 p-4" aria-label="Replanifier la livraison">
+      <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+        <CalendarClock className="h-3.5 w-3.5 text-[#c1647a]" />
+        Replanifier / consignes
+      </h4>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <label className="space-y-1 block">
+          <span className="font-semibold text-gray-700">Date prévue</span>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="w-full h-9 rounded-md border border-[#e7e4dd] bg-white px-2.5 text-xs text-gray-900"
+          />
+        </label>
+        <label className="space-y-1 block">
+          <span className="font-semibold text-gray-700">Créneau</span>
+          <select
+            value={slot}
+            onChange={(e) => setSlot(e.target.value)}
+            className="w-full h-9 rounded-md border border-[#e7e4dd] bg-white px-2.5 text-xs text-gray-900"
+          >
+            <option value="">Aucun créneau</option>
+            {DELIVERY_TIME_SLOTS.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <label className="space-y-1 block">
+        <span className="font-semibold text-gray-700">Consignes de livraison</span>
+        <textarea
+          rows={3}
+          maxLength={1000}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Ex : appeler le destinataire 15 min avant, sonner au portail…"
+          className="w-full rounded-md border border-[#e7e4dd] bg-white p-2.5 text-xs text-gray-900 resize-none"
+        />
+      </label>
+      <div className="flex justify-end gap-2">
+        <Button type="button" size="sm" variant="outline" onClick={onCancel} disabled={saving} className="text-xs h-8 border-[#e7e4dd]">
+          Annuler
+        </Button>
+        <Button type="submit" size="sm" disabled={saving} className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs h-8 gap-1.5">
+          {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+          Enregistrer
+        </Button>
+      </div>
+    </form>
   );
 }

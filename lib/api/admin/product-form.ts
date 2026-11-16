@@ -77,6 +77,14 @@ export async function saveAdminProduct(id: string | null, payload: ProductPayloa
     : apiClient.post<AdminProductDto>('/admin/products', payload, admin);
 }
 
+/**
+ * Masque le produit (statut « Brouillon / Inactif ») par la modification de la fiche :
+ * droit « Modifier » du module Produits, contrairement à la suppression.
+ */
+export async function hideAdminProduct(id: string): Promise<AdminProductDto> {
+  return apiClient.patch<AdminProductDto>(`/admin/products/${id}`, { status: 'HIDDEN' satisfies AdminProductStatus }, admin);
+}
+
 /** Masque le produit (par défaut) ou le supprime définitivement s'il n'a jamais été commandé. */
 export async function removeAdminProduct(id: string, permanent: boolean): Promise<{ deleted: boolean }> {
   return apiClient.delete<{ deleted: boolean }>(`/admin/products/${id}`, { ...admin, params: { permanent: permanent ? 'true' : undefined } });
