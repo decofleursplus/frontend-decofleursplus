@@ -15,11 +15,10 @@ import { Breadcrumbs } from '@/components/seo/breadcrumbs';
 import { ArticleInteractions } from '@/components/blog/article-interactions';
 import type { BlogArticle } from '@/lib/admin/mock-data/types';
 
-export const dynamicParams = true;
-
-export function generateStaticParams() {
-  return [];
-}
+// Rendu à chaque requête : l'article est lu dans l'API sans cache. Une page « statique » sans chemin
+// pré-généré (generateStaticParams vide) faisait échouer en production (erreur 500) tout article publié
+// après le déploiement : Next refuse qu'une page statique devienne dynamique au moment du rendu.
+export const dynamic = 'force-dynamic';
 
 async function fetchArticleData(slug: string): Promise<{
   article: BlogArticle;
