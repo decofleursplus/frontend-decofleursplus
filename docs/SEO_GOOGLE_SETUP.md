@@ -14,7 +14,7 @@ Ce guide fournit les procédures pas-à-pas destinées à la direction et à l'�
 Google Search Console est l'outil indispensable fourni gratuitement par Google pour superviser la présence du site dans les résultats de recherche, soumettre les plans de site (*sitemaps*) et détecter les erreurs d'exploration.
 
 ### 1.1 Étape 1 : Créer la Propriété
-1. Connectez-vous sur [Google Search Console](https://search.google.com/search-console) avec l'adresse email professionnelle de l'entreprise (ex: `contact@decofleurplus.com` ou le compte Google officiel).
+1. Connectez-vous sur [Google Search Console](https://search.google.com/search-console) avec l'adresse email professionnelle de l'entreprise (ex: `contact@decofleursplus.com` ou le compte Google officiel).
 2. Cliquez sur **Ajouter la propriété**.
 3. Choisissez le type de propriété **Domaine** (recommandé car il couvre l'ensemble des sous-domaines et protocoles http/https) :
    - Saisissez : `decofleurplus.com`

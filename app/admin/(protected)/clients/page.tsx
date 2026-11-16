@@ -49,10 +49,12 @@ import {
   Check,
   RefreshCw,
   Loader2,
+  Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { SendEmailDialog } from '@/components/admin/send-email-dialog';
+import { DeleteCustomerDialog } from '@/components/admin/delete-customer-dialog';
 import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import { toast } from 'sonner';
 
@@ -68,6 +70,7 @@ const SEGMENT_OPTIONS: { value: 'PARTICULIER' | 'VIP' | 'ENTREPRISE'; label: str
 export default function AdminCustomersPage() {
   const can = useAdminCan();
   const canWrite = can('clients', 'write');
+  const canDelete = can('clients', 'delete');
   const [customers, setCustomers] = useState<AdminCustomer[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -196,6 +199,10 @@ export default function AdminCustomersPage() {
     useState<AdminCustomer | null>(null);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
 
+  // Suppression (ou anonymisation si le client a un historique)
+  const [selectedCustomerForDelete, setSelectedCustomerForDelete] = useState<AdminCustomer | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
   // Sync draft filters when opening drawer
   const handleOpenFilterDrawer = (open: boolean) => {
     if (open) {
@@ -300,6 +307,11 @@ export default function AdminCustomersPage() {
   const handleOpenEmailDialog = (customer: AdminCustomer) => {
     setSelectedCustomerForEmail(customer);
     setIsEmailModalOpen(true);
+  };
+
+  const handleOpenDeleteDialog = (customer: AdminCustomer) => {
+    setSelectedCustomerForDelete(customer);
+    setIsDeleteModalOpen(true);
   };
 
   return (
@@ -869,6 +881,18 @@ export default function AdminCustomersPage() {
                             </DropdownMenuGroup>
                           </>
                         )}
+                        {canDelete && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="cursor-pointer text-rose-700 font-medium"
+                              onClick={() => handleOpenDeleteDialog(customer)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4 text-rose-600" />
+                              Supprimer le client
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -987,6 +1011,17 @@ export default function AdminCustomersPage() {
                   <Mail className="h-3.5 w-3.5" />
                   Email
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  hidden={!canDelete}
+                  onClick={() => handleOpenDeleteDialog(customer)}
+                  aria-label={`Supprimer le client ${customer.name}`}
+                  className="h-8 text-xs border-rose-200 text-rose-700 hover:bg-rose-50 font-medium gap-1.5"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Supprimer
+                </Button>
               </div>
               <label className="flex items-center justify-between gap-2 text-xs text-gray-600">
                 <span>Segment</span>
@@ -1037,6 +1072,14 @@ export default function AdminCustomersPage() {
         open={isEmailModalOpen}
         onOpenChange={setIsEmailModalOpen}
         customer={selectedCustomerForEmail}
+      />
+
+      {/* Delete Customer Modal */}
+      <DeleteCustomerDialog
+        open={isDeleteModalOpen}
+        onOpenChange={setIsDeleteModalOpen}
+        customer={selectedCustomerForDelete}
+        onDeleted={() => void loadCustomers()}
       />
     </div>
   );

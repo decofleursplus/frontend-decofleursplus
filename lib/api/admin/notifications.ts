@@ -4,7 +4,6 @@
 
 import { apiClient } from '../client';
 import {
-  PaginatedResponse,
   NotificationType,
   NotificationPriority,
   BroadcastTarget,
@@ -24,6 +23,10 @@ export interface AdminNotification {
   readAt?: string | null;
 }
 
+/** Canaux d'une annonce : notification dans l'espace client et/ou copie par email. */
+export type AnnouncementChannel = 'IN_APP' | 'EMAIL';
+
+/** Annonce envoyée aux clients (historique). */
 export interface NotificationBroadcast {
   id: string;
   title: string;
@@ -31,11 +34,14 @@ export interface NotificationBroadcast {
   targetType: BroadcastTarget;
   targetSegment?: string | null;
   targetCustomers: string[];
-  channels: string[];
+  channels: AnnouncementChannel[];
+  /** Comptes clients visés */
+  recipientCount: number;
+  /** Emails réellement envoyés */
+  emailCount: number;
   status: BroadcastStatus;
-  totalSent: number;
+  sentAt?: string | null;
   createdAt: string;
-  scheduledAt?: string | null;
 }
 
 export interface SendBroadcastPayload {
@@ -43,11 +49,19 @@ export interface SendBroadcastPayload {
   message: string;
   target: {
     type: BroadcastTarget;
+    /** PARTICULIER, ENTREPRISE ou VIP */
     segment?: string;
     customerIds?: string[];
   };
-  channels?: string[];
-  scheduledAt?: string | null;
+  channels: AnnouncementChannel[];
+}
+
+export interface BroadcastSent {
+  id: string;
+  recipientCount: number;
+  emailCount: number;
+  status: BroadcastStatus;
+  sentAt: string;
 }
 
 export interface ListAdminNotificationsParams {
@@ -136,26 +150,15 @@ export async function markAllAdminNotificationsAsRead(): Promise<{ message: stri
   );
 }
 
-/**
- * Diffuse une notification broadcast manuelle (tous les utilisateurs, un segment ou une liste d'utilisateurs)
- */
-export async function sendBroadcastNotification(
-  payload: SendBroadcastPayload,
-): Promise<NotificationBroadcast> {
-  return apiClient.post<NotificationBroadcast>('/admin/notifications/send', payload, {
-    useAdminToken: true,
-  });
+/** Envoie une annonce aux clients (immédiatement). */
+export async function sendBroadcastNotification(payload: SendBroadcastPayload): Promise<BroadcastSent> {
+  return apiClient.post<BroadcastSent>('/admin/notifications/send', payload, { useAdminToken: true });
 }
 
-/**
- * Consulte l'historique des diffusions broadcasts
- */
+/** Historique des annonces envoyées. */
 export async function getNotificationBroadcasts(options?: {
   page?: number;
   limit?: number;
-}): Promise<PaginatedResponse<NotificationBroadcast>> {
-  return apiClient.get<PaginatedResponse<NotificationBroadcast>>('/admin/notifications/broadcasts', {
-    useAdminToken: true,
-    params: options,
-  });
+}): Promise<{ broadcasts: NotificationBroadcast[]; pagination: { total: number; page: number; limit: number; totalPages: number } }> {
+  return apiClient.get('/admin/notifications/broadcasts', { useAdminToken: true, cache: 'no-store', params: options });
 }

@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
-import { FileSpreadsheet, Search, Send, Eye, Plus, Trash2, RefreshCw, Loader2, Check, X, Lock, Save } from 'lucide-react';
+import { FileSpreadsheet, Search, Send, Eye, Plus, Trash2, RefreshCw, Loader2, Check, X, Lock, Save, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
 import { AdminPagination } from '@/components/admin/admin-pagination';
@@ -13,12 +13,22 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import type { LandscapeQuote, QuoteStatus } from '@/lib/admin/mock-data/types';
 import {
   QUOTE_NEXT_STATUSES,
+  convertAdminQuoteToOrder,
   getAdminQuotes,
   saveAdminQuoteProposal,
   sendAdminQuoteProposal,
   updateAdminQuoteStatus,
   type AdminQuotesResponse,
+  type ConvertQuotePayload,
 } from '@/lib/api/admin/quotes';
+import {
+  DELIVERY_MODE_LABELS,
+  PAYMENT_METHOD_LABELS,
+  TIME_SLOTS,
+  type DeliveryMode,
+  type OrderPaymentMethod,
+  type TimeSlot,
+} from '@/lib/api/orders';
 import { ApiClientError } from '@/lib/api/client';
 import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 
@@ -119,9 +129,141 @@ const draftFromQuote = (q: LandscapeQuote): Draft => ({
   guests: q.estimatedGuests ? String(q.estimatedGuests) : '',
 });
 
+/** AAAA-MM-JJ du jour (fuseau du navigateur). */
+const todayIso = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+const dialogInputCls = 'w-full p-2 rounded-lg border border-border bg-white outline-none text-xs focus:ring-1 focus:ring-[#193e23]';
+
+/**
+ * Confirmation de la conversion d'un devis accepté en commande : livraison (préremplie avec le lieu et la date
+ * de l'événement) et moyen de paiement. Remonté à chaque ouverture (clé) pour repartir des valeurs du devis.
+ */
+function ConvertQuoteDialog({
+  quote,
+  busy,
+  onCancel,
+  onConfirm,
+}: {
+  quote: LandscapeQuote | null;
+  busy: boolean;
+  onCancel: () => void;
+  onConfirm: (payload: ConvertQuotePayload) => void;
+}) {
+  const today = todayIso();
+  const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>('STANDARD');
+  const [address, setAddress] = useState(quote?.location ?? '');
+  // Date de l'événement, sauf si elle est déjà passée (à planifier ensuite depuis la commande)
+  const [date, setDate] = useState(quote?.desiredDate && quote.desiredDate >= today ? quote.desiredDate : '');
+  const [timeSlot, setTimeSlot] = useState<TimeSlot | ''>('');
+  const [paymentMethod, setPaymentMethod] = useState<OrderPaymentMethod>('WAVE');
+
+  const pickup = deliveryMode === 'PICKUP';
+  const addressMissing = !pickup && address.trim().length < 3;
+  const datePast = date !== '' && date < today;
+  const lineCount = quote?.quoteItems?.length ?? 0;
+
+  const submit = () =>
+    onConfirm({
+      deliveryMode,
+      ...(pickup ? {} : { deliveryAddress: address.trim() }),
+      deliveryDate: date || null,
+      timeSlot: timeSlot || null,
+      paymentMethod,
+    });
+
+  return (
+    <Dialog open={quote !== null} onOpenChange={(open) => !open && !busy && onCancel()}>
+      <DialogContent overlayClassName="z-[10000]" className="z-[10001] sm:max-w-md bg-white rounded-2xl p-6">
+        <DialogHeader>
+          <DialogTitle>Convertir le devis {quote?.quoteNumber} en commande ?</DialogTitle>
+          <DialogDescription>
+            La commande reprend {lineCount > 1 ? `les ${lineCount} lignes` : lineCount === 1 ? 'la ligne' : 'le montant'} du devis
+            ({(quote?.quoteAmount ?? 0).toLocaleString('fr-FR')} FCFA, sans frais de livraison). Elle est créée en attente de
+            paiement et le client reçoit la confirmation de commande.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3 text-xs">
+          <label className="block space-y-1">
+            <span className="font-semibold text-muted-foreground">Mode de livraison</span>
+            <select value={deliveryMode} onChange={(e) => setDeliveryMode(e.target.value as DeliveryMode)} className={dialogInputCls}>
+              {(Object.keys(DELIVERY_MODE_LABELS) as DeliveryMode[]).map((mode) => (
+                <option key={mode} value={mode}>
+                  {DELIVERY_MODE_LABELS[mode]}
+                </option>
+              ))}
+            </select>
+          </label>
+          {!pickup && (
+            <label className="block space-y-1">
+              <span className="font-semibold text-muted-foreground">Adresse de livraison</span>
+              <input
+                type="text"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                className={`${dialogInputCls} ${addressMissing ? 'border-amber-300' : ''}`}
+              />
+            </label>
+          )}
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block space-y-1">
+              <span className="font-semibold text-muted-foreground">{pickup ? 'Date de retrait' : 'Date de livraison'}</span>
+              <input type="date" min={today} value={date} onChange={(e) => setDate(e.target.value)} className={dialogInputCls} />
+            </label>
+            <label className="block space-y-1">
+              <span className="font-semibold text-muted-foreground">Créneau</span>
+              <select value={timeSlot} onChange={(e) => setTimeSlot(e.target.value as TimeSlot | '')} className={dialogInputCls}>
+                <option value="">Non précisé</option>
+                {TIME_SLOTS.map((slot) => (
+                  <option key={slot} value={slot}>
+                    {slot}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          {!date && <p className="text-[11px] text-muted-foreground">Sans date, la livraison sera planifiée depuis la commande.</p>}
+          {datePast && <p className="text-[11px] text-red-600">La date ne peut pas être dans le passé.</p>}
+          <label className="block space-y-1">
+            <span className="font-semibold text-muted-foreground">Moyen de paiement</span>
+            <select
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value as OrderPaymentMethod)}
+              className={dialogInputCls}
+            >
+              {(Object.keys(PAYMENT_METHOD_LABELS) as OrderPaymentMethod[]).map((method) => (
+                <option key={method} value={method}>
+                  {PAYMENT_METHOD_LABELS[method]}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <DialogFooter className="gap-2">
+          <Button type="button" variant="outline" disabled={busy} onClick={onCancel}>
+            Annuler
+          </Button>
+          <Button
+            type="button"
+            disabled={busy || addressMissing || datePast}
+            onClick={submit}
+            className="bg-[#193e23] hover:bg-[#12301a] text-white"
+          >
+            {busy && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+            Créer la commande
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function AdminDevisPage() {
   const can = useAdminCan();
   const canWrite = can('devis', 'write');
+  const canReadOrders = can('commandes', 'read');
   const [quotes, setQuotes] = useState<LandscapeQuote[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -142,6 +284,8 @@ export default function AdminDevisPage() {
   const [pendingStatus, setPendingStatus] = useState<QuoteStatus | null>(null);
   const [confirmClose, setConfirmClose] = useState(false);
   const [justChanged, setJustChanged] = useState<QuoteStatus | null>(null);
+  const [convertOpen, setConvertOpen] = useState(false);
+  const [converting, setConverting] = useState(false);
 
   const setStatusFilter = (s: 'all' | QuoteStatus) => {
     setStatusFilterState(s);
@@ -225,6 +369,7 @@ export default function AdminDevisPage() {
       return;
     }
     setConfirmClose(false);
+    setConvertOpen(false);
     setSelectedQuote(null);
     setDraft(null);
   };
@@ -342,6 +487,24 @@ export default function AdminDevisPage() {
       toast.error(errorMessage(err, 'Erreur lors de la mise à jour du statut'));
     } finally {
       setStatusBusy(null);
+    }
+  };
+
+  /** Devis accepté → commande ; le devis passe « Converti en commande ». */
+  const convertToOrder = async (payload: ConvertQuotePayload) => {
+    if (!selectedQuote) return;
+    setConverting(true);
+    try {
+      const { quote, order } = await convertAdminQuoteToOrder(selectedQuote.id, payload);
+      applyUpdated(quote);
+      setJustChanged(quote.status);
+      setConvertOpen(false);
+      toast.success(`Commande ${order.orderNumber} créée`, { description: `Depuis le devis ${quote.quoteNumber || ''}` });
+      void reloadList();
+    } catch (err) {
+      toast.error(errorMessage(err, 'Erreur lors de la création de la commande'));
+    } finally {
+      setConverting(false);
     }
   };
 
@@ -645,7 +808,32 @@ export default function AdminDevisPage() {
                 </p>
               )}
               <div className="flex flex-wrap items-center gap-2 pt-1">
-                {nextStatuses.length === 0 && !canSend ? (
+                {selectedQuote.status === 'acceptee' ? (
+                  <>
+                    <span className="text-xs text-muted-foreground mr-1">Accepté par le client : la commande n’a pas encore été créée.</span>
+                    <button
+                      type="button"
+                      hidden={!canWrite}
+                      disabled={converting}
+                      onClick={() => setConvertOpen(true)}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#193e23] hover:bg-[#12301a] text-white text-xs font-semibold shadow-sm transition-colors disabled:opacity-50"
+                    >
+                      <ShoppingBag size={13} /> Convertir en commande
+                    </button>
+                  </>
+                ) : selectedQuote.status === 'terminee' && selectedQuote.convertedOrderNumber ? (
+                  <span className="inline-flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                    <ShoppingBag size={13} /> Converti en commande {selectedQuote.convertedOrderNumber}.
+                    {canReadOrders && selectedQuote.convertedOrderId && (
+                      <Link
+                        href={`/admin/commandes/${selectedQuote.convertedOrderId}`}
+                        className="font-semibold text-[#193e23] underline hover:text-[#c1647a]"
+                      >
+                        Voir la commande {selectedQuote.convertedOrderNumber}
+                      </Link>
+                    )}
+                  </span>
+                ) : nextStatuses.length === 0 && !canSend ? (
                   <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Lock size={13} /> Ce devis est clôturé, son statut ne peut plus changer.
                   </span>
@@ -874,6 +1062,15 @@ export default function AdminDevisPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Conversion d'un devis accepté en commande */}
+      <ConvertQuoteDialog
+        key={convertOpen && selectedQuote ? `ouvert-${selectedQuote.id}` : 'ferme'}
+        quote={convertOpen ? selectedQuote : null}
+        busy={converting}
+        onCancel={() => setConvertOpen(false)}
+        onConfirm={(payload) => void convertToOrder(payload)}
+      />
 
       {/* Modifications non enregistrées */}
       <Dialog open={confirmClose} onOpenChange={setConfirmClose}>

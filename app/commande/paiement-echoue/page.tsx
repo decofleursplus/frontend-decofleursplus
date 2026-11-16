@@ -85,10 +85,10 @@ function PaymentFailedContent() {
       // Les articles sont remis dans le panier pour pouvoir recommencer
       replace(
         order.items
-          .filter((it) => it.variantId)
+          .filter((it) => it.variantId && it.productId)
           .map((it) => ({
             lineId: buildLineId(it.variantId!, { giftWrap: it.giftWrap, cardMessage: it.cardMessage ?? '' }),
-            productId: it.productId,
+            productId: it.productId!,
             slug: '',
             name: it.productName,
             image: it.image || PRODUCT_PLACEHOLDER_IMAGE,

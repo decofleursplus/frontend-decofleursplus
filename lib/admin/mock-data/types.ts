@@ -54,7 +54,8 @@ export type StockMovement = {
 
 
 export type OrderItem = {
-  productId: string;
+  /** null : ligne libre (commande créée depuis un devis) */
+  productId: string | null;
   productName: string;
   quantity: number;
   unitPrice: number;
@@ -732,4 +733,7 @@ export type LandscapeQuote = {
   /** Valeurs brutes éditables par l'équipe */
   estimatedGuests?: number | null;
   budgetRange?: string | null;
+  /** Commande créée depuis ce devis (devis converti) */
+  convertedOrderId?: string | null;
+  convertedOrderNumber?: string | null;
 };

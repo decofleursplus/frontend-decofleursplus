@@ -262,9 +262,12 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               <User className="h-4 w-4" /> Client
             </h2>
             <strong className="block text-sm">{order.customerName}</strong>
-            <a href={`mailto:${order.customerEmail}`} className="block text-[#c1647a]">
-              {order.customerEmail}
-            </a>
+            {/* Une commande créée depuis un devis peut ne pas avoir d'adresse email */}
+            {order.customerEmail && (
+              <a href={`mailto:${order.customerEmail}`} className="block text-[#c1647a]">
+                {order.customerEmail}
+              </a>
+            )}
             <a href={`tel:${order.customerPhone}`} className="block">
               {order.customerPhone}
             </a>
