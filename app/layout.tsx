@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import './globals.css';
 import { RootShell } from '@/components/root-shell';
 import { Geist } from "next/font/google";
@@ -103,10 +104,33 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="fr" className={cn("font-sans", geist.variable)} data-scroll-behavior="smooth">
       <head>
+        <Script
+          src="https://www.googletagmanager.com/gtm.js?id=GTM-PNZS4HBX"
+          strategy="afterInteractive"
+        />
+        <Script
+          id="gtm-init"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+            `,
+          }}
+        />
         <JsonLd data={getOrganizationSchema()} />
         <JsonLd data={getFloristSchema()} />
       </head>
       <body className="min-h-screen">
+        <noscript>
+          <iframe
+            src="https://www.googletagmanager.com/ns.html?id=GTM-PNZS4HBX"
+            height="0"
+            width="0"
+            style={{ display: 'none', visibility: 'hidden' }}
+          />
+        </noscript>
         <RootShell>{children}</RootShell>
       </body>
     </html>
