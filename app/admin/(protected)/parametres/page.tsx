@@ -166,7 +166,7 @@ export default function AdminParametresPage() {
       );
     }
     if (activeTab === 'fidelite') return <LoyaltyTab key={refreshKey} canEdit={can(access, 'fidelite', 'write')} />;
-    return <ZonesTab key={refreshKey} canEdit={can(access, 'zones', 'write')} />;
+    return <ZonesTab key={refreshKey} canEdit={can(access, 'zones', 'write')} canDelete={can(access, 'zones', 'delete')} />;
   };
 
   const lastUpdate = settings ? formatDateTime(settings.updatedAt) : null;

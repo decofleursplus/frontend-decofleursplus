@@ -20,6 +20,7 @@ import {
   type AdminQuotesResponse,
 } from '@/lib/api/admin/quotes';
 import { ApiClientError } from '@/lib/api/client';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 
 type QuoteLine = { description: string; qty: number; unitPrice: number; total: number };
 
@@ -119,6 +120,8 @@ const draftFromQuote = (q: LandscapeQuote): Draft => ({
 });
 
 export default function AdminDevisPage() {
+  const can = useAdminCan();
+  const canWrite = can('devis', 'write');
   const [quotes, setQuotes] = useState<LandscapeQuote[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -202,6 +205,8 @@ export default function AdminDevisPage() {
 
   // ---------- Fiche devis ----------
   const locked = selectedQuote ? LOCKED.includes(selectedQuote.status) : true;
+  // Compte sans droit de modification : la fiche reste consultable, sans saisie possible.
+  const readOnly = locked || !canWrite;
   const dirty = useMemo(() => {
     // Un devis clôturé n'est plus modifiable : rien à enregistrer
     if (!selectedQuote || !draft || LOCKED.includes(selectedQuote.status)) return false;
@@ -601,7 +606,7 @@ export default function AdminDevisPage() {
                     Devis PDF
                   </Link>
                 )}
-                {!locked && (
+                {!readOnly && (
                   <button
                     type="button"
                     disabled={isSubmitting || !dirty}
@@ -615,6 +620,7 @@ export default function AdminDevisPage() {
                 {canSend && (
                   <button
                     type="button"
+                    hidden={!canWrite}
                     disabled={isSubmitting}
                     onClick={() => void saveCommercialProposal()}
                     className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#c8436e] hover:bg-[#b0355d] text-white text-xs font-semibold shadow-sm transition-colors disabled:opacity-50"
@@ -643,7 +649,7 @@ export default function AdminDevisPage() {
                   <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Lock size={13} /> Ce devis est clôturé, son statut ne peut plus changer.
                   </span>
-                ) : (
+                ) : !canWrite ? null : (
                   <>
                     <span className="text-xs text-muted-foreground mr-1">Faire avancer :</span>
                     {nextStatuses.map((st) => (
@@ -706,19 +712,19 @@ export default function AdminDevisPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <label className="space-y-1">
                   <span className="font-semibold text-muted-foreground">Date souhaitée</span>
-                  <input type="date" disabled={locked} value={draft.eventDate} onChange={(e) => setDraft({ ...draft, eventDate: e.target.value })} className={inputCls} />
+                  <input type="date" disabled={readOnly} value={draft.eventDate} onChange={(e) => setDraft({ ...draft, eventDate: e.target.value })} className={inputCls} />
                 </label>
                 <label className="space-y-1">
                   <span className="font-semibold text-muted-foreground">Localisation</span>
-                  <input type="text" disabled={locked} value={draft.location} onChange={(e) => setDraft({ ...draft, location: e.target.value })} className={inputCls} />
+                  <input type="text" disabled={readOnly} value={draft.location} onChange={(e) => setDraft({ ...draft, location: e.target.value })} className={inputCls} />
                 </label>
                 <label className="space-y-1">
                   <span className="font-semibold text-muted-foreground">Budget indiqué</span>
-                  <input type="text" disabled={locked} value={draft.budget} placeholder="Non spécifié" onChange={(e) => setDraft({ ...draft, budget: e.target.value })} className={inputCls} />
+                  <input type="text" disabled={readOnly} value={draft.budget} placeholder="Non spécifié" onChange={(e) => setDraft({ ...draft, budget: e.target.value })} className={inputCls} />
                 </label>
                 <label className="space-y-1">
                   <span className="font-semibold text-muted-foreground">Nombre d’invités</span>
-                  <input type="number" min={1} disabled={locked} value={draft.guests} onChange={(e) => setDraft({ ...draft, guests: e.target.value })} className={inputCls} />
+                  <input type="number" min={1} disabled={readOnly} value={draft.guests} onChange={(e) => setDraft({ ...draft, guests: e.target.value })} className={inputCls} />
                 </label>
               </div>
               <div>
@@ -731,7 +737,7 @@ export default function AdminDevisPage() {
                 <span className="text-xs font-semibold text-muted-foreground">Notes internes (non visibles par le client)</span>
                 <textarea
                   value={draft.notes}
-                  disabled={locked}
+                  disabled={readOnly}
                   onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
                   placeholder="Échanges, relances, contraintes du chantier..."
                   rows={3}
@@ -757,7 +763,7 @@ export default function AdminDevisPage() {
             <section className="pt-4 border-t border-border space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-bold text-[#173f22]">Proposition chiffrée</h4>
-                {!locked && (
+                {!readOnly && (
                   <button
                     type="button"
                     onClick={addQuoteItem}
@@ -781,11 +787,11 @@ export default function AdminDevisPage() {
                       <span className="text-[11px] font-semibold text-muted-foreground">Désignation</span>
                       <input
                         type="text"
-                        disabled={locked}
+                        disabled={readOnly}
                         value={item.description}
                         onChange={(e) => updateLine(idx, { description: e.target.value })}
                         placeholder="Ex. Arche florale de cérémonie"
-                        className={`${inputCls} ${item.description.trim().length < 2 && !locked ? 'border-amber-300' : ''}`}
+                        className={`${inputCls} ${item.description.trim().length < 2 && !readOnly ? 'border-amber-300' : ''}`}
                       />
                     </label>
                     <label className="col-span-3 sm:col-span-2 space-y-1">
@@ -793,7 +799,7 @@ export default function AdminDevisPage() {
                       <input
                         type="number"
                         min={1}
-                        disabled={locked}
+                        disabled={readOnly}
                         value={item.qty}
                         onChange={(e) => updateLine(idx, { qty: Math.max(1, Math.round(Number(e.target.value) || 1)) })}
                         className={`${inputCls} text-center`}
@@ -804,14 +810,14 @@ export default function AdminDevisPage() {
                       <input
                         type="number"
                         min={0}
-                        disabled={locked}
+                        disabled={readOnly}
                         value={item.unitPrice}
                         onChange={(e) => updateLine(idx, { unitPrice: Math.max(0, Number(e.target.value) || 0) })}
                         className={`${inputCls} text-right`}
                       />
                     </label>
                     <div className="col-span-4 sm:col-span-1 flex items-center justify-end gap-1 pb-1.5">
-                      {!locked && (
+                      {!readOnly && (
                         <button
                           type="button"
                           onClick={() => removeQuoteItem(idx)}
@@ -833,7 +839,7 @@ export default function AdminDevisPage() {
                 <span className="text-xs font-bold text-[#173f22]">Montant total</span>
                 <span className="text-base font-extrabold text-[#c8436e]">{totalQuoteAmount.toLocaleString('fr-FR')} FCFA</span>
               </div>
-              {selectedQuote.quoteAmount !== undefined && selectedQuote.quoteAmount !== totalQuoteAmount && !locked && (
+              {selectedQuote.quoteAmount !== undefined && selectedQuote.quoteAmount !== totalQuoteAmount && !readOnly && (
                 <p className="text-[11px] text-amber-700">Montant enregistré : {selectedQuote.quoteAmount.toLocaleString('fr-FR')} FCFA — enregistrez pour le mettre à jour.</p>
               )}
             </section>

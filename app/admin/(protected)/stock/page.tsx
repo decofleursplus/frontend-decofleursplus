@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Package, Search, Loader2, RefreshCw, ChevronLeft, ChevronRight, History, AlertTriangle, SlidersHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import {
   adjustVariantStock,
   getInventory,
@@ -72,6 +73,8 @@ export default function AdminStockPage() {
 }
 
 function InventoryTab() {
+  const can = useAdminCan();
+  const canWrite = can('stock', 'write');
   const [data, setData] = useState<InventoryPage | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [status, setStatus] = useState<'all' | 'low' | 'out'>('all');
@@ -204,6 +207,7 @@ function InventoryTab() {
                       min={0}
                       defaultValue={row.variant.minStockAlert}
                       key={`${row.variant.id}-${row.variant.minStockAlert}`}
+                      disabled={!canWrite}
                       onBlur={(e) => void saveThreshold(row, e.target.value)}
                       aria-label={`Seuil d’alerte de ${row.product.name} ${row.variant.name}`}
                       className="w-20 h-8 rounded-md border border-[#e7e4dd] px-2"
@@ -223,6 +227,7 @@ function InventoryTab() {
                   <td className="px-4 py-3 text-right">
                     <button
                       type="button"
+                      hidden={!canWrite}
                       onClick={() => setAdjusting(row)}
                       className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#24582d] text-white font-semibold"
                       aria-label={`Ajuster le stock de ${row.product.name} ${row.variant.name}`}

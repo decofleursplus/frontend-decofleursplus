@@ -2,13 +2,15 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Search, Receipt, Loader2, CheckCircle2, RefreshCw, Wallet, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Plus, Search, Receipt, Loader2, CheckCircle2, RefreshCw, Wallet, AlertTriangle, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
 import { AdminPagination } from '@/components/admin/admin-pagination';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import type { Supplier, SupplierInvoice, SupplierInvoiceStatus, SupplierOrder } from '@/lib/admin/mock-data/types';
 import {
   createSupplierInvoice,
+  deleteSupplierInvoice,
   getSupplierInvoices,
   getSupplierOrders,
   getSuppliers,
@@ -63,6 +65,14 @@ export default function AdminFacturesFournisseursPage() {
   const [selected, setSelected] = useState<SupplierInvoice | null>(null);
   const [detailStatus, setDetailStatus] = useState<Exclude<SupplierInvoiceStatus, 'en_retard'>>('a_payer');
   const [detailNotes, setDetailNotes] = useState('');
+  const [detailNumber, setDetailNumber] = useState('');
+  const [detailDate, setDetailDate] = useState('');
+  const [detailDue, setDetailDue] = useState('');
+  const [detailAmount, setDetailAmount] = useState('');
+  // Boutons selon les droits du compte (Paramètres › Rôles & permissions)
+  const can = useAdminCan();
+  const canWrite = can('factures-fournisseurs', 'write');
+  const canDelete = can('factures-fournisseurs', 'delete');
   const [paymentMethod, setPaymentMethod] = useState('Virement');
 
   const load = useCallback(
@@ -150,18 +160,48 @@ export default function AdminFacturesFournisseursPage() {
     setSelected(inv);
     setDetailStatus(inv.status === 'en_retard' ? 'a_payer' : inv.status);
     setDetailNotes(inv.notes ?? '');
+    setDetailNumber(inv.invoiceNumber);
+    setDetailDate(inv.date ? inv.date.slice(0, 10) : '');
+    setDetailDue(inv.dueDate ? inv.dueDate.slice(0, 10) : '');
+    setDetailAmount(String(inv.amount));
   };
 
   const saveDetail = async () => {
     if (!selected) return;
     setSaving(true);
     try {
-      await updateSupplierInvoice(selected.id, { status: detailStatus, notes: detailNotes.trim() || null });
+      // Une facture payée ne change plus de montant ni de dates : seuls le statut et les notes restent modifiables
+      const details =
+        selected.status === 'payee'
+          ? {}
+          : {
+              invoiceNumber: detailNumber.trim() || selected.invoiceNumber,
+              invoiceDate: detailDate || undefined,
+              dueDate: detailDue || undefined,
+              amount: Number(detailAmount) > 0 ? Math.round(Number(detailAmount)) : undefined,
+            };
+      await updateSupplierInvoice(selected.id, { ...details, status: detailStatus, notes: detailNotes.trim() || null });
       toast.success(`Facture ${selected.invoiceNumber} mise à jour.`);
       setSelected(null);
       await load();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Mise à jour impossible.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const removeInvoice = async () => {
+    if (!selected) return;
+    if (!window.confirm(`Supprimer définitivement la facture ${selected.invoiceNumber} de ${selected.supplierName} ?`)) return;
+    setSaving(true);
+    try {
+      await deleteSupplierInvoice(selected.id);
+      toast.success(`Facture ${selected.invoiceNumber} supprimée.`);
+      setSelected(null);
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Suppression impossible.');
     } finally {
       setSaving(false);
     }
@@ -202,7 +242,7 @@ export default function AdminFacturesFournisseursPage() {
           <button type="button" onClick={() => void load()} className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-border bg-white text-xs font-semibold hover:bg-muted">
             <RefreshCw size={14} /> Actualiser
           </button>
-          <button type="button" onClick={() => setAddOpen(true)} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b5355e] text-white text-sm font-semibold shadow-sm">
+          <button type="button" hidden={!canWrite} onClick={() => setAddOpen(true)} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b5355e] text-white text-sm font-semibold shadow-sm">
             <Plus size={18} /> Ajouter une facture
           </button>
         </div>
@@ -425,10 +465,20 @@ export default function AdminFacturesFournisseursPage() {
           size="md"
           footer={
             <div className="flex flex-wrap justify-end gap-2.5 w-full">
-              <button type="button" onClick={() => void saveDetail()} disabled={saving} className="px-4 py-2.5 rounded-xl border border-border font-semibold text-xs disabled:opacity-60">
+              {canDelete && selected.status !== 'payee' && (
+                <button
+                  type="button"
+                  onClick={() => void removeInvoice()}
+                  disabled={saving}
+                  className="mr-auto inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-red-200 text-red-600 font-semibold text-xs hover:bg-red-50 disabled:opacity-60"
+                >
+                  <Trash2 size={14} /> Supprimer
+                </button>
+              )}
+              <button type="button" hidden={!canWrite} onClick={() => void saveDetail()} disabled={saving} className="px-4 py-2.5 rounded-xl border border-border font-semibold text-xs disabled:opacity-60">
                 Enregistrer
               </button>
-              {selected.status !== 'payee' && selected.status !== 'annulee' && (
+              {canWrite && selected.status !== 'payee' && selected.status !== 'annulee' && (
                 <button
                   type="button"
                   onClick={() => void markPaid()}
@@ -452,9 +502,29 @@ export default function AdminFacturesFournisseursPage() {
                 </span>
               )}
             </div>
+            {selected.status !== 'payee' && (
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block col-span-2">
+                  <span className="block font-semibold mb-1">N° de facture</span>
+                  <input value={detailNumber} disabled={!canWrite} onChange={(e) => setDetailNumber(e.target.value)} className={inputClass} />
+                </label>
+                <label className="block">
+                  <span className="block font-semibold mb-1">Date de facture</span>
+                  <input type="date" value={detailDate} disabled={!canWrite} onChange={(e) => setDetailDate(e.target.value)} className={inputClass} />
+                </label>
+                <label className="block">
+                  <span className="block font-semibold mb-1">Échéance</span>
+                  <input type="date" value={detailDue} disabled={!canWrite} onChange={(e) => setDetailDue(e.target.value)} className={inputClass} />
+                </label>
+                <label className="block col-span-2">
+                  <span className="block font-semibold mb-1">Montant (FCFA)</span>
+                  <input type="number" min={1} value={detailAmount} disabled={!canWrite} onChange={(e) => setDetailAmount(e.target.value)} className={inputClass} />
+                </label>
+              </div>
+            )}
             <label className="block">
               <span className="block font-semibold mb-1">Statut</span>
-              <select value={detailStatus} onChange={(e) => setDetailStatus(e.target.value as typeof detailStatus)} className={inputClass}>
+              <select value={detailStatus} disabled={!canWrite} onChange={(e) => setDetailStatus(e.target.value as typeof detailStatus)} className={inputClass}>
                 {EDITABLE_STATUSES.map((s) => (
                   <option key={s} value={s}>
                     {INVOICE_STATUS_LABELS[s]}
@@ -474,7 +544,7 @@ export default function AdminFacturesFournisseursPage() {
             )}
             <label className="block">
               <span className="block font-semibold mb-1">Notes</span>
-              <textarea rows={3} value={detailNotes} onChange={(e) => setDetailNotes(e.target.value)} className={inputClass} />
+              <textarea rows={3} value={detailNotes} disabled={!canWrite} onChange={(e) => setDetailNotes(e.target.value)} className={inputClass} />
             </label>
           </div>
         </AdminDrawer>

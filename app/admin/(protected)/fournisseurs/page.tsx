@@ -19,6 +19,7 @@ import {
 import { toast } from 'sonner';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
 import type { Supplier, SupplierStatus } from '@/lib/admin/mock-data/types';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import { createSupplier, deleteSupplier, getSuppliers, updateSupplier } from '@/lib/api/admin/procurement';
 import { AdminPagination, paginate } from '@/components/admin/admin-pagination';
 
@@ -70,6 +71,10 @@ export default function AdminFournisseursPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // Boutons selon les droits du compte (Paramètres › Rôles & permissions)
+  const can = useAdminCan();
+  const canWrite = can('approvisionnements', 'write');
+  const canDelete = can('approvisionnements', 'delete');
 
   const load = useCallback(
     () =>
@@ -170,6 +175,7 @@ export default function AdminFournisseursPage() {
       </Link>
       <button
         type="button"
+        hidden={!canWrite}
         disabled={busyId === sup.id}
         onClick={() => void toggleStatus(sup)}
         className={`p-1.5 rounded-lg border transition-all disabled:opacity-50 ${
@@ -180,7 +186,7 @@ export default function AdminFournisseursPage() {
       >
         {sup.status === 'actif' ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
       </button>
-      {!sup.totalOrders && (
+      {canDelete && !sup.totalOrders && (
         <button
           type="button"
           disabled={busyId === sup.id}
@@ -212,6 +218,7 @@ export default function AdminFournisseursPage() {
           </button>
           <button
             type="button"
+            hidden={!canWrite}
             onClick={() => setIsAddModalOpen(true)}
             className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b5355e] text-white text-sm font-semibold shadow-sm"
           >

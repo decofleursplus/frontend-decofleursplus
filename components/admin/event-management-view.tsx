@@ -43,6 +43,7 @@ import {
 } from '@/lib/api/events';
 import { EVENT_TEMPLATES } from '@/lib/events-data';
 import { EditEventDialog, type EventDraft } from './edit-event-dialog';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 
 const themeLabels: Record<EventThemeColor, { label: string; dot: string; bg: string }> = {
   emerald: { label: 'Vert Atelier', dot: '#193e23', bg: '#edf8ef' },
@@ -78,6 +79,9 @@ const errorText = (err: unknown, fallback: string) => (err instanceof Error ? er
 
 /** Marketing › Événements : événements saisonniers enregistrés en base et affichés sur l'accueil. */
 export function EventManagementView() {
+  const can = useAdminCan();
+  const canWrite = can('evenements', 'write');
+  const canDelete = can('evenements', 'delete');
   const [events, setEvents] = useState<SeasonalEvent[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -299,6 +303,7 @@ export function EventManagementView() {
             <Button
               variant="outline"
               size="sm"
+              hidden={!canWrite}
               onClick={handleResetToStandard}
               disabled={busy}
               className="text-xs border-zinc-300 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-50 h-9 px-3 gap-1.5"
@@ -318,6 +323,7 @@ export function EventManagementView() {
           </Link>
 
           <Button
+            hidden={!canWrite}
             onClick={handleCreateNewEvent}
             className="bg-[#193e23] hover:bg-[#122e1a] text-white text-xs font-semibold h-9 px-3.5 gap-1.5 shadow-xs"
           >
@@ -414,7 +420,7 @@ export function EventManagementView() {
                   </div>
 
                   {/* Menu à 3 points en haut à droite */}
-                  <div className="absolute top-2.5 right-2.5">
+                  <div hidden={!canWrite && !canDelete} className="absolute top-2.5 right-2.5">
                     <DropdownMenu>
                       <DropdownMenuTrigger
                         className="h-8 w-8 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center backdrop-blur-xs transition-colors"
@@ -423,24 +429,30 @@ export function EventManagementView() {
                         <MoreVertical className="h-4 w-4" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-44">
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setEditingEvent(ev);
-                            setIsDialogOpen(true);
-                          }}
-                        >
-                          <Edit3 className="h-3.5 w-3.5 mr-2 text-zinc-500" />
-                          <span>Modifier</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDuplicate(ev)}>
-                          <Copy className="h-3.5 w-3.5 mr-2 text-zinc-500" />
-                          <span>Dupliquer</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem variant="destructive" onClick={() => setEventToDelete(ev)}>
-                          <Trash2 className="h-3.5 w-3.5 mr-2 text-red-500" />
-                          <span>Supprimer</span>
-                        </DropdownMenuItem>
+                        {canWrite && (
+                          <>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setEditingEvent(ev);
+                                setIsDialogOpen(true);
+                              }}
+                            >
+                              <Edit3 className="h-3.5 w-3.5 mr-2 text-zinc-500" />
+                              <span>Modifier</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDuplicate(ev)}>
+                              <Copy className="h-3.5 w-3.5 mr-2 text-zinc-500" />
+                              <span>Dupliquer</span>
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                        {canWrite && canDelete && <DropdownMenuSeparator />}
+                        {canDelete && (
+                          <DropdownMenuItem variant="destructive" onClick={() => setEventToDelete(ev)}>
+                            <Trash2 className="h-3.5 w-3.5 mr-2 text-red-500" />
+                            <span>Supprimer</span>
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -491,7 +503,7 @@ export function EventManagementView() {
                 <div className="flex items-center gap-2">
                   <Switch
                     checked={isLive}
-                    disabled={busy}
+                    disabled={busy || !canWrite}
                     onCheckedChange={() => handleToggleEvent(ev)}
                     className={isLive ? 'bg-[#193e23]' : 'bg-zinc-200'}
                     aria-label={`Activer ou désactiver ${ev.name}`}
@@ -508,6 +520,7 @@ export function EventManagementView() {
                 <Button
                   variant="outline"
                   size="sm"
+                  hidden={!canWrite}
                   onClick={() => {
                     setEditingEvent(ev);
                     setIsDialogOpen(true);
@@ -529,7 +542,7 @@ export function EventManagementView() {
             <p className="text-xs text-zinc-500 max-w-md mx-auto">
               Ajoutez d’un clic les événements types (Tabaski, Korité, Saint-Valentin, Fête des Mères, Noël…) puis personnalisez-les, ou créez le vôtre.
             </p>
-            <Button size="sm" onClick={importTemplates} disabled={busy} className="mt-2 text-xs bg-[#193e23] hover:bg-[#122e1a] text-white">
+            <Button size="sm" hidden={!canWrite} onClick={importTemplates} disabled={busy} className="mt-2 text-xs bg-[#193e23] hover:bg-[#122e1a] text-white">
               {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} Importer les événements types
             </Button>
           </div>

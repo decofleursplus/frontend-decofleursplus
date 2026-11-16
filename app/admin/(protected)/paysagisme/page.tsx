@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Trees, Plus, Search, Pencil, Trash2, Eye, EyeOff, Star, Loader2, Upload, ExternalLink, Heart } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import type { LandscapePrestation, LandscapeProject, LandscapeProjectCategory } from '@/lib/admin/mock-data/types';
 import { uploadAdminMedia } from '@/lib/api/admin/uploads';
 import {
@@ -47,6 +48,9 @@ const NEW_PROJECT: ProjectForm = { title: '', category: 'villas', location: '', 
 
 /** Paysagisme : prestations et réalisations publiées sur la vitrine (/paysagisme). */
 export default function AdminPaysagismePage() {
+  const can = useAdminCan();
+  const canWrite = can('paysagisme', 'write');
+  const canDelete = can('paysagisme', 'delete');
   const [activeTab, setActiveTab] = useState<'prestations' | 'realisations'>('prestations');
   const [services, setServices] = useState<LandscapePrestation[] | null>(null);
   const [projects, setProjects] = useState<LandscapeProject[] | null>(null);
@@ -234,6 +238,7 @@ export default function AdminPaysagismePage() {
           <button
             type="button"
             onClick={() => (activeTab === 'prestations' ? setServiceForm({ ...NEW_SERVICE }) : setProjectForm({ ...NEW_PROJECT }))}
+            hidden={!canWrite}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b5355e] text-white text-sm font-semibold shadow-sm"
           >
             <Plus size={18} /> {activeTab === 'prestations' ? 'Ajouter une prestation' : 'Ajouter une réalisation'}
@@ -296,6 +301,7 @@ export default function AdminPaysagismePage() {
                   <button
                     type="button"
                     disabled={busyId === s.id}
+                    hidden={!canWrite}
                     onClick={() => void run(s.id, () => updateLandscapeService(s.id, { isActive: !s.isActive }), s.isActive ? 'Prestation masquée.' : 'Prestation publiée.')}
                     className="p-1.5 rounded-lg border border-border"
                     aria-label={s.isActive ? `Masquer ${s.title}` : `Publier ${s.title}`}
@@ -318,6 +324,7 @@ export default function AdminPaysagismePage() {
                       })
                     }
                     className="p-1.5 rounded-lg border border-border"
+                    hidden={!canWrite}
                     aria-label={`Modifier ${s.title}`}
                   >
                     <Pencil size={15} />
@@ -325,6 +332,7 @@ export default function AdminPaysagismePage() {
                   <button
                     type="button"
                     disabled={busyId === s.id}
+                    hidden={!canDelete}
                     onClick={() => window.confirm(`Supprimer « ${s.title} » ?`) && void run(s.id, () => deleteLandscapeService(s.id), 'Prestation supprimée.')}
                     className="p-1.5 rounded-lg border border-red-200 text-red-600"
                     aria-label={`Supprimer ${s.title}`}
@@ -364,6 +372,7 @@ export default function AdminPaysagismePage() {
                 <button
                   type="button"
                   disabled={busyId === p.id}
+                  hidden={!canWrite}
                   onClick={() => toggleProjectFeatured(p)}
                   className={`p-1.5 rounded-lg border transition-colors ${p.featured ? 'border-amber-300 text-amber-600 bg-amber-50/60' : 'border-border hover:bg-muted'}`}
                   aria-label={p.featured ? `Retirer ${p.title} de la une` : `Mettre ${p.title} à la une (max 3)`}
@@ -374,6 +383,7 @@ export default function AdminPaysagismePage() {
                 <button
                   type="button"
                   disabled={busyId === p.id}
+                  hidden={!canWrite}
                   onClick={() => void run(p.id, () => updateLandscapeProject(p.id, { isPublished: !p.isPublished }), p.isPublished ? 'Réalisation dépubliée.' : 'Réalisation publiée.')}
                   className="p-1.5 rounded-lg border border-border"
                   aria-label={p.isPublished ? `Dépublier ${p.title}` : `Publier ${p.title}`}
@@ -396,6 +406,7 @@ export default function AdminPaysagismePage() {
                     })
                   }
                   className="p-1.5 rounded-lg border border-border"
+                  hidden={!canWrite}
                   aria-label={`Modifier ${p.title}`}
                 >
                   <Pencil size={15} />
@@ -403,6 +414,7 @@ export default function AdminPaysagismePage() {
                 <button
                   type="button"
                   disabled={busyId === p.id}
+                  hidden={!canDelete}
                   onClick={() => window.confirm(`Supprimer « ${p.title} » ?`) && void run(p.id, () => deleteLandscapeProject(p.id), 'Réalisation supprimée.')}
                   className="p-1.5 rounded-lg border border-red-200 text-red-600"
                   aria-label={`Supprimer ${p.title}`}

@@ -4,15 +4,18 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { AdminPagination } from '@/components/admin/admin-pagination';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Boxes, Plus, Search, Receipt, Trash2, Loader2, PackageCheck, Eye, RefreshCw } from 'lucide-react';
+import { Boxes, Plus, Search, Receipt, Trash2, Loader2, PackageCheck, Eye, RefreshCw, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import type { Supplier, SupplierOrder, SupplierOrderStatus } from '@/lib/admin/mock-data/types';
 import {
   ORDER_NEXT_STATUSES,
   RECEIVABLE_STATUSES,
   changeSupplierOrderStatus,
   createSupplierOrder,
+  deleteSupplierOrder,
+  updateSupplierOrder,
   getCatalogVariantOptions,
   getSupplierOrders,
   getSuppliers,
@@ -38,6 +41,9 @@ interface Line {
   unitPrice: string;
 }
 const EMPTY_LINE: Line = { variantId: '', name: '', qty: '1', unitPrice: '' };
+/** Bon modifiable (lignes comprises) / supprimable tant qu'il n'a eu aucun effet. */
+const EDITABLE_STATUSES: SupplierOrderStatus[] = ['brouillon', 'a_valider'];
+const DELETABLE_STATUSES: SupplierOrderStatus[] = ['brouillon', 'a_valider', 'annulee'];
 
 export default function AdminApprovisionnementsPage() {
   return (
@@ -73,8 +79,14 @@ function SupplierOrdersScreen() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [variants, setVariants] = useState<CatalogVariantOption[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // Boutons selon les droits du compte (Paramètres › Rôles & permissions)
+  const can = useAdminCan();
+  const canWrite = can('approvisionnements', 'write');
+  const canDelete = can('approvisionnements', 'delete');
+  const canReceive = can('receptions', 'write');
 
-  // Création
+  // Création ou modification (bon en brouillon / à valider)
+  const [editingOrder, setEditingOrder] = useState<SupplierOrder | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(params.get('nouveau') === '1');
   const [newSupplierId, setNewSupplierId] = useState(params.get('fournisseur') ?? '');
   const [expectedDate, setExpectedDate] = useState('');
@@ -141,6 +153,45 @@ function SupplierOrdersScreen() {
     setExpectedDate('');
     setDeliveryFee('0');
     setNotes('');
+    setEditingOrder(null);
+  };
+
+  const openCreate = () => {
+    if (editingOrder) resetForm();
+    setDrawerOpen(true);
+  };
+
+  const openEdit = (order: SupplierOrder) => {
+    setEditingOrder(order);
+    setNewSupplierId(order.supplierId);
+    setExpectedDate(order.expectedDate ? order.expectedDate.slice(0, 10) : '');
+    setDeliveryFee(String(order.deliveryFee));
+    setNotes(order.notes ?? '');
+    setLines(
+      order.items.length
+        ? order.items.map((i) => ({ variantId: i.variantId ?? '', name: i.name, qty: String(i.orderedQty), unitPrice: String(i.unitPrice) }))
+        : [{ ...EMPTY_LINE }],
+    );
+    setDrawerOpen(true);
+  };
+
+  const closeDrawer = () => {
+    setDrawerOpen(false);
+    if (editingOrder) resetForm();
+  };
+
+  const removeOrder = async (order: SupplierOrder) => {
+    if (!window.confirm(`Supprimer définitivement le bon de commande ${order.orderNumber} ?`)) return;
+    setBusyId(order.id);
+    try {
+      await deleteSupplierOrder(order.id);
+      toast.success(`Bon de commande ${order.orderNumber} supprimé.`);
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Suppression impossible.');
+    } finally {
+      setBusyId(null);
+    }
   };
 
   const submit = async (status: 'brouillon' | 'validee') => {
@@ -150,6 +201,25 @@ function SupplierOrdersScreen() {
       .map((l) => ({ variantId: l.variantId || null, name: l.name.trim(), orderedQty: Math.max(1, Math.round(Number(l.qty) || 0)), unitPrice: Number(l.unitPrice) || 0 }));
     if (items.length === 0) return toast.error('Ajoutez au moins une ligne (désignation, quantité, prix).');
     setSaving(true);
+    if (editingOrder) {
+      try {
+        await updateSupplierOrder(editingOrder.id, {
+          expectedDate: expectedDate || null,
+          deliveryFee: Number(deliveryFee) || 0,
+          notes: notes.trim() || null,
+          items,
+        });
+        toast.success(`Bon de commande ${editingOrder.orderNumber} mis à jour.`);
+        setDrawerOpen(false);
+        resetForm();
+        await load();
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Modification impossible.');
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
     try {
       const created = await createSupplierOrder({
         supplierId: newSupplierId,
@@ -202,7 +272,8 @@ function SupplierOrdersScreen() {
           </button>
           <button
             type="button"
-            onClick={() => setDrawerOpen(true)}
+            hidden={!canWrite}
+            onClick={openCreate}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b5355e] text-white text-sm font-semibold shadow-sm"
           >
             <Plus size={18} /> Nouvelle commande
@@ -294,7 +365,27 @@ function SupplierOrdersScreen() {
                 </div>
               </div>
               <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-border pt-3">
-                {ORDER_NEXT_STATUSES[o.status].map((next) => (
+                {canWrite && EDITABLE_STATUSES.includes(o.status) && (
+                  <button
+                    type="button"
+                    disabled={busyId === o.id}
+                    onClick={() => openEdit(o)}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border text-xs font-semibold hover:bg-muted disabled:opacity-50"
+                  >
+                    <Pencil size={13} /> Modifier
+                  </button>
+                )}
+                {canDelete && DELETABLE_STATUSES.includes(o.status) && o.items.every((i) => i.receivedQty === 0) && (
+                  <button
+                    type="button"
+                    disabled={busyId === o.id}
+                    onClick={() => void removeOrder(o)}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-red-200 text-red-600 text-xs font-semibold hover:bg-red-50 disabled:opacity-50"
+                  >
+                    <Trash2 size={13} /> Supprimer
+                  </button>
+                )}
+                {(canWrite ? ORDER_NEXT_STATUSES[o.status] : []).map((next) => (
                   <button
                     key={next}
                     type="button"
@@ -307,7 +398,7 @@ function SupplierOrdersScreen() {
                     {ACTION_LABELS[next]}
                   </button>
                 ))}
-                {RECEIVABLE_STATUSES.includes(o.status) ? (
+                {canReceive && RECEIVABLE_STATUSES.includes(o.status) ? (
                   <Link
                     href={`/admin/approvisionnements/reception/${o.id}`}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#193e23] text-white text-xs font-semibold"
@@ -341,34 +432,54 @@ function SupplierOrdersScreen() {
       )}
 
       <AdminDrawer
-        isOpen={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        title="Nouveau bon de commande"
+        isOpen={drawerOpen && canWrite}
+        onClose={closeDrawer}
+        title={editingOrder ? `Modifier le bon ${editingOrder.orderNumber}` : 'Nouveau bon de commande'}
         subtitle="Les lignes liées au catalogue alimentent le stock à la réception."
         size="lg"
         footer={
           <div className="flex flex-wrap justify-between items-center gap-2.5 w-full">
             <strong className="text-sm text-[#173f22]">Total : {formatFcfa(total)}</strong>
-            <div className="flex gap-2">
-              <button type="button" disabled={saving} onClick={() => void submit('brouillon')} className="px-4 py-2.5 rounded-xl border border-border font-semibold text-xs disabled:opacity-60">
-                Enregistrer en brouillon
-              </button>
+            {editingOrder ? (
               <button
                 type="button"
                 disabled={saving}
-                onClick={() => void submit('validee')}
+                onClick={() => void submit('brouillon')}
                 className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b5355e] text-white font-semibold text-xs disabled:opacity-60"
               >
-                {saving && <Loader2 size={14} className="animate-spin" />} Créer et valider
+                {saving && <Loader2 size={14} className="animate-spin" />} Enregistrer les modifications
               </button>
-            </div>
+            ) : (
+              <div className="flex gap-2">
+                <button type="button" disabled={saving} onClick={() => void submit('brouillon')} className="px-4 py-2.5 rounded-xl border border-border font-semibold text-xs disabled:opacity-60">
+                  Enregistrer en brouillon
+                </button>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => void submit('validee')}
+                  className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b5355e] text-white font-semibold text-xs disabled:opacity-60"
+                >
+                  {saving && <Loader2 size={14} className="animate-spin" />} Créer et valider
+                </button>
+              </div>
+            )}
           </div>
         }
       >
         <div className="space-y-4 text-xs">
           <label className="block">
             <span className="block font-semibold text-muted-foreground mb-1">Fournisseur *</span>
-            <select value={newSupplierId} onChange={(e) => setNewSupplierId(e.target.value)} className={inputClass} aria-label="Fournisseur">
+            <select
+              value={newSupplierId}
+              disabled={Boolean(editingOrder)}
+              onChange={(e) => setNewSupplierId(e.target.value)}
+              className={inputClass}
+              aria-label="Fournisseur"
+            >
+              {editingOrder && !activeSuppliers.some((s) => s.id === editingOrder.supplierId) && (
+                <option value={editingOrder.supplierId}>{editingOrder.supplierName}</option>
+              )}
               <option value="">Choisir un fournisseur actif</option>
               {activeSuppliers.map((s) => (
                 <option key={s.id} value={s.id}>

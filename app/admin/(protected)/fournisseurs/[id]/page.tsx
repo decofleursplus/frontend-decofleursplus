@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, Building2, Phone, Mail, MapPin, Pencil, Boxes, Receipt, History, Info, Loader2, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import { getSupplier, updateSupplier, type SupplierDetail } from '@/lib/api/admin/procurement';
 import { ORDER_STATUS_LABELS, INVOICE_STATUS_LABELS, formatFcfa, formatDay } from '@/lib/admin/procurement-labels';
 
@@ -20,6 +21,7 @@ export default function AdminFournisseurDetailPage({ params }: { params: Promise
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const canWrite = useAdminCan()('approvisionnements', 'write');
 
   const load = useCallback(
     () =>
@@ -173,10 +175,10 @@ export default function AdminFournisseurDetailPage({ params }: { params: Promise
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={openEdit} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-white text-xs font-semibold hover:bg-muted">
+          <button type="button" hidden={!canWrite} onClick={openEdit} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-white text-xs font-semibold hover:bg-muted">
             <Pencil size={14} /> Modifier
           </button>
-          {supplier.status === 'actif' && (
+          {canWrite && supplier.status === 'actif' && (
             <Link
               href={`/admin/approvisionnements?fournisseur=${supplier.id}&nouveau=1`}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#c8436e] hover:bg-[#b5355e] text-white text-xs font-semibold shadow-xs"

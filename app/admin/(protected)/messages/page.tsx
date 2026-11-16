@@ -11,6 +11,7 @@ import {
   type ContactMessageStatus,
   type NewsletterSubscriber,
 } from '@/lib/api/contact';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 
 const STATUS_LABELS: Record<ContactMessageStatus, string> = { NEW: 'Non lus', READ: 'Lus', ARCHIVED: 'Archivés' };
 const dateTime = (iso: string) => new Date(iso).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -43,6 +44,8 @@ export default function AdminMessagesPage() {
 }
 
 function MessagesTab() {
+  const can = useAdminCan();
+  const canWrite = can('messages', 'write');
   const [status, setStatus] = useState<ContactMessageStatus | 'all'>('NEW');
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -82,7 +85,7 @@ function MessagesTab() {
 
   const open = (m: ContactMessage) => {
     setOpenId(openId === m.id ? null : m.id);
-    if (m.status === 'NEW') void changeStatus(m, 'READ');
+    if (m.status === 'NEW' && canWrite) void changeStatus(m, 'READ');
   };
 
   return (
@@ -147,12 +150,12 @@ function MessagesTab() {
                       <Reply className="h-3.5 w-3.5" /> Répondre
                     </a>
                     {m.status !== 'NEW' && (
-                      <button type="button" onClick={() => void changeStatus(m, 'NEW')} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#e7e4dd] font-semibold">
+                      <button type="button" onClick={() => void changeStatus(m, 'NEW')} hidden={!canWrite} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#e7e4dd] font-semibold">
                         <MailOpen className="h-3.5 w-3.5" /> Marquer non lu
                       </button>
                     )}
                     {m.status !== 'ARCHIVED' && (
-                      <button type="button" onClick={() => void changeStatus(m, 'ARCHIVED')} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#e7e4dd] font-semibold">
+                      <button type="button" onClick={() => void changeStatus(m, 'ARCHIVED')} hidden={!canWrite} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#e7e4dd] font-semibold">
                         <Archive className="h-3.5 w-3.5" /> Archiver
                       </button>
                     )}
