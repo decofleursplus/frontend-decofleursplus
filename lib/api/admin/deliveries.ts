@@ -3,6 +3,7 @@ import type { AdminDelivery, DeliveryDriver, DeliveryStatus } from '@/lib/admin/
 
 /** Créneaux acceptés par le backend (identiques au tunnel de commande). */
 export const DELIVERY_TIME_SLOTS = ['9h-12h', '10h-14h', '14h-18h', '18h-20h'] as const;
+export type DeliveryTimeSlot = (typeof DELIVERY_TIME_SLOTS)[number];
 
 const VEHICLE_FROM_API: Record<string, DeliveryDriver['vehicle']> = { MOTO: 'Moto', SCOOTER: 'Scooter', VAN: 'Fourgonnette', CAR: 'Voiture' };
 const VEHICLE_TO_API: Record<DeliveryDriver['vehicle'], string> = { Moto: 'MOTO', Scooter: 'SCOOTER', Fourgonnette: 'VAN', Voiture: 'CAR' };
@@ -70,6 +71,12 @@ export interface DriverAccessCredentials {
   emailSent?: boolean;
 }
 
+/** Date ISO → AAAA-MM-JJ dans le fuseau du navigateur (même jour que la date affichée). */
+const toDateInput = (iso: string) => {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 const formatTime = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : undefined;
 
@@ -94,6 +101,7 @@ export function transformAdminDelivery(raw: ApiDelivery): AdminDelivery {
     driverVehicle: raw.driver ? [vehicle, raw.driver.vehiclePlate].filter(Boolean).join(' · ') : undefined,
     status,
     scheduledDate: raw.scheduledDate ? new Date(raw.scheduledDate).toLocaleDateString('fr-FR') : 'Non planifiée',
+    scheduledDateIso: raw.scheduledDate ? toDateInput(raw.scheduledDate) : null,
     timeSlot: raw.timeSlot ?? '',
     deliveredAt: formatTime(raw.deliveredAt),
     recipientName: raw.recipientName ?? undefined,
@@ -168,6 +176,14 @@ export async function assignDeliveryDriver(
   body: { driverId: string; timeSlot?: string; scheduledDate?: string; note?: string },
 ): Promise<AdminDelivery> {
   return transformAdminDelivery(await apiClient.post<ApiDelivery>(`/admin/deliveries/${id}/assign`, body, { useAdminToken: true }));
+}
+
+/** Replanification et consignes : date prévue (AAAA-MM-JJ), créneau et notes (PATCH /admin/deliveries/:id). */
+export async function updateAdminDelivery(
+  id: string,
+  body: { scheduledDate?: string | null; timeSlot?: DeliveryTimeSlot | null; notes?: string | null },
+): Promise<AdminDelivery> {
+  return transformAdminDelivery(await apiClient.patch<ApiDelivery>(`/admin/deliveries/${id}`, body, { useAdminToken: true }));
 }
 
 /** Départ en livraison (la commande doit être « prête » et un livreur assigné). */

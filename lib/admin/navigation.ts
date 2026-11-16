@@ -21,6 +21,7 @@ import {
   Mail,
   Route,
   Gift,
+  MessageSquareQuote,
 } from 'lucide-react';
 
 export interface AdminNavItem {
@@ -70,6 +71,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { label: 'Approvisionnements', href: '/admin/approvisionnements', icon: Boxes },
       { label: 'Fournisseurs', href: '/admin/fournisseurs', icon: Building2 },
       { label: 'Catégories', href: '/admin/categories', icon: FolderTree },
+      { label: 'Avis clients', href: '/admin/avis', icon: MessageSquareQuote },
     ],
   },
   {

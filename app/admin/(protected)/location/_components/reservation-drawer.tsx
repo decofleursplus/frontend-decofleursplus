@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { AlertCircle, CalendarClock, Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import { ApiClientError } from '@/lib/api/client';
 import {
   changeAdminRentalReservationStatus,
@@ -88,6 +89,8 @@ export function ReservationDrawer({ reservationId, onClose, onChanged }: Reserva
   const [busy, setBusy] = useState<string | null>(null);
   const [cancelMode, setCancelMode] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  // Statut, caution, annulation et notes : droit « Modifier » du module Réservations de location
+  const canWrite = useAdminCan()('location', 'write');
 
   useEffect(() => {
     if (!reservationId) return;
@@ -266,7 +269,7 @@ export function ReservationDrawer({ reservationId, onClose, onChanged }: Reserva
                 <DepositStatusBadge status={reservation.depositStatus} />
               </span>
             </div>
-            {reservation.deposit > 0 && depositActions(reservation).length > 0 && (
+            {canWrite && reservation.deposit > 0 && depositActions(reservation).length > 0 && (
               <div className="flex flex-wrap gap-2 pt-1">
                 {depositActions(reservation).map((action) => (
                   <button
@@ -293,6 +296,8 @@ export function ReservationDrawer({ reservationId, onClose, onChanged }: Reserva
               </p>
             ) : reservation.status === 'RETURNED' ? (
               <p className="text-teal-700">Location terminée : le matériel a été restitué.</p>
+            ) : !canWrite ? (
+              <p className="text-muted-foreground">Consultation seule : vous n’avez pas le droit de modifier les réservations.</p>
             ) : (
               <>
                 <div className="flex flex-wrap gap-2">
@@ -375,9 +380,10 @@ export function ReservationDrawer({ reservationId, onClose, onChanged }: Reserva
               value={adminNotes}
               onChange={(e) => setAdminNotes(e.target.value)}
               placeholder="Livraison, état du matériel au retour…"
+              readOnly={!canWrite}
               className="w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs resize-none"
             />
-            <div className="flex justify-end">
+            <div className="flex justify-end" hidden={!canWrite}>
               <button
                 type="submit"
                 disabled={!notesChanged || busy !== null}

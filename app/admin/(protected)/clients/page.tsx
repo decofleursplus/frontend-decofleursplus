@@ -50,11 +50,14 @@ import {
   RefreshCw,
   Loader2,
   Trash2,
+  UserPlus,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { SendEmailDialog } from '@/components/admin/send-email-dialog';
 import { DeleteCustomerDialog } from '@/components/admin/delete-customer-dialog';
+import { CustomerFormDialog } from '@/components/admin/customer-form-dialog';
 import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import { toast } from 'sonner';
 
@@ -203,6 +206,15 @@ export default function AdminCustomersPage() {
   const [selectedCustomerForDelete, setSelectedCustomerForDelete] = useState<AdminCustomer | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
+  // Création d'une fiche client (droit Clients › Modifier) ; la clé remonte le formulaire à chaque ouverture
+  const router = useRouter();
+  const [createFormKey, setCreateFormKey] = useState(0);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const openCreateDialog = () => {
+    setCreateFormKey((k) => k + 1);
+    setIsCreateModalOpen(true);
+  };
+
   // Sync draft filters when opening drawer
   const handleOpenFilterDrawer = (open: boolean) => {
     if (open) {
@@ -324,7 +336,7 @@ export default function AdminCustomersPage() {
             Gérez votre base de clients, suivez leur valeur et communiquez directement avec eux.
           </p>
         </div>
-        <div>
+        <div className="flex items-center gap-2">
           <Button
             type="button"
             variant="outline"
@@ -334,6 +346,15 @@ export default function AdminCustomersPage() {
           >
             <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? 'animate-spin text-[#c1647a]' : ''}`} />
             Actualiser
+          </Button>
+          <Button
+            type="button"
+            hidden={!canWrite}
+            onClick={openCreateDialog}
+            className="h-10 text-xs bg-[#24582d] hover:bg-[#1d4724] text-white"
+          >
+            <UserPlus className="h-3.5 w-3.5 mr-1.5" />
+            Nouveau client
           </Button>
         </div>
       </div>
@@ -1072,6 +1093,22 @@ export default function AdminCustomersPage() {
         open={isEmailModalOpen}
         onOpenChange={setIsEmailModalOpen}
         customer={selectedCustomerForEmail}
+      />
+
+      {/* Nouvelle fiche client */}
+      <CustomerFormDialog
+        key={createFormKey}
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+        onSaved={(created, { linkedAccount }) => {
+          toast.success('Fiche client créée', {
+            description: linkedAccount
+              ? `Un compte client existait avec cet email : la fiche de ${created.name} y est liée.`
+              : `${created.name} a été ajouté à la base clients.`,
+            action: { label: 'Ouvrir', onClick: () => router.push(`/admin/clients/${created.id}`) },
+          });
+          void loadCustomers();
+        }}
       />
 
       {/* Delete Customer Modal */}

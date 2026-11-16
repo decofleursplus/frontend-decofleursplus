@@ -13,6 +13,7 @@ import {
   startAdminDelivery,
   completeAdminDelivery,
   failAdminDelivery,
+  updateAdminDelivery,
   createAdminDriver,
   updateAdminDriver,
   deleteAdminDriver,
@@ -57,7 +58,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AssignDriverDialog } from '@/components/admin/assign-driver-dialog';
-import { DeliveryDetailSheet } from '@/components/admin/delivery-detail-sheet';
+import { DeliveryDetailSheet, type DeliveryRescheduleBody } from '@/components/admin/delivery-detail-sheet';
 import { AddDriverDialog, DriverCredentialsDialog, type DriverFormValues } from '@/components/admin/add-driver-dialog';
 import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import { CompleteDeliveryDialog } from '@/components/admin/complete-delivery-dialog';
@@ -300,6 +301,20 @@ export default function AdminDeliveriesPage() {
       `Livreur ${drv?.name ?? ''} assigné`,
     );
   };
+
+  /** Replanification (date, créneau) et consignes depuis la fiche : la fiche affiche aussitôt les nouvelles valeurs. */
+  const handleRescheduleDelivery = (deliveryId: string, body: DeliveryRescheduleBody) =>
+    runAction(
+      async () => {
+        const updated = await updateAdminDelivery(deliveryId, body);
+        setSelectedDelivery((current) => (current?.id === deliveryId ? updated : current));
+        return updated;
+      },
+      (updated) =>
+        body.scheduledDate !== undefined || body.timeSlot !== undefined
+          ? `Livraison ${updated.deliveryNumber} replanifiée : ${updated.scheduledDate}${updated.timeSlot ? ` (${updated.timeSlot})` : ''}`
+          : `Consignes de ${updated.deliveryNumber} enregistrées`,
+    );
 
   const handleCompleteDelivery = (deliveryId: string, recipientName: string, notes?: string) =>
     runAction(() => completeAdminDelivery(deliveryId, { recipientName, notes }), 'Livraison marquée comme effectuée');
@@ -1406,6 +1421,7 @@ export default function AdminDeliveriesPage() {
         isOpen={isDetailOpen}
         onOpenChange={setIsDetailOpen}
         readOnly={!canWriteDeliveries}
+        onReschedule={handleRescheduleDelivery}
         onStatusChange={handleStatusChange}
         onOpenAssignDriver={(d) => {
           setIsDetailOpen(false);

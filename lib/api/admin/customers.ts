@@ -31,9 +31,11 @@ export function transformAdminCustomer(raw: any): AdminCustomer {
   if (rawSegment.includes('vip')) segment = 'vip';
   else if (rawSegment.includes('entreprise') || rawSegment.includes('b2b') || rawSegment.includes('pro')) segment = 'entreprise';
 
-  const defaultAddr = Array.isArray(raw.addresses)
-    ? raw.addresses.find((a: { isDefault?: boolean }) => a.isDefault) || raw.addresses[0]
-    : raw.address;
+  // Adresse par défaut du carnet du compte, sinon l'adresse saisie sur la fiche CRM
+  const defaultAddr =
+    Array.isArray(raw.addresses) && raw.addresses.length > 0
+      ? raw.addresses.find((a: { isDefault?: boolean }) => a.isDefault) || raw.addresses[0]
+      : raw.address;
 
   const addressStr = typeof defaultAddr === 'string'
     ? defaultAddr
@@ -59,6 +61,8 @@ export function transformAdminCustomer(raw: any): AdminCustomer {
     notes: raw.notes || '',
     internalRating: raw.internalRating ? Number(raw.internalRating) : undefined,
     recentOrders: Array.isArray(raw.recentOrders) ? raw.recentOrders.map(transformAdminOrder) : [],
+    userId: raw.userId ?? null,
+    crmAddress: typeof raw.address === 'string' ? raw.address : '',
   };
 }
 
@@ -123,6 +127,9 @@ export async function updateAdminCustomer(
   id: string,
   body: Partial<{
     name: string;
+    /** Fiche sans compte ni historique uniquement (sinon 409) */
+    email: string;
+    /** Chaîne vide : aucun numéro */
     phone: string;
     address: string | null;
     segment: 'PARTICULIER' | 'ENTREPRISE' | 'VIP';
@@ -135,6 +142,25 @@ export async function updateAdminCustomer(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const res = await apiClient.patch<any>(`/admin/customers/${id}`, body, { useAdminToken: true });
   return transformAdminCustomer(res);
+}
+
+export interface CreateAdminCustomerBody {
+  name: string;
+  email: string;
+  phone?: string;
+  segment?: 'PARTICULIER' | 'ENTREPRISE' | 'VIP';
+  address?: string | null;
+  notes?: string | null;
+}
+
+/**
+ * Crée une fiche client sans compte de connexion (POST /admin/customers). 409 si l'email est déjà utilisé par
+ * une fiche ou un compte de l'équipe ; un compte client existant sans fiche y est lié (`linkedAccount`).
+ */
+export async function createAdminCustomer(body: CreateAdminCustomerBody): Promise<{ customer: AdminCustomer; linkedAccount: boolean }> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const res = await apiClient.post<any>('/admin/customers', body, { useAdminToken: true });
+  return { customer: transformAdminCustomer(res), linkedAccount: Boolean(res?.linkedAccount) };
 }
 
 /** Envoie un email au client depuis le back-office (POST /admin/customers/:id/email). */

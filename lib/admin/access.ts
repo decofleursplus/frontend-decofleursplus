@@ -29,6 +29,7 @@ const PAGE_RULES: { prefix: string; modules?: string[]; role?: StaffRole }[] = [
   { prefix: '/admin/produits', modules: ['produits'] },
   { prefix: '/admin/stock', modules: ['stock'] },
   { prefix: '/admin/categories', modules: ['categories'] },
+  { prefix: '/admin/avis', modules: ['avis'] },
   { prefix: '/admin/clients', modules: ['clients'] },
   { prefix: '/admin/devis', modules: ['devis'] },
   { prefix: '/admin/location', modules: ['location', 'materiel-location'] },
