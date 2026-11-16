@@ -74,7 +74,7 @@ import {
   type AdminSubscriptionStats,
 } from '@/lib/api/admin/subscriptions';
 import { SubscriptionPlansManager } from '@/components/admin/subscription-plans-manager';
-import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import type {
   CustomerSubscription,
   SubscriptionDelivery,
@@ -184,8 +184,8 @@ function PlanBadge({ plan, plans }: { plan: SubscriptionPlan; plans: AdminSubscr
 
 export default function AdminAbonnementsPage() {
   const [view, setView] = useState<'abonnements' | 'formules'>('abonnements');
-  const { currentUser } = useAdminSidebar();
-  const canEditPlans = ['ADMIN', 'MANAGER'].includes(currentUser?.role ?? '');
+  // Formules : droit « Modifier » du module Formules d'abonnement
+  const canEditPlans = useAdminCan()('formules-abonnement', 'write');
 
   // ── Catalogue des formules (libellés, filtre, gestion) ──
   const [plans, setPlans] = useState<AdminSubscriptionPlan[] | null>(null);

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, Printer, Truck, MapPin, CreditCard, User, Loader2, History, StickyNote, Save, Package, FileText } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import {
   DELIVERY_MODE_LABELS,
   ORDER_ACTION_LABELS,
@@ -26,6 +27,8 @@ const dateTime = (iso: string) => new Date(iso).toLocaleString('fr-FR', { day: '
 /** Détail d'une commande : informations complètes, actions de statut proposées par le serveur, notes et créneau. */
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  // Droit « Modifier » sur les commandes (sinon consultation seule, ex. fleuriste ou comptable)
+  const canEdit = useAdminCan()('commandes', 'write');
   const [order, setOrder] = useState<AdminOrderDetail | null | undefined>(undefined);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -154,7 +157,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               <FileText className="h-3.5 w-3.5" /> Facture
             </Link>
           )}
-          {order.allowedTransitions.map((to) => (
+          {canEdit && order.allowedTransitions.map((to) => (
             <button
               key={to}
               type="button"
@@ -307,11 +310,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
               <span className="block font-semibold mb-1">Date de livraison</span>
-              <input type="date" value={deliveryDate} disabled={final} onChange={(e) => setDeliveryDate(e.target.value)} className="w-full h-9 rounded-md border border-[#e7e4dd] px-2" />
+              <input type="date" value={deliveryDate} disabled={final || !canEdit} onChange={(e) => setDeliveryDate(e.target.value)} className="w-full h-9 rounded-md border border-[#e7e4dd] px-2" />
             </label>
             <label className="block">
               <span className="block font-semibold mb-1">Créneau</span>
-              <select value={timeSlot} disabled={final} onChange={(e) => setTimeSlot(e.target.value)} className="w-full h-9 rounded-md border border-[#e7e4dd] px-2 bg-white">
+              <select value={timeSlot} disabled={final || !canEdit} onChange={(e) => setTimeSlot(e.target.value)} className="w-full h-9 rounded-md border border-[#e7e4dd] px-2 bg-white">
                 <option value="">Non défini</option>
                 {TIME_SLOTS.map((s) => (
                   <option key={s}>{s}</option>
@@ -321,16 +324,20 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           </div>
           <label className="block">
             <span className="block font-semibold mb-1">Notes internes (non visibles du client)</span>
-            <textarea rows={3} value={adminNotes} onChange={(e) => setAdminNotes(e.target.value)} className="w-full rounded-md border border-[#e7e4dd] p-2" />
+            <textarea rows={3} value={adminNotes} disabled={!canEdit} onChange={(e) => setAdminNotes(e.target.value)} className="w-full rounded-md border border-[#e7e4dd] p-2" />
           </label>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void saveDetails()}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#24582d] text-white font-semibold disabled:opacity-50"
-          >
-            <Save className="h-3.5 w-3.5" /> Enregistrer
-          </button>
+          {canEdit ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void saveDetails()}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#24582d] text-white font-semibold disabled:opacity-50"
+            >
+              <Save className="h-3.5 w-3.5" /> Enregistrer
+            </button>
+          ) : (
+            <p className="text-[11px] text-gray-500">Consultation seule : vos droits ne permettent pas de modifier les commandes.</p>
+          )}
         </section>
 
         <section className="bg-white rounded-2xl border border-[#e7e4dd] p-5 text-xs">

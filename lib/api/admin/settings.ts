@@ -106,6 +106,8 @@ export interface StaffUser {
   avatar: string | null;
   /** Dernière connexion réussie ; null si le compte ne s'est jamais connecté. */
   lastLoginAt: string | null;
+  /** Mot de passe temporaire pas encore changé par le collaborateur */
+  mustChangePassword?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -156,7 +158,7 @@ export async function deleteAdminStaffUser(id: string): Promise<void> {
   await apiClient.delete<{ id: string; deleted: boolean }>(`/admin/users/${id}`, { useAdminToken: true });
 }
 
-// ── Rôles & permissions (lecture seule) ────────────────────────────────────
+// ── Rôles & permissions ────────────────────────────────────────────────────
 
 export interface RoleDefinition {
   key: string;
@@ -166,27 +168,64 @@ export interface RoleDefinition {
   badgeClass: string;
 }
 
-export interface RoleModulePermission {
+export type PermissionAction = 'read' | 'write' | 'delete';
+
+/** read = voir, write = créer / modifier, delete = supprimer */
+export interface ModulePermission {
   read: boolean;
   write: boolean;
   delete: boolean;
-  /** Accès à une partie seulement des fonctions du module. */
-  limited: boolean;
 }
 
 export interface PermissionModule {
   key: string;
   label: string;
   category: string;
-  /** Clé = RoleDefinition.key */
-  permissions: Record<string, RoleModulePermission>;
+  description: string;
+  /** Actions qui ont un sens pour ce module */
+  actions: PermissionAction[];
+  /** Actions réservées à l'administrateur (non attribuables) */
+  adminOnly?: PermissionAction[];
+  /** Libellés propres au module (ex. « Désactiver ») */
+  actionLabels?: Partial<Record<PermissionAction, string>>;
 }
 
 export interface RolesAndPermissions {
   roles: RoleDefinition[];
-  permissions: PermissionModule[];
+  modules: PermissionModule[];
+  /** Droits en vigueur : clé de rôle (admin, gestionnaire…) → module → actions */
+  permissions: Record<string, Record<string, ModulePermission>>;
+  /** Droits par défaut, pour comparer et revenir en arrière */
+  defaults: Record<string, Record<string, ModulePermission>>;
+  /** La matrice a été modifiée par l'administrateur */
+  customized: boolean;
+}
+
+/** Droits du compte connecté (rôle actuel, relu par l'API). */
+export interface MyAdminAccess {
+  role: StaffRole;
+  roleKey: string;
+  permissions: Record<string, ModulePermission>;
+  /** Mot de passe temporaire : à changer avant d'utiliser le back-office */
+  mustChangePassword?: boolean;
 }
 
 export async function getAdminRoles(): Promise<RolesAndPermissions> {
   return apiClient.get<RolesAndPermissions>('/admin/roles', { useAdminToken: true });
+}
+
+export async function getMyAdminAccess(): Promise<MyAdminAccess> {
+  return apiClient.get<MyAdminAccess>('/admin/roles/me', { useAdminToken: true });
+}
+
+/** Modification partielle (administrateur) : clé de rôle → module → actions. */
+export async function updateRolePermissions(
+  permissions: Record<string, Record<string, Partial<ModulePermission>>>,
+): Promise<RolesAndPermissions> {
+  return apiClient.put<RolesAndPermissions>('/admin/roles/permissions', { permissions }, { useAdminToken: true });
+}
+
+/** Revient aux droits par défaut de tous les rôles (administrateur). */
+export async function resetRolePermissions(): Promise<RolesAndPermissions> {
+  return apiClient.post<RolesAndPermissions>('/admin/roles/permissions/reset', undefined, { useAdminToken: true });
 }

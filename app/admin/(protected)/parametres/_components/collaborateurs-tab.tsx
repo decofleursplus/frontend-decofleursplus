@@ -401,6 +401,7 @@ export function CollaborateursTab({
                       {statusBadge(user)}
                       <span className="text-[10px] text-gray-400 truncate">
                         {user.lastLoginAt ? `Connexion : ${formatDateTime(user.lastLoginAt)}` : 'Jamais connecté'}
+                        {user.mustChangePassword && <span className="ml-1 text-amber-700">· mot de passe temporaire</span>}
                       </span>
                     </div>
                     {actions(user)}
@@ -452,6 +453,11 @@ export function CollaborateursTab({
                       <TableCell className="text-center text-xs py-3 whitespace-nowrap">{statusBadge(user)}</TableCell>
                       <TableCell className="text-xs py-3 text-gray-500 whitespace-nowrap">
                         {user.lastLoginAt ? formatDateTime(user.lastLoginAt) : <span className="italic text-gray-400">Jamais</span>}
+                        {user.mustChangePassword && (
+                          <span className="block text-[11px] text-amber-700" title="Le collaborateur n’a pas encore choisi son mot de passe">
+                            Mot de passe temporaire
+                          </span>
+                        )}
                       </TableCell>
                       {canEdit && <TableCell className="text-right text-xs py-3 whitespace-nowrap">{actions(user)}</TableCell>}
                     </TableRow>
@@ -500,7 +506,8 @@ export function CollaborateursTab({
           <DialogHeader>
             <DialogTitle>Compte créé</DialogTitle>
             <DialogDescription>
-              Communiquez ces identifiants à {createdCredentials?.user.name}. Le mot de passe ne sera plus affiché ensuite.
+              Identifiants de {createdCredentials?.user.name}. Le mot de passe est temporaire : il devra le changer à sa
+              première connexion. Il ne sera plus affiché ensuite.
             </DialogDescription>
           </DialogHeader>
           {createdCredentials && (
@@ -510,7 +517,7 @@ export function CollaborateursTab({
                 <strong className="font-mono">{createdCredentials.user.email}</strong>
               </div>
               <div>
-                <span className="text-gray-500">Mot de passe initial : </span>
+                <span className="text-gray-500">Mot de passe temporaire : </span>
                 <strong className="font-mono select-all">{createdCredentials.password}</strong>
               </div>
               <div>
@@ -519,8 +526,8 @@ export function CollaborateursTab({
               </div>
               <p className={createdCredentials.user.invitationSent ? 'text-emerald-700' : 'text-amber-700'}>
                 {createdCredentials.user.invitationSent
-                  ? 'Un email d’invitation a été envoyé au collaborateur.'
-                  : 'L’email d’invitation n’a pas pu être envoyé : transmettez ces identifiants vous-même.'}
+                  ? 'Ses identifiants lui ont été envoyés par email.'
+                  : 'L’email n’a pas pu être envoyé : transmettez ces identifiants vous-même.'}
               </p>
             </div>
           )}

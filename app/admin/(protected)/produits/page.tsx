@@ -14,7 +14,6 @@ import {
 } from '@/lib/api/admin/products';
 import { getAdminCategories } from '@/lib/api/admin/categories';
 import { ApiClientError } from '@/lib/api/client';
-import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
 import { AdminPagination } from '@/components/admin/admin-pagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,6 +50,7 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 
 type StateTab = 'all' | AdminProductState;
 type StockFilter = 'all' | 'ok' | 'low' | 'out';
@@ -119,9 +119,10 @@ export default function AdminProductsPage() {
 }
 
 function ProductsScreen() {
+  const can = useAdminCan();
+  const canWrite = can('produits', 'write');
+  const canDelete = can('produits', 'delete');
   const searchParams = useSearchParams();
-  const { currentUser } = useAdminSidebar();
-  const canDelete = ['ADMIN', 'MANAGER'].includes(currentUser?.role ?? '');
 
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [total, setTotal] = useState(0);
@@ -420,6 +421,7 @@ function ProductsScreen() {
             <>
               <DropdownMenuSeparator className="my-1 border-t border-[#f0eee8]" />
               <DropdownMenuItem
+                hidden={!canDelete}
                 onClick={() => setProductToDelete(product)}
                 className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-red-600 hover:bg-red-50 whitespace-nowrap focus:text-red-700 focus:bg-red-50"
               >
@@ -473,6 +475,7 @@ function ProductsScreen() {
           <Button
             variant="cta"
             className="bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs w-full sm:w-auto"
+            hidden={!canWrite}
             render={<Link href="/admin/produits/nouveau" />}
           >
             <Plus className="mr-2 h-4 w-4 text-white" />
@@ -697,7 +700,7 @@ function ProductsScreen() {
       )}
 
       {/* Barre d'actions groupées : discrète (desktop au-dessus du tableau, mobile fixée en bas) */}
-      {selectionCount > 0 && (
+      {canWrite && selectionCount > 0 && (
         <div
           role="region"
           aria-label="Actions groupées"
@@ -748,6 +751,7 @@ function ProductsScreen() {
               size="sm"
               variant="outline"
               disabled={bulkBusy}
+              hidden={!canDelete}
               onClick={() => setBulkDeleteOpen(true)}
               className="h-8 text-xs text-red-600 border-red-200 hover:bg-red-50"
             >

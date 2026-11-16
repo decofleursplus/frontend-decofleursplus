@@ -353,8 +353,8 @@ function UserEditorForm({
         {fieldError('password')}
         <p className="text-[10.5px] text-gray-500">
           {isEditing
-            ? `Au moins ${MIN_PASSWORD_LENGTH} caractères. Il vous sera affiché une fois enregistré, pour le transmettre au collaborateur.`
-            : `Au moins ${MIN_PASSWORD_LENGTH} caractères. Il vous sera réaffiché après la création pour que vous le transmettiez au collaborateur : il ne figure pas dans l’email d’invitation.`}
+            ? `Au moins ${MIN_PASSWORD_LENGTH} caractères. Mot de passe temporaire : envoyé par email au collaborateur, qui devra le changer à sa prochaine connexion.`
+            : `Au moins ${MIN_PASSWORD_LENGTH} caractères. Mot de passe temporaire : envoyé par email avec l’identifiant, le collaborateur devra le changer à sa première connexion.`}
         </p>
       </div>
 
