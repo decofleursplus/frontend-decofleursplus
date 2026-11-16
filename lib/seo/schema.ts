@@ -12,7 +12,7 @@ export function getOrganizationSchema() {
     url: SITE_URL,
     logo: {
       '@type': 'ImageObject',
-      url: `${SITE_URL}/logo_decofleur.png`,
+      url: `${SITE_URL}/logo_decofleur.jpeg`,
       caption: SITE_CONFIG.name,
     },
     contactPoint: [
@@ -53,7 +53,7 @@ export function getFloristSchema() {
     email: SITE_CONFIG.email,
     priceRange: SITE_CONFIG.priceRange,
     image: `${SITE_URL}/images/og-decofleur.png`,
-    logo: `${SITE_URL}/logo_decofleur.png`,
+    logo: `${SITE_URL}/logo_decofleur.jpeg`,
     parentOrganization: {
       '@id': `${SITE_URL}/#organization`,
     },
