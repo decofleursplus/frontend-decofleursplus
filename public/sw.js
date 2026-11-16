@@ -1,7 +1,7 @@
-const VERSION = 'decofleur-pwa-v2';
+const VERSION = 'decofleur-pwa-v3';
 const SHELL = `${VERSION}-shell`;
 const STATIC = `${VERSION}-static`;
-const SHELL_URLS = ['/offline.html', '/icons/icon.svg', '/icons/icon-maskable.svg'];
+const SHELL_URLS = ['/offline.html', '/icons/icon-192.png', '/icons/icon-maskable-512.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(SHELL).then((cache) => cache.addAll(SHELL_URLS)).then(() => self.skipWaiting()));
