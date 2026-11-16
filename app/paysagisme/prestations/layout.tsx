@@ -8,7 +8,7 @@ export const metadata: Metadata = constructMetadata({
   description:
     'Découvrez nos 6 prestations de paysagisme au Sénégal : création de jardins tropicaux, aménagement de terrasses de villas, végétalisation d’hôtels et bureaux, gazonnement et entretien à Saly et Dakar.',
   canonical: '/paysagisme/prestations',
-  image: '/images/paysagisme/paysagisme-hero.jpg',
+  image: '/images/paysagisme/jardin-villa.jpg',
   keywords: [
     'prestations paysagisme dakar',
     'creation jardin villa saly',
@@ -29,7 +29,7 @@ export default function PrestationsLayout({ children }: { children: React.ReactN
     name: 'Prestations Paysagères Décofleur Plus',
     description: 'Services professionnels d’aménagement paysager et d’entretien vert au Sénégal.',
     url: '/paysagisme/prestations',
-    image: '/images/paysagisme/paysagisme-hero.jpg',
+    image: '/images/paysagisme/jardin-villa.jpg',
   });
 
   return (

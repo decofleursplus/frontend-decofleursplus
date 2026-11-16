@@ -107,7 +107,7 @@ export async function generateMetadata({
         title: 'Livraison de Fleurs à Saly, Dakar, Somone & Petite-Côte | Décofleur Plus',
         description: 'Modalités de livraison de fleurs fraîches : express 2h à Saly Portudal, le jour même à Somone et Mbour, et 24h par navette réfrigérée vers Dakar.',
         canonical: '/livraison',
-        image: '/images/hero.jpg',
+        image: '/images/livraison/camionnette.jpg',
         keywords: ['livraison fleurs dakar', 'livraison fleurs saly', 'livraison bouquet senegal', 'livraison somone'],
       });
     case 'a-propos':
@@ -378,6 +378,47 @@ async function DeliveryPage() {
           </section>
 
           {/* Grille des zones et tarifs */}
+          {/* Flotte de livraison : photos réelles des véhicules Décofleur Plus */}
+          <section aria-labelledby="delivery-fleet-title">
+            <div className="delivery-section-heading">
+              <span>NOTRE FLOTTE</span>
+              <h2 id="delivery-fleet-title">Nos véhicules aux couleurs de Décofleur Plus</h2>
+              <p>Vos fleurs voyagent dans nos propres véhicules, conduits par notre équipe, jusqu’à votre porte.</p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {[
+                {
+                  src: '/images/livraison/scooter-saly.jpg',
+                  alt: 'Scooter de livraison Décofleur Plus garé à Saly Portudal',
+                  title: 'Scooter de livraison express',
+                  desc: 'Pour les livraisons rapides à Saly, Somone et Ngaparou, avec caisson pour protéger les bouquets.',
+                },
+                {
+                  src: '/images/livraison/camionnette.jpg',
+                  alt: 'Camionnette de livraison Décofleur Plus',
+                  title: 'Camionnette de livraison',
+                  desc: 'Pour Mbour et Dakar, les grandes compositions et le matériel de décoration de vos événements.',
+                },
+              ].map((vehicle) => (
+                <figure key={vehicle.src} className="overflow-hidden rounded-2xl border border-[#ece5da] bg-white shadow-xs">
+                  <div className="relative aspect-4/3 bg-[#f5f1ea]">
+                    <Image
+                      src={vehicle.src}
+                      alt={vehicle.alt}
+                      fill
+                      sizes="(max-width: 640px) 100vw, 50vw"
+                      className="object-cover"
+                    />
+                  </div>
+                  <figcaption className="space-y-1 p-4">
+                    <p className="font-semibold text-[#173f22]">{vehicle.title}</p>
+                    <p className="text-sm leading-relaxed text-[#5f5a52]">{vehicle.desc}</p>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </section>
+
           <section aria-labelledby="delivery-zones-title">
             <div className="delivery-section-heading">
               <span>TARIFICATION TRANSPARENTE</span>

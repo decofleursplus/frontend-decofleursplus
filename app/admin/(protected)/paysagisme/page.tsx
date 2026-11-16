@@ -34,7 +34,7 @@ const PROJECT_IMAGES = [
   { path: '/images/paysagisme/paysagisme-villas.jpg', label: 'Villa' },
   { path: '/images/paysagisme/paysagisme-hotels.jpg', label: 'Hôtel' },
   { path: '/images/paysagisme/paysagisme-bureaux.jpg', label: 'Bureaux' },
-  { path: '/images/paysagisme/paysagisme-hero.jpg', label: 'Jardin' },
+  { path: '/images/paysagisme/jardin-villa.jpg', label: 'Jardin' },
 ];
 const lines = (v: string) => v.split('\n').map((x) => x.trim()).filter(Boolean);
 const errorText = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback);

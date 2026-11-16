@@ -61,7 +61,7 @@ export default function FleuristeMbourPage() {
         {/* Hero Section Mbour */}
         <section className="relative rounded-3xl overflow-hidden min-h-[360px] md:min-h-[420px] flex items-center p-6 md:p-12 mb-10 shadow-md border border-neutral-100 bg-[#173f22]">
           <Image
-            src="/images/fruits.jpg"
+            src="/images/realisations/corbeille-fruits.jpg"
             alt="Bouquets et paniers de fruits livrés à Mbour par Décofleur Plus"
             fill
             priority

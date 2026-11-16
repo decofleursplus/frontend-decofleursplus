@@ -209,9 +209,11 @@ export default function RealisationsPage() {
 
                     {/* Textes avec Conteneur Flou Backdrop-Blur Protecteur (Image copy 2) */}
                     <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4 p-3.5 sm:p-4 rounded-xl bg-black/45 backdrop-blur-md border border-white/10 text-white transition-transform group-hover:-translate-y-0.5">
-                      <div className="flex items-center gap-1.5 text-xs text-[#f5c6cb] font-medium mb-1">
-                        <MapPin size={13} /> {project.location}
-                      </div>
+                      {project.location && (
+                        <div className="flex items-center gap-1.5 text-xs text-[#f5c6cb] font-medium mb-1">
+                          <MapPin size={13} /> {project.location}
+                        </div>
+                      )}
                       <h3 className={`${isFirst ? 'text-xl sm:text-2xl md:text-3xl' : 'text-base sm:text-lg'} font-serif font-bold text-white leading-tight`}>
                         {project.title}
                       </h3>
@@ -284,9 +286,11 @@ export default function RealisationsPage() {
 
               <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between">
                 <div>
-                  <div className="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-[#c8436e] mb-2">
-                    <MapPin size={15} /> {activeProject.location}
-                  </div>
+                  {activeProject.location && (
+                    <div className="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-[#c8436e] mb-2">
+                      <MapPin size={15} /> {activeProject.location}
+                    </div>
+                  )}
                   <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#173f22] mb-3">
                     {activeProject.title}
                   </h2>
