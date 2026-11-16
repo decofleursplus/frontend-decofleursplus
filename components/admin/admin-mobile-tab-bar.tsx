@@ -38,7 +38,7 @@ const directTabs = [
 
 export function AdminMobileTabBar() {
   const pathname = usePathname();
-  const { isMobileDrawerOpen, toggleMobileDrawer, currentUser } = useAdminSidebar();
+  const { isMobileDrawerOpen, toggleMobileDrawer, access } = useAdminSidebar();
 
   return (
     <nav
@@ -46,7 +46,7 @@ export function AdminMobileTabBar() {
       aria-label="Navigation principale mobile du back-office"
     >
       <div className="admin-mobile-tabbar-grid">
-        {directTabs.filter((tab) => canAccessAdminPath(currentUser?.role ?? 'ADMIN', tab.href)).map((tab) => {
+        {directTabs.filter((tab) => canAccessAdminPath(access, tab.href)).map((tab) => {
           const isActive =
             pathname === tab.href ||
             (tab.href !== '/admin/tableau-de-bord' && pathname.startsWith(tab.href + '/'));

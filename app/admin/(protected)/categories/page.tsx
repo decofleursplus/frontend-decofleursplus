@@ -49,8 +49,12 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SubcategoriesDialog } from '@/components/admin/subcategories-dialog';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 
 export default function AdminCategoriesPage() {
+  const can = useAdminCan();
+  const canWrite = can('categories', 'write');
+  const canDelete = can('categories', 'delete');
   const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -228,6 +232,7 @@ export default function AdminCategoriesPage() {
             Actualiser
           </Button>
           <Button
+            hidden={!canWrite}
             onClick={handleOpenCreateDialog}
             variant="cta"
             className="bg-[#c1647a] hover:bg-[#a9576a] !text-white shadow-xs font-medium w-full sm:w-auto h-10 shrink-0"
@@ -387,7 +392,8 @@ export default function AdminCategoriesPage() {
                         </DropdownMenuLabel>
                         <DropdownMenuItem
                           className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef] transition-colors whitespace-nowrap"
-                          onClick={() => handleOpenEditDialog(category)}
+                          hidden={!canWrite}
+                  onClick={() => handleOpenEditDialog(category)}
                         >
                           <Edit2 className="mr-2.5 h-4 w-4 text-[#24582d]" />
                           Modifier
@@ -405,6 +411,7 @@ export default function AdminCategoriesPage() {
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef] transition-colors whitespace-nowrap"
+                          hidden={!canWrite}
                           onClick={() => setSubcategoriesFor(category)}
                         >
                           <FolderTree className="mr-2.5 h-4 w-4 text-gray-500" />
@@ -412,7 +419,8 @@ export default function AdminCategoriesPage() {
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef] transition-colors whitespace-nowrap"
-                          onClick={() => handleToggleStatus(category)}
+                          hidden={!canWrite}
+                  onClick={() => handleToggleStatus(category)}
                         >
                           <Power className="mr-2.5 h-4 w-4 text-gray-500" />
                           {category.status === 'actif' ? 'Désactiver' : 'Activer'}
@@ -424,7 +432,8 @@ export default function AdminCategoriesPage() {
                       <DropdownMenuGroup>
                         <DropdownMenuItem
                           className="cursor-pointer font-medium py-2 px-2.5 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors whitespace-nowrap focus:text-red-700 focus:bg-red-50"
-                          onClick={() => setCategoryToDelete(category)}
+                          hidden={!canDelete}
+                  onClick={() => setCategoryToDelete(category)}
                         >
                           <Trash2 className="mr-2.5 h-4 w-4 text-red-600" />
                           Supprimer
@@ -476,7 +485,8 @@ export default function AdminCategoriesPage() {
                       <Button
                         variant="cta"
                         size="sm"
-                        onClick={handleOpenCreateDialog}
+                        hidden={!canWrite}
+            onClick={handleOpenCreateDialog}
                         className="mt-2 text-xs bg-[#c1647a] hover:bg-[#a9576a] !text-white"
                       >
                         <Plus className="mr-1.5 h-3.5 w-3.5" />
@@ -556,6 +566,7 @@ export default function AdminCategoriesPage() {
 
               <div className="flex items-center gap-1">
                 <button
+                  hidden={!canWrite}
                   onClick={() => handleToggleStatus(category)}
                   className={`h-8 w-8 rounded-lg flex items-center justify-center border transition-colors ${
                     category.status === 'actif'
@@ -568,6 +579,7 @@ export default function AdminCategoriesPage() {
                 </button>
 
                 <button
+                  hidden={!canWrite}
                   onClick={() => handleOpenEditDialog(category)}
                   className="h-8 w-8 rounded-lg flex items-center justify-center border border-[#e7e4dd] text-gray-600 hover:text-[#24582d] hover:bg-[#edf8ef] transition-colors"
                   title="Modifier"
@@ -576,6 +588,7 @@ export default function AdminCategoriesPage() {
                 </button>
 
                 <button
+                  hidden={!canDelete}
                   onClick={() => setCategoryToDelete(category)}
                   className="h-8 w-8 rounded-lg flex items-center justify-center border border-[#e7e4dd] text-red-600 hover:bg-red-50 transition-colors"
                   title="Supprimer"
@@ -621,7 +634,8 @@ export default function AdminCategoriesPage() {
               <Button
                 variant="cta"
                 size="sm"
-                onClick={handleOpenCreateDialog}
+                hidden={!canWrite}
+            onClick={handleOpenCreateDialog}
                 className="mt-2 text-xs bg-[#c1647a] hover:bg-[#a9576a] !text-white"
               >
                 <Plus className="mr-1.5 h-3.5 w-3.5" />

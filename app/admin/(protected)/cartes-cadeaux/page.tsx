@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
 import { AdminPagination } from '@/components/admin/admin-pagination';
-import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ApiClientError } from '@/lib/api/client';
@@ -333,8 +333,8 @@ function GiftCardsView() {
 // ---------------------------------------------------------------------------
 
 function GiftCardDrawer({ cardId, onClose, onChanged }: { cardId: string | null; onClose: () => void; onChanged: () => void }) {
-  const { currentUser } = useAdminSidebar();
-  const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'MANAGER';
+  // Désactiver / réactiver une carte : droit « Désactiver » du module Cartes cadeaux
+  const canManage = useAdminCan()('cartes-cadeaux', 'delete');
   const [card, setCard] = useState<AdminGiftCardDetail | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);

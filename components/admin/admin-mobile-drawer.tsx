@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { LogOut, X, ExternalLink, Download, Smartphone, CheckCircle2, Camera } from 'lucide-react';
-import { canAccessAdminPath } from '@/lib/admin/access';
+import { canAccessAdminPath, firstAccessiblePath, ROLE_LABELS, type StaffRole } from '@/lib/admin/access';
 import { ADMIN_NAV_GROUPS, isAdminNavActive } from '@/lib/admin/navigation';
 import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
 import { logoutAdmin } from '@/app/admin/connexion/actions';
@@ -25,7 +25,7 @@ const TAB_BAR_HREFS = ['/admin/tableau-de-bord', '/admin/commandes', '/admin/pro
 
 export function AdminMobileDrawer({ initialUser }: { initialUser?: AdminSessionUser | null } = {}) {
   const pathname = usePathname();
-  const { isMobileDrawerOpen, closeMobileDrawer, currentUser: contextUser, setCurrentUser } = useAdminSidebar();
+  const { isMobileDrawerOpen, closeMobileDrawer, currentUser: contextUser, setCurrentUser, access } = useAdminSidebar();
   const currentUser = contextUser ?? initialUser ?? null;
 
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
@@ -130,7 +130,7 @@ export function AdminMobileDrawer({ initialUser }: { initialUser?: AdminSessionU
         {/* Header du Drawer */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/20 backdrop-blur-md">
           <Link
-            href="/admin/tableau-de-bord"
+            href={firstAccessiblePath(access)}
             onClick={closeMobileDrawer}
             className="flex items-center gap-2.5 hover:opacity-85 transition-opacity"
           >
@@ -197,7 +197,7 @@ export function AdminMobileDrawer({ initialUser }: { initialUser?: AdminSessionU
           </button>
           <div className="flex items-center gap-2 shrink-0">
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-              {currentUser?.role || 'Staff'}
+              {(currentUser?.role && ROLE_LABELS[currentUser.role as StaffRole]) || currentUser?.role || 'Personnel'}
             </span>
             <form action={logoutAdmin}>
               <button
@@ -251,7 +251,7 @@ export function AdminMobileDrawer({ initialUser }: { initialUser?: AdminSessionU
           {ADMIN_NAV_GROUPS.map((group) => ({
             ...group,
             items: group.items.filter(
-              (item) => !TAB_BAR_HREFS.includes(item.href) && canAccessAdminPath(currentUser?.role ?? 'ADMIN', item.href),
+              (item) => !TAB_BAR_HREFS.includes(item.href) && canAccessAdminPath(access, item.href),
             ),
           }))
             .filter((group) => group.items.length > 0)

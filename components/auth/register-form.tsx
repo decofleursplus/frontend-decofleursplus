@@ -32,6 +32,7 @@ export function RegisterForm() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,6 +56,10 @@ export function RegisterForm() {
     }
     if (password.length < PASSWORD_MIN_LENGTH) {
       setFeedback(`Le mot de passe doit contenir au moins ${PASSWORD_MIN_LENGTH} caractères.`);
+      return;
+    }
+    if (password !== passwordConfirm) {
+      setFeedback('Les deux mots de passe ne sont pas identiques.');
       return;
     }
 
@@ -219,6 +224,35 @@ export function RegisterForm() {
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
+        </div>
+
+        {/* Confirmation du mot de passe */}
+        <div className="auth-field-group">
+          <label htmlFor="reg-password-confirm" className="auth-label">
+            Confirmer le mot de passe <span className="auth-required-star">*</span>
+          </label>
+          <div className="auth-input-wrapper">
+            <span className="auth-input-icon" aria-hidden="true">
+              <LockKeyhole size={16} />
+            </span>
+            <input
+              id="reg-password-confirm"
+              type={showPassword ? 'text' : 'password'}
+              required
+              autoComplete="new-password"
+              placeholder="Saisissez-le à nouveau"
+              value={passwordConfirm}
+              onChange={(e) => setPasswordConfirm(e.target.value)}
+              aria-invalid={passwordConfirm.length > 0 && passwordConfirm !== password}
+              aria-describedby="reg-password-confirm-hint"
+              className="auth-input"
+            />
+          </div>
+          {passwordConfirm.length > 0 && passwordConfirm !== password && (
+            <p id="reg-password-confirm-hint" className="mt-1 text-xs text-[#c1647a]">
+              Les deux mots de passe ne sont pas identiques.
+            </p>
+          )}
         </div>
 
         {/* Referral code (optional) */}

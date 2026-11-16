@@ -18,6 +18,7 @@ import {
   type AdminOrdersFilters,
   type BackendOrderStatus,
 } from '@/lib/api/admin/orders';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 
 const STATUSES: BackendOrderStatus[] = ['PENDING', 'PAID', 'PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED', 'CANCELLED'];
 const PAGE_SIZE = 25;
@@ -25,6 +26,7 @@ const fcfa = (n: number) => `${Math.round(n).toLocaleString('fr-FR')} F`;
 
 /** Commandes : filtres, recherche, tri et pagination côté serveur ; actions selon les transitions autorisées. */
 export default function AdminOrdersPage() {
+  const canEdit = useAdminCan()('commandes', 'write');
   const [orders, setOrders] = useState<AdminOrderDetail[] | null>(null);
   const [counts, setCounts] = useState<Record<BackendOrderStatus, number> | null>(null);
   const [total, setTotal] = useState(0);
@@ -94,7 +96,8 @@ export default function AdminOrdersPage() {
 
   const allCount = counts ? Object.values(counts).reduce((a, b) => a + b, 0) : 0;
   /** Action principale proposée dans la liste (l'annulation, qui demande un motif, se fait depuis le détail). */
-  const nextStep = (o: AdminOrderDetail) => o.allowedTransitions.find((t) => t !== 'CANCELLED' && t !== 'PENDING');
+  const nextStep = (o: AdminOrderDetail) =>
+    canEdit ? o.allowedTransitions.find((t) => t !== 'CANCELLED' && t !== 'PENDING') : undefined;
 
   return (
     <div className="space-y-6">
