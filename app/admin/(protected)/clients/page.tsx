@@ -53,6 +53,7 @@ import {
 import Link from 'next/link';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { SendEmailDialog } from '@/components/admin/send-email-dialog';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import { toast } from 'sonner';
 
 type SegmentPill = 'all' | 'vip' | 'entreprise' | 'particulier' | 'inactif';
@@ -65,6 +66,8 @@ const SEGMENT_OPTIONS: { value: 'PARTICULIER' | 'VIP' | 'ENTREPRISE'; label: str
 ];
 
 export default function AdminCustomersPage() {
+  const can = useAdminCan();
+  const canWrite = can('clients', 'write');
   const [customers, setCustomers] = useState<AdminCustomer[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -828,38 +831,44 @@ export default function AdminCustomersPage() {
                             <Eye className="mr-2 h-4 w-4 text-gray-500" />
                             Voir le profil
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="cursor-pointer text-[#24582d] font-medium"
-                            onClick={() => handleOpenEmailDialog(customer)}
-                          >
-                            <Mail className="mr-2 h-4 w-4 text-[#24582d]" />
-                            Envoyer un e-mail
-                          </DropdownMenuItem>
+                          {canWrite && (
+                            <DropdownMenuItem
+                              className="cursor-pointer text-[#24582d] font-medium"
+                              onClick={() => handleOpenEmailDialog(customer)}
+                            >
+                              <Mail className="mr-2 h-4 w-4 text-[#24582d]" />
+                              Envoyer un e-mail
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuGroup>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuGroup>
-                          <DropdownMenuLabel className="text-xs text-gray-400 uppercase">
-                            Changer de segment
-                          </DropdownMenuLabel>
-                          {SEGMENT_OPTIONS.map((opt) => {
-                            const current = customer.segment.toUpperCase() === opt.value;
-                            return (
-                              <DropdownMenuItem
-                                key={opt.value}
-                                className="cursor-pointer"
-                                disabled={current || updatingSegmentId === customer.id}
-                                onClick={() => handleChangeSegment(customer, opt.value)}
-                              >
-                                {current ? (
-                                  <Check className="mr-2 h-4 w-4 text-[#24582d]" />
-                                ) : (
-                                  <span className="mr-2 inline-block h-4 w-4" />
-                                )}
-                                {opt.label}
-                              </DropdownMenuItem>
-                            );
-                          })}
-                        </DropdownMenuGroup>
+                        {canWrite && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuGroup>
+                              <DropdownMenuLabel className="text-xs text-gray-400 uppercase">
+                                Changer de segment
+                              </DropdownMenuLabel>
+                              {SEGMENT_OPTIONS.map((opt) => {
+                                const current = customer.segment.toUpperCase() === opt.value;
+                                return (
+                                  <DropdownMenuItem
+                                    key={opt.value}
+                                    className="cursor-pointer"
+                                    disabled={current || updatingSegmentId === customer.id}
+                                    onClick={() => handleChangeSegment(customer, opt.value)}
+                                  >
+                                    {current ? (
+                                      <Check className="mr-2 h-4 w-4 text-[#24582d]" />
+                                    ) : (
+                                      <span className="mr-2 inline-block h-4 w-4" />
+                                    )}
+                                    {opt.label}
+                                  </DropdownMenuItem>
+                                );
+                              })}
+                            </DropdownMenuGroup>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -971,6 +980,7 @@ export default function AdminCustomersPage() {
                 <Button
                   variant="outline"
                   size="sm"
+                  hidden={!canWrite}
                   onClick={() => handleOpenEmailDialog(customer)}
                   className="flex-1 h-8 text-xs border-[#24582d]/30 text-[#24582d] hover:bg-[#edf8ef] font-medium gap-1.5"
                 >
@@ -982,7 +992,7 @@ export default function AdminCustomersPage() {
                 <span>Segment</span>
                 <select
                   value={customer.segment.toUpperCase()}
-                  disabled={updatingSegmentId === customer.id}
+                  disabled={updatingSegmentId === customer.id || !canWrite}
                   onChange={(e) => handleChangeSegment(customer, e.target.value as 'PARTICULIER' | 'VIP' | 'ENTREPRISE')}
                   className="h-8 rounded-md border border-[#e7e4dd] bg-white px-2 text-xs"
                   aria-label={`Segment de ${customer.name}`}

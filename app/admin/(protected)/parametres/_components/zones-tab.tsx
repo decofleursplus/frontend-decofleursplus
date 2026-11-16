@@ -231,7 +231,7 @@ function ZoneDialog({
   );
 }
 
-export function ZonesTab({ canEdit }: { canEdit: boolean }) {
+export function ZonesTab({ canEdit, canDelete = canEdit }: { canEdit: boolean; canDelete?: boolean }) {
   const [zones, setZones] = useState<AdminDeliveryZone[] | null>(null);
   const [loadError, setLoadError] = useState<unknown>(null);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -391,6 +391,7 @@ export function ZonesTab({ canEdit }: { canEdit: boolean }) {
                         variant="ghost"
                         size="sm"
                         title="Supprimer"
+                        hidden={!canDelete}
                         aria-label={`Supprimer la zone ${zone.name}`}
                         onClick={() => setToDelete(zone)}
                         className="h-8 w-8 p-0 text-gray-400 hover:text-rose-600"

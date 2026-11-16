@@ -9,11 +9,13 @@ import {
   CheckCircle2,
   Gift,
   Loader2,
+  Pencil,
   Plus,
   RefreshCw,
   RotateCcw,
   Search,
   Send,
+  Trash2,
   Wallet,
   X,
 } from 'lucide-react';
@@ -33,12 +35,14 @@ import {
 } from '@/lib/api/rewards';
 import {
   activateGiftCard,
+  deleteGiftCard,
   disableGiftCard,
   enableGiftCard,
   getAdminGiftCard,
   issueGiftCard,
   listAdminGiftCards,
   resendGiftCard,
+  updateGiftCard,
   type AdminGiftCard,
   type AdminGiftCardDetail,
   type AdminGiftCardPage,
@@ -100,6 +104,7 @@ function GiftCardsView() {
   // Lien « Ouvrir dans le back-office » des emails : ?carte=ID
   const [selectedId, setSelectedId] = useState<string | null>(() => searchParams.get('carte'));
   const [issuing, setIssuing] = useState(false);
+  const canWriteCards = useAdminCan()('cartes-cadeaux', 'write');
 
   const setStatus = (s: GiftCardStatus | 'all') => {
     setStatusState(s);
@@ -156,7 +161,7 @@ function GiftCardsView() {
           <Button type="button" variant="outline" onClick={refresh} className="h-10 border-[#e7e4dd] bg-white text-xs text-gray-700">
             <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${loading ? 'animate-spin text-[#c1647a]' : ''}`} /> Actualiser
           </Button>
-          <Button type="button" onClick={() => setIssuing(true)} className="h-10 bg-[#c1647a] text-xs font-semibold text-white hover:bg-[#a85266]">
+          <Button type="button" hidden={!canWriteCards} onClick={() => setIssuing(true)} className="h-10 bg-[#c1647a] text-xs font-semibold text-white hover:bg-[#a85266]">
             <Plus className="mr-1.5 h-3.5 w-3.5" /> Émettre une carte
           </Button>
         </div>
@@ -286,7 +291,7 @@ function GiftCardsView() {
                         onClick={() => setSelectedId(card.id)}
                         className="h-8 border-[#e7e4dd] text-[11px]"
                       >
-                        {card.status === 'PENDING_PAYMENT' ? 'Encaisser' : 'Détails'}
+                        {card.status === 'PENDING_PAYMENT' && canWriteCards ? 'Encaisser' : 'Détails'}
                       </Button>
                     </td>
                   </tr>
@@ -333,8 +338,12 @@ function GiftCardsView() {
 // ---------------------------------------------------------------------------
 
 function GiftCardDrawer({ cardId, onClose, onChanged }: { cardId: string | null; onClose: () => void; onChanged: () => void }) {
-  // Désactiver / réactiver une carte : droit « Désactiver » du module Cartes cadeaux
-  const canManage = useAdminCan()('cartes-cadeaux', 'delete');
+  // Encaisser, renvoyer, corriger : droit « modifier » ; désactiver / réactiver / supprimer : droit « supprimer »
+  const can = useAdminCan();
+  const canWrite = can('cartes-cadeaux', 'write');
+  const canManage = can('cartes-cadeaux', 'delete');
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState({ recipientName: '', recipientEmail: '', message: '', notes: '' });
   const [card, setCard] = useState<AdminGiftCardDetail | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -367,8 +376,27 @@ function GiftCardDrawer({ cardId, onClose, onChanged }: { cardId: string | null;
         toast.success(success);
         onChanged();
         setConfirmDisable(false);
+        setEditing(false);
       })
       .catch((err) => toast.error(errorMessage(err, 'Action impossible.')))
+      .finally(() => setBusy(null));
+  };
+
+  const startEditing = (c: AdminGiftCardDetail) => {
+    setDraft({ recipientName: c.recipientName, recipientEmail: c.recipientEmail, message: c.message ?? '', notes: c.notes ?? '' });
+    setEditing(true);
+  };
+
+  const remove = (c: AdminGiftCardDetail) => {
+    if (!window.confirm(`Supprimer la carte ${c.code} ? Cette demande n’a jamais été payée ; elle sera définitivement effacée.`)) return;
+    setBusy('delete');
+    deleteGiftCard(c.id)
+      .then(() => {
+        toast.success('Carte supprimée');
+        onChanged();
+        onClose();
+      })
+      .catch((err) => toast.error(errorMessage(err, 'Suppression impossible.')))
       .finally(() => setBusy(null));
   };
 
@@ -382,7 +410,7 @@ function GiftCardDrawer({ cardId, onClose, onChanged }: { cardId: string | null;
           Reçu (PDF)
         </Link>
       )}
-      {card.status === 'ACTIVE' && (
+      {canWrite && card.status === 'ACTIVE' && (
         <Button
           type="button"
           variant="outline"
@@ -417,6 +445,18 @@ function GiftCardDrawer({ cardId, onClose, onChanged }: { cardId: string | null;
           Réactiver
         </Button>
       )}
+      {canManage && card.status === 'PENDING_PAYMENT' && !card.paidAt && (
+        <Button
+          type="button"
+          variant="outline"
+          disabled={Boolean(busy)}
+          onClick={() => remove(card)}
+          className="h-9 border-red-200 text-xs text-red-700 hover:bg-red-50"
+        >
+          {busy === 'delete' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Trash2 className="mr-1.5 h-3.5 w-3.5" />}
+          Supprimer
+        </Button>
+      )}
     </div>
   ) : undefined;
 
@@ -441,7 +481,7 @@ function GiftCardDrawer({ cardId, onClose, onChanged }: { cardId: string | null;
         </p>
       ) : card ? (
         <div className="space-y-5 text-xs">
-          {card.status === 'PENDING_PAYMENT' && (
+          {canWrite && card.status === 'PENDING_PAYMENT' && (
             <section className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
               <h3 className="flex items-center gap-1.5 text-sm font-bold text-amber-900">
                 <Wallet className="h-4 w-4" /> Encaisser cette carte
@@ -520,9 +560,101 @@ function GiftCardDrawer({ cardId, onClose, onChanged }: { cardId: string | null;
             </div>
           </section>
 
+          {editing && (
+            <section className="space-y-3 rounded-xl border border-[#e7e4dd] bg-white p-4">
+              <h3 className="text-sm font-bold text-[#1e2a1f]">Corriger la carte</h3>
+              {(card.status === 'USED' || card.status === 'EXPIRED') && (
+                <p className="text-gray-500">Carte utilisée ou expirée : seule la note interne reste modifiable.</p>
+              )}
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="space-y-1">
+                  <span className="font-semibold text-gray-700">Nom du destinataire</span>
+                  <Input
+                    value={draft.recipientName}
+                    disabled={card.status === 'USED' || card.status === 'EXPIRED'}
+                    onChange={(e) => setDraft((d) => ({ ...d, recipientName: e.target.value }))}
+                    className="h-9 bg-white text-xs"
+                  />
+                </label>
+                <label className="space-y-1">
+                  <span className="font-semibold text-gray-700">Email du destinataire</span>
+                  <Input
+                    type="email"
+                    value={draft.recipientEmail}
+                    disabled={card.status === 'USED' || card.status === 'EXPIRED'}
+                    onChange={(e) => setDraft((d) => ({ ...d, recipientEmail: e.target.value }))}
+                    className="h-9 bg-white text-xs"
+                  />
+                </label>
+              </div>
+              <label className="block space-y-1">
+                <span className="font-semibold text-gray-700">Message</span>
+                <textarea
+                  value={draft.message}
+                  disabled={card.status === 'USED' || card.status === 'EXPIRED'}
+                  onChange={(e) => setDraft((d) => ({ ...d, message: e.target.value }))}
+                  maxLength={500}
+                  rows={2}
+                  className="w-full rounded-md border border-[#e7e4dd] bg-white px-3 py-2 text-xs disabled:opacity-60"
+                />
+              </label>
+              <label className="block space-y-1">
+                <span className="font-semibold text-gray-700">Note interne</span>
+                <textarea
+                  value={draft.notes}
+                  onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
+                  maxLength={1000}
+                  rows={2}
+                  className="w-full rounded-md border border-[#e7e4dd] bg-white px-3 py-2 text-xs"
+                />
+              </label>
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setEditing(false)} className="h-8 text-xs">
+                  Annuler
+                </Button>
+                <Button
+                  type="button"
+                  disabled={Boolean(busy)}
+                  onClick={() =>
+                    run(
+                      'update',
+                      () =>
+                        updateGiftCard(
+                          card.id,
+                          card.status === 'USED' || card.status === 'EXPIRED'
+                            ? { notes: draft.notes }
+                            : {
+                                recipientName: draft.recipientName,
+                                recipientEmail: draft.recipientEmail,
+                                message: draft.message,
+                                notes: draft.notes,
+                              },
+                        ),
+                      'Carte mise à jour',
+                    )
+                  }
+                  className="h-8 bg-[#24582d] text-xs text-white hover:bg-[#1c4423]"
+                >
+                  {busy === 'update' && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+                  Enregistrer
+                </Button>
+              </div>
+            </section>
+          )}
+
           <section className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1 rounded-xl bg-[#faf8f4] p-3">
-              <h3 className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Destinataire</h3>
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Destinataire</h3>
+                <button
+                  type="button"
+                  hidden={!canWrite || editing}
+                  onClick={() => startEditing(card)}
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#c1647a] hover:underline"
+                >
+                  <Pencil className="h-3 w-3" /> Modifier
+                </button>
+              </div>
               <p className="font-semibold text-gray-900">{card.recipientName}</p>
               <p className="text-gray-600">{card.recipientEmail}</p>
               {card.message && <p className="pt-1 italic text-gray-600">« {card.message} »</p>}

@@ -63,9 +63,13 @@ import {
 import { toast } from 'sonner';
 import { CreateBlogCategoryDialog } from '@/components/admin/create-blog-category-dialog';
 import { AuthorProfileDialog } from '@/components/admin/author-profile-dialog';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 
 export default function AdminBlogPage() {
   const router = useRouter();
+  const can = useAdminCan();
+  const canWrite = can('blog', 'write');
+  const canDelete = can('blog', 'delete');
   // Main Top-level navigation: 'articles' | 'categories' | 'authors'
   const [activeTab, setActiveTab] = useState<'articles' | 'categories' | 'authors'>('articles');
 
@@ -394,6 +398,7 @@ export default function AdminBlogPage() {
           <Button
             size="sm"
             onClick={handleOpenCreateArticle}
+            hidden={!canWrite}
             className="bg-[#24582d] hover:bg-[#1a4021] text-white text-xs font-semibold shadow-xs h-10 sm:h-9 w-full sm:w-auto"
           >
             <Plus size={15} className="mr-1.5" />
@@ -879,6 +884,7 @@ export default function AdminBlogPage() {
                 <Button
                   onClick={() => router.push('/admin/blog/nouveau')}
                   size="sm"
+                  hidden={!canWrite}
                   className="bg-[#24582d] hover:bg-[#1a4021] text-white text-xs font-semibold px-4"
                 >
                   <Plus size={14} className="mr-1.5" />
@@ -1028,6 +1034,7 @@ export default function AdminBlogPage() {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleToggleStatus(art)}
+                      hidden={!canWrite}
                       className={`h-7 px-2 text-[11px] font-semibold gap-1.5 ${
                         art.status === 'publie'
                           ? 'text-[#24582d] hover:bg-[#edf8ef]'
@@ -1053,6 +1060,7 @@ export default function AdminBlogPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleOpenEditArticle(art)}
+                        hidden={!canWrite}
                         className="h-7 w-7 p-0 text-[#666] hover:text-[#24582d] hover:bg-[#edf8ef]"
                         title="Modifier l'article"
                       >
@@ -1062,6 +1070,7 @@ export default function AdminBlogPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDuplicateArticle(art)}
+                        hidden={!canWrite}
                         className="h-7 w-7 p-0 text-[#666] hover:text-[#24582d] hover:bg-[#edf8ef]"
                         title="Dupliquer"
                       >
@@ -1071,6 +1080,7 @@ export default function AdminBlogPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDeleteArticle(art.id, art.title)}
+                        hidden={!canDelete}
                         className="h-7 w-7 p-0 text-[#888] hover:text-red-600 hover:bg-red-50"
                         title="Supprimer"
                       >
@@ -1103,6 +1113,7 @@ export default function AdminBlogPage() {
             <Button
               size="sm"
               onClick={handleOpenCreateCategory}
+              hidden={!canWrite}
               className="bg-[#24582d] hover:bg-[#1a4021] text-white text-xs font-semibold w-full sm:w-auto h-10 sm:h-9"
             >
               <Plus size={14} className="mr-1.5" />
@@ -1124,6 +1135,7 @@ export default function AdminBlogPage() {
               <Button
                 onClick={handleOpenCreateCategory}
                 size="sm"
+                hidden={!canWrite}
                 className="bg-[#24582d] hover:bg-[#1a4021] text-white text-xs font-semibold px-4"
               >
                 <Plus size={14} className="mr-1.5" />
@@ -1164,6 +1176,7 @@ export default function AdminBlogPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleOpenEditCategory(cat)}
+                        hidden={!canWrite}
                         className="h-7 px-2 text-xs text-[#666] hover:text-[#24582d]"
                       >
                         <Edit3 size={12} className="mr-1" /> Modifier
@@ -1172,6 +1185,7 @@ export default function AdminBlogPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDeleteCategory(cat.id, cat.name)}
+                        hidden={!canDelete}
                         className="h-7 px-2 text-xs text-[#888] hover:text-red-600 hover:bg-red-50"
                       >
                         <Trash2 size={12} />
@@ -1203,6 +1217,7 @@ export default function AdminBlogPage() {
             <Button
               size="sm"
               onClick={handleOpenCreateAuthor}
+              hidden={!canWrite}
               className="bg-[#24582d] hover:bg-[#1a4021] text-white text-xs font-semibold w-full sm:w-auto h-10 sm:h-9"
             >
               <Plus size={14} className="mr-1.5" />
@@ -1224,6 +1239,7 @@ export default function AdminBlogPage() {
               <Button
                 onClick={handleOpenCreateAuthor}
                 size="sm"
+                hidden={!canWrite}
                 className="bg-[#24582d] hover:bg-[#1a4021] text-white text-xs font-semibold px-4"
               >
                 <Plus size={14} className="mr-1.5" />
@@ -1270,6 +1286,7 @@ export default function AdminBlogPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleOpenEditAuthor(auth)}
+                        hidden={!canWrite}
                         className="h-7 px-2 text-xs text-[#24582d] hover:bg-[#edf8ef]"
                       >
                         <Edit3 size={12} className="mr-1" /> Profil
@@ -1279,6 +1296,7 @@ export default function AdminBlogPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => void handleDeleteAuthor(auth)}
+                          hidden={!canDelete}
                           className="h-7 px-2 text-xs text-red-600 hover:bg-red-50"
                           aria-label={`Supprimer ${auth.name}`}
                         >

@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 
 interface ArticlePreviewViewProps {
   article: BlogArticle;
@@ -29,6 +30,8 @@ interface ArticlePreviewViewProps {
 
 export function ArticlePreviewView({ article }: ArticlePreviewViewProps) {
   const router = useRouter();
+  const can = useAdminCan();
+  const canWrite = can('blog', 'write');
   const [copied, setCopied] = useState(false);
 
   const author = {
@@ -178,6 +181,7 @@ export function ArticlePreviewView({ article }: ArticlePreviewViewProps) {
             type="button"
             size="sm"
             onClick={() => router.push(`/admin/blog/${article.id}`)}
+            hidden={!canWrite}
             className="bg-[#24582d] hover:bg-[#1a4021] text-white text-xs font-semibold shadow-xs"
           >
             <Edit3 size={13} className="mr-1.5" />
@@ -369,6 +373,7 @@ export function ArticlePreviewView({ article }: ArticlePreviewViewProps) {
         <Button
           type="button"
           onClick={() => router.push(`/admin/blog/${article.id}`)}
+          hidden={!canWrite}
           className="bg-[#24582d] hover:bg-[#1a4021] text-white text-xs font-semibold px-4"
         >
           <Edit3 size={13} className="mr-1.5" />

@@ -34,6 +34,8 @@ interface DeliveryDetailSheetProps {
   onStatusChange: (deliveryId: string, newStatus: DeliveryStatus) => void;
   onOpenAssignDriver: (delivery: AdminDelivery) => void;
   onOpenComplete?: (delivery: AdminDelivery) => void;
+  /** Compte sans droit de modification des livraisons : fiche consultable, sans bouton d'action. */
+  readOnly?: boolean;
 }
 
 export function DeliveryDetailSheet({
@@ -43,6 +45,7 @@ export function DeliveryDetailSheet({
   onStatusChange,
   onOpenAssignDriver,
   onOpenComplete,
+  readOnly = false,
 }: DeliveryDetailSheetProps) {
   if (!delivery) return null;
 
@@ -118,7 +121,7 @@ export function DeliveryDetailSheet({
 
           {/* Quick Action Buttons Bar */}
           <div className="mt-4 pt-3 border-t border-[#e7e4dd] flex flex-wrap items-center gap-2">
-            {delivery.status === 'a_livrer' && (
+            {!readOnly && delivery.status === 'a_livrer' && (
               <>
                 <Button
                   size="sm"
@@ -152,7 +155,7 @@ export function DeliveryDetailSheet({
               </>
             )}
 
-            {delivery.status === 'en_cours' && (
+            {!readOnly && delivery.status === 'en_cours' && (
               <>
                 <Button
                   size="sm"
@@ -184,7 +187,7 @@ export function DeliveryDetailSheet({
               </>
             )}
 
-            {delivery.status === 'echec' && (
+            {!readOnly && delivery.status === 'echec' && (
               <Button
                 size="sm"
                 onClick={() => {
@@ -321,6 +324,7 @@ export function DeliveryDetailSheet({
               <Button
                 variant="ghost"
                 size="sm"
+                hidden={readOnly}
                 onClick={() => onOpenAssignDriver(delivery)}
                 className="text-xs text-[#c1647a] hover:text-[#a85266] p-0 h-auto font-medium"
               >

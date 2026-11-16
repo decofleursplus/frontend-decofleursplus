@@ -4,6 +4,7 @@ import { use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Building2, Calendar, CheckCircle2, AlertTriangle, Clock, Loader2, PackageCheck, Save, Boxes } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import type { SupplierOrder, SupplierOrderItem } from '@/lib/admin/mock-data/types';
 import { RECEIVABLE_STATUSES, getSupplierOrder, receiveSupplierOrder } from '@/lib/api/admin/procurement';
 import { ORDER_STATUS_LABELS, ORDER_STATUS_STYLES, formatDay, formatFcfa } from '@/lib/admin/procurement-labels';
@@ -38,6 +39,8 @@ export default function AdminReceptionPage({ params }: { params: Promise<{ id: s
   const [loadError, setLoadError] = useState<string | null>(null);
   const [arrivals, setArrivals] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  // Saisie de la réception : droit « Réceptionner » ; sinon la commande reste consultable
+  const canReceive = useAdminCan()('receptions', 'write');
 
   const load = useCallback(
     () =>
@@ -84,7 +87,7 @@ export default function AdminReceptionPage({ params }: { params: Promise<{ id: s
     );
   }
 
-  const receivable = RECEIVABLE_STATUSES.includes(order.status);
+  const receivable = canReceive && RECEIVABLE_STATUSES.includes(order.status);
   const remaining = (it: SupplierOrderItem) => it.orderedQty - it.receivedQty;
 
   const fillAll = () => setArrivals(Object.fromEntries(order.items.filter((i) => remaining(i) > 0).map((i) => [i.id, String(remaining(i))])));

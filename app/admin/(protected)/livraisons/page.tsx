@@ -15,7 +15,10 @@ import {
   failAdminDelivery,
   createAdminDriver,
   updateAdminDriver,
+  deleteAdminDriver,
+  provisionAdminDriverAccess,
   type AdminDeliveriesResponse,
+  type DriverAccessCredentials,
 } from '@/lib/api/admin/deliveries';
 import { ApiClientError } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
@@ -48,11 +51,15 @@ import {
   ChevronRight,
   RefreshCw,
   Loader2,
+  Pencil,
+  KeyRound,
+  Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AssignDriverDialog } from '@/components/admin/assign-driver-dialog';
 import { DeliveryDetailSheet } from '@/components/admin/delivery-detail-sheet';
-import { AddDriverDialog } from '@/components/admin/add-driver-dialog';
+import { AddDriverDialog, DriverCredentialsDialog, type DriverFormValues } from '@/components/admin/add-driver-dialog';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import { CompleteDeliveryDialog } from '@/components/admin/complete-delivery-dialog';
 
 export default function AdminDeliveriesPage() {
@@ -124,7 +131,20 @@ export default function AdminDeliveriesPage() {
   const [completeDeliveryTarget, setCompleteDeliveryTarget] = useState<AdminDelivery | null>(null);
   const [isCompleteOpen, setIsCompleteOpen] = useState(false);
 
-  const [isAddDriverOpen, setIsAddDriverOpen] = useState(false);
+  // Fiche livreur (création ou modification) et identifiants de l'espace livreur à afficher une fois
+  const [driverDialog, setDriverDialog] = useState<{ open: boolean; driver: DeliveryDriver | null; key: number }>({
+    open: false,
+    driver: null,
+    key: 0,
+  });
+  const [driverAccess, setDriverAccess] = useState<{ name: string; credentials: DriverAccessCredentials } | null>(null);
+  const openDriverDialog = (driver: DeliveryDriver | null) => setDriverDialog((d) => ({ open: true, driver, key: d.key + 1 }));
+
+  // Boutons affichés selon les droits du compte (Paramètres › Rôles & permissions)
+  const can = useAdminCan();
+  const canWriteDeliveries = can('livraisons', 'write');
+  const canWriteDrivers = can('livreurs', 'write');
+  const canDeleteDrivers = can('livreurs', 'delete');
 
   // Counts for pills
   const counts = useMemo(() => {
@@ -234,10 +254,10 @@ export default function AdminDeliveriesPage() {
   };
 
   /** Exécute une action serveur puis recharge la liste ; aucune mise à jour locale en cas d'échec. */
-  const runAction = async (action: () => Promise<unknown>, success: string): Promise<boolean> => {
+  const runAction = async <T,>(action: () => Promise<T>, success: string | ((result: T) => string)): Promise<boolean> => {
     try {
-      await action();
-      toast.success(success);
+      const result = await action();
+      toast.success(typeof success === 'function' ? success(result) : success);
       await fetchAll();
       return true;
     } catch (err) {
@@ -284,8 +304,78 @@ export default function AdminDeliveriesPage() {
   const handleCompleteDelivery = (deliveryId: string, recipientName: string, notes?: string) =>
     runAction(() => completeAdminDelivery(deliveryId, { recipientName, notes }), 'Livraison marquée comme effectuée');
 
-  const handleAddDriver = (input: { name: string; phone: string; vehicle: DeliveryDriver['vehicle']; vehiclePlate?: string; available: boolean }) =>
-    runAction(() => createAdminDriver(input), `Livreur ${input.name} ajouté à la flotte`);
+  /** Création (avec accès à l'espace livreur si un email est saisi) ou modification d'un livreur. */
+  const handleSaveDriver = async (values: DriverFormValues): Promise<boolean> => {
+    const editing = driverDialog.driver;
+    if (editing) {
+      return runAction(
+        () =>
+          updateAdminDriver(editing.id, {
+            name: values.name,
+            phone: values.phone,
+            vehicle: values.vehicle,
+            vehiclePlate: values.vehiclePlate ?? null,
+            available: values.available,
+          }),
+        `Livreur ${values.name} mis à jour`,
+      );
+    }
+    const out: { credentials: DriverAccessCredentials | null } = { credentials: null };
+    const ok = await runAction(
+      async () => {
+        out.credentials = (await createAdminDriver(values)).credentials;
+      },
+      `Livreur ${values.name} ajouté à la flotte`,
+    );
+    if (ok && out.credentials) setDriverAccess({ name: values.name, credentials: out.credentials });
+    return ok;
+  };
+
+  /** Donne l'accès à l'espace livreur (email demandé) ou génère un nouveau mot de passe temporaire. */
+  const handleDriverAccess = async (drv: DeliveryDriver) => {
+    let email: string | undefined;
+    if (!drv.accountEmail) {
+      const input = window.prompt(`Email de connexion de ${drv.name} (il y recevra ses identifiants) :`, '');
+      if (input === null) return;
+      email = input.trim();
+      if (!/^\S+@\S+\.\S+$/.test(email)) {
+        toast.error('Adresse email invalide');
+        return;
+      }
+    } else if (
+      !window.confirm(`Générer un nouveau mot de passe temporaire pour ${drv.name} ? L’ancien ne fonctionnera plus.`)
+    ) {
+      return;
+    }
+    const out: { credentials: DriverAccessCredentials | null } = { credentials: null };
+    const ok = await runAction(
+      async () => {
+        out.credentials = (await provisionAdminDriverAccess(drv.id, email)).credentials;
+      },
+      drv.accountEmail ? `Nouveau mot de passe généré pour ${drv.name}` : `Accès à l’espace livreur créé pour ${drv.name}`,
+    );
+    if (ok && out.credentials) setDriverAccess({ name: drv.name, credentials: out.credentials });
+  };
+
+  const handleDeleteDriver = async (drv: DeliveryDriver) => {
+    if (drv.activeDeliveriesCount > 0) {
+      toast.error(`${drv.name} a des livraisons en cours : réassignez-les avant de le supprimer.`);
+      return;
+    }
+    if (
+      !window.confirm(
+        `Supprimer ${drv.name} ? S’il a déjà effectué des livraisons, il sera seulement désactivé pour conserver l’historique. Son accès à l’espace livreur sera coupé.`,
+      )
+    )
+      return;
+    await runAction(
+      () => deleteAdminDriver(drv.id),
+      (res) => (res.deleted ? `${drv.name} a été supprimé` : `${drv.name} a été désactivé (historique conservé)`),
+    );
+  };
+
+  const handleReactivateDriver = (drv: DeliveryDriver) =>
+    runAction(() => updateAdminDriver(drv.id, { isActive: true }), `${drv.name} est de nouveau actif`);
 
   const handleToggleDriverStatus = async (driverId: string) => {
     const drv = drivers.find((d) => d.id === driverId);
@@ -818,6 +908,7 @@ export default function AdminDeliveriesPage() {
                         ) : (
                           <button
                             type="button"
+                            disabled={!canWriteDeliveries}
                             onClick={() => handleOpenAssignModal(delivery)}
                             className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 rounded-md px-2 py-0.5 transition-colors cursor-pointer"
                             title="Cliquer pour assigner un livreur"
@@ -834,7 +925,7 @@ export default function AdminDeliveriesPage() {
                       {/* Action column with primary step + quick direct complete button */}
                       <TableCell className="text-right pr-4 px-3 py-2.5 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1.5">
-                          {delivery.status === 'a_livrer' && (
+                          {canWriteDeliveries && delivery.status === 'a_livrer' && (
                             <>
                               <Button
                                 size="sm"
@@ -856,7 +947,7 @@ export default function AdminDeliveriesPage() {
                             </>
                           )}
 
-                          {delivery.status === 'en_cours' && (
+                          {canWriteDeliveries && delivery.status === 'en_cours' && (
                             <Button
                               size="sm"
                               onClick={() => handleOpenCompleteModal(delivery)}
@@ -879,7 +970,7 @@ export default function AdminDeliveriesPage() {
                             </Button>
                           )}
 
-                          {delivery.status === 'echec' && (
+                          {canWriteDeliveries && delivery.status === 'echec' && (
                             <>
                               <Button
                                 size="sm"
@@ -1000,6 +1091,7 @@ export default function AdminDeliveriesPage() {
                       ) : (
                         <button
                           type="button"
+                          disabled={!canWriteDeliveries}
                           onClick={() => handleOpenAssignModal(delivery)}
                           className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 rounded-md px-2 py-0.5 transition-colors cursor-pointer mt-0.5"
                         >
@@ -1012,7 +1104,7 @@ export default function AdminDeliveriesPage() {
 
                   {/* Action Buttons Row */}
                   <div className="pt-2 border-t border-[#f0ede6] flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                    {delivery.status === 'a_livrer' && (
+                    {canWriteDeliveries && delivery.status === 'a_livrer' && (
                       <>
                         <Button
                           size="sm"
@@ -1034,7 +1126,7 @@ export default function AdminDeliveriesPage() {
                       </>
                     )}
 
-                    {delivery.status === 'en_cours' && (
+                    {canWriteDeliveries && delivery.status === 'en_cours' && (
                       <>
                         <Button
                           size="sm"
@@ -1067,7 +1159,7 @@ export default function AdminDeliveriesPage() {
                       </Button>
                     )}
 
-                    {delivery.status === 'echec' && (
+                    {canWriteDeliveries && delivery.status === 'echec' && (
                       <div className="flex items-center gap-2 w-full">
                         <Button
                           size="sm"
@@ -1108,7 +1200,8 @@ export default function AdminDeliveriesPage() {
               </p>
             </div>
             <Button
-              onClick={() => setIsAddDriverOpen(true)}
+              hidden={!canWriteDrivers}
+              onClick={() => openDriverDialog(null)}
               className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold gap-1.5 h-9"
             >
               <UserPlus className="h-3.5 w-3.5" />
@@ -1130,7 +1223,8 @@ export default function AdminDeliveriesPage() {
                 <p className="text-xs text-gray-400 mt-1">Ajoutez votre premier coursier pour lui affecter des livraisons.</p>
               </div>
               <Button
-                onClick={() => setIsAddDriverOpen(true)}
+                hidden={!canWriteDrivers}
+                onClick={() => openDriverDialog(null)}
                 className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold gap-1.5 h-8 mt-2"
               >
                 <UserPlus className="h-3.5 w-3.5" />
@@ -1169,7 +1263,9 @@ export default function AdminDeliveriesPage() {
                       </a>
                     </div>
                     <div>
-                      {drv.status === 'disponible' ? (
+                      {drv.isActive === false ? (
+                        <Badge className="bg-red-50 text-red-700 border-none text-[11px] font-medium">Désactivé</Badge>
+                      ) : drv.status === 'disponible' ? (
                         <Badge className="bg-[#dcfce7] text-[#166534] border-none text-[11px] font-medium">
                           Disponible
                         </Badge>
@@ -1185,20 +1281,81 @@ export default function AdminDeliveriesPage() {
                     </div>
                   </div>
 
+                  <div className="flex items-center gap-1.5 text-[11px]">
+                    <KeyRound className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                    {drv.accountEmail ? (
+                      <span className="text-gray-600 truncate">
+                        Espace livreur : <span className="font-mono">{drv.accountEmail}</span>
+                      </span>
+                    ) : (
+                      <span className="text-amber-700">Pas encore d’accès à l’espace livreur</span>
+                    )}
+                  </div>
+
                   <div className="pt-2 border-t border-[#f0ede6] flex items-center justify-between">
                     <span className="text-[11px] text-gray-500">
                       {drv.activeDeliveriesCount > 0
                         ? `${drv.activeDeliveriesCount} course(s) en cours`
                         : 'Aucune course en cours'}
                     </span>
+                    {drv.isActive === false ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        hidden={!canWriteDrivers}
+                        onClick={() => void handleReactivateDriver(drv)}
+                        className="text-[11px] text-gray-600 hover:text-gray-900 h-7 px-2 gap-1"
+                      >
+                        <Power className="h-3 w-3" />
+                        Réactiver
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        hidden={!canWriteDrivers}
+                        onClick={() => handleToggleDriverStatus(drv.id)}
+                        className="text-[11px] text-gray-600 hover:text-gray-900 h-7 px-2 gap-1"
+                      >
+                        <Power className="h-3 w-3" />
+                        {drv.status === 'disponible' ? 'Mettre en pause' : 'Rendre disponible'}
+                      </Button>
+                    )}
+                  </div>
+
+                  <div
+                    hidden={!canWriteDrivers && !canDeleteDrivers}
+                    className="pt-2 border-t border-[#f0ede6] flex flex-wrap items-center justify-end gap-1.5"
+                  >
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      onClick={() => handleToggleDriverStatus(drv.id)}
-                      className="text-[11px] text-gray-600 hover:text-gray-900 h-7 px-2 gap-1"
+                      hidden={!canWriteDrivers}
+                      onClick={() => openDriverDialog(drv)}
+                      className="h-7 px-2 text-[11px] gap-1 border-[#e7e4dd]"
                     >
-                      <Power className="h-3 w-3" />
-                      {drv.status === 'disponible' ? 'Mettre en pause' : 'Rendre disponible'}
+                      <Pencil className="h-3 w-3" />
+                      Modifier
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      hidden={!canWriteDrivers || drv.isActive === false}
+                      onClick={() => void handleDriverAccess(drv)}
+                      className="h-7 px-2 text-[11px] gap-1 border-[#e7e4dd]"
+                    >
+                      <KeyRound className="h-3 w-3" />
+                      {drv.accountEmail ? 'Nouveau mot de passe' : 'Donner l’accès'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      hidden={!canDeleteDrivers || drv.isActive === false}
+                      onClick={() => void handleDeleteDriver(drv)}
+                      className="h-7 px-2 text-[11px] gap-1 border-red-200 text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      Supprimer
                     </Button>
                   </div>
                 </div>
@@ -1229,9 +1386,18 @@ export default function AdminDeliveriesPage() {
 
       {/* Add Driver Dialog */}
       <AddDriverDialog
-        isOpen={isAddDriverOpen}
-        onOpenChange={setIsAddDriverOpen}
-        onAddDriver={handleAddDriver}
+        key={`driver-${driverDialog.key}`}
+        isOpen={driverDialog.open}
+        onOpenChange={(open) => setDriverDialog((d) => ({ ...d, open }))}
+        driver={driverDialog.driver}
+        onSubmit={handleSaveDriver}
+      />
+
+      {/* Identifiants de l'espace livreur (affichés une seule fois) */}
+      <DriverCredentialsDialog
+        credentials={driverAccess?.credentials ?? null}
+        driverName={driverAccess?.name ?? ''}
+        onClose={() => setDriverAccess(null)}
       />
 
       {/* Delivery Detail Sheet */}
@@ -1239,6 +1405,7 @@ export default function AdminDeliveriesPage() {
         delivery={selectedDelivery}
         isOpen={isDetailOpen}
         onOpenChange={setIsDetailOpen}
+        readOnly={!canWriteDeliveries}
         onStatusChange={handleStatusChange}
         onOpenAssignDriver={(d) => {
           setIsDetailOpen(false);

@@ -237,6 +237,18 @@ export async function createAdminCampaign(data: {
   return transformAdminCampaign(res);
 }
 
+/** Modifie une campagne non envoyée. */
+export async function updateAdminCampaign(
+  id: string,
+  data: Partial<{ name: string; channel: string; audience: string; messageContent: string }>,
+): Promise<AdminCampaign> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const res = await apiClient.patch<any>(`/admin/marketing/campaigns/${id}`, data, {
+    useAdminToken: true,
+  });
+  return transformAdminCampaign(res);
+}
+
 export async function sendAdminCampaign(id: string): Promise<boolean> {
   await apiClient.post(`/admin/marketing/campaigns/${id}/send`, {}, {
     useAdminToken: true,

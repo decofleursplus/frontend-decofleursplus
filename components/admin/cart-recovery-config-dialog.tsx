@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Sliders, Clock, Gift, CheckCircle2, Loader2, Mail } from 'lucide-react';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 
 interface CartRecoveryConfigDialogProps {
   isOpen: boolean;
@@ -24,6 +25,8 @@ export function CartRecoveryConfigDialog(props: CartRecoveryConfigDialogProps) {
 }
 
 function CartRecoveryForm({ isOpen, onOpenChange, settings, coupons, onSave }: CartRecoveryConfigDialogProps) {
+  const can = useAdminCan();
+  const canWrite = can('marketing', 'write');
   const [autoEnabled, setAutoEnabled] = useState(settings.autoEnabled);
   const [delay1, setDelay1] = useState(settings.delayHours1.toString());
   const [delay2, setDelay2] = useState(settings.delayHours2.toString());
@@ -88,7 +91,7 @@ function CartRecoveryForm({ isOpen, onOpenChange, settings, coupons, onSave }: C
                   <Mail className="h-3 w-3" /> Envoi par e-mail ; les relances WhatsApp restent manuelles depuis la liste.
                 </span>
               </span>
-              <input type="checkbox" checked={autoEnabled} onChange={(e) => setAutoEnabled(e.target.checked)} className="h-4 w-4 accent-[#c1647a]" />
+              <input type="checkbox" disabled={!canWrite} checked={autoEnabled} onChange={(e) => setAutoEnabled(e.target.checked)} className="h-4 w-4 accent-[#c1647a]" />
             </label>
 
             <div className="grid grid-cols-2 gap-4">
@@ -97,7 +100,7 @@ function CartRecoveryForm({ isOpen, onOpenChange, settings, coupons, onSave }: C
                   <Clock className="h-3.5 w-3.5 text-gray-400" />
                   1re relance (heures)
                 </Label>
-                <Input id="cart-delay-1" type="number" min={1} max={72} value={delay1} onChange={(e) => setDelay1(e.target.value)} className="text-xs h-10 bg-white" />
+                <Input id="cart-delay-1" type="number" min={1} max={72} value={delay1} disabled={!canWrite} onChange={(e) => setDelay1(e.target.value)} className="text-xs h-10 bg-white" />
                 <span className="text-[10px] text-gray-400 block">Rappel du panier, sans code</span>
               </div>
               <div className="space-y-1.5">
@@ -105,7 +108,7 @@ function CartRecoveryForm({ isOpen, onOpenChange, settings, coupons, onSave }: C
                   <Clock className="h-3.5 w-3.5 text-gray-400" />
                   2e relance (heures)
                 </Label>
-                <Input id="cart-delay-2" type="number" min={2} max={168} value={delay2} onChange={(e) => setDelay2(e.target.value)} className="text-xs h-10 bg-white" />
+                <Input id="cart-delay-2" type="number" min={2} max={168} value={delay2} disabled={!canWrite} onChange={(e) => setDelay2(e.target.value)} className="text-xs h-10 bg-white" />
                 <span className="text-[10px] text-gray-400 block">Rappel avec l’offre ci-dessous</span>
               </div>
             </div>
@@ -117,7 +120,7 @@ function CartRecoveryForm({ isOpen, onOpenChange, settings, coupons, onSave }: C
                   <Gift className="h-3.5 w-3.5 text-[#c1647a]" />
                   Inclure un code promo dans la 2e relance
                 </span>
-                <input type="checkbox" checked={includeDiscount} onChange={(e) => setIncludeDiscount(e.target.checked)} className="h-4 w-4 accent-[#c1647a]" />
+                <input type="checkbox" disabled={!canWrite} checked={includeDiscount} onChange={(e) => setIncludeDiscount(e.target.checked)} className="h-4 w-4 accent-[#c1647a]" />
               </label>
               {includeDiscount &&
                 (activeCoupons.length === 0 ? (
@@ -133,6 +136,7 @@ function CartRecoveryForm({ isOpen, onOpenChange, settings, coupons, onSave }: C
                       <select
                         id="cart-coupon"
                         value={discountCode}
+                        disabled={!canWrite}
                         onChange={(e) => setDiscountCode(e.target.value)}
                         className="w-full h-10 rounded-md border border-[#e7e4dd] bg-white px-2 font-mono text-xs font-bold"
                       >
@@ -153,6 +157,7 @@ function CartRecoveryForm({ isOpen, onOpenChange, settings, coupons, onSave }: C
                       <Input
                         id="cart-offer"
                         value={discountValue}
+                        disabled={!canWrite}
                         onChange={(e) => setDiscountValue(e.target.value)}
                         placeholder="Ex : -10 % sur votre commande"
                         className="text-xs h-10 bg-white"
@@ -167,7 +172,7 @@ function CartRecoveryForm({ isOpen, onOpenChange, settings, coupons, onSave }: C
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="text-xs h-10 px-4 border-[#e7e4dd]">
               Annuler
             </Button>
-            <Button type="submit" disabled={saving} className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold h-10 px-5 gap-1.5">
+            <Button type="submit" hidden={!canWrite} disabled={saving} className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold h-10 px-5 gap-1.5">
               {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
               Enregistrer
             </Button>

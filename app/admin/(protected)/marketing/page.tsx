@@ -20,6 +20,7 @@ import {
   getAdminPromotions,
   createAdminPromotion,
   updateAdminPromotion,
+  updateAdminCampaign,
   deleteAdminPromotion,
   getAdminCampaigns,
   createAdminCampaign,
@@ -60,6 +61,7 @@ import {
   RefreshCw,
   Eye,
   EyeOff,
+  Pencil,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { WhatsAppColorIcon, WhatsAppButtonIcon } from '@/components/icons';
@@ -68,10 +70,19 @@ import { CreatePromotionDialog } from '@/components/admin/create-promotion-dialo
 import { CreateCampaignDialog } from '@/components/admin/create-campaign-dialog';
 import { CartRecoveryConfigDialog } from '@/components/admin/cart-recovery-config-dialog';
 import { EventManagementView } from '@/components/admin/event-management-view';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 
 export default function AdminMarketingPage() {
+  const can = useAdminCan();
+  const canReadMarketing = can('marketing', 'read');
+  const canWrite = can('marketing', 'write');
+  const canDelete = can('marketing', 'delete');
+  const canReadEvents = can('evenements', 'read');
+
   // Main Top-level tab: 'evenements' | 'coupons' | 'promotions' | 'campagnes' | 'paniers'
-  const [activeTab, setActiveTab] = useState<'evenements' | 'coupons' | 'promotions' | 'campagnes' | 'paniers'>('evenements');
+  const [selectedTab, setActiveTab] = useState<'evenements' | 'coupons' | 'promotions' | 'campagnes' | 'paniers'>('evenements');
+  // Sans accès aux événements, l'onglet par défaut devient les codes promo.
+  const activeTab = selectedTab === 'evenements' && !canReadEvents ? 'coupons' : selectedTab;
 
   // State data
   const [coupons, setCoupons] = useState<AdminCoupon[]>([]);
@@ -156,6 +167,24 @@ export default function AdminMarketingPage() {
   const [isCouponDialogOpen, setIsCouponDialogOpen] = useState(false);
   const [isPromotionDialogOpen, setIsPromotionDialogOpen] = useState(false);
   const [isCampaignDialogOpen, setIsCampaignDialogOpen] = useState(false);
+  // Élément en cours de modification (null = création)
+  const [editingCoupon, setEditingCoupon] = useState<AdminCoupon | null>(null);
+  const [editingPromotion, setEditingPromotion] = useState<AdminPromotion | null>(null);
+  const [editingCampaign, setEditingCampaign] = useState<AdminCampaign | null>(null);
+  const [promotionDialogKey, setPromotionDialogKey] = useState(0);
+  const openCouponDialog = (coupon: AdminCoupon | null) => {
+    setEditingCoupon(coupon);
+    setIsCouponDialogOpen(true);
+  };
+  const openPromotionDialog = (promotion: AdminPromotion | null) => {
+    setEditingPromotion(promotion);
+    setPromotionDialogKey((k) => k + 1);
+    setIsPromotionDialogOpen(true);
+  };
+  const openCampaignDialog = (campaign: AdminCampaign | null) => {
+    setEditingCampaign(campaign);
+    setIsCampaignDialogOpen(true);
+  };
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
 
   // KPIs calculés par le serveur (GET /admin/marketing/summary)
@@ -461,7 +490,8 @@ export default function AdminMarketingPage() {
 
           {activeTab === 'coupons' && (
             <Button
-              onClick={() => setIsCouponDialogOpen(true)}
+              hidden={!canWrite}
+              onClick={() => openCouponDialog(null)}
               className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold h-10 px-4 gap-1.5 shadow-xs flex-1 sm:flex-initial"
             >
               <Plus className="h-4 w-4" />
@@ -471,7 +501,8 @@ export default function AdminMarketingPage() {
 
           {activeTab === 'promotions' && (
             <Button
-              onClick={() => setIsPromotionDialogOpen(true)}
+              hidden={!canWrite}
+              onClick={() => openPromotionDialog(null)}
               className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold h-10 px-4 gap-1.5 shadow-xs flex-1 sm:flex-initial"
             >
               <Plus className="h-4 w-4" />
@@ -481,7 +512,8 @@ export default function AdminMarketingPage() {
 
           {activeTab === 'campagnes' && (
             <Button
-              onClick={() => setIsCampaignDialogOpen(true)}
+              hidden={!canWrite}
+              onClick={() => openCampaignDialog(null)}
               className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold h-10 px-4 gap-1.5 shadow-xs flex-1 sm:flex-initial"
             >
               <Plus className="h-4 w-4" />
@@ -503,7 +535,7 @@ export default function AdminMarketingPage() {
       </div>
 
       {/* Top Marketing KPI Cards (2x2 on mobile, 4 on desktop) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div hidden={!canReadMarketing} className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-white border border-[#e7e4dd] rounded-xl p-3 sm:p-4 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-gray-500 text-[11px] sm:text-xs">
             <span className="truncate">CA Promo</span>
@@ -565,6 +597,7 @@ export default function AdminMarketingPage() {
       {/* Main Top Navigation Tabs (Horizontally scrollable on mobile) */}
       <div className="flex border-b border-[#e7e4dd] gap-2 overflow-x-auto no-scrollbar flex-nowrap pb-1">
         <button
+          hidden={!canReadEvents}
           onClick={() => {
             setActiveTab('evenements');
             setSearchQuery('');
@@ -583,6 +616,7 @@ export default function AdminMarketingPage() {
         </button>
 
         <button
+          hidden={!canReadMarketing}
           onClick={() => {
             setActiveTab('coupons');
             setSearchQuery('');
@@ -601,6 +635,7 @@ export default function AdminMarketingPage() {
         </button>
 
         <button
+          hidden={!canReadMarketing}
           onClick={() => {
             setActiveTab('promotions');
             setSearchQuery('');
@@ -619,6 +654,7 @@ export default function AdminMarketingPage() {
         </button>
 
         <button
+          hidden={!canReadMarketing}
           onClick={() => {
             setActiveTab('campagnes');
             setSearchQuery('');
@@ -637,6 +673,7 @@ export default function AdminMarketingPage() {
         </button>
 
         <button
+          hidden={!canReadMarketing}
           onClick={() => {
             setActiveTab('paniers');
             setSearchQuery('');
@@ -847,6 +884,7 @@ export default function AdminMarketingPage() {
                         <div className="flex items-center justify-end gap-1">
                           <button
                             type="button"
+                            hidden={!canWrite}
                             onClick={() => handleToggleCouponVisibility(coupon.id)}
                             className={`p-1 ${coupon.isPublic ? 'text-[#24582d]' : 'text-gray-400 hover:text-gray-700'}`}
                             title={coupon.isPublic ? 'Retirer de « Mes coupons » des clients' : 'Afficher dans « Mes coupons » des clients'}
@@ -856,6 +894,17 @@ export default function AdminMarketingPage() {
                           </button>
                           <button
                             type="button"
+                            hidden={!canWrite}
+                            onClick={() => openCouponDialog(coupon)}
+                            className="text-gray-400 hover:text-gray-900 p-1"
+                            title="Modifier"
+                            aria-label={`Modifier le code ${coupon.code}`}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            hidden={!canWrite}
                             onClick={() => handleToggleCouponStatus(coupon.id)}
                             className="text-[11px] font-medium text-gray-600 hover:text-gray-900 p-1"
                             title={coupon.status === 'actif' ? 'Désactiver' : 'Activer'}
@@ -864,6 +913,7 @@ export default function AdminMarketingPage() {
                           </button>
                           <button
                             type="button"
+                            hidden={!canDelete}
                             onClick={() => handleDeleteCoupon(coupon.id)}
                             className="text-gray-400 hover:text-red-600 p-1"
                             title="Supprimer"
@@ -978,6 +1028,7 @@ export default function AdminMarketingPage() {
                   <div className="flex items-center gap-1.5">
                     <button
                       type="button"
+                      hidden={!canWrite}
                       onClick={() => handleToggleCouponVisibility(coupon.id)}
                       className={`p-1.5 rounded-md border border-[#e7e4dd] ${coupon.isPublic ? 'text-[#24582d] bg-[#edf8ef]' : 'text-gray-400'}`}
                       title={coupon.isPublic ? 'Retirer de « Mes coupons » des clients' : 'Afficher dans « Mes coupons » des clients'}
@@ -986,6 +1037,17 @@ export default function AdminMarketingPage() {
                     </button>
                     <button
                       type="button"
+                      hidden={!canWrite}
+                      onClick={() => openCouponDialog(coupon)}
+                      className="p-1.5 rounded-md border border-[#e7e4dd] text-gray-500 hover:text-gray-900 transition-colors"
+                      title="Modifier"
+                      aria-label={`Modifier le code ${coupon.code}`}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      hidden={!canWrite}
                       onClick={() => handleToggleCouponStatus(coupon.id)}
                       className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-colors ${
                         coupon.status === 'actif'
@@ -997,6 +1059,7 @@ export default function AdminMarketingPage() {
                     </button>
                     <button
                       type="button"
+                      hidden={!canDelete}
                       onClick={() => handleDeleteCoupon(coupon.id)}
                       className="p-1.5 rounded-md border border-[#e7e4dd] text-gray-400 hover:text-red-600 transition-colors"
                       title="Supprimer"
@@ -1149,6 +1212,17 @@ export default function AdminMarketingPage() {
                         <div className="flex items-center justify-end gap-1">
                           <button
                             type="button"
+                            hidden={!canWrite}
+                            onClick={() => openPromotionDialog(promo)}
+                            className="text-gray-400 hover:text-gray-900 p-1"
+                            title="Modifier"
+                            aria-label={`Modifier la promotion ${promo.name}`}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            hidden={!canWrite}
                             onClick={() => handleTogglePromotionStatus(promo.id)}
                             className="text-[11px] font-medium text-gray-600 hover:text-gray-900 p-1"
                           >
@@ -1156,6 +1230,7 @@ export default function AdminMarketingPage() {
                           </button>
                           <button
                             type="button"
+                            hidden={!canDelete}
                             onClick={() => handleDeletePromotion(promo.id)}
                             className="text-gray-400 hover:text-red-600 p-1"
                             title="Supprimer"
@@ -1226,6 +1301,17 @@ export default function AdminMarketingPage() {
                 <div className="flex items-center justify-end gap-1.5 pt-2 border-t border-[#f0eee8]">
                   <button
                     type="button"
+                    hidden={!canWrite}
+                    onClick={() => openPromotionDialog(promo)}
+                    className="p-1.5 rounded-md border border-[#e7e4dd] text-gray-500 hover:text-gray-900 transition-colors"
+                    title="Modifier"
+                    aria-label={`Modifier la promotion ${promo.name}`}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    hidden={!canWrite}
                     onClick={() => handleTogglePromotionStatus(promo.id)}
                     className={`px-3 py-1 rounded-md text-xs font-semibold border transition-colors ${
                       promo.status === 'active'
@@ -1237,6 +1323,7 @@ export default function AdminMarketingPage() {
                   </button>
                   <button
                     type="button"
+                    hidden={!canDelete}
                     onClick={() => handleDeletePromotion(promo.id)}
                     className="p-1.5 rounded-md border border-[#e7e4dd] text-gray-400 hover:text-red-600 transition-colors"
                     title="Supprimer"
@@ -1404,8 +1491,13 @@ export default function AdminMarketingPage() {
                       {/* Actions */}
                       <TableCell className="px-3 py-2.5 text-right pr-4">
                         <div className="flex items-center justify-end gap-1.5">
+                          {camp.status !== 'envoyee' && (
+                            <Button size="sm" variant="outline" hidden={!canWrite} onClick={() => openCampaignDialog(camp)} className="h-7 text-xs border-[#e7e4dd] gap-1">
+                              <Pencil className="h-3 w-3" /> Modifier
+                            </Button>
+                          )}
                           {camp.status !== 'envoyee' && camp.channel === 'email' && (
-                            <Button size="sm" onClick={() => void handleSendCampaign(camp)} className="h-7 text-xs bg-[#c1647a] hover:bg-[#a85266] text-white">
+                            <Button size="sm" hidden={!canWrite} onClick={() => void handleSendCampaign(camp)} className="h-7 text-xs bg-[#c1647a] hover:bg-[#a85266] text-white">
                               Envoyer
                             </Button>
                           )}
@@ -1418,7 +1510,7 @@ export default function AdminMarketingPage() {
                             Aperçu
                           </Button>
                           {camp.status !== 'envoyee' && (
-                            <Button size="sm" variant="outline" onClick={() => void handleDeleteCampaign(camp)} className="h-7 text-xs border-red-200 text-red-600">
+                            <Button size="sm" variant="outline" hidden={!canDelete} onClick={() => void handleDeleteCampaign(camp)} className="h-7 text-xs border-red-200 text-red-600">
                               Supprimer
                             </Button>
                           )}
@@ -1499,8 +1591,13 @@ export default function AdminMarketingPage() {
                     {camp.sentAt || camp.scheduledAt || 'Brouillon'}
                   </span>
                   <div className="flex gap-1.5">
+                    {camp.status !== 'envoyee' && (
+                      <Button size="sm" variant="outline" hidden={!canWrite} onClick={() => openCampaignDialog(camp)} className="h-8 text-xs border-[#e7e4dd]">
+                        Modifier
+                      </Button>
+                    )}
                     {camp.status !== 'envoyee' && camp.channel === 'email' && (
-                      <Button size="sm" onClick={() => void handleSendCampaign(camp)} className="h-8 text-xs bg-[#c1647a] text-white">
+                      <Button size="sm" hidden={!canWrite} onClick={() => void handleSendCampaign(camp)} className="h-8 text-xs bg-[#c1647a] text-white">
                         Envoyer
                       </Button>
                     )}
@@ -1508,7 +1605,7 @@ export default function AdminMarketingPage() {
                       Aperçu
                     </Button>
                     {camp.status !== 'envoyee' && (
-                      <Button size="sm" variant="outline" onClick={() => void handleDeleteCampaign(camp)} className="h-8 text-xs border-red-200 text-red-600">
+                      <Button size="sm" variant="outline" hidden={!canDelete} onClick={() => void handleDeleteCampaign(camp)} className="h-8 text-xs border-red-200 text-red-600">
                         Supprimer
                       </Button>
                     )}
@@ -1559,6 +1656,7 @@ export default function AdminMarketingPage() {
               <Button
                 size="sm"
                 variant="outline"
+                hidden={!canWrite}
                 disabled={!cartSettings.autoEnabled || runningReminders}
                 onClick={handleRunReminders}
                 className="text-xs h-9 sm:h-8 border-[#e7e4dd] bg-white text-gray-700 hover:text-[#c1647a] gap-1 w-full sm:w-auto"
@@ -1569,6 +1667,7 @@ export default function AdminMarketingPage() {
               <Button
                 size="sm"
                 variant="outline"
+                hidden={!canWrite}
                 onClick={() => setIsConfigDialogOpen(true)}
                 className="text-xs h-9 sm:h-8 border-[#e7e4dd] bg-white text-gray-700 hover:text-[#c1647a] gap-1 w-full sm:w-auto"
               >
@@ -1704,6 +1803,7 @@ export default function AdminMarketingPage() {
                           <div className="flex items-center justify-end gap-1.5">
                             <Button
                               size="sm"
+                              hidden={!canWrite}
                               onClick={() => handleSendCartReminder(cart, 'whatsapp')}
                               className="h-7 px-2.5 text-[11px] font-semibold bg-[#25D366] hover:bg-[#20ba5a] active:bg-[#128C7E] text-white gap-1.5 shadow-xs transition-colors cursor-pointer"
                               title="Relancer par WhatsApp"
@@ -1715,6 +1815,7 @@ export default function AdminMarketingPage() {
                             <Button
                               size="sm"
                               variant="outline"
+                              hidden={!canWrite}
                               onClick={() => handleSendCartReminder(cart, 'email')}
                               className="h-7 px-2 text-[11px] font-semibold border-[#e7e4dd] text-gray-700 hover:text-[#c1647a] gap-1"
                               title="Relancer par Email"
@@ -1726,6 +1827,7 @@ export default function AdminMarketingPage() {
                             <Button
                               size="sm"
                               variant="ghost"
+                              hidden={!canWrite}
                               onClick={() => handleMarkCartRecovered(cart.id)}
                               className="h-7 w-7 p-0 text-emerald-700 hover:bg-emerald-50"
                               title="Marquer comme converti"
@@ -1812,6 +1914,7 @@ export default function AdminMarketingPage() {
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
+                        hidden={!canWrite}
                         onClick={() => handleSendCartReminder(cart, 'whatsapp')}
                         className="flex-1 h-9 px-3 text-xs font-semibold bg-[#25D366] hover:bg-[#20ba5a] active:bg-[#128C7E] text-white gap-2 shadow-xs transition-colors cursor-pointer"
                       >
@@ -1822,6 +1925,7 @@ export default function AdminMarketingPage() {
                       <Button
                         size="sm"
                         variant="outline"
+                        hidden={!canWrite}
                         onClick={() => handleSendCartReminder(cart, 'email')}
                         className="h-9 px-3 text-xs font-semibold border-[#e7e4dd] text-gray-700 hover:text-[#c1647a] gap-1"
                       >
@@ -1832,6 +1936,7 @@ export default function AdminMarketingPage() {
                       <Button
                         size="sm"
                         variant="ghost"
+                        hidden={!canWrite}
                         onClick={() => handleMarkCartRecovered(cart.id)}
                         className="h-9 w-9 p-0 text-emerald-700 hover:bg-emerald-50 shrink-0 border border-emerald-200"
                         title="Marquer comme converti"
@@ -1862,8 +1967,26 @@ export default function AdminMarketingPage() {
       <CreateCouponDialog
         isOpen={isCouponDialogOpen}
         onOpenChange={setIsCouponDialogOpen}
+        coupon={editingCoupon}
         onCreate={async (newCoupon) => {
           try {
+            if (editingCoupon) {
+              await updateAdminCoupon(editingCoupon.id, {
+                code: newCoupon.code,
+                type: newCoupon.type,
+                value: newCoupon.value,
+                minOrderAmount: newCoupon.minOrderAmount,
+                maxUsageTotal: newCoupon.maxUsageTotal,
+                startDate: newCoupon.startDate,
+                endDate: newCoupon.endDate,
+                description: newCoupon.description,
+                maxUsagePerCustomer: newCoupon.maxUsagePerCustomer,
+                isPublic: newCoupon.isPublic,
+              });
+              toast.success(`Code promo ${newCoupon.code} mis à jour.`);
+              await loadData(true);
+              return true;
+            }
             await createAdminCoupon({
               code: newCoupon.code,
               type: newCoupon.type,
@@ -1880,17 +2003,34 @@ export default function AdminMarketingPage() {
             await loadData(true);
             return true;
           } catch (err) {
-            toast.error(err instanceof Error ? err.message : 'Création du code impossible.');
+            toast.error(err instanceof Error ? err.message : editingCoupon ? 'Modification du code impossible.' : 'Création du code impossible.');
             return false;
           }
         }}
       />
 
       <CreatePromotionDialog
+        key={`promotion-${promotionDialogKey}`}
         isOpen={isPromotionDialogOpen}
         onOpenChange={setIsPromotionDialogOpen}
+        promotion={editingPromotion}
         onCreate={async (newPromo) => {
           try {
+            if (editingPromotion) {
+              await updateAdminPromotion(editingPromotion.id, {
+                name: newPromo.name,
+                discountPercentage: newPromo.discountPercentage,
+                startDate: newPromo.startDate,
+                endDate: newPromo.endDate,
+                badgeText: newPromo.badgeText,
+                targetType: newPromo.targetType,
+                targetNames: newPromo.targetNames,
+                targetIds: newPromo.targetIds,
+              });
+              toast.success(`Promotion « ${newPromo.name} » mise à jour.`);
+              await loadData(true);
+              return true;
+            }
             await createAdminPromotion({
               name: newPromo.name,
               discountPercentage: newPromo.discountPercentage,
@@ -1905,7 +2045,7 @@ export default function AdminMarketingPage() {
             await loadData(true);
             return true;
           } catch (err) {
-            toast.error(err instanceof Error ? err.message : 'Création de la promotion impossible.');
+            toast.error(err instanceof Error ? err.message : editingPromotion ? 'Modification de la promotion impossible.' : 'Création de la promotion impossible.');
             return false;
           }
         }}
@@ -1914,8 +2054,20 @@ export default function AdminMarketingPage() {
       <CreateCampaignDialog
         isOpen={isCampaignDialogOpen}
         onOpenChange={setIsCampaignDialogOpen}
+        campaign={editingCampaign}
         onCreate={async (newCamp) => {
           try {
+            if (editingCampaign) {
+              await updateAdminCampaign(editingCampaign.id, {
+                name: newCamp.name,
+                channel: newCamp.channel,
+                audience: newCamp.audience,
+                messageContent: newCamp.messageContent,
+              });
+              toast.success(`Campagne « ${newCamp.name} » mise à jour.`);
+              await loadData(true);
+              return true;
+            }
             await createAdminCampaign({
               name: newCamp.name,
               channel: newCamp.channel,
@@ -1926,7 +2078,7 @@ export default function AdminMarketingPage() {
             await loadData(true);
             return true;
           } catch (err) {
-            toast.error(err instanceof Error ? err.message : 'Création de la campagne impossible.');
+            toast.error(err instanceof Error ? err.message : editingCampaign ? 'Modification de la campagne impossible.' : 'Création de la campagne impossible.');
             return false;
           }
         }}

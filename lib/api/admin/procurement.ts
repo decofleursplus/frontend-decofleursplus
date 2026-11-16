@@ -273,6 +273,19 @@ export async function createSupplierOrder(payload: {
   );
 }
 
+/** Modifie un bon de commande (les lignes ne sont modifiables qu'en brouillon ou à valider). */
+export async function updateSupplierOrder(
+  id: string,
+  payload: { expectedDate?: string | null; deliveryFee?: number; notes?: string | null; items?: SupplierOrderLinePayload[] },
+): Promise<SupplierOrder> {
+  return toSupplierOrder(await apiClient.patch<ApiOrder>(`/admin/supplier-orders/${id}`, payload, admin));
+}
+
+/** Supprime un bon de commande sans effet (brouillon, à valider ou annulé, rien reçu, aucune facture). */
+export async function deleteSupplierOrder(id: string): Promise<void> {
+  await apiClient.delete(`/admin/supplier-orders/${id}`, admin);
+}
+
 export async function changeSupplierOrderStatus(id: string, status: SupplierOrderStatus): Promise<SupplierOrder> {
   return toSupplierOrder(await apiClient.patch<ApiOrder>(`/admin/supplier-orders/${id}/status`, { status: ORDER_STATUS_TO_API[status] }, admin));
 }
@@ -345,6 +358,11 @@ export async function updateSupplierInvoice(id: string, payload: Partial<Supplie
   return toSupplierInvoice(
     await apiClient.patch<ApiInvoice>(`/admin/supplier-invoices/${id}`, { ...rest, ...(status ? { status: INVOICE_STATUS_TO_API[status] } : {}) }, admin),
   );
+}
+
+/** Supprime une facture non payée (saisie par erreur). */
+export async function deleteSupplierInvoice(id: string): Promise<void> {
+  await apiClient.delete(`/admin/supplier-invoices/${id}`, admin);
 }
 
 export async function paySupplierInvoice(id: string, paymentMethod?: string): Promise<SupplierInvoice> {
