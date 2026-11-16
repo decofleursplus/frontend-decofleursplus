@@ -9,7 +9,7 @@ export const metadata: Metadata = constructMetadata({
   description:
     'Service de location d’équipements et vaisselle pour mariages, réceptions et événements au Sénégal : tables rondes, chaises Chiavari, nappage, vaisselle et décoration florale.',
   canonical: '/location',
-  image: '/images/location/location-hero.jpg',
+  image: '/images/location/hero-location.jpg',
   keywords: [
     'location materiel evenementiel dakar',
     'location vaisselle saly',

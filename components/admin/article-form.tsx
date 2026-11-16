@@ -56,7 +56,9 @@ interface ArticleFormProps {
 
 const PRESET_IMAGES = [
   { url: '/images/bouquet-detail.jpg', label: 'Roses fraîches détail' },
-  { url: '/images/mariage.jpg', label: 'Cérémonie & Arche' },
+  { url: '/images/realisations/arche-mariage.jpg', label: 'Cérémonie & Arche' },
+  { url: '/images/realisations/corbeille-fruits.jpg', label: 'Corbeille de fruits' },
+  { url: '/images/livraison/scooter-saly.jpg', label: 'Livraison à Saly' },
   { url: '/images/fruits.jpg', label: 'Panier gourmand & fruits' },
   { url: '/images/plante-monstera.jpg', label: 'Monstera en pot' },
   { url: '/images/bouquet-passion.jpg', label: 'Bouquet Romance' },

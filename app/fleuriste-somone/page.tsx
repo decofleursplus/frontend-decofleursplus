@@ -60,7 +60,7 @@ export default function FleuristeSomonePage() {
         {/* Hero Section Somone */}
         <section className="relative rounded-3xl overflow-hidden min-h-[360px] md:min-h-[420px] flex items-center p-6 md:p-12 mb-10 shadow-md border border-neutral-100 bg-[#173f22]">
           <Image
-            src="/images/mariage.jpg"
+            src="/images/realisations/arche-mariage.jpg"
             alt="Décoration florale de mariage et bouquets à la Somone par Décofleur Plus"
             fill
             priority

@@ -9,7 +9,7 @@ export const metadata: Metadata = constructMetadata({
   description:
     'Explorez notre galerie de projets paysagers d’exception : jardins luxuriants de villas à Saly, patios d’hôtels de prestige et terrasses végétalisées aux Almadies et à Dakar.',
   canonical: '/paysagisme/realisations',
-  image: '/images/paysagisme/villas.jpg',
+  image: '/images/paysagisme/jardin-villa.jpg',
   keywords: [
     'realisations paysagisme dakar',
     'photos jardins saly',

@@ -270,8 +270,8 @@ export default function FleuristeSalyPage() {
 
             <div className="relative aspect-4/3 rounded-2xl overflow-hidden shadow-md">
               <Image
-                src="/images/paysagisme/paysagisme-hero.jpg"
-                alt="Fleurissement et jardin de villa à Saly Portudal"
+                src="/images/realisations/composition-tropicale.jpg"
+                alt="Composition florale tropicale pour une villa à Saly Portudal"
                 fill
                 sizes="(max-width: 1024px) 100vw, 500px"
                 className="object-cover"

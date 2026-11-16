@@ -17,7 +17,7 @@ export const metadata: Metadata = constructMetadata({
   description:
     'Conception paysagère, aménagement de jardins, terrasses de villas, végétalisation d’hôtels et entretien d’espaces verts à Saly Portudal, Somone et Dakar par Décofleur Plus.',
   canonical: '/paysagisme',
-  image: '/images/paysagisme/paysagisme-hero.jpg',
+  image: '/images/paysagisme/jardin-villa.jpg',
   keywords: [
     'paysagiste dakar',
     'paysagiste saly',
@@ -41,7 +41,7 @@ export default async function PaysagismePage() {
     description:
       'Conception paysagère, création de jardins de villas, terrasses végétalisées et entretien d’espaces verts au Sénégal par Décofleur Plus.',
     url: '/paysagisme',
-    image: '/images/paysagisme/paysagisme-hero.jpg',
+    image: '/images/paysagisme/jardin-villa.jpg',
     areaServed: ['Saly Portudal', 'Dakar', 'Somone', 'Mbour', 'Ngaparou', 'Petite-Côte'],
   });
 
@@ -60,8 +60,8 @@ export default async function PaysagismePage() {
         {/* ── 1. Hero Banner Panoramique Compact (Hauteur Réduite) ── */}
         <section className="relative w-full rounded-xl overflow-hidden min-h-[280px] sm:min-h-[310px] lg:min-h-[340px] flex items-center p-6 sm:p-8 lg:p-10 mb-6 sm:mb-8 shadow-md border border-[#e6ded5]">
           <Image
-            src="/images/paysagisme/hero-paysagisme.webp"
-            alt="Aménagement paysager et scénographie végétale par Décofleur Plus"
+            src="/images/paysagisme/jardin-villa.jpg"
+            alt="Jardin tropical de villa aménagé par Décofleur Plus : palmiers, cycas et pelouse"
             fill
             priority
             className="object-cover object-center"

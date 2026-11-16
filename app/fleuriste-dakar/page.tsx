@@ -64,7 +64,7 @@ export default function FleuristeDakarPage() {
         {/* Hero Section Dakar */}
         <section className="relative rounded-3xl overflow-hidden min-h-[360px] md:min-h-[420px] flex items-center p-6 md:p-12 mb-10 shadow-md border border-neutral-100 bg-[#173f22]">
           <Image
-            src="/images/mariage.jpg"
+            src="/images/realisations/arches-ceremonie.jpg"
             alt="Livraison de fleurs d'exception à Dakar par Décofleur Plus"
             fill
             priority
@@ -203,8 +203,8 @@ export default function FleuristeDakarPage() {
 
             <div className="relative aspect-4/3 rounded-2xl overflow-hidden shadow-md">
               <Image
-                src="/images/paysagisme/villas.jpg"
-                alt="Aménagement paysager et végétalisation de villa à Dakar"
+                src="/images/realisations/composition-tropicale-hotel.jpg"
+                alt="Grande composition florale tropicale dans le hall d’un hôtel, par Décofleur Plus"
                 fill
                 sizes="(max-width: 1024px) 100vw, 500px"
                 className="object-cover"
