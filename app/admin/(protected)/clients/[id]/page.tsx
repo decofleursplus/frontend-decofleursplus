@@ -13,10 +13,13 @@ import Link from 'next/link';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SendEmailDialog } from '@/components/admin/send-email-dialog';
 import { CustomerCrmCard } from '@/components/admin/customer-crm-card';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import { toast } from 'sonner';
 
 export default function CustomerProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const can = useAdminCan();
+  const canWrite = can('clients', 'write');
   const [customer, setCustomer] = useState<AdminCustomer | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
@@ -116,6 +119,7 @@ export default function CustomerProfilePage({ params }: { params: Promise<{ id: 
           <Button
             type="button"
             variant="outline"
+            hidden={!canWrite}
             onClick={() => setIsEmailModalOpen(true)}
             className="w-full sm:w-auto border-[#e7e4dd] text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef] hover:border-[#24582d]/30"
           >

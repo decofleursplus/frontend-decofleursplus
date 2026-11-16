@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { CouponType } from '@/lib/admin/mock-data/types';
+import type { AdminCoupon, CouponType } from '@/lib/admin/mock-data/types';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,8 +26,10 @@ export interface NewCouponInput {
 interface CreateCouponDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Résout à true si l'API a créé le code (le panneau se ferme alors). */
+  /** Résout à true si l'API a enregistré le code (le panneau se ferme alors). */
   onCreate: (coupon: NewCouponInput) => Promise<boolean>;
+  /** Code à modifier ; absent = création. */
+  coupon?: AdminCoupon | null;
 }
 
 const TYPES: { value: CouponType; label: string; icon: React.ReactNode }[] = [
@@ -38,22 +40,23 @@ const TYPES: { value: CouponType; label: string; icon: React.ReactNode }[] = [
 
 const isoDay = (offsetDays = 0) => new Date(Date.now() + offsetDays * 86_400_000).toISOString().split('T')[0];
 
-/** Panneau latéral de création d'un code promo (le formulaire repart de zéro à chaque ouverture). */
+/** Panneau latéral de création ou de modification d'un code promo (le formulaire repart à chaque ouverture). */
 export function CreateCouponDialog(props: CreateCouponDialogProps) {
-  return <CouponDrawer key={props.isOpen ? 'ouvert' : 'ferme'} {...props} />;
+  return <CouponDrawer key={props.isOpen ? `ouvert-${props.coupon?.id ?? 'nouveau'}` : 'ferme'} {...props} />;
 }
 
-function CouponDrawer({ isOpen, onOpenChange, onCreate }: CreateCouponDialogProps) {
-  const [code, setCode] = useState('');
-  const [type, setType] = useState<CouponType>('percentage');
-  const [value, setValue] = useState('');
-  const [minOrder, setMinOrder] = useState('');
-  const [maxUsageTotal, setMaxUsageTotal] = useState('');
-  const [maxUsagePerCustomer, setMaxUsagePerCustomer] = useState('1');
-  const [startDate, setStartDate] = useState(() => isoDay(0));
-  const [endDate, setEndDate] = useState(() => isoDay(30));
-  const [description, setDescription] = useState('');
-  const [isPublic, setIsPublic] = useState(false);
+function CouponDrawer({ isOpen, onOpenChange, onCreate, coupon }: CreateCouponDialogProps) {
+  const editing = Boolean(coupon);
+  const [code, setCode] = useState(coupon?.code ?? '');
+  const [type, setType] = useState<CouponType>(coupon?.type ?? 'percentage');
+  const [value, setValue] = useState(coupon && coupon.type !== 'free_shipping' ? String(coupon.value) : '');
+  const [minOrder, setMinOrder] = useState(coupon?.minOrderAmount ? String(coupon.minOrderAmount) : '');
+  const [maxUsageTotal, setMaxUsageTotal] = useState(coupon?.maxUsageTotal ? String(coupon.maxUsageTotal) : '');
+  const [maxUsagePerCustomer, setMaxUsagePerCustomer] = useState(coupon ? String(coupon.maxUsagePerCustomer ?? '') : '1');
+  const [startDate, setStartDate] = useState(() => coupon?.startDate?.slice(0, 10) || isoDay(0));
+  const [endDate, setEndDate] = useState(() => coupon?.endDate?.slice(0, 10) || isoDay(30));
+  const [description, setDescription] = useState(coupon?.description ?? '');
+  const [isPublic, setIsPublic] = useState(coupon?.isPublic ?? false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
@@ -109,7 +112,7 @@ function CouponDrawer({ isOpen, onOpenChange, onCreate }: CreateCouponDialogProp
       onClose={() => onOpenChange(false)}
       size="md"
       icon={<Tag size={20} />}
-      title="Nouveau code promo"
+      title={editing ? `Modifier le code ${coupon?.code}` : 'Nouveau code promo'}
       subtitle="Règles et conditions d’application du coupon."
       footer={
         <>
@@ -118,7 +121,7 @@ function CouponDrawer({ isOpen, onOpenChange, onCreate }: CreateCouponDialogProp
           </Button>
           <Button type="submit" form="coupon-form" disabled={saving} className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold h-10 px-5 gap-2">
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            Créer le code promo
+            {editing ? 'Enregistrer les modifications' : 'Créer le code promo'}
           </Button>
         </>
       }

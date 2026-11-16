@@ -59,6 +59,15 @@ interface ApiDriver {
   rating: number;
   isActive: boolean;
   activeDeliveriesCount: number;
+  accountEmail?: string | null;
+}
+
+/** Identifiants de l'espace livreur, renvoyés une seule fois (création du compte ou nouveau mot de passe). */
+export interface DriverAccessCredentials {
+  email: string;
+  temporaryPassword: string;
+  /** true : les identifiants ont été envoyés par email au livreur */
+  emailSent?: boolean;
 }
 
 const formatTime = (iso: string | null) =>
@@ -117,6 +126,8 @@ export function transformDeliveryDriver(raw: ApiDriver): DeliveryDriver {
     status: !raw.isActive || raw.availability === 'UNAVAILABLE' ? 'indisponible' : raw.activeDeliveriesCount > 0 ? 'en_course' : 'disponible',
     activeDeliveriesCount: raw.activeDeliveriesCount,
     rating: raw.rating,
+    isActive: raw.isActive,
+    accountEmail: raw.accountEmail ?? null,
     avatar: raw.name
       .split(' ')
       .map((n) => n[0])
@@ -187,8 +198,10 @@ export async function createAdminDriver(body: {
   vehicle: DeliveryDriver['vehicle'];
   vehiclePlate?: string;
   available?: boolean;
-}): Promise<DeliveryDriver> {
-  const res = await apiClient.post<ApiDriver>(
+  /** Crée aussi l'accès à l'espace livreur (identifiants envoyés par email). */
+  accountEmail?: string;
+}): Promise<{ driver: DeliveryDriver; credentials: DriverAccessCredentials | null }> {
+  const res = await apiClient.post<ApiDriver & { credentials?: DriverAccessCredentials | null }>(
     '/admin/drivers',
     {
       name: body.name,
@@ -196,10 +209,27 @@ export async function createAdminDriver(body: {
       vehicle: VEHICLE_TO_API[body.vehicle],
       vehiclePlate: body.vehiclePlate || null,
       availability: body.available === false ? 'UNAVAILABLE' : 'AVAILABLE',
+      ...(body.accountEmail ? { accountEmail: body.accountEmail } : {}),
     },
     { useAdminToken: true },
   );
-  return transformDeliveryDriver(res);
+  return { driver: transformDeliveryDriver(res), credentials: res.credentials ?? null };
+}
+
+/**
+ * Accès à l'espace livreur : crée le compte (email requis) si le livreur n'en a pas,
+ * sinon génère un nouveau mot de passe provisoire. Les identifiants sont envoyés par email au livreur.
+ */
+export async function provisionAdminDriverAccess(
+  id: string,
+  email?: string,
+): Promise<{ driver: DeliveryDriver; credentials: DriverAccessCredentials; created: boolean }> {
+  const res = await apiClient.post<{ driver: ApiDriver; credentials: DriverAccessCredentials; created: boolean }>(
+    `/admin/drivers/${id}/account`,
+    email ? { email } : {},
+    { useAdminToken: true },
+  );
+  return { driver: transformDeliveryDriver(res.driver), credentials: res.credentials, created: res.created };
 }
 
 export async function updateAdminDriver(
@@ -216,6 +246,7 @@ export async function updateAdminDriver(
   return transformDeliveryDriver(await apiClient.patch<ApiDriver>(`/admin/drivers/${id}`, payload, { useAdminToken: true }));
 }
 
-export async function deleteAdminDriver(id: string): Promise<void> {
-  await apiClient.delete(`/admin/drivers/${id}`, { useAdminToken: true });
+/** Supprime le livreur, ou le désactive s'il a déjà des livraisons (historique conservé). */
+export async function deleteAdminDriver(id: string): Promise<{ deleted: boolean; deactivated: boolean }> {
+  return apiClient.delete<{ deleted: boolean; deactivated: boolean }>(`/admin/drivers/${id}`, { useAdminToken: true });
 }

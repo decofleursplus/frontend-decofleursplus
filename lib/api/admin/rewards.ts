@@ -93,6 +93,19 @@ export function resendGiftCard(id: string) {
   return apiClient.post<{ sent: boolean; to: string }>(`/admin/gift-cards/${encodeURIComponent(id)}/resend`, undefined, admin);
 }
 
+/** Corrige le destinataire, le message ou la note interne d'une carte. */
+export function updateGiftCard(
+  id: string,
+  input: { recipientName?: string; recipientEmail?: string; message?: string | null; notes?: string | null },
+) {
+  return apiClient.patch<AdminGiftCardDetail>(`/admin/gift-cards/${encodeURIComponent(id)}`, input, admin);
+}
+
+/** Supprime une carte jamais payée (une carte payée se désactive). */
+export function deleteGiftCard(id: string) {
+  return apiClient.delete<{ deleted: true }>(`/admin/gift-cards/${encodeURIComponent(id)}`, admin);
+}
+
 // ---------------------------------------------------------------------------
 // Programme de fidélité & parrainage
 // ---------------------------------------------------------------------------

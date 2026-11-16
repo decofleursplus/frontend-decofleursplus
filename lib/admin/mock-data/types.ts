@@ -146,6 +146,10 @@ export type DeliveryDriver = {
   activeDeliveriesCount: number;
   rating: number;
   avatar?: string;
+  /** false : livreur désactivé (historique conservé) */
+  isActive?: boolean;
+  /** Email du compte de l'espace livreur, null si le livreur n'a pas encore d'accès */
+  accountEmail?: string | null;
 };
 
 export type DeliveryTrackingStep = {

@@ -21,30 +21,34 @@ import { toast } from 'sonner';
 interface CreatePromotionDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Résout à true si l'API a créé la promotion (la fenêtre se ferme alors). */
+  /** Résout à true si l'API a enregistré la promotion (la fenêtre se ferme alors). */
   onCreate: (promotion: AdminPromotion) => Promise<boolean>;
+  /** Promotion à modifier ; absente = création. */
+  promotion?: AdminPromotion | null;
 }
 
 export function CreatePromotionDialog({
   isOpen,
   onOpenChange,
   onCreate,
+  promotion,
 }: CreatePromotionDialogProps) {
-  const [name, setName] = useState('');
-  const [targetType, setTargetType] = useState<PromotionTargetType>('categories');
+  const editing = Boolean(promotion);
+  const [name, setName] = useState(promotion?.name ?? '');
+  const [targetType, setTargetType] = useState<PromotionTargetType>(promotion?.targetType ?? 'categories');
   // Cibles sélectionnées par identifiant (le backend applique la promotion aux ids)
-  const [selectedTargets, setSelectedTargets] = useState<string[]>([]);
+  const [selectedTargets, setSelectedTargets] = useState<string[]>(promotion?.targetIds ?? []);
   const [categoriesList, setCategoriesList] = useState<{ id: string; name: string }[]>([]);
   const [productsList, setProductsList] = useState<{ id: string; name: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const [isLoadingTargets, setIsLoadingTargets] = useState(false);
-  const [discount, setDiscount] = useState('');
-  const [badgeText, setBadgeText] = useState('');
+  const [discount, setDiscount] = useState(promotion ? String(promotion.discountPercentage) : '');
+  const [badgeText, setBadgeText] = useState(promotion?.badgeText ?? '');
   const [startDate, setStartDate] = useState(() =>
-    new Date().toISOString().split('T')[0]
+    promotion?.startDate?.slice(0, 10) || new Date().toISOString().split('T')[0]
   );
   const [endDate, setEndDate] = useState(() =>
-    new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    promotion?.endDate?.slice(0, 10) || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   );
 
   useEffect(() => {
@@ -138,7 +142,7 @@ export function CreatePromotionDialog({
           <DialogHeader className="space-y-1.5 pb-2">
             <DialogTitle className="text-xl font-bold text-[#1e2a1f] flex items-center gap-2.5">
               <BadgePercent className="h-5 w-5 text-[#c1647a]" />
-              Lancer une promotion directe (Catalogue)
+              {editing ? `Modifier « ${promotion?.name} »` : 'Lancer une promotion directe (Catalogue)'}
             </DialogTitle>
             <DialogDescription className="text-xs text-gray-500">
               Appliquez une remise automatique sans code sur des catégories ou produits précis.
@@ -307,7 +311,7 @@ export function CreatePromotionDialog({
               className="bg-[#c1647a] hover:bg-[#a85266] text-white text-xs font-semibold h-10 px-5 gap-2"
             >
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-              {saving ? 'Enregistrement…' : 'Appliquer la promotion'}
+              {saving ? 'Enregistrement…' : editing ? 'Enregistrer les modifications' : 'Appliquer la promotion'}
             </Button>
           </DialogFooter>
         </form>

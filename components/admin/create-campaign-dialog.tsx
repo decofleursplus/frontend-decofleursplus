@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { CampaignChannel } from '@/lib/admin/mock-data/types';
+import type { AdminCampaign, CampaignChannel } from '@/lib/admin/mock-data/types';
 import { getCampaignAudiences, type CampaignAudience } from '@/lib/api/admin/marketing';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,8 @@ interface CreateCampaignDialogProps {
   onOpenChange: (open: boolean) => void;
   /** Résout à true si l'API a enregistré la campagne (le panneau se ferme alors). */
   onCreate: (campaign: NewCampaignInput) => Promise<boolean>;
+  /** Campagne (non envoyée) à modifier ; absente = création. */
+  campaign?: AdminCampaign | null;
 }
 
 /**
@@ -36,16 +38,17 @@ const CHANNELS: { value: CampaignChannel; label: string; icon: React.ReactNode; 
 ];
 
 /** Panneau latéral « Nouvelle campagne » ; le formulaire repart de zéro à chaque ouverture. */
-export function CreateCampaignDialog({ isOpen, onOpenChange, onCreate }: CreateCampaignDialogProps) {
+export function CreateCampaignDialog({ isOpen, onOpenChange, onCreate, campaign }: CreateCampaignDialogProps) {
   if (!isOpen) return null;
-  return <CampaignDrawer onOpenChange={onOpenChange} onCreate={onCreate} />;
+  return <CampaignDrawer key={campaign?.id ?? 'nouvelle'} onOpenChange={onOpenChange} onCreate={onCreate} campaign={campaign} />;
 }
 
-function CampaignDrawer({ onOpenChange, onCreate }: Omit<CreateCampaignDialogProps, 'isOpen'>) {
-  const [name, setName] = useState('');
+function CampaignDrawer({ onOpenChange, onCreate, campaign }: Omit<CreateCampaignDialogProps, 'isOpen'>) {
+  const editing = Boolean(campaign);
+  const [name, setName] = useState(campaign?.name ?? '');
   const [audiences, setAudiences] = useState<CampaignAudience[] | null>(null);
-  const [audience, setAudience] = useState('all');
-  const [message, setMessage] = useState('');
+  const [audience, setAudience] = useState(campaign?.audience ?? 'all');
+  const [message, setMessage] = useState(campaign?.messageContent ?? '');
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [audienceError, setAudienceError] = useState<string | null>(null);
@@ -79,7 +82,7 @@ function CampaignDrawer({ onOpenChange, onCreate }: Omit<CreateCampaignDialogPro
       onClose={() => onOpenChange(false)}
       size="lg"
       icon={<Megaphone size={20} />}
-      title="Nouvelle campagne"
+      title={editing ? `Modifier « ${campaign?.name} »` : 'Nouvelle campagne'}
       subtitle="Enregistrée en brouillon : vous l’envoyez ensuite depuis la liste."
       footer={
         <>
@@ -87,7 +90,7 @@ function CampaignDrawer({ onOpenChange, onCreate }: Omit<CreateCampaignDialogPro
             Annuler
           </Button>
           <Button type="submit" form="campaign-form" disabled={saving} className="bg-[#c1647a] hover:bg-[#a85266] text-white gap-2">
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />} Enregistrer la campagne
+            {saving && <Loader2 className="h-4 w-4 animate-spin" />} {editing ? 'Enregistrer les modifications' : 'Enregistrer la campagne'}
           </Button>
         </>
       }

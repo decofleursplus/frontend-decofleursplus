@@ -48,6 +48,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ApiClientError } from '@/lib/api/client';
+import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 
 interface ArticleFormProps {
   initialArticle?: BlogArticle | null;
@@ -101,6 +102,8 @@ function markdownToHtml(md: string): string {
 
 export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
   const router = useRouter();
+  const can = useAdminCan();
+  const canWrite = can('blog', 'write');
   const editorRef = useRef<HTMLDivElement>(null);
 
   // Form states
@@ -435,6 +438,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
             size="sm"
             onClick={() => handleSubmit('brouillon')}
             disabled={isSubmitting}
+            hidden={!canWrite}
             className="text-xs border-amber-300 text-amber-800 bg-amber-50/50 hover:bg-amber-100/50"
           >
             Enregistrer brouillon
@@ -445,6 +449,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
             size="sm"
             onClick={() => handleSubmit()}
             disabled={isSubmitting}
+            hidden={!canWrite}
             className="bg-[#24582d] hover:bg-[#1a4021] text-white text-xs font-semibold shadow-xs"
           >
             <Save size={14} className="mr-1.5" />
@@ -456,6 +461,12 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
           </Button>
         </div>
       </div>
+
+      {!canWrite && (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-800">
+          Consultation seule : votre rôle ne vous permet pas de créer ni de modifier les articles du blog.
+        </p>
+      )}
 
       {/* ========================================================================= */}
       {/* MAIN CONTENT WRITING CANVAS (Pleine largeur aérée) */}
@@ -480,6 +491,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
                     size="sm"
                     variant="outline"
                     onClick={() => setShowPresetsBar(!showPresetsBar)}
+                    hidden={!canWrite}
                     className="h-8 text-xs bg-white/90 hover:bg-white text-gray-800 border-none shadow-xs"
                   >
                     <ImageIcon size={13} className="mr-1.5 text-[#24582d]" />
@@ -490,6 +502,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
                     size="sm"
                     variant="outline"
                     onClick={() => setCoverImage('')}
+                    hidden={!canWrite}
                     className="h-8 text-xs bg-red-600/90 hover:bg-red-700 text-white border-none shadow-xs"
                   >
                     <X size={13} className="mr-1" />
@@ -501,6 +514,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
           ) : (
             <div
               onClick={() => setShowPresetsBar(true)}
+              hidden={!canWrite}
               className="p-8 rounded-3xl border-2 border-dashed border-[#e7e4dd] bg-[#faf9f6] hover:bg-[#f5f3ec] hover:border-[#24582d]/40 transition-colors cursor-pointer flex flex-col items-center justify-center text-center gap-2 group"
             >
               <div className="w-10 h-10 rounded-xl bg-white border border-[#e7e4dd] flex items-center justify-center text-[#24582d] group-hover:scale-105 transition-transform shadow-2xs">
@@ -518,7 +532,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
           )}
 
           {/* Quick preset thumbnail picker strip */}
-          {(showPresetsBar || !coverImage) && (
+          {canWrite && (showPresetsBar || !coverImage) && (
             <div className="p-4 rounded-2xl bg-white border border-[#ece8e1] shadow-xs space-y-4 animate-in fade-in-50 duration-200">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-semibold text-[#1e2a1f] flex items-center gap-1.5">
@@ -589,6 +603,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
                 placeholder="ex: Atelier de création florale chez Décofleur Plus Saly..."
                 value={coverImageCaption}
                 onChange={(e) => setCoverImageCaption(e.target.value)}
+                disabled={!canWrite}
                 className="flex-1 text-xs text-[#555] bg-transparent border-b border-dashed border-[#e0ded8] focus:border-[#24582d] focus:outline-none py-0.5 italic"
               />
             </div>
@@ -607,6 +622,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
                 placeholder="ex: Comment entretenir vos roses et bouquets sous le climat de Saly..."
                 value={title}
                 onChange={(e) => handleTitleChange(e.target.value)}
+                disabled={!canWrite}
                 className="font-serif text-xl sm:text-2xl font-bold text-[#1e2a1f] h-12 border-[#e7e4dd] focus-visible:ring-[#24582d] placeholder:font-serif placeholder:font-normal placeholder:text-gray-300"
               />
             </div>
@@ -623,6 +639,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
                   id="post-slug"
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
+                  disabled={!canWrite}
                   className="font-mono text-xs text-[#24582d] h-9 border-[#e7e4dd] focus-visible:ring-[#24582d] flex-1"
                   placeholder="permalink-automatique"
                 />
@@ -647,6 +664,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
                 placeholder="Rédigez un court résumé percutant (qui apparaîtra en haut de l’article, sur les cartes de la page d'accueil du blog et lors des partages sur WhatsApp ou Facebook)..."
                 value={excerpt}
                 onChange={(e) => setExcerpt(e.target.value)}
+                disabled={!canWrite}
                 className="w-full p-3 rounded-xl border border-[#e7e4dd] bg-white text-xs text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#24582d]/20 transition-all leading-relaxed resize-y"
               />
               <div className="flex items-center justify-between text-[11px] text-gray-500 px-0.5">
@@ -678,7 +696,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
           </CardHeader>
 
           {/* Visual WYSIWYG Formatting Toolbar */}
-          <div className="px-4 py-2 border-b border-[#f0eee8] bg-[#faf8f4] flex items-center gap-1 flex-wrap text-xs text-[#555]">
+          <div hidden={!canWrite} className="px-4 py-2 border-b border-[#f0eee8] bg-[#faf8f4] flex items-center gap-1 flex-wrap text-xs text-[#555]">
             <span className="text-[11px] font-semibold text-[#888] mr-1.5">Mise en forme :</span>
 
             {/* Titre H2 */}
@@ -817,7 +835,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
               {/* Direct WYSIWYG ContentEditable Surface */}
               <div
                 ref={editorRef}
-                contentEditable
+                contentEditable={canWrite}
                 suppressContentEditableWarning
                 onInput={handleEditorInput}
                 onKeyUp={updateActiveFormats}
@@ -845,7 +863,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
         </Card>
 
         <Card className="border-[#ece8e1] shadow-xs">
-          <CardContent className="p-5">
+          <CardContent className="p-5" inert={!canWrite}>
             <RelatedProductsPicker
               value={relatedProductIds}
               onChange={setRelatedProductIds}
@@ -902,6 +920,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
                     name="drawer-status"
                     checked={status === 'publie'}
                     onChange={() => setStatus('publie')}
+                    disabled={!canWrite}
                     className="mt-0.5"
                   />
                   <div>
@@ -922,6 +941,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
                     name="drawer-status"
                     checked={status === 'brouillon'}
                     onChange={() => setStatus('brouillon')}
+                    disabled={!canWrite}
                     className="mt-0.5"
                   />
                   <div>
@@ -942,6 +962,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
                     name="drawer-status"
                     checked={status === 'planifie'}
                     onChange={() => setStatus('planifie')}
+                    disabled={!canWrite}
                     className="mt-0.5"
                   />
                   <div>
@@ -961,6 +982,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
                     type="date"
                     value={scheduledAt}
                     onChange={(e) => setScheduledAt(e.target.value)}
+                    disabled={!canWrite}
                     className="text-xs h-9 border-[#e7e4dd]"
                   />
                 </div>
@@ -973,6 +995,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
                   id="drawer-featured-check"
                   checked={isFeatured}
                   onChange={(e) => setIsFeatured(e.target.checked)}
+                  disabled={!canWrite}
                   className="w-4 h-4 rounded text-[#24582d] focus:ring-[#24582d]"
                 />
                 <Label htmlFor="drawer-featured-check" className="text-xs text-[#333] cursor-pointer flex items-center gap-1.5 font-medium">
@@ -998,6 +1021,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
                   id="drawer-category"
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
+                  disabled={!canWrite}
                   className="w-full p-2.5 rounded-xl border border-[#e7e4dd] bg-[#faf8f4] text-xs font-medium text-[#222] focus:outline-none focus:ring-2 focus:ring-[#24582d]/20"
                 >
                   {availableCategories.length === 0 ? (
@@ -1021,6 +1045,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
                   id="drawer-author"
                   value={authorId}
                   onChange={(e) => setAuthorId(e.target.value)}
+                  disabled={!canWrite}
                   className="w-full h-9 rounded-md text-xs bg-[#faf8f4] border border-[#e7e4dd] px-2"
                 >
                   {availableAuthors.length === 0 && <option value="">Aucun auteur : créez-en un dans l’onglet Auteurs</option>}
@@ -1041,6 +1066,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
                   id="drawer-read-time"
                   value={readTime}
                   onChange={(e) => setReadTime(e.target.value)}
+                  disabled={!canWrite}
                   placeholder="ex: 4 min de lecture"
                   className="text-xs h-9 border-[#e7e4dd]"
                 />
@@ -1053,6 +1079,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
               <Input
                 value={seoTitle}
                 onChange={(e) => setSeoTitle(e.target.value)}
+                disabled={!canWrite}
                 maxLength={120}
                 placeholder={`${title || 'Titre de l’article'} | Blog Décofleur Plus`}
                 aria-label="Titre SEO"
@@ -1061,6 +1088,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
               <textarea
                 value={seoDescription}
                 onChange={(e) => setSeoDescription(e.target.value)}
+                disabled={!canWrite}
                 maxLength={320}
                 rows={2}
                 placeholder={excerpt.slice(0, 160) || 'Description affichée dans les résultats de recherche'}
@@ -1079,6 +1107,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
               <Input
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
+                disabled={!canWrite}
                 placeholder="Roses, Conseils, Saly, Décofleur..."
                 className="text-xs h-9 border-[#e7e4dd]"
               />
