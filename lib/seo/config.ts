@@ -24,6 +24,7 @@ export const SITE_CONFIG = {
   currencySymbol: 'FCFA',
   priceRange: '$$',
   defaultOgImage: '/images/og-decofleur.png',
+  gtmId: 'GTM-PNZS4HBX',
   
   address: {
     streetAddress: 'Rue des Palmiers, Saly Portudal',
