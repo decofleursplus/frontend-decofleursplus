@@ -35,6 +35,7 @@ const PAGE_RULES: { prefix: string; modules?: string[]; role?: StaffRole }[] = [
   { prefix: '/admin/paysagisme', modules: ['paysagisme'] },
   { prefix: '/admin/livraisons', modules: ['livraisons', 'livreurs'] },
   { prefix: '/admin/marketing', modules: ['marketing', 'evenements'] },
+  { prefix: '/admin/annonces', modules: ['annonces'] },
   { prefix: '/admin/cartes-cadeaux', modules: ['cartes-cadeaux'] },
   { prefix: '/admin/messages', modules: ['messages'] },
   { prefix: '/admin/blog', modules: ['blog'] },

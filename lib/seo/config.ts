@@ -18,7 +18,7 @@ export const SITE_CONFIG = {
   url: SITE_URL,
   description:
     'Artisan fleuriste, magasin de décoration & wedding planner au Sénégal. Bouquets de roses fraîches, décoration florale de mariage, scénographie événementielle, vases design et cadeaux livrés à Saly Portudal, Dakar, Somone et Mbour.',
-  email: 'contact@decofleursplus.sn',
+  email: 'contact@decofleursplus.com',
   phoneSaly: '+221 33 957 88 99',
   phoneDakar: '+221 77 941 78 60',
   whatsappNumber: '221779417860',

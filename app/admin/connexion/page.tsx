@@ -52,7 +52,7 @@ export default function AdminLoginPage() {
             id="email"
             name="email"
             type="email"
-            placeholder="votre-adresse@decofleurplus.sn"
+            placeholder="votre-adresse@decofleursplus.com"
             required
             autoComplete="username"
             className="border-[#e7e4dd] focus-visible:ring-[#24582d]/20 h-12"

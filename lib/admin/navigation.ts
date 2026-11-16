@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import {
+  BellRing,
   LayoutDashboard,
   ShoppingBag,
   FolderTree,
@@ -75,6 +76,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     title: 'Communication',
     items: [
       { label: 'Marketing', mobileLabel: 'Marketing & promos', href: '/admin/marketing', icon: Megaphone },
+      { label: 'Annonces', mobileLabel: 'Annonces aux clients', href: '/admin/annonces', icon: BellRing },
       { label: 'Cartes cadeaux', href: '/admin/cartes-cadeaux', icon: Gift },
       { label: 'Blog & Contenu', href: '/admin/blog', icon: FileText },
     ],

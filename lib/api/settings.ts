@@ -37,6 +37,17 @@ export interface PublicShopSettings {
   orderOptions: { giftWrapFee: number; cardMessageFee: number };
   /** Choix du formulaire de demande de devis, par type de projet */
   quoteForm: QuoteFormSettings;
+  /** Bandeau d'annonce en haut du site (affiché s'il est actif) */
+  announcementBar?: AnnouncementBar;
+}
+
+/** Bandeau d'annonce du site, géré dans le back-office (Annonces). */
+export interface AnnouncementBar {
+  enabled: boolean;
+  message: string;
+  linkLabel: string;
+  /** Page du site (« /boutique ») ou adresse https://, vide si aucun lien */
+  linkUrl: string;
 }
 
 export async function getPublicSettings(): Promise<PublicShopSettings> {

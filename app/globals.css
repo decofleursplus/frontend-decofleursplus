@@ -1154,6 +1154,32 @@
 }
 
 /* ── Header Topbar & Main Row ── */
+/* Bandeau d'annonce (back-office › Annonces) */
+.topbar-announcement {
+  font-weight: 600;
+}
+.announcement-link {
+  margin-left: 6px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  color: inherit;
+}
+.announcement-mobile {
+  display: none;
+}
+@media (max-width: 768px) {
+  .announcement-mobile {
+    display: block;
+    background: #193e23;
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1.4;
+    text-align: center;
+    padding: 8px 16px;
+  }
+}
 .topbar-left {
   display: flex;
   align-items: center;

@@ -1,5 +1,6 @@
 import { apiClient } from '../client';
 import type { LandscapeQuote, QuoteStatus } from '@/lib/admin/mock-data/types';
+import type { DeliveryMode, OrderPaymentMethod, TimeSlot } from '../orders';
 
 export interface GetAdminQuotesParams {
   page?: number;
@@ -121,6 +122,8 @@ export function transformAdminQuote(raw: any): LandscapeQuote {
     quoteItems,
     estimatedGuests: raw.estimatedGuests ?? null,
     budgetRange: raw.budgetRange ?? null,
+    convertedOrderId: raw.convertedOrderId ?? null,
+    convertedOrderNumber: raw.convertedOrderNumber ?? null,
   };
 }
 
@@ -273,6 +276,30 @@ export async function sendAdminQuoteProposal(id: string, message?: string): Prom
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const res = await apiClient.post<any>(`/admin/quotes/${id}/send`, { message: message || undefined }, { useAdminToken: true });
   return { ...transformAdminQuote(res), emailSent: res?.emailSent };
+}
+
+/** Options de la commande créée depuis un devis accepté (POST /admin/quotes/:id/convert). */
+export interface ConvertQuotePayload {
+  deliveryMode: DeliveryMode;
+  /** Ignorée pour un retrait en boutique */
+  deliveryAddress?: string;
+  /** AAAA-MM-JJ, ou null : date à planifier depuis la commande */
+  deliveryDate: string | null;
+  timeSlot: TimeSlot | null;
+  paymentMethod: OrderPaymentMethod;
+}
+
+/** Crée la commande d'un devis accepté ; le devis passe « Converti en commande ». */
+export async function convertAdminQuoteToOrder(
+  id: string,
+  body: ConvertQuotePayload,
+): Promise<{ quote: LandscapeQuote; order: { id: string; orderNumber: string } }> {
+  const res = await apiClient.post<{
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    quote: any;
+    order: { id: string; orderNumber: string };
+  }>(`/admin/quotes/${encodeURIComponent(id)}/convert`, body, { useAdminToken: true });
+  return { quote: transformAdminQuote(res.quote), order: res.order };
 }
 
 /** Devis tel que renvoyé par l'API (GET /admin/quotes/:id), pour l'édition du document imprimable. */

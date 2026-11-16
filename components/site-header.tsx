@@ -43,6 +43,19 @@ export function SiteHeader() {
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const menuCloseRef = useRef<HTMLButtonElement>(null);
   const { settings } = usePublicSettings();
+  // Bandeau d'annonce géré dans le back-office (Annonces) : remplace les informations habituelles du haut de page
+  const announcement = settings?.announcementBar?.enabled && settings.announcementBar.message ? settings.announcementBar : null;
+  const announcementLink = announcement?.linkUrl ? (
+    announcement.linkUrl.startsWith('/') ? (
+      <Link href={announcement.linkUrl} className="announcement-link">
+        {announcement.linkLabel || 'En savoir plus'}
+      </Link>
+    ) : (
+      <a href={announcement.linkUrl} target="_blank" rel="noopener noreferrer" className="announcement-link">
+        {announcement.linkLabel || 'En savoir plus'}
+      </a>
+    )
+  ) : null;
   const categories = useStoreCategories();
   // Coordonnées et réseaux gérés dans Paramètres › Boutique / SEO
   const shopPhone = settings?.boutique.phoneDakar ?? SITE_CONFIG.phoneDakar;
@@ -149,15 +162,29 @@ export function SiteHeader() {
 
   return (
     <header className={`site-header${isAuthRoute ? ' auth-route-header' : ''}`}>
+      {/* Bandeau d'annonce sur mobile (la barre du haut y est masquée) */}
+      {announcement && (
+        <div className="announcement-mobile" role="note">
+          {announcement.message} {announcementLink}
+        </div>
+      )}
       {/* 1. Top Announcement Bar */}
       <div className="topbar">
         <div className="content-width topbar-inner">
           <div className="topbar-left">
-            <span><MapPin size={13} /> Saly Portudal, Sénégal</span>
-            <span className="topbar-sep">•</span>
-            <span><Truck size={14} /> Livraison à Saly & Mbour</span>
-            <span className="topbar-sep">•</span>
-            <span><ShieldCheck size={14} /> Paiement sécurisé</span>
+            {announcement ? (
+              <span className="topbar-announcement" role="note">
+                {announcement.message} {announcementLink}
+              </span>
+            ) : (
+              <>
+                <span><MapPin size={13} /> Saly Portudal, Sénégal</span>
+                <span className="topbar-sep">•</span>
+                <span><Truck size={14} /> Livraison à Saly & Mbour</span>
+                <span className="topbar-sep">•</span>
+                <span><ShieldCheck size={14} /> Paiement sécurisé</span>
+              </>
+            )}
           </div>
           <div className="topbar-right">
             <a className="topbar-phone" href={telHref(shopPhone)}>

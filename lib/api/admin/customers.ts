@@ -144,3 +144,11 @@ export async function sendAdminCustomerEmail(
 ): Promise<void> {
   await apiClient.post(`/admin/customers/${customerId}/email`, body, { useAdminToken: true });
 }
+
+/**
+ * Supprime un client (DELETE /admin/customers/:id). S'il a un historique (commandes, devis, abonnements…),
+ * le serveur l'anonymise à la place et désactive son compte : `anonymized` vaut alors true.
+ */
+export async function deleteAdminCustomer(id: string): Promise<{ deleted: boolean; anonymized: boolean }> {
+  return apiClient.delete<{ deleted: boolean; anonymized: boolean }>(`/admin/customers/${id}`, { useAdminToken: true });
+}

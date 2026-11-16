@@ -27,7 +27,8 @@ export function LoginForm() {
   const [rememberMe, setRememberMe] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [socialLoading, setSocialLoading] = useState<boolean>(false);
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  // staffLink : compte de l'équipe saisi ici, à rediriger vers le formulaire du back-office
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string; staffLink?: boolean } | null>(null);
   // Compte dont l'email n'a pas encore été confirmé : on bascule sur la saisie du code
   const [pendingVerification, setPendingVerification] = useState<{ email: string; cooldown: number } | null>(null);
   // Connexion sans mot de passe : code à usage unique reçu par email
@@ -73,6 +74,8 @@ export function LoginForm() {
           email: String(err.context?.email || identifier.trim()),
           cooldown: Number(err.context?.resendAvailableInSeconds) || 60,
         });
+      } else if (err instanceof ApiClientError && err.code === 'WRONG_PORTAL') {
+        setFeedback({ type: 'error', text: 'Ce compte appartient à l’équipe DécoFleur Plus : connectez-vous depuis l’espace administration.', staffLink: true });
       } else {
         setFeedback({
           type: 'error',
@@ -94,6 +97,7 @@ export function LoginForm() {
       setFeedback({
         type: 'error',
         text: err instanceof Error ? err.message : 'La connexion avec Google a échoué.',
+        staffLink: err instanceof ApiClientError && err.code === 'WRONG_PORTAL',
       });
       setSocialLoading(false);
     }
@@ -141,6 +145,11 @@ export function LoginForm() {
           role={feedback.type === 'error' ? 'alert' : 'status'}
         >
           <span>{feedback.text}</span>
+          {feedback.staffLink && (
+            <Link href="/admin/connexion" className="ml-1 font-semibold underline">
+              Aller à l’espace administration
+            </Link>
+          )}
         </div>
       )}
 

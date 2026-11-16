@@ -63,8 +63,9 @@ export const TIME_SLOTS = ['9h-12h', '10h-14h', '14h-18h', '18h-20h'] as const;
 
 export interface AdminOrderItemDetail {
   id: string;
-  productId: string;
-  variantId: string;
+  /** null : ligne libre (commande créée depuis un devis), sans produit du catalogue */
+  productId: string | null;
+  variantId: string | null;
   productName: string;
   variantName: string | null;
   sku: string | null;

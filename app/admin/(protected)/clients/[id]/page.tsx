@@ -8,11 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Mail, Phone, MapPin, Calendar, Star, ShoppingBag, Gift, Loader2 } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, MapPin, Calendar, Star, ShoppingBag, Gift, Loader2, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SendEmailDialog } from '@/components/admin/send-email-dialog';
 import { CustomerCrmCard } from '@/components/admin/customer-crm-card';
+import { DeleteCustomerDialog } from '@/components/admin/delete-customer-dialog';
 import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import { toast } from 'sonner';
 
@@ -20,9 +22,12 @@ export default function CustomerProfilePage({ params }: { params: Promise<{ id: 
   const { id } = use(params);
   const can = useAdminCan();
   const canWrite = can('clients', 'write');
+  const canDelete = can('clients', 'delete');
+  const router = useRouter();
   const [customer, setCustomer] = useState<AdminCustomer | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -125,6 +130,16 @@ export default function CustomerProfilePage({ params }: { params: Promise<{ id: 
           >
             <Mail className="mr-2 h-4 w-4 text-[#24582d]" />
             Contacter par e-mail
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            hidden={!canDelete}
+            onClick={() => setIsDeleteModalOpen(true)}
+            className="w-full sm:w-auto border-rose-200 text-rose-700 hover:text-rose-800 hover:bg-rose-50 hover:border-rose-300"
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Supprimer le client
           </Button>
         </div>
       </div>
@@ -284,6 +299,14 @@ export default function CustomerProfilePage({ params }: { params: Promise<{ id: 
         open={isEmailModalOpen}
         onOpenChange={setIsEmailModalOpen}
         customer={customer}
+      />
+
+      {/* Suppression (ou anonymisation si historique) puis retour à la liste */}
+      <DeleteCustomerDialog
+        open={isDeleteModalOpen}
+        onOpenChange={setIsDeleteModalOpen}
+        customer={customer}
+        onDeleted={() => router.push('/admin/clients')}
       />
     </div>
   );
