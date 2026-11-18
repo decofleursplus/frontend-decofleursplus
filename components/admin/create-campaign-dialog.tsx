@@ -10,6 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Loader2, Mail, Megaphone, Lock } from 'lucide-react';
 import { WhatsAppColorIcon } from '@/components/icons';
 
+import { RequiredStar } from '@/components/ui/required-star';
+
 /** Champs exacts attendus par POST /admin/marketing/campaigns (la campagne est créée en brouillon). */
 export interface NewCampaignInput {
   name: string;
@@ -98,8 +100,7 @@ function CampaignDrawer({ onOpenChange, onCreate, campaign }: Omit<CreateCampaig
       <form id="campaign-form" onSubmit={submit} noValidate className="space-y-5">
         <div className="space-y-1.5">
           <Label htmlFor="campaign-name" className="text-xs font-semibold">
-            Nom / objet de l’email *
-          </Label>
+            Nom / objet de l’email <RequiredStar /></Label>
           <Input id="campaign-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex : Offre spéciale Saint-Valentin" />
           {errors.name && <p className="text-[11px] text-red-600">{errors.name}</p>}
         </div>
@@ -138,8 +139,7 @@ function CampaignDrawer({ onOpenChange, onCreate, campaign }: Omit<CreateCampaig
 
         <div className="space-y-1.5">
           <Label htmlFor="campaign-audience" className="text-xs font-semibold">
-            Audience *
-          </Label>
+            Audience <RequiredStar /></Label>
           <select
             id="campaign-audience"
             value={audience}
@@ -161,8 +161,7 @@ function CampaignDrawer({ onOpenChange, onCreate, campaign }: Omit<CreateCampaig
 
         <div className="space-y-1.5">
           <Label htmlFor="campaign-message" className="text-xs font-semibold">
-            Message *
-          </Label>
+            Message <RequiredStar /></Label>
           <textarea
             id="campaign-message"
             rows={8}

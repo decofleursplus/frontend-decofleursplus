@@ -17,6 +17,8 @@ import type { AdminCustomer } from '@/lib/admin/mock-data/types';
 import { createAdminCustomer, updateAdminCustomer } from '@/lib/api/admin/customers';
 import { ApiClientError } from '@/lib/api/client';
 
+import { RequiredStar } from '@/components/ui/required-star';
+
 const SEGMENTS = [
   { value: 'PARTICULIER', label: 'Particulier' },
   { value: 'ENTREPRISE', label: 'Entreprise' },
@@ -137,8 +139,7 @@ export function CustomerFormDialog({ open, onOpenChange, customer, onSaved }: Cu
           <div className="space-y-4 py-4 text-xs">
             <div className="space-y-1.5">
               <label htmlFor="customer-name" className="font-semibold text-gray-700 block">
-                Nom complet ou raison sociale *
-              </label>
+                Nom complet ou raison sociale <RequiredStar /></label>
               <Input
                 id="customer-name"
                 value={name}
@@ -155,8 +156,7 @@ export function CustomerFormDialog({ open, onOpenChange, customer, onSaved }: Cu
             <div className="space-y-1.5">
               <label htmlFor="customer-email" className="font-semibold text-gray-700 flex items-center gap-1.5">
                 <Mail className="h-3.5 w-3.5 text-gray-400" />
-                Adresse email *
-              </label>
+                Adresse email <RequiredStar /></label>
               <Input
                 id="customer-email"
                 type="email"

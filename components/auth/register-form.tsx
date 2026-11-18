@@ -30,6 +30,7 @@ export function RegisterForm() {
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
@@ -50,6 +51,14 @@ export function RegisterForm() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (isSubmitting) return;
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!emailRegex.test(email.trim())) {
+      setEmailError('Veuillez entrer une adresse email valide (ex : nom@domaine.com).');
+      return;
+    }
+    setEmailError(null);
+
     if (!termsAccepted) {
       setFeedback('Veuillez accepter les CGU et la Politique de confidentialité.');
       return;
@@ -167,10 +176,16 @@ export function RegisterForm() {
               autoComplete="email"
               placeholder="ex : sally.diop@email.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (emailError) setEmailError(null);
+              }}
               className="auth-input"
             />
           </div>
+          {emailError && (
+            <p className="mt-1 text-xs text-[#c1647a]">{emailError}</p>
+          )}
         </div>
 
         {/* Phone */}

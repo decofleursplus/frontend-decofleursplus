@@ -19,6 +19,8 @@ import { toast } from 'sonner';
 import type { AdminCustomer } from '@/lib/admin/mock-data/types';
 import { sendAdminCustomerEmail } from '@/lib/api/admin/customers';
 
+import { RequiredStar } from '@/components/ui/required-star';
+
 interface SendEmailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -172,7 +174,7 @@ function SendEmailDialogInner({
         <form onSubmit={handleSend} className="space-y-4 pt-2 flex-1 overflow-y-auto overflow-x-hidden pr-1">
           <div className="space-y-1.5">
             <Label htmlFor="email-subject" className="text-xs font-semibold text-gray-700">
-              Objet du message <span className="text-red-500">*</span>
+              Objet du message <RequiredStar />
             </Label>
             <Input
               id="email-subject"
@@ -187,7 +189,7 @@ function SendEmailDialogInner({
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label htmlFor="email-body" className="text-xs font-semibold text-gray-700">
-                Message <span className="text-red-500">*</span>
+                Message <RequiredStar />
               </Label>
               <span className="text-[11px] text-gray-400">
                 {message.length} caractères

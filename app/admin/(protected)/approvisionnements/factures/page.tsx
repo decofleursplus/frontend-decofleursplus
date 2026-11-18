@@ -19,6 +19,8 @@ import {
 } from '@/lib/api/admin/procurement';
 import { INVOICE_STATUS_LABELS, INVOICE_STATUS_STYLES, formatDay, formatFcfa } from '@/lib/admin/procurement-labels';
 
+import { RequiredStar } from '@/components/ui/required-star';
+
 const inputClass =
   'w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs transition-colors';
 const FILTERS: ('all' | SupplierInvoiceStatus)[] = ['all', 'a_verifier', 'a_payer', 'en_retard', 'payee', 'contestee', 'annulee'];
@@ -398,11 +400,11 @@ export default function AdminFacturesFournisseursPage() {
       >
         <form id="add-invoice-form" onSubmit={addInvoice} className="space-y-4 text-xs" noValidate>
           <label className="block">
-            <span className="block font-semibold mb-1">Numéro de la facture *</span>
+            <span className="block font-semibold mb-1">Numéro de la facture <RequiredStar /></span>
             <input value={form.invoiceNumber} onChange={(e) => setForm((f) => ({ ...f, invoiceNumber: e.target.value }))} placeholder="Ex : F-2026-118" className={inputClass} />
           </label>
           <label className="block">
-            <span className="block font-semibold mb-1">Fournisseur *</span>
+            <span className="block font-semibold mb-1">Fournisseur <RequiredStar /></span>
             <select value={form.supplierId} onChange={(e) => pickSupplier(e.target.value)} className={inputClass}>
               <option value="">Choisir…</option>
               {suppliers.map((s) => (
@@ -425,17 +427,17 @@ export default function AdminFacturesFournisseursPage() {
           </label>
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
-              <span className="block font-semibold mb-1">Date de facture *</span>
+              <span className="block font-semibold mb-1">Date de facture <RequiredStar /></span>
               <input type="date" value={form.invoiceDate} onChange={(e) => setForm((f) => ({ ...f, invoiceDate: e.target.value }))} className={inputClass} />
             </label>
             <label className="block">
-              <span className="block font-semibold mb-1">Échéance *</span>
+              <span className="block font-semibold mb-1">Échéance <RequiredStar /></span>
               <input type="date" value={form.dueDate} onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))} className={inputClass} />
             </label>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
-              <span className="block font-semibold mb-1">Montant TTC (FCFA) *</span>
+              <span className="block font-semibold mb-1">Montant TTC (FCFA) <RequiredStar /></span>
               <input type="number" min={0} value={form.amount} onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))} className={inputClass} />
             </label>
             <label className="block">

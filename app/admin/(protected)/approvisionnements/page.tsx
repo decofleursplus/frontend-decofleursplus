@@ -23,6 +23,8 @@ import {
 } from '@/lib/api/admin/procurement';
 import { ORDER_STATUS_LABELS, ORDER_STATUS_STYLES, formatDay, formatFcfa } from '@/lib/admin/procurement-labels';
 
+import { RequiredStar } from '@/components/ui/required-star';
+
 const inputClass =
   'w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs transition-colors';
 const ACTION_LABELS: Partial<Record<SupplierOrderStatus, string>> = {
@@ -469,7 +471,7 @@ function SupplierOrdersScreen() {
       >
         <div className="space-y-4 text-xs">
           <label className="block">
-            <span className="block font-semibold text-muted-foreground mb-1">Fournisseur *</span>
+            <span className="block font-semibold text-muted-foreground mb-1">Fournisseur <RequiredStar /></span>
             <select
               value={newSupplierId}
               disabled={Boolean(editingOrder)}
@@ -505,7 +507,7 @@ function SupplierOrdersScreen() {
           </div>
 
           <div className="space-y-2">
-            <span className="block font-semibold text-muted-foreground">Lignes de commande *</span>
+            <span className="block font-semibold text-muted-foreground">Lignes de commande <RequiredStar /></span>
             {lines.map((line, index) => (
               <div key={index} className="rounded-xl border border-border p-3 space-y-2 bg-white">
                 <div className="flex gap-2">

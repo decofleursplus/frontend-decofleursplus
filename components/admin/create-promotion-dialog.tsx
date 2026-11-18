@@ -18,6 +18,8 @@ import { Label } from '@/components/ui/label';
 import { BadgePercent, FolderTree, Package, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { RequiredStar } from '@/components/ui/required-star';
+
 interface CreatePromotionDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -152,7 +154,7 @@ export function CreatePromotionDialog({
           <div className="space-y-5 py-4 text-xs">
             {/* Nom de l'opération */}
             <div className="space-y-1.5">
-              <Label className="font-semibold text-gray-700 text-xs whitespace-nowrap block">Nom de la promotion *</Label>
+              <Label className="font-semibold text-gray-700 text-xs whitespace-nowrap block">Nom de la promotion <RequiredStar /></Label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -164,7 +166,7 @@ export function CreatePromotionDialog({
 
             {/* Type de ciblage */}
             <div className="space-y-1.5">
-              <Label className="font-semibold text-gray-700 text-xs whitespace-nowrap block">Cible de la réduction *</Label>
+              <Label className="font-semibold text-gray-700 text-xs whitespace-nowrap block">Cible de la réduction <RequiredStar /></Label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
@@ -203,8 +205,7 @@ export function CreatePromotionDialog({
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <Label className="font-semibold text-gray-700 text-xs whitespace-nowrap block">
-                  Sélectionnez les {targetType === 'categories' ? 'catégories' : 'produits'} concernés *
-                </Label>
+                  Sélectionnez les {targetType === 'categories' ? 'catégories' : 'produits'} concernés <RequiredStar /></Label>
                 {selectedTargets.length > 0 && (
                   <span className="text-[11px] text-[#c1647a] font-medium">
                     {selectedTargets.length} sélectionné(s)
@@ -247,7 +248,7 @@ export function CreatePromotionDialog({
             {/* Pourcentage et Badge */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="font-semibold text-gray-700 text-xs whitespace-nowrap block">Pourcentage de réduction (%) *</Label>
+                <Label className="font-semibold text-gray-700 text-xs whitespace-nowrap block">Pourcentage de réduction (%) <RequiredStar /></Label>
                 <Input
                   type="number"
                   min="1"
@@ -274,7 +275,7 @@ export function CreatePromotionDialog({
             {/* Dates */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="font-semibold text-gray-700 text-xs whitespace-nowrap block">Date de début *</Label>
+                <Label className="font-semibold text-gray-700 text-xs whitespace-nowrap block">Date de début <RequiredStar /></Label>
                 <Input
                   type="date"
                   value={startDate}
@@ -284,7 +285,7 @@ export function CreatePromotionDialog({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="font-semibold text-gray-700 text-xs whitespace-nowrap block">Date de fin *</Label>
+                <Label className="font-semibold text-gray-700 text-xs whitespace-nowrap block">Date de fin <RequiredStar /></Label>
                 <Input
                   type="date"
                   value={endDate}

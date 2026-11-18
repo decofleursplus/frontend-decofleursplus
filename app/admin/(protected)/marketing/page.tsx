@@ -62,7 +62,16 @@ import {
   Eye,
   EyeOff,
   Pencil,
+  AlertTriangle,
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { WhatsAppColorIcon, WhatsAppButtonIcon } from '@/components/icons';
 import { CreateCouponDialog } from '@/components/admin/create-coupon-dialog';
@@ -93,6 +102,19 @@ export default function AdminMarketingPage() {
   const [summary, setSummary] = useState<MarketingSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Modals remplaçant les alertes / confirmations natives
+  const [confirmModal, setConfirmModal] = useState<{
+    title: string;
+    description: string;
+    variant?: 'danger' | 'warning' | 'default';
+    confirmLabel?: string;
+    onConfirm: () => void | Promise<void>;
+  } | null>(null);
+  const [previewModal, setPreviewModal] = useState<{
+    title: string;
+    content: string;
+  } | null>(null);
 
   // Chaîne de promesses : les setState n'ont lieu que dans les callbacks, jamais pendant l'effet.
   const fetchMarketing = useCallback(
@@ -290,17 +312,25 @@ export default function AdminMarketingPage() {
     );
   };
 
-  const handleDeleteCoupon = async (couponId: string) => {
+  const handleDeleteCoupon = (couponId: string) => {
     const cp = coupons.find((c) => c.id === couponId);
     const used = (cp?.currentUsageCount ?? 0) > 0;
     const question = used
       ? `Le code ${cp?.code ?? ''} a déjà servi : il sera désactivé et son historique conservé. Continuer ?`
-      : `Supprimer le code ${cp?.code ?? ''} ?`;
-    if (!window.confirm(question)) return;
-    await runAction(
-      () => deleteAdminCoupon(couponId),
-      (res) => (res.deactivated ? 'Code désactivé : il a déjà servi, son historique est conservé.' : 'Code promotionnel supprimé.'),
-    );
+      : `Voulez-vous vraiment supprimer le code promotionnel ${cp?.code ?? ''} ?`;
+    setConfirmModal({
+      title: used ? 'Désactiver le code promo' : 'Supprimer le code promo',
+      description: question,
+      variant: 'danger',
+      confirmLabel: used ? 'Désactiver' : 'Supprimer',
+      onConfirm: async () => {
+        setConfirmModal(null);
+        await runAction(
+          () => deleteAdminCoupon(couponId),
+          (res) => (res.deactivated ? 'Code désactivé : il a déjà servi, son historique est conservé.' : 'Code promotionnel supprimé.'),
+        );
+      },
+    });
   };
 
   const handleTogglePromotionStatus = async (promoId: string) => {
@@ -313,20 +343,44 @@ export default function AdminMarketingPage() {
     );
   };
 
-  const handleDeletePromotion = async (promoId: string) => {
+  const handleDeletePromotion = (promoId: string) => {
     const pr = promotions.find((p) => p.id === promoId);
-    if (!window.confirm(`Supprimer la promotion « ${pr?.name ?? ''} » ?`)) return;
-    await runAction(() => deleteAdminPromotion(promoId), 'Promotion supprimée du catalogue.');
+    setConfirmModal({
+      title: 'Supprimer la promotion',
+      description: `Voulez-vous vraiment supprimer la promotion « ${pr?.name ?? ''} » ?`,
+      variant: 'danger',
+      confirmLabel: 'Supprimer',
+      onConfirm: async () => {
+        setConfirmModal(null);
+        await runAction(() => deleteAdminPromotion(promoId), 'Promotion supprimée du catalogue.');
+      },
+    });
   };
 
-  const handleSendCampaign = async (camp: AdminCampaign) => {
-    if (!window.confirm(`Envoyer la campagne « ${camp.name} » maintenant ?`)) return;
-    await runAction(() => sendAdminCampaign(camp.id), `Campagne « ${camp.name} » envoyée.`);
+  const handleSendCampaign = (camp: AdminCampaign) => {
+    setConfirmModal({
+      title: 'Envoyer la campagne',
+      description: `Voulez-vous envoyer la campagne « ${camp.name} » maintenant à ses destinataires ?`,
+      variant: 'default',
+      confirmLabel: 'Envoyer',
+      onConfirm: async () => {
+        setConfirmModal(null);
+        await runAction(() => sendAdminCampaign(camp.id), `Campagne « ${camp.name} » envoyée.`);
+      },
+    });
   };
 
-  const handleDeleteCampaign = async (camp: AdminCampaign) => {
-    if (!window.confirm(`Supprimer la campagne « ${camp.name} » ?`)) return;
-    await runAction(() => deleteAdminCampaign(camp.id), 'Campagne supprimée.');
+  const handleDeleteCampaign = (camp: AdminCampaign) => {
+    setConfirmModal({
+      title: 'Supprimer la campagne',
+      description: `Voulez-vous vraiment supprimer la campagne « ${camp.name} » ?`,
+      variant: 'danger',
+      confirmLabel: 'Supprimer',
+      onConfirm: async () => {
+        setConfirmModal(null);
+        await runAction(() => deleteAdminCampaign(camp.id), 'Campagne supprimée.');
+      },
+    });
   };
 
   /**
@@ -1511,7 +1565,7 @@ export default function AdminMarketingPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => window.alert(`${camp.name}\n\n${camp.messageContent}`)}
+                            onClick={() => setPreviewModal({ title: camp.name, content: camp.messageContent })}
                             className="h-7 text-xs border-[#e7e4dd]"
                           >
                             Aperçu
@@ -1608,7 +1662,12 @@ export default function AdminMarketingPage() {
                         Envoyer
                       </Button>
                     )}
-                    <Button size="sm" variant="outline" onClick={() => window.alert(`${camp.name}\n\n${camp.messageContent}`)} className="h-8 text-xs border-[#e7e4dd]">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setPreviewModal({ title: camp.name, content: camp.messageContent })}
+                      className="h-8 text-xs border-[#e7e4dd]"
+                    >
                       Aperçu
                     </Button>
                     {camp.status !== 'envoyee' && (
@@ -2109,6 +2168,86 @@ export default function AdminMarketingPage() {
         }}
       />
       )}
+
+      {/* Modal de confirmation d'action (remplace window.confirm) */}
+      <Dialog open={!!confirmModal} onOpenChange={(open) => !open && setConfirmModal(null)}>
+        <DialogContent className="w-[94vw] max-w-md p-6">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              {confirmModal?.variant === 'danger' ? (
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+              ) : (
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-[#173f22]">
+                  <Send className="h-5 w-5" />
+                </div>
+              )}
+              <div>
+                <DialogTitle className="text-base font-bold text-gray-900">
+                  {confirmModal?.title}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-gray-500 mt-1">
+                  {confirmModal?.description}
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          <DialogFooter className="mt-4 gap-2 sm:gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setConfirmModal(null)}
+              className="border-gray-200"
+            >
+              Annuler
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              className={
+                confirmModal?.variant === 'danger'
+                  ? 'bg-red-600 hover:bg-red-700 text-white'
+                  : 'bg-[#173f22] hover:bg-[#122e19] text-white'
+              }
+              onClick={() => {
+                confirmModal?.onConfirm();
+              }}
+            >
+              {confirmModal?.confirmLabel || 'Confirmer'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal d'aperçu du message de campagne (remplace window.alert) */}
+      <Dialog open={!!previewModal} onOpenChange={(open) => !open && setPreviewModal(null)}>
+        <DialogContent className="w-[94vw] max-w-lg p-6">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-[#173f22]">
+              Aperçu de la campagne : {previewModal?.title}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-gray-500">
+              Contenu du message tel qu’il sera envoyé aux destinataires.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-3 max-h-72 overflow-y-auto whitespace-pre-wrap rounded-xl border border-[#e7e4dd] bg-[#faf8f4] p-4 text-xs text-gray-800 font-sans leading-relaxed">
+            {previewModal?.content}
+          </div>
+          <DialogFooter className="mt-4">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPreviewModal(null)}
+              className="border-gray-200"
+            >
+              Fermer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

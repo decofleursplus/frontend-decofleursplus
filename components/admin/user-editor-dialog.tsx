@@ -2,13 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,6 +39,8 @@ import {
   type StaffStatus,
   type StaffUser,
 } from '@/lib/api/admin/settings';
+
+import { RequiredStar } from '@/components/ui/required-star';
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -242,7 +244,7 @@ function UserEditorForm({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="userFirstName" className="text-xs font-semibold text-gray-700">
-            Prénom <span className="text-[#c1647a]">*</span>
+            Prénom <RequiredStar />
           </Label>
           <div className="relative">
             <User className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
@@ -274,7 +276,7 @@ function UserEditorForm({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="userEmail" className="text-xs font-semibold text-gray-700">
-            Email de connexion {!isEditing && <span className="text-[#c1647a]">*</span>}
+            Email de connexion {!isEditing && <RequiredStar />}
           </Label>
           <div className="relative">
             <Mail className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
@@ -314,7 +316,7 @@ function UserEditorForm({
         <Label htmlFor="userPassword" className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
           <KeyRound className="h-3.5 w-3.5 text-gray-400" />
           {isEditing ? 'Nouveau mot de passe (facultatif)' : 'Mot de passe initial'}
-          {!isEditing && <span className="text-[#c1647a]">*</span>}
+          {!isEditing && <RequiredStar />}
         </Label>
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
@@ -361,7 +363,7 @@ function UserEditorForm({
       {/* Rôle */}
       <div className="space-y-1.5">
         <Label className="text-xs font-semibold text-gray-700">
-          Rôle <span className="text-[#c1647a]">*</span>
+          Rôle <RequiredStar />
         </Label>
         {isSelf && (
           <p className="text-[11px] text-amber-700">Vous ne pouvez pas modifier votre propre rôle ni désactiver votre compte.</p>
@@ -428,7 +430,7 @@ function UserEditorForm({
         </div>
       )}
 
-      <DialogFooter className="pt-3">
+      <SheetFooter className="pt-4 px-0 bg-transparent border-t border-gray-100 mt-6">
         <Button type="button" variant="outline" size="sm" onClick={onCancel} disabled={saving}>
           Annuler
         </Button>
@@ -447,7 +449,7 @@ function UserEditorForm({
                 ? 'Enregistrer les modifications'
                 : 'Créer le collaborateur'}
         </Button>
-      </DialogFooter>
+      </SheetFooter>
     </form>
   );
 }
@@ -462,40 +464,42 @@ export function UserEditorDialog({ isOpen, onOpenChange, user, roles, isSelf, on
   }, [isOpen]);
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[94vw] max-w-[540px] max-h-[calc(100vh-3rem)] overflow-y-auto p-4 sm:p-6">
-        <DialogHeader>
+    <Sheet open={isOpen} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-full sm:max-w-[560px] flex flex-col p-0">
+        <SheetHeader className="p-6 border-b border-[#f0eee8]">
           <div className="flex items-center gap-2">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-pink-50 text-[#c1647a]">
               <ShieldCheck className="h-4 w-4" />
             </span>
             <div>
-              <DialogTitle className="text-lg font-bold text-gray-900">
+              <SheetTitle className="text-lg font-bold text-gray-900 font-sans">
                 {isEditing ? 'Modifier le collaborateur' : 'Ajouter un collaborateur'}
-              </DialogTitle>
-              <DialogDescription className="text-xs text-gray-500">
+              </SheetTitle>
+              <SheetDescription className="text-xs text-gray-500">
                 {isEditing
                   ? 'Profil, rôle, statut et mot de passe du compte.'
                   : 'Le collaborateur reçoit un email d’invitation avec son identifiant et le lien de connexion.'}
-              </DialogDescription>
+              </SheetDescription>
             </div>
           </div>
-        </DialogHeader>
+        </SheetHeader>
 
-        {isOpen && (
-          <UserEditorForm
-            key={`${user?.id ?? 'new'}-${formKey}`}
-            user={user}
-            roles={roles}
-            isSelf={isSelf}
-            onSaved={(saved, password) => {
-              onSaved(saved, password);
-              onOpenChange(false);
-            }}
-            onCancel={() => onOpenChange(false)}
-          />
-        )}
-      </DialogContent>
-    </Dialog>
+        <div className="flex-1 overflow-y-auto p-6">
+          {isOpen && (
+            <UserEditorForm
+              key={`${user?.id ?? 'new'}-${formKey}`}
+              user={user}
+              roles={roles}
+              isSelf={isSelf}
+              onSaved={(saved, password) => {
+                onSaved(saved, password);
+                onOpenChange(false);
+              }}
+              onCancel={() => onOpenChange(false)}
+            />
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }

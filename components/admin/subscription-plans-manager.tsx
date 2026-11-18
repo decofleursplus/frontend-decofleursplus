@@ -19,6 +19,8 @@ import {
   type SubscriptionPlanPayload,
 } from '@/lib/api/admin/subscriptions';
 
+import { RequiredStar } from '@/components/ui/required-star';
+
 const FREQUENCY_OPTIONS: { value: SubscriptionFrequency; label: string; hint: string }[] = [
   { value: 'HEBDOMADAIRE', label: 'Hebdomadaire', hint: '4 passages par mois' },
   { value: 'BIMENSUELLE', label: 'Bimensuelle', hint: '2 passages par mois' },
@@ -406,8 +408,7 @@ function PlanFormDrawer({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label htmlFor="plan-name" className="text-xs font-semibold">
-              Nom de la formule *
-            </Label>
+              Nom de la formule <RequiredStar /></Label>
             <Input id="plan-name" value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="Ex : Bureau Zen" />
             {err('name')}
           </div>
@@ -430,8 +431,7 @@ function PlanFormDrawer({
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_160px] gap-3">
           <div className="space-y-1.5">
             <Label htmlFor="plan-tagline" className="text-xs font-semibold">
-              Description courte *
-            </Label>
+              Description courte <RequiredStar /></Label>
             <Input id="plan-tagline" value={form.tagline} onChange={(e) => set('tagline', e.target.value)} placeholder="Fraîcheur & poésie au quotidien" />
             {err('tagline')}
           </div>

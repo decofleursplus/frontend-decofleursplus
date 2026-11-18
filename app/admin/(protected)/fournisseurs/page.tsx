@@ -23,6 +23,8 @@ import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import { createSupplier, deleteSupplier, getSuppliers, updateSupplier } from '@/lib/api/admin/procurement';
 import { AdminPagination, paginate } from '@/components/admin/admin-pagination';
 
+import { RequiredStar } from '@/components/ui/required-star';
+
 const inputClass =
   'w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs transition-colors';
 const formatFcfa = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
@@ -404,7 +406,7 @@ export default function AdminFournisseursPage() {
       >
         <form id="add-supplier-form" onSubmit={handleAddSupplier} className="space-y-4 text-xs" noValidate>
           <label className="block">
-            <span className="block font-semibold text-muted-foreground mb-1">Raison sociale / Nom *</span>
+            <span className="block font-semibold text-muted-foreground mb-1">Raison sociale / Nom <RequiredStar /></span>
             <input type="text" value={form.name} onChange={set('name')} placeholder="Ex : Flora Sénégal" className={inputClass} />
           </label>
           <div className="grid grid-cols-2 gap-3">

@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tag, Sparkles, Percent, Banknote, Truck, Loader2 } from 'lucide-react';
 
+import { RequiredStar } from '@/components/ui/required-star';
+
 /** Champs exacts attendus par POST /admin/marketing/coupons. */
 export interface NewCouponInput {
   code: string;
@@ -129,8 +131,7 @@ function CouponDrawer({ isOpen, onOpenChange, onCreate, coupon }: CreateCouponDi
       <form id="coupon-form" onSubmit={handleSubmit} noValidate className="space-y-5 text-xs">
         <div className="space-y-1.5">
           <Label htmlFor="coupon-code" className="font-semibold text-gray-700 text-xs">
-            Code promotionnel *
-          </Label>
+            Code promotionnel <RequiredStar /></Label>
           <div className="flex gap-2">
             <Input
               id="coupon-code"
@@ -221,15 +222,13 @@ function CouponDrawer({ isOpen, onOpenChange, onCreate, coupon }: CreateCouponDi
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label htmlFor="coupon-start" className="font-semibold text-gray-700 text-xs">
-              Date de début *
-            </Label>
+              Date de début <RequiredStar /></Label>
             <Input id="coupon-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="text-xs h-10 bg-white" />
             {fieldError('startDate')}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="coupon-end" className="font-semibold text-gray-700 text-xs">
-              Date d’expiration *
-            </Label>
+              Date d’expiration <RequiredStar /></Label>
             <Input id="coupon-end" type="date" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} className="text-xs h-10 bg-white" />
             {fieldError('endDate')}
           </div>
