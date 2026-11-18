@@ -15,6 +15,8 @@ import { Input } from '@/components/ui/input';
 import { CheckCircle2, User, Clock, MapPin, Package, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { RequiredStar } from '@/components/ui/required-star';
+
 interface CompleteDeliveryDialogProps {
   delivery: AdminDelivery | null;
   isOpen: boolean;
@@ -85,8 +87,7 @@ export function CompleteDeliveryDialog({
             <div className="space-y-1.5">
               <label className="font-semibold text-gray-700 text-xs flex items-center gap-1.5 whitespace-nowrap">
                 <User className="h-3.5 w-3.5 text-gray-400" />
-                Nom de la personne ayant réceptionné *
-              </label>
+                Nom de la personne ayant réceptionné <RequiredStar /></label>
               <Input
                 value={recipientName}
                 onChange={(e) => setRecipientName(e.target.value)}

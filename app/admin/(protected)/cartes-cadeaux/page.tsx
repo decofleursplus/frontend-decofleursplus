@@ -48,6 +48,8 @@ import {
   type AdminGiftCardPage,
 } from '@/lib/api/admin/rewards';
 
+import { RequiredStar } from '@/components/ui/required-star';
+
 const fcfa = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
 const date = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
 const errorMessage = (err: unknown, fallback: string) => {
@@ -806,16 +808,16 @@ function IssueGiftCardDrawer({
           </p>
         )}
         <label className="block space-y-1">
-          <span className="font-semibold text-gray-700">Montant (FCFA) *</span>
+          <span className="font-semibold text-gray-700">Montant (FCFA) <RequiredStar /></span>
           <Input inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d\s]/g, ''))} className={field} required />
         </label>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block space-y-1">
-            <span className="font-semibold text-gray-700">Nom du destinataire *</span>
+            <span className="font-semibold text-gray-700">Nom du destinataire <RequiredStar /></span>
             <Input value={recipientName} onChange={(e) => setRecipientName(e.target.value)} className={field} required />
           </label>
           <label className="block space-y-1">
-            <span className="font-semibold text-gray-700">Email du destinataire *</span>
+            <span className="font-semibold text-gray-700">Email du destinataire <RequiredStar /></span>
             <Input type="email" value={recipientEmail} onChange={(e) => setRecipientEmail(e.target.value)} className={field} required />
           </label>
         </div>

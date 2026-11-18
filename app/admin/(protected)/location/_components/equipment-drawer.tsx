@@ -13,6 +13,8 @@ import {
   type RentalItemAdminStatus,
 } from '@/lib/api/admin/rentals';
 
+import { RequiredStar } from '@/components/ui/required-star';
+
 export const RENTAL_CATEGORY_OPTIONS = [
   { value: 'mobilier', label: 'Mobilier événementiel' },
   { value: 'vaisselle', label: 'Vaisselle & arts de la table' },
@@ -165,7 +167,7 @@ function EquipmentDrawerForm({ isOpen, equipment, onClose, onSaved }: EquipmentD
     >
       <form id="equipment-form" onSubmit={handleSubmit} noValidate className="space-y-4 text-xs">
         <div>
-          <label htmlFor="eq-name" className="block font-semibold text-muted-foreground mb-1">Nom de l’équipement *</label>
+          <label htmlFor="eq-name" className="block font-semibold text-muted-foreground mb-1">Nom de l’équipement <RequiredStar /></label>
           <input
             id="eq-name"
             type="text"
@@ -179,7 +181,7 @@ function EquipmentDrawerForm({ isOpen, equipment, onClose, onSaved }: EquipmentD
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label htmlFor="eq-category" className="block font-semibold text-muted-foreground mb-1">Catégorie *</label>
+            <label htmlFor="eq-category" className="block font-semibold text-muted-foreground mb-1">Catégorie <RequiredStar /></label>
             <select id="eq-category" value={category} onChange={(e) => setCategory(e.target.value)} className={inputClass}>
               {RENTAL_CATEGORY_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -210,7 +212,7 @@ function EquipmentDrawerForm({ isOpen, equipment, onClose, onSaved }: EquipmentD
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor="eq-price" className="block font-semibold text-muted-foreground mb-1">Prix par jour (FCFA) *</label>
+            <label htmlFor="eq-price" className="block font-semibold text-muted-foreground mb-1">Prix par jour (FCFA) <RequiredStar /></label>
             <input
               id="eq-price"
               type="number"
@@ -222,7 +224,7 @@ function EquipmentDrawerForm({ isOpen, equipment, onClose, onSaved }: EquipmentD
             {fieldError('pricePerDay')}
           </div>
           <div>
-            <label htmlFor="eq-deposit" className="block font-semibold text-muted-foreground mb-1">Caution par unité (FCFA) *</label>
+            <label htmlFor="eq-deposit" className="block font-semibold text-muted-foreground mb-1">Caution par unité (FCFA) <RequiredStar /></label>
             <input
               id="eq-deposit"
               type="number"
@@ -236,7 +238,7 @@ function EquipmentDrawerForm({ isOpen, equipment, onClose, onSaved }: EquipmentD
         </div>
 
         <div>
-          <label htmlFor="eq-stock" className="block font-semibold text-muted-foreground mb-1">Stock total (unités) *</label>
+          <label htmlFor="eq-stock" className="block font-semibold text-muted-foreground mb-1">Stock total (unités) <RequiredStar /></label>
           <input
             id="eq-stock"
             type="number"
@@ -267,7 +269,7 @@ function EquipmentDrawerForm({ isOpen, equipment, onClose, onSaved }: EquipmentD
         </div>
 
         <div>
-          <label htmlFor="eq-description" className="block font-semibold text-muted-foreground mb-1">Description *</label>
+          <label htmlFor="eq-description" className="block font-semibold text-muted-foreground mb-1">Description <RequiredStar /></label>
           <textarea
             id="eq-description"
             rows={3}

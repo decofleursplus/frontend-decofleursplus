@@ -34,6 +34,8 @@ import { getProducts } from '@/lib/api/catalog';
 import { stripEmojis } from '@/lib/events-data';
 import type { EventThemeColor, SeasonalEventInput } from '@/lib/api/events';
 
+import { RequiredStar } from '@/components/ui/required-star';
+
 /** Événement en cours d'édition (`id` absent pour une création). */
 export type EventDraft = SeasonalEventInput & { id?: string };
 
@@ -263,7 +265,7 @@ function EditEventDialogInner({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
               <div className="space-y-1.5 sm:col-span-1">
                 <Label className="text-xs font-semibold text-zinc-700">
-                  Nom de l’événement <span className="text-red-500">*</span>
+                  Nom de l’événement <RequiredStar />
                 </Label>
                 <Input
                   value={formData.name}
@@ -320,7 +322,7 @@ function EditEventDialogInner({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-zinc-700">
-                  Titre principal <span className="text-red-500">*</span>
+                  Titre principal <RequiredStar />
                 </Label>
                 <Input
                   value={formData.headline}
