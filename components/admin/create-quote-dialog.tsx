@@ -11,6 +11,8 @@ import { getAdminCustomers } from '@/lib/api/admin/customers';
 import { getAdminProducts } from '@/lib/api/admin/products';
 import type { AdminCustomer, AdminProduct, LandscapeQuote } from '@/lib/admin/mock-data/types';
 
+import { RequiredStar } from '@/components/ui/required-star';
+
 interface Line {
   key: number;
   description: string;
@@ -152,7 +154,7 @@ function CreateQuoteForm({ onClose, onCreated }: { onClose: () => void; onCreate
           {canSearchClients && <SearchPicker<AdminCustomer> placeholder="Retrouver un client existant (nom, email, téléphone)…" search={(q) => getAdminCustomers({ search: q, limit: 6 }).then((r) => r.customers)} render={(c) => [c.name, c.email]} onPick={pickCustomer} />}
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="space-y-1">
-              <span className="font-semibold text-gray-700">Nom du client *</span>
+              <span className="font-semibold text-gray-700">Nom du client <RequiredStar /></span>
               <input value={name} onChange={(e) => setName(e.target.value)} className={inputClass} placeholder="Ex : Aminata Fall" />
             </label>
             <label className="space-y-1">
@@ -175,7 +177,7 @@ function CreateQuoteForm({ onClose, onCreated }: { onClose: () => void; onCreate
           <h3 className="text-sm font-bold text-[#1e2a1f]">Projet</h3>
           <div className="grid gap-3 sm:grid-cols-3">
             <label className="space-y-1 sm:col-span-1">
-              <span className="font-semibold text-gray-700">Objet du devis *</span>
+              <span className="font-semibold text-gray-700">Objet du devis <RequiredStar /></span>
               <input list="quote-project-types" value={eventType} onChange={(e) => setEventType(e.target.value)} className={inputClass} placeholder="Ex : Mariage & Cérémonie" />
               <datalist id="quote-project-types">
                 {PROJECT_SUGGESTIONS.map((s) => (

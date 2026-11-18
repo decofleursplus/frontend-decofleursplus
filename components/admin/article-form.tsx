@@ -50,6 +50,8 @@ import { toast } from 'sonner';
 import { ApiClientError } from '@/lib/api/client';
 import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 
+import { RequiredStar } from '@/components/ui/required-star';
+
 interface ArticleFormProps {
   initialArticle?: BlogArticle | null;
   onSave?: (article: BlogArticle) => void;
@@ -615,7 +617,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
           <CardContent className="p-4 sm:p-6 space-y-4">
             <div>
               <Label htmlFor="post-title" className="text-xs font-bold text-[#333] uppercase tracking-wider block mb-1.5">
-                Titre principal de l’article <span className="text-red-500">*</span>
+                Titre principal de l’article <RequiredStar />
               </Label>
               <Input
                 id="post-title"
@@ -652,7 +654,7 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
                 <Label htmlFor="post-excerpt" className="text-xs font-bold text-[#333] uppercase tracking-wider flex items-center gap-1.5">
                   <FileText size={13} className="text-[#24582d]" />
                   <span>Extrait / Résumé d’accroche (Chapeau)</span>
-                  <span className="text-red-500">*</span>
+                  <RequiredStar />
                 </Label>
                 <span className="text-[10.5px] text-gray-400 hidden sm:inline">
                   Partages & cartes blog

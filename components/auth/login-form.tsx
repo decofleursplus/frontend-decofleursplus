@@ -22,6 +22,7 @@ export function LoginForm() {
   const { login, loginWithGoogle } = useAuth();
 
   const [identifier, setIdentifier] = useState('');
+  const [identifierError, setIdentifierError] = useState<string | null>(null);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -40,11 +41,40 @@ export function LoginForm() {
     router.push(redirectTarget);
   }
 
+  function validateInput(val: string, currentMethod: 'password' | 'code'): string | null {
+    const trimmed = val.trim();
+    if (!trimmed) return 'Veuillez renseigner ce champ.';
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (currentMethod === 'code') {
+      if (!emailRegex.test(trimmed)) {
+        return 'Veuillez entrer une adresse email valide (ex : nom@domaine.com).';
+      }
+      return null;
+    }
+    if (trimmed.includes('@')) {
+      if (!emailRegex.test(trimmed)) {
+        return 'Veuillez entrer une adresse email valide (ex : nom@domaine.com).';
+      }
+      return null;
+    }
+    const digitsOnly = trimmed.replace(/[\s().-]/g, '');
+    if (!/^\+?[0-9]{7,15}$/.test(digitsOnly)) {
+      return 'Veuillez entrer une adresse email valide ou un numéro de téléphone.';
+    }
+    return null;
+  }
+
   async function handleRequestCode() {
+    const err = validateInput(identifier, 'code');
+    if (err) {
+      setIdentifierError(err);
+      return;
+    }
+    setIdentifierError(null);
     setIsSubmitting(true);
     setFeedback(null);
     try {
-      const res = await requestLoginCode(identifier);
+      const res = await requestLoginCode(identifier.trim());
       setCodeStep({ cooldown: res.resendAvailableInSeconds, minutes: res.expiresInMinutes });
     } catch (err: unknown) {
       setFeedback({ type: 'error', text: err instanceof Error ? err.message : 'Impossible d’envoyer le code pour le moment.' });
@@ -55,7 +85,14 @@ export function LoginForm() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!identifier.trim() || isSubmitting) return;
+    if (isSubmitting) return;
+
+    const validationErr = validateInput(identifier, method);
+    if (validationErr) {
+      setIdentifierError(validationErr);
+      return;
+    }
+    setIdentifierError(null);
 
     if (method === 'code') {
       await handleRequestCode();
@@ -198,10 +235,16 @@ export function LoginForm() {
               autoComplete="username"
               placeholder="ex : sally.diop@email.com ou +221 77 123 45 67"
               value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
+              onChange={(e) => {
+                setIdentifier(e.target.value);
+                if (identifierError) setIdentifierError(null);
+              }}
               className="auth-input"
             />
           </div>
+          {identifierError && (
+            <p className="mt-1 text-xs text-[#c1647a]">{identifierError}</p>
+          )}
         </div>
 
         {method === 'password' ? (

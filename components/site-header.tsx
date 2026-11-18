@@ -360,11 +360,16 @@ export function SiteHeader() {
                 onMouseLeave={handleDropdownLeave}
               >
                 <Link href="/boutique" className="dropdown-item" onClick={closeDropdownInstantly}>Tous les produits</Link>
-                {(categories ?? []).map((c) => (
+                {(categories ?? []).slice(0, 7).map((c) => (
                   <Link key={c.id} href={`/categories/${c.slug}`} className="dropdown-item" onClick={closeDropdownInstantly}>
                     {c.name}
                   </Link>
                 ))}
+                {(categories ?? []).length > 7 && (
+                  <Link href="/boutique" className="dropdown-item font-medium text-[#173f22]" onClick={closeDropdownInstantly}>
+                    Voir toutes les catégories →
+                  </Link>
+                )}
               </div>
             )}
           </div>

@@ -16,6 +16,8 @@ import { Label } from '@/components/ui/label';
 import { UserCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { RequiredStar } from '@/components/ui/required-star';
+
 interface AuthorProfileDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -114,7 +116,7 @@ function AuthorProfileForm({
 
             <div>
               <Label htmlFor="author-name" className="text-xs font-semibold text-[#444]">
-                Nom & Prénom <span className="text-red-500">*</span>
+                Nom & Prénom <RequiredStar />
               </Label>
               <Input
                 id="author-name"

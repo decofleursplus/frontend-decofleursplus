@@ -86,6 +86,8 @@ import type {
 } from '@/lib/api/subscriptions';
 import { ApiClientError } from '@/lib/api/client';
 
+import { RequiredStar } from '@/components/ui/required-star';
+
 const PAGE_SIZE = 20;
 
 
@@ -1209,7 +1211,7 @@ export default function AdminAbonnementsPage() {
           </DialogHeader>
           <div className="space-y-1.5">
             <Label htmlFor="cancel-reason" className="text-xs">
-              Motif de résiliation <span className="text-rose-600">*</span>
+              Motif de résiliation <RequiredStar />
             </Label>
             <Textarea
               id="cancel-reason"

@@ -9,17 +9,23 @@ import { JsonLd } from '@/components/seo/json-ld';
 import { SITE_URL, SITE_CONFIG } from '@/lib/seo/config';
 
 export const metadata: Metadata = constructMetadata({
-  title: 'Boutique Florale en Ligne | Bouquets, Plantes & Cadeaux à Saly & Dakar',
+  title: 'Boutique Florale en Ligne | Fleurs Sénégal, Bouquets & Cadeaux à Saly & Dakar',
   description:
-    'Achetez en ligne vos bouquets de roses, plantes tropicales, corbeilles de fruits et cadeaux raffinés. Livraison rapide à Saly Portudal, Somone, Mbour et Dakar.',
+    'Fleuriste Sénégal en ligne : achetez vos bouquets de fleurs fraîches, roses, plantes tropicales et cadeaux raffinés. Livraison express à Dakar, Saly Portudal, Somone et Mbour.',
   canonical: '/boutique',
   keywords: [
+    'fleurs senegal',
+    'fleuriste senegal',
+    'fleuriste au senegal',
     'boutique fleuriste senegal',
+    'acheter fleurs senegal',
     'acheter fleurs dakar',
     'fleurs en ligne saly',
     'livraison fleurs senegal',
+    'livraison fleurs mbour',
     'bouquet de roses',
     'plantes tropicales dakar',
+    'cadeaux senegal',
   ],
 });
 

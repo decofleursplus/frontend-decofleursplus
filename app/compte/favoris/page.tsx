@@ -13,10 +13,7 @@ export default function AccountFavoritesPage() {
     <>
       <div className="account-title-row">
         <div>
-          <h1 className="account-title flex items-center gap-2">
-            <Heart size={24} className="text-pink-600" />
-            Mes favoris
-          </h1>
+          <h1 className="account-title">Mes favoris</h1>
           <p className="account-intro">Les créations que vous avez gardées de côté sur cet appareil.</p>
         </div>
       </div>

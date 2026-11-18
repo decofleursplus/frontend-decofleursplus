@@ -11,6 +11,8 @@ import { uploadAdminMedia } from '@/lib/api/admin/uploads';
 import type { AdminShopSettings, BoutiqueSettings, UpdateShopSettingsPayload } from '@/lib/api/admin/settings';
 import { describeError, FieldError, fieldErrorsOf, InfoNote, ReadOnlyNote } from './shared';
 
+import { RequiredStar } from '@/components/ui/required-star';
+
 type BoutiqueDraft = Pick<
   BoutiqueSettings,
   'shopName' | 'tagline' | 'contactEmail' | 'phoneDakar' | 'phoneSaly' | 'address' | 'logoUrl' | 'openingHours' | 'ninea' | 'rccm'
@@ -167,7 +169,7 @@ export function BoutiqueTab({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label htmlFor="shopName" className="font-semibold text-gray-700">
-              Nom de la boutique <span className="text-[#c1647a]">*</span>
+              Nom de la boutique <RequiredStar />
             </Label>
             <Input
               id="shopName"
@@ -195,7 +197,7 @@ export function BoutiqueTab({
 
           <div className="space-y-1.5">
             <Label htmlFor="contactEmail" className="font-semibold text-gray-700">
-              Email de contact <span className="text-[#c1647a]">*</span>
+              Email de contact <RequiredStar />
             </Label>
             <div className="relative">
               <Mail className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />

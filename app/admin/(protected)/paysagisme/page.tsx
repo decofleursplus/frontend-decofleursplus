@@ -21,6 +21,8 @@ import {
   updateLandscapeService,
 } from '@/lib/api/landscaping';
 
+import { RequiredStar } from '@/components/ui/required-star';
+
 const inputClass =
   'w-full p-2.5 rounded-xl border border-border bg-[#faf8f5] focus:bg-white focus:border-[#173f22] outline-none text-xs transition-colors';
 const SERVICE_CATEGORIES = ['Conception', 'Création', 'Entretien', 'Toitures & Terrasses', 'Végétalisation intérieure'];
@@ -446,7 +448,7 @@ export default function AdminPaysagismePage() {
         {serviceForm && (
           <form id="service-form" onSubmit={saveService} className="space-y-3 text-xs" noValidate>
             <label className="block">
-              <span className="block font-semibold mb-1">Titre *</span>
+              <span className="block font-semibold mb-1">Titre <RequiredStar /></span>
               <input value={serviceForm.title} onChange={(e) => setServiceForm({ ...serviceForm, title: e.target.value })} placeholder="Ex : Conception & design paysager" className={inputClass} />
             </label>
             <label className="block">
@@ -501,7 +503,7 @@ export default function AdminPaysagismePage() {
         {projectForm && (
           <form id="project-form" onSubmit={saveProject} className="space-y-3 text-xs" noValidate>
             <label className="block">
-              <span className="block font-semibold mb-1">Nom de la réalisation *</span>
+              <span className="block font-semibold mb-1">Nom de la réalisation <RequiredStar /></span>
               <input value={projectForm.title} onChange={(e) => setProjectForm({ ...projectForm, title: e.target.value })} placeholder="Ex : Villa Océane – Saly Portudal" className={inputClass} />
             </label>
             <div className="grid grid-cols-2 gap-3">
@@ -528,7 +530,7 @@ export default function AdminPaysagismePage() {
               <span className="block font-semibold mb-1">Mots-clés (séparés par des virgules : année, surface, essences…)</span>
               <input value={projectForm.tags} onChange={(e) => setProjectForm({ ...projectForm, tags: e.target.value })} placeholder="2026, 450 m², palmiers" className={inputClass} />
             </label>
-            <span className="block font-semibold">Photo principale *</span>
+            <span className="block font-semibold">Photo principale <RequiredStar /></span>
             {imagePicker(projectForm.image, PROJECT_IMAGES, (url) => setProjectForm((f) => (f ? { ...f, image: url } : f)))}
             <label className="flex items-center gap-2">
               <input

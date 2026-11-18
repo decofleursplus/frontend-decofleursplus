@@ -16,6 +16,8 @@ import { Label } from '@/components/ui/label';
 import { FolderTree, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { RequiredStar } from '@/components/ui/required-star';
+
 interface CreateBlogCategoryDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -116,7 +118,7 @@ function CreateBlogCategoryForm({
           <div className="py-4 space-y-4">
             <div>
               <Label htmlFor="cat-name" className="text-xs font-semibold text-[#444]">
-                Nom de la catégorie <span className="text-red-500">*</span>
+                Nom de la catégorie <RequiredStar />
               </Label>
               <Input
                 id="cat-name"

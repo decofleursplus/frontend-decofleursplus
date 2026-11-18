@@ -18,6 +18,8 @@ import {
 import { DEPOSIT_STATUS_LABELS, formatFcfa, formatRentalDate } from '@/lib/rental-utils';
 import { DepositStatusBadge, ReservationStatusBadge } from './reservation-status';
 
+import { RequiredStar } from '@/components/ui/required-star';
+
 interface ReservationDrawerProps {
   /** Identifiant (ou numéro) de la réservation à afficher ; null = fermé */
   reservationId: string | null;
@@ -327,8 +329,7 @@ export function ReservationDrawer({ reservationId, onClose, onChanged }: Reserva
                 {cancelMode && (
                   <div className="p-3 rounded-xl border border-red-200 bg-red-50/60 space-y-2">
                     <label htmlFor="cancel-reason" className="block font-semibold text-red-800">
-                      Motif d’annulation (envoyé au client par email) *
-                    </label>
+                      Motif d’annulation (envoyé au client par email) <RequiredStar /></label>
                     <textarea
                       id="cancel-reason"
                       rows={2}

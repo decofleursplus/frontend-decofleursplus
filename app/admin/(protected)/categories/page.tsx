@@ -51,6 +51,8 @@ import { toast } from 'sonner';
 import { SubcategoriesDialog } from '@/components/admin/subcategories-dialog';
 import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 
+import { RequiredStar } from '@/components/ui/required-star';
+
 export default function AdminCategoriesPage() {
   const can = useAdminCan();
   const canWrite = can('categories', 'write');
@@ -667,7 +669,7 @@ export default function AdminCategoriesPage() {
             {/* Nom */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-gray-700">
-                Nom de la catégorie <span className="text-red-500">*</span>
+                Nom de la catégorie <RequiredStar />
               </label>
               <Input
                 placeholder="Ex : Bouquets de mariage, Plantes d'intérieur..."

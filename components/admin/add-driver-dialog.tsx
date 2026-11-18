@@ -15,6 +15,8 @@ import { Input } from '@/components/ui/input';
 import { UserPlus, Bike, Phone, Hash, ShieldCheck, Mail, Pencil, KeyRound, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { RequiredStar } from '@/components/ui/required-star';
+
 export interface DriverFormValues {
   name: string;
   phone: string;
@@ -83,16 +85,14 @@ export function AddDriverDialog({ isOpen, onOpenChange, driver, onSubmit }: AddD
           <div className="space-y-4 py-4 text-xs">
             <div className="space-y-1.5">
               <label htmlFor="driver-name" className="font-semibold text-gray-700 block">
-                Nom complet du coursier *
-              </label>
+                Nom complet du coursier <RequiredStar /></label>
               <Input id="driver-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex : Abdoulaye Ndiaye" className="text-xs h-9 bg-white" required />
             </div>
 
             <div className="space-y-1.5">
               <label htmlFor="driver-phone" className="font-semibold text-gray-700 flex items-center gap-1.5">
                 <Phone className="h-3.5 w-3.5 text-gray-400" />
-                Numéro de téléphone *
-              </label>
+                Numéro de téléphone <RequiredStar /></label>
               <Input id="driver-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+221 77 000 00 00" className="text-xs h-9 bg-white font-mono" required />
             </div>
 
