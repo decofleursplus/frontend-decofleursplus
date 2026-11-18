@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Check, ChevronDown, ChevronUp, FileText, Plus, Sparkles, X } from 'lucide-react';
 import { getMyQuotes, respondToQuote, type QuoteItem, type QuoteStatus } from '@/lib/api/quotes';
 import { ErrorState, LoadingState, Notice, SectionHeader, errorText, fcfa, formatDate, useResource } from './shared';
+import { ConfirmModal } from '@/components/ui/confirm-modal';
 
 const STATUS: Record<QuoteStatus, { label: string; color: string }> = {
   NEW: { label: 'Reçue', color: 'bg-amber-100 text-amber-800' },
@@ -20,15 +21,11 @@ function QuoteCard({ quote, onUpdated }: { quote: QuoteItem; onUpdated: (q: Quot
   const [open, setOpen] = useState(quote.status === 'SENT');
   const [comment, setComment] = useState('');
   const [busy, setBusy] = useState<'ACCEPTED' | 'REFUSED' | null>(null);
+  const [pendingDecision, setPendingDecision] = useState<'ACCEPTED' | 'REFUSED' | null>(null);
   const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
   const status = STATUS[quote.status];
 
   async function respond(decision: 'ACCEPTED' | 'REFUSED') {
-    const confirmText =
-      decision === 'ACCEPTED'
-        ? `Accepter la proposition de ${fcfa(quote.quotedAmount ?? 0)} ? Notre équipe vous recontactera pour la suite.`
-        : 'Refuser cette proposition ?';
-    if (!window.confirm(confirmText)) return;
     setBusy(decision);
     setMessage(null);
     try {
@@ -153,10 +150,10 @@ function QuoteCard({ quote, onUpdated }: { quote: QuoteItem; onUpdated: (q: Quot
                 />
               </label>
               <div className="flex flex-wrap gap-2">
-                <button type="button" className="button button-primary button-small" disabled={busy !== null} onClick={() => respond('ACCEPTED')}>
+                <button type="button" className="button button-primary button-small" disabled={busy !== null} onClick={() => setPendingDecision('ACCEPTED')}>
                   <Check size={14} /> {busy === 'ACCEPTED' ? 'Envoi…' : 'Accepter la proposition'}
                 </button>
-                <button type="button" className="button button-outline button-small" disabled={busy !== null} onClick={() => respond('REFUSED')}>
+                <button type="button" className="button button-outline button-small" disabled={busy !== null} onClick={() => setPendingDecision('REFUSED')}>
                   <X size={14} /> {busy === 'REFUSED' ? 'Envoi…' : 'Refuser'}
                 </button>
               </div>
@@ -164,6 +161,27 @@ function QuoteCard({ quote, onUpdated }: { quote: QuoteItem; onUpdated: (q: Quot
           )}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={pendingDecision !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDecision(null);
+        }}
+        title={pendingDecision === 'ACCEPTED' ? 'Accepter le devis' : 'Refuser le devis'}
+        description={
+          pendingDecision === 'ACCEPTED'
+            ? `Accepter la proposition de ${fcfa(quote.quotedAmount ?? 0)} ? Notre équipe vous recontactera pour la suite.`
+            : 'Confirmez-vous le refus de cette proposition ?'
+        }
+        variant={pendingDecision === 'REFUSED' ? 'danger' : 'default'}
+        confirmLabel={pendingDecision === 'ACCEPTED' ? 'Accepter' : 'Refuser'}
+        onConfirm={async () => {
+          if (!pendingDecision) return;
+          const d = pendingDecision;
+          setPendingDecision(null);
+          await respond(d);
+        }}
+      />
     </div>
   );
 }

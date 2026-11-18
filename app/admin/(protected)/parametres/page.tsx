@@ -216,7 +216,7 @@ export default function AdminParametresPage() {
       </div>
 
       <div className="grid grid-cols-12 gap-6 items-start">
-        <aside className="hidden md:block md:col-span-4 lg:col-span-3 sticky top-6 self-start z-10 space-y-4">
+        <aside className="hidden md:block md:col-span-4 lg:col-span-3 sticky top-20 self-start z-10 space-y-4">
           <nav className="rounded-xl border border-gray-200 bg-white p-2 shadow-2xs space-y-1" aria-label="Sections des paramètres">
             {visibleItems.map((item) => {
               const Icon = item.icon;

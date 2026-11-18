@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { ApiClientError } from '@/lib/api/client';
 import { ImageUploader } from '@/components/admin/image-uploader';
 import { useAdminCan } from '@/components/admin/admin-sidebar-context';
+import { AdminConfirmModal } from '@/components/admin/admin-confirm-modal';
 import {
   PRODUCT_STATUS_LABELS,
   duplicateAdminProduct,
@@ -50,6 +51,20 @@ export function ProductForm({ product }: { product?: AdminProductDto }) {
   const can = useAdminCan();
   const canWrite = can('produits', 'write');
   const canDelete = can('produits', 'delete');
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    variant: 'danger' | 'default';
+    confirmLabel?: string;
+    onConfirm: () => void | Promise<void>;
+  }>({
+    isOpen: false,
+    title: '',
+    description: '',
+    variant: 'default',
+    onConfirm: () => {},
+  });
   const [categories, setCategories] = useState<CategoryOption[] | null>(null);
   const [name, setName] = useState(product?.name ?? '');
   const [description, setDescription] = useState(product?.description ?? '');
@@ -131,28 +146,48 @@ export function ProductForm({ product }: { product?: AdminProductDto }) {
     }
   };
 
-  const hide = async () => {
+  const hide = () => {
     if (!product) return;
-    if (!window.confirm(`Masquer « ${product.name} » de la boutique ?`)) return;
-    try {
-      await hideAdminProduct(product.id);
-      toast.success('Produit masqué de la boutique.');
-      router.push('/admin/produits');
-    } catch (err) {
-      toast.error(errorMessage(err));
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Masquer le produit',
+      description: `Masquer « ${product.name} » de la boutique ?`,
+      variant: 'default',
+      confirmLabel: 'Masquer',
+      onConfirm: async () => {
+        try {
+          await hideAdminProduct(product.id);
+          toast.success('Produit masqué de la boutique.');
+          router.push('/admin/produits');
+        } catch (err) {
+          toast.error(errorMessage(err));
+        } finally {
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
   };
 
-  const remove = async () => {
+  const remove = () => {
     if (!product) return;
-    if (!window.confirm(`Supprimer définitivement « ${product.name} » ? (impossible s'il a déjà été commandé)`)) return;
-    try {
-      const res = await removeAdminProduct(product.id, true);
-      toast.success(res.deleted ? 'Produit supprimé définitivement.' : 'Produit masqué de la boutique.');
-      router.push('/admin/produits');
-    } catch (err) {
-      toast.error(errorMessage(err));
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Supprimer le produit',
+      description: `Supprimer définitivement « ${product.name} » ? (impossible s'il a déjà été commandé)`,
+      variant: 'danger',
+      confirmLabel: 'Supprimer',
+      onConfirm: async () => {
+        try {
+          const res = await removeAdminProduct(product.id, true);
+          toast.success(res.deleted ? 'Produit supprimé définitivement.' : 'Produit masqué de la boutique.');
+          router.push('/admin/produits');
+        } catch (err) {
+          toast.error(errorMessage(err));
+        } finally {
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
   };
 
   const duplicate = async () => {
@@ -344,6 +379,16 @@ export function ProductForm({ product }: { product?: AdminProductDto }) {
           description="Glissez vos photos ou cliquez pour parcourir ; cliquez sur une photo pour en faire la photo principale."
         />
       </section>
+
+      <AdminConfirmModal
+        isOpen={confirmModal.isOpen}
+        onOpenChange={(open) => setConfirmModal((prev) => ({ ...prev, isOpen: open }))}
+        title={confirmModal.title}
+        description={confirmModal.description}
+        variant={confirmModal.variant}
+        confirmLabel={confirmModal.confirmLabel}
+        onConfirm={confirmModal.onConfirm}
+      />
     </form>
   );
 }

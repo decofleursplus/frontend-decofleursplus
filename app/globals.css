@@ -6513,7 +6513,7 @@
 }
 
 /* ── Topbar ────────────────────────────────────── */
-.admin-topbar { display: flex; z-index: 999; align-items: center; justify-content: space-between; gap: 20px; height: 56px; padding: 0 28px; background-image: url('/images/floral-bg.jpg'); background-size: 380px; background-repeat: repeat; background-blend-mode: overlay; background-color: rgba(255, 255, 255, 0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(238, 235, 229, 0.7); box-shadow: 0 1px 3px rgba(36, 88, 45, 0.03); position: sticky; top: 0; z-index: 10; }
+.admin-topbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; height: 56px; padding: 0 28px; background-image: url('/images/floral-bg.jpg'); background-size: 380px; background-repeat: repeat; background-blend-mode: overlay; background-color: rgba(255, 255, 255, 0.96); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(238, 235, 229, 0.85); box-shadow: 0 1px 4px rgba(36, 88, 45, 0.05); position: sticky; top: 0; z-index: 50; }
 .admin-topbar-brand { display: flex; align-items: center; gap: 8px; user-select: none; }
 .admin-topbar-title { font-family: Georgia, 'Playfair Display', 'Times New Roman', serif; font-style: italic; font-size: 20px; font-weight: 500; letter-spacing: 0.02em; color: #1e2a1f; }
 .admin-topbar-title span { color: var(--pink); font-weight: 600; }

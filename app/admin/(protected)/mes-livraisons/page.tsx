@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { MapPin, Phone, Truck, CheckCircle2, XCircle, Loader2, RefreshCw, Navigation, Clock } from 'lucide-react';
 import { toast } from 'sonner';
+import { AdminPromptModal } from '@/components/admin/admin-prompt-modal';
 import {
   completeDriverDelivery,
   failDriverDelivery,
@@ -29,6 +30,19 @@ export default function DriverDeliveriesPage() {
   const [deliveries, setDeliveries] = useState<DriverDelivery[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+
+  const [promptModal, setPromptModal] = useState<{
+    title: string;
+    description?: string;
+    label?: string;
+    placeholder?: string;
+    defaultValue?: string;
+    inputType?: 'text' | 'email' | 'textarea';
+    confirmLabel?: string;
+    variant?: 'danger' | 'default';
+    validate?: (val: string) => string | null;
+    onSubmit: (val: string) => void | Promise<void>;
+  } | null>(null);
 
   const load = useCallback(
     () =>
@@ -60,17 +74,37 @@ export default function DriverDeliveriesPage() {
   };
 
   const complete = (d: DriverDelivery) => {
-    const name = window.prompt('Nom de la personne qui a réceptionné le colis :', d.order.recipientName ?? d.order.customerName);
-    if (name === null) return;
-    if (name.trim().length < 2) return toast.error('Indiquez le nom de la personne qui a réceptionné.');
-    void run(d, () => completeDriverDelivery(d.id, { recipientName: name.trim() }), `Course ${d.deliveryNumber} livrée.`);
+    setPromptModal({
+      title: 'Confirmer la livraison',
+      description: `Course ${d.deliveryNumber} pour ${d.order.customerName}.`,
+      label: 'Nom de la personne qui a réceptionné le colis',
+      placeholder: 'ex : Fatou Ndiaye (gardien, collègue, destinataire…)',
+      defaultValue: d.order.recipientName ?? d.order.customerName,
+      confirmLabel: 'Valider la livraison',
+      variant: 'default',
+      validate: (val) => (val.trim().length < 2 ? 'Indiquez le nom de la personne qui a réceptionné.' : null),
+      onSubmit: async (name) => {
+        setPromptModal(null);
+        await run(d, () => completeDriverDelivery(d.id, { recipientName: name.trim() }), `Course ${d.deliveryNumber} livrée.`);
+      },
+    });
   };
 
   const fail = (d: DriverDelivery) => {
-    const reason = window.prompt('Motif de l’échec (client absent, adresse introuvable…) :', '');
-    if (reason === null) return;
-    if (reason.trim().length < 3) return toast.error('Indiquez un motif (3 caractères minimum).');
-    void run(d, () => failDriverDelivery(d.id, reason.trim()), `Échec enregistré pour ${d.deliveryNumber}.`);
+    setPromptModal({
+      title: 'Signaler un échec de livraison',
+      description: `Indiquez la raison pour laquelle la course ${d.deliveryNumber} n’a pas pu être effectuée.`,
+      label: 'Motif de l’échec',
+      placeholder: 'ex : Client absent, adresse introuvable, téléphone sans réponse…',
+      inputType: 'textarea',
+      confirmLabel: 'Enregistrer l’échec',
+      variant: 'danger',
+      validate: (val) => (val.trim().length < 3 ? 'Indiquez un motif d’au moins 3 caractères.' : null),
+      onSubmit: async (reason) => {
+        setPromptModal(null);
+        await run(d, () => failDriverDelivery(d.id, reason.trim()), `Échec enregistré pour ${d.deliveryNumber}.`);
+      },
+    });
   };
 
   return (
@@ -204,6 +238,23 @@ export default function DriverDeliveriesPage() {
             );
           })}
         </div>
+      )}
+
+      {promptModal && (
+        <AdminPromptModal
+          isOpen={!!promptModal}
+          onOpenChange={(open) => !open && setPromptModal(null)}
+          title={promptModal.title}
+          description={promptModal.description}
+          label={promptModal.label}
+          placeholder={promptModal.placeholder}
+          defaultValue={promptModal.defaultValue}
+          inputType={promptModal.inputType}
+          confirmLabel={promptModal.confirmLabel}
+          variant={promptModal.variant}
+          validate={promptModal.validate}
+          onSubmit={promptModal.onSubmit}
+        />
       )}
     </div>
   );

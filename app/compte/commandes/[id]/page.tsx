@@ -25,6 +25,7 @@ import { getMyOrder, cancelMyOrder, DELIVERY_MODE_LABELS, type CustomerOrder } f
 import { getOrderPayments, payOrder, Payment } from '@/lib/api/payment';
 import { formatPrice } from '@/lib/products';
 import { useAuth } from '@/components/auth-provider';
+import { PromptModal } from '@/components/ui/prompt-modal';
 
 export default function OrderDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -36,6 +37,7 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
   const [loading, setLoading] = useState(true);
   const [retryingPayment, setRetryingPayment] = useState(false);
   const [cancellingOrder, setCancellingOrder] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   const [actionMessage, setActionMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
   const [loadError, setLoadError] = useState<{ notFound: boolean; text: string } | null>(null);
 
@@ -89,11 +91,13 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
     setRetryingPayment(false);
   }
 
-  async function handleCancelOrder() {
+  function handleCancelOrder() {
     if (!order) return;
-    const reason = window.prompt('Souhaitez-vous indiquer la raison de l’annulation ? (facultatif)', '');
-    if (reason === null) return;
+    setShowCancelModal(true);
+  }
 
+  async function doCancelOrder(reason: string) {
+    if (!order) return;
     setCancellingOrder(true);
     setActionMessage(null);
     try {
@@ -506,6 +510,22 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
           </section>
         </div>
       </div>
+
+      <PromptModal
+        isOpen={showCancelModal}
+        onOpenChange={setShowCancelModal}
+        title="Annuler cette commande"
+        description="Êtes-vous sûr de vouloir annuler votre commande ? Vous pouvez indiquer un motif ci-dessous (facultatif)."
+        label="Motif d'annulation (facultatif)"
+        placeholder="Ex : Erreur de date, commande en double..."
+        confirmLabel="Confirmer l'annulation"
+        variant="danger"
+        loading={cancellingOrder}
+        onSubmit={async (reason) => {
+          setShowCancelModal(false);
+          await doCancelOrder(reason);
+        }}
+      />
     </>
   );
 }
