@@ -22,6 +22,7 @@ import type { Supplier, SupplierStatus } from '@/lib/admin/mock-data/types';
 import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import { createSupplier, deleteSupplier, getSuppliers, updateSupplier } from '@/lib/api/admin/procurement';
 import { AdminPagination, paginate } from '@/components/admin/admin-pagination';
+import { AdminConfirmModal } from '@/components/admin/admin-confirm-modal';
 
 import { RequiredStar } from '@/components/ui/required-star';
 
@@ -73,6 +74,7 @@ export default function AdminFournisseursPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [supplierToDelete, setSupplierToDelete] = useState<Supplier | null>(null);
   // Boutons selon les droits du compte (Paramètres › Rôles & permissions)
   const can = useAdminCan();
   const canWrite = can('approvisionnements', 'write');
@@ -148,8 +150,7 @@ export default function AdminFournisseursPage() {
     }
   };
 
-  const remove = async (sup: Supplier) => {
-    if (!window.confirm(`Supprimer définitivement « ${sup.name} » ?`)) return;
+  const executeRemove = async (sup: Supplier) => {
     setBusyId(sup.id);
     try {
       await deleteSupplier(sup.id);
@@ -160,6 +161,10 @@ export default function AdminFournisseursPage() {
     } finally {
       setBusyId(null);
     }
+  };
+
+  const remove = (sup: Supplier) => {
+    setSupplierToDelete(sup);
   };
 
   const list = suppliers ?? [];
@@ -451,6 +456,22 @@ export default function AdminFournisseursPage() {
           </label>
         </form>
       </AdminDrawer>
+
+      {supplierToDelete && (
+        <AdminConfirmModal
+          isOpen={!!supplierToDelete}
+          onOpenChange={(open) => !open && setSupplierToDelete(null)}
+          title="Supprimer le fournisseur"
+          description={`Supprimer définitivement le fournisseur « ${supplierToDelete.name} » ?`}
+          confirmLabel="Supprimer"
+          variant="danger"
+          onConfirm={async () => {
+            const sup = supplierToDelete;
+            setSupplierToDelete(null);
+            await executeRemove(sup);
+          }}
+        />
+      )}
     </div>
   );
 }

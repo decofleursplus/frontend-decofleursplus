@@ -6,6 +6,7 @@ import { ArrowLeft, Plus, Search, Receipt, Loader2, CheckCircle2, RefreshCw, Wal
 import { toast } from 'sonner';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
 import { AdminPagination } from '@/components/admin/admin-pagination';
+import { AdminConfirmModal } from '@/components/admin/admin-confirm-modal';
 import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import type { Supplier, SupplierInvoice, SupplierInvoiceStatus, SupplierOrder } from '@/lib/admin/mock-data/types';
 import {
@@ -71,6 +72,7 @@ export default function AdminFacturesFournisseursPage() {
   const [detailDate, setDetailDate] = useState('');
   const [detailDue, setDetailDue] = useState('');
   const [detailAmount, setDetailAmount] = useState('');
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   // Boutons selon les droits du compte (Paramètres › Rôles & permissions)
   const can = useAdminCan();
   const canWrite = can('factures-fournisseurs', 'write');
@@ -193,9 +195,8 @@ export default function AdminFacturesFournisseursPage() {
     }
   };
 
-  const removeInvoice = async () => {
+  const executeRemoveInvoice = async () => {
     if (!selected) return;
-    if (!window.confirm(`Supprimer définitivement la facture ${selected.invoiceNumber} de ${selected.supplierName} ?`)) return;
     setSaving(true);
     try {
       await deleteSupplierInvoice(selected.id);
@@ -207,6 +208,11 @@ export default function AdminFacturesFournisseursPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const removeInvoice = () => {
+    if (!selected) return;
+    setConfirmDeleteOpen(true);
   };
 
   const markPaid = async () => {
@@ -550,6 +556,21 @@ export default function AdminFacturesFournisseursPage() {
             </label>
           </div>
         </AdminDrawer>
+      )}
+
+      {selected && (
+        <AdminConfirmModal
+          isOpen={confirmDeleteOpen}
+          onOpenChange={setConfirmDeleteOpen}
+          title="Supprimer la facture"
+          description={`Supprimer définitivement la facture ${selected.invoiceNumber} de ${selected.supplierName} ?`}
+          confirmLabel="Supprimer définitivement"
+          variant="danger"
+          onConfirm={async () => {
+            setConfirmDeleteOpen(false);
+            await executeRemoveInvoice();
+          }}
+        />
       )}
     </div>
   );

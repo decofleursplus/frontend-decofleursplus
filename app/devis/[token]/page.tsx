@@ -8,6 +8,7 @@ import { ApiClientError } from '@/lib/api/client';
 import { getSharedQuote, respondToSharedQuote, type SharedQuote } from '@/lib/api/quotes';
 import { getPublicSettings, type PublicShopSettings } from '@/lib/api/settings';
 import { buildQuoteDocument, quoteIsIssued } from '@/lib/documents/other-documents';
+import { ConfirmModal } from '@/components/ui/confirm-modal';
 
 const dateFr = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
@@ -25,6 +26,7 @@ export default function SharedQuotePage({ params }: { params: Promise<{ token: s
   const [error, setError] = useState<string | null>(null);
   const [comment, setComment] = useState('');
   const [busy, setBusy] = useState<'ACCEPTED' | 'REFUSED' | null>(null);
+  const [pendingDecision, setPendingDecision] = useState<'ACCEPTED' | 'REFUSED' | null>(null);
   const [answerError, setAnswerError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -42,11 +44,6 @@ export default function SharedQuotePage({ params }: { params: Promise<{ token: s
   }, [token]);
 
   const respond = async (decision: 'ACCEPTED' | 'REFUSED') => {
-    const question =
-      decision === 'ACCEPTED'
-        ? 'Confirmez-vous l’acceptation de ce devis ? Notre équipe vous recontactera pour la suite.'
-        : 'Confirmez-vous le refus de ce devis ?';
-    if (!window.confirm(question)) return;
     setBusy(decision);
     setAnswerError(null);
     try {
@@ -113,7 +110,7 @@ export default function SharedQuotePage({ params }: { params: Promise<{ token: s
             <button
               type="button"
               disabled={Boolean(busy)}
-              onClick={() => void respond('ACCEPTED')}
+              onClick={() => setPendingDecision('ACCEPTED')}
               className="inline-flex items-center gap-1.5 rounded-full bg-[#24582d] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#1c4423] disabled:opacity-60"
             >
               {busy === 'ACCEPTED' ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
@@ -122,7 +119,7 @@ export default function SharedQuotePage({ params }: { params: Promise<{ token: s
             <button
               type="button"
               disabled={Boolean(busy)}
-              onClick={() => void respond('REFUSED')}
+              onClick={() => setPendingDecision('REFUSED')}
               className="inline-flex items-center gap-1.5 rounded-full border border-[#d9c4c9] bg-white px-5 py-2.5 text-sm font-semibold text-[#6b4c55] hover:bg-[#fbf3f5] disabled:opacity-60"
             >
               {busy === 'REFUSED' ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
@@ -149,6 +146,27 @@ export default function SharedQuotePage({ params }: { params: Promise<{ token: s
           Votre proposition est en cours de préparation : vous la recevrez par email.
         </p>
       )}
+
+      <ConfirmModal
+        isOpen={pendingDecision !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDecision(null);
+        }}
+        title={pendingDecision === 'ACCEPTED' ? 'Accepter le devis' : 'Refuser le devis'}
+        description={
+          pendingDecision === 'ACCEPTED'
+            ? 'Confirmez-vous l’acceptation de ce devis ? Notre équipe vous recontactera pour la suite.'
+            : 'Confirmez-vous le refus de ce devis ?'
+        }
+        variant={pendingDecision === 'REFUSED' ? 'danger' : 'default'}
+        confirmLabel={pendingDecision === 'ACCEPTED' ? 'Accepter' : 'Refuser'}
+        onConfirm={async () => {
+          if (!pendingDecision) return;
+          const d = pendingDecision;
+          setPendingDecision(null);
+          await respond(d);
+        }}
+      />
     </main>
   );
 }

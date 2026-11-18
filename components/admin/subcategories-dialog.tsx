@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import type { AdminCategory } from '@/lib/admin/mock-data/types';
 import { createAdminSubcategory, deleteAdminSubcategory, updateAdminSubcategory } from '@/lib/api/admin/categories';
 import { useAdminCan } from '@/components/admin/admin-sidebar-context';
+import { AdminConfirmModal } from '@/components/admin/admin-confirm-modal';
 
 /** Sous-catégories d'une catégorie : ajout, renommage, suppression (via l'API). */
 export function SubcategoriesDialog({ category, onClose, onChanged }: { category: AdminCategory; onClose: () => void; onChanged: () => Promise<unknown> }) {
@@ -14,6 +15,7 @@ export function SubcategoriesDialog({ category, onClose, onChanged }: { category
     Object.fromEntries((category.subCategories ?? []).map((s) => [s.id, s.name])),
   );
   const [busy, setBusy] = useState<string | null>(null);
+  const [subcategoryToDelete, setSubcategoryToDelete] = useState<{ id: string; name: string } | null>(null);
   // Suppression : droit « Supprimer » du module Catégories (l'API refuse sinon)
   const canDelete = useAdminCan()('categories', 'delete');
 
@@ -72,7 +74,7 @@ export function SubcategoriesDialog({ category, onClose, onChanged }: { category
                 type="button"
                 hidden={!canDelete}
                 disabled={busy !== null}
-                onClick={() => window.confirm(`Supprimer « ${s.name} » ?`) && void run(s.id, () => deleteAdminSubcategory(s.id), 'Sous-catégorie supprimée.')}
+                onClick={() => setSubcategoryToDelete({ id: s.id, name: s.name })}
                 className="p-2 rounded-lg border border-red-200 text-red-600 disabled:opacity-40"
                 aria-label={`Supprimer ${s.name}`}
               >
@@ -93,6 +95,23 @@ export function SubcategoriesDialog({ category, onClose, onChanged }: { category
             {busy === 'new' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} Ajouter
           </button>
         </form>
+
+        <AdminConfirmModal
+          isOpen={subcategoryToDelete !== null}
+          onOpenChange={(open) => {
+            if (!open) setSubcategoryToDelete(null);
+          }}
+          title="Supprimer la sous-catégorie"
+          description={subcategoryToDelete ? `Supprimer la sous-catégorie « ${subcategoryToDelete.name} » ?` : ''}
+          variant="danger"
+          confirmLabel="Supprimer"
+          onConfirm={async () => {
+            if (!subcategoryToDelete) return;
+            const { id } = subcategoryToDelete;
+            setSubcategoryToDelete(null);
+            await run(id, () => deleteAdminSubcategory(id), 'Sous-catégorie supprimée.');
+          }}
+        />
       </div>
     </div>
   );

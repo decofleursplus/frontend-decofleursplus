@@ -7,6 +7,7 @@ import { Trees, Plus, Search, Pencil, Trash2, Eye, EyeOff, Star, Loader2, Upload
 import { toast } from 'sonner';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
 import { useAdminCan } from '@/components/admin/admin-sidebar-context';
+import { AdminConfirmModal } from '@/components/admin/admin-confirm-modal';
 import type { LandscapePrestation, LandscapeProject, LandscapeProjectCategory } from '@/lib/admin/mock-data/types';
 import { uploadAdminMedia } from '@/lib/api/admin/uploads';
 import {
@@ -63,6 +64,11 @@ export default function AdminPaysagismePage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{
+    title: string;
+    description: string;
+    onConfirm: () => Promise<void>;
+  } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(
@@ -335,7 +341,16 @@ export default function AdminPaysagismePage() {
                     type="button"
                     disabled={busyId === s.id}
                     hidden={!canDelete}
-                    onClick={() => window.confirm(`Supprimer « ${s.title} » ?`) && void run(s.id, () => deleteLandscapeService(s.id), 'Prestation supprimée.')}
+                    onClick={() =>
+                      setConfirmModal({
+                        title: 'Supprimer la prestation',
+                        description: `Supprimer définitivement la prestation « ${s.title} » ?`,
+                        onConfirm: async () => {
+                          setConfirmModal(null);
+                          await run(s.id, () => deleteLandscapeService(s.id), 'Prestation supprimée.');
+                        },
+                      })
+                    }
                     className="p-1.5 rounded-lg border border-red-200 text-red-600"
                     aria-label={`Supprimer ${s.title}`}
                   >
@@ -417,7 +432,16 @@ export default function AdminPaysagismePage() {
                   type="button"
                   disabled={busyId === p.id}
                   hidden={!canDelete}
-                  onClick={() => window.confirm(`Supprimer « ${p.title} » ?`) && void run(p.id, () => deleteLandscapeProject(p.id), 'Réalisation supprimée.')}
+                  onClick={() =>
+                    setConfirmModal({
+                      title: 'Supprimer la réalisation',
+                      description: `Supprimer définitivement la réalisation « ${p.title} » ?`,
+                      onConfirm: async () => {
+                        setConfirmModal(null);
+                        await run(p.id, () => deleteLandscapeProject(p.id), 'Réalisation supprimée.');
+                      },
+                    })
+                  }
                   className="p-1.5 rounded-lg border border-red-200 text-red-600"
                   aria-label={`Supprimer ${p.title}`}
                 >
@@ -556,6 +580,18 @@ export default function AdminPaysagismePage() {
           </form>
         )}
       </AdminDrawer>
+
+      {confirmModal && (
+        <AdminConfirmModal
+          isOpen={!!confirmModal}
+          onOpenChange={(open) => !open && setConfirmModal(null)}
+          title={confirmModal.title}
+          description={confirmModal.description}
+          confirmLabel="Supprimer"
+          variant="danger"
+          onConfirm={confirmModal.onConfirm}
+        />
+      )}
     </div>
   );
 }

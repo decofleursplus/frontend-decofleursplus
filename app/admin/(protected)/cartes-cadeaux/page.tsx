@@ -48,6 +48,7 @@ import {
   type AdminGiftCardPage,
 } from '@/lib/api/admin/rewards';
 
+import { AdminConfirmModal } from '@/components/admin/admin-confirm-modal';
 import { RequiredStar } from '@/components/ui/required-star';
 
 const fcfa = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
@@ -353,6 +354,7 @@ function GiftCardDrawer({ cardId, onClose, onChanged }: { cardId: string | null;
   const [notes, setNotes] = useState('');
   const [disableReason, setDisableReason] = useState('');
   const [confirmDisable, setConfirmDisable] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const loading = Boolean(cardId) && !card && !loadError;
 
   useEffect(() => {
@@ -389,8 +391,7 @@ function GiftCardDrawer({ cardId, onClose, onChanged }: { cardId: string | null;
     setEditing(true);
   };
 
-  const remove = (c: AdminGiftCardDetail) => {
-    if (!window.confirm(`Supprimer la carte ${c.code} ? Cette demande n’a jamais été payée ; elle sera définitivement effacée.`)) return;
+  const executeRemove = (c: AdminGiftCardDetail) => {
     setBusy('delete');
     deleteGiftCard(c.id)
       .then(() => {
@@ -400,6 +401,10 @@ function GiftCardDrawer({ cardId, onClose, onChanged }: { cardId: string | null;
       })
       .catch((err) => toast.error(errorMessage(err, 'Suppression impossible.')))
       .finally(() => setBusy(null));
+  };
+
+  const remove = () => {
+    setConfirmDelete(true);
   };
 
   const footer = card ? (
@@ -452,7 +457,7 @@ function GiftCardDrawer({ cardId, onClose, onChanged }: { cardId: string | null;
           type="button"
           variant="outline"
           disabled={Boolean(busy)}
-          onClick={() => remove(card)}
+          onClick={remove}
           className="h-9 border-red-200 text-xs text-red-700 hover:bg-red-50"
         >
           {busy === 'delete' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Trash2 className="mr-1.5 h-3.5 w-3.5" />}
@@ -719,6 +724,21 @@ function GiftCardDrawer({ cardId, onClose, onChanged }: { cardId: string | null;
           </section>
         </div>
       ) : null}
+
+      {card && (
+        <AdminConfirmModal
+          isOpen={confirmDelete}
+          onOpenChange={setConfirmDelete}
+          title="Supprimer la carte cadeau"
+          description={`Supprimer la carte ${card.code} ? Cette demande n’a jamais été payée ; elle sera définitivement effacée.`}
+          confirmLabel="Supprimer définitivement"
+          variant="danger"
+          onConfirm={() => {
+            setConfirmDelete(false);
+            executeRemove(card);
+          }}
+        />
+      )}
     </AdminDrawer>
   );
 }

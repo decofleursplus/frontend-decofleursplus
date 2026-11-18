@@ -17,6 +17,7 @@ import { payOrder } from '@/lib/api/payment';
 import { useAuth } from '@/components/auth-provider';
 import { formatPrice, PRODUCT_PLACEHOLDER_IMAGE } from '@/lib/products';
 import { buildLineId, useCart } from '@/components/cart-provider';
+import { ConfirmModal } from '@/components/ui/confirm-modal';
 
 function PaymentFailedContent() {
   const router = useRouter();
@@ -30,6 +31,7 @@ function PaymentFailedContent() {
   const [retrying, setRetrying] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [actionError, setActionError] = useState('');
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   // Redirection vers connexion si session expirée
   useEffect(() => {
@@ -70,14 +72,6 @@ function PaymentFailedContent() {
 
   async function handleCancelOrder() {
     if (!order) return;
-    if (
-      !window.confirm(
-        'Êtes-vous sûr de vouloir annuler cette commande ? Vos articles seront remis en stock.'
-      )
-    ) {
-      return;
-    }
-
     setCancelling(true);
     setActionError('');
     try {
@@ -208,7 +202,7 @@ function PaymentFailedContent() {
 
               <button
                 type="button"
-                onClick={handleCancelOrder}
+                onClick={() => setShowCancelModal(true)}
                 disabled={cancelling}
                 className="button button-outline text-xs text-neutral-600 hover:text-red-700 flex items-center justify-center gap-1.5 py-2"
               >
@@ -236,6 +230,19 @@ function PaymentFailedContent() {
           Consulter mes commandes
         </Link>
       </div>
+
+      <ConfirmModal
+        isOpen={showCancelModal}
+        onOpenChange={setShowCancelModal}
+        title="Annuler cette commande ?"
+        description="Êtes-vous sûr de vouloir annuler cette commande ? Vos articles seront remis en stock et replacés dans votre panier."
+        variant="danger"
+        confirmLabel="Annuler la commande"
+        onConfirm={async () => {
+          setShowCancelModal(false);
+          await handleCancelOrder();
+        }}
+      />
     </main>
   );
 }

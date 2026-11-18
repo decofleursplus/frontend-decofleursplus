@@ -64,6 +64,7 @@ import { toast } from 'sonner';
 import { CreateBlogCategoryDialog } from '@/components/admin/create-blog-category-dialog';
 import { AuthorProfileDialog } from '@/components/admin/author-profile-dialog';
 import { useAdminCan } from '@/components/admin/admin-sidebar-context';
+import { AdminConfirmModal } from '@/components/admin/admin-confirm-modal';
 
 export default function AdminBlogPage() {
   const router = useRouter();
@@ -79,6 +80,20 @@ export default function AdminBlogPage() {
   const [authors, setAuthors] = useState<BlogAuthor[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    variant: 'danger' | 'default';
+    confirmLabel?: string;
+    onConfirm: () => void | Promise<void>;
+  }>({
+    isOpen: false,
+    title: '',
+    description: '',
+    variant: 'danger',
+    onConfirm: () => {},
+  });
 
   // Chargement en chaîne de promesses : les setState n'ont lieu que dans les callbacks (jamais pendant l'effet).
   const fetchBlog = useCallback(
@@ -251,16 +266,25 @@ export default function AdminBlogPage() {
     router.push(`/admin/blog/${art.id}/apercu`);
   };
 
-  const handleDeleteArticle = async (id: string, title: string) => {
-    if (confirm(`Confirmez-vous la suppression définitive de l'article « ${title} » ?`)) {
-      try {
-        await deleteAdminBlogArticle(id);
-        setArticles((prev) => prev.filter((a) => a.id !== id));
-        toast.success(`Article « ${title} » supprimé.`);
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Suppression impossible.');
-      }
-    }
+  const handleDeleteArticle = (id: string, title: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Supprimer l'article",
+      description: `Confirmez-vous la suppression définitive de l'article « ${title} » ?`,
+      variant: 'danger',
+      confirmLabel: 'Supprimer',
+      onConfirm: async () => {
+        try {
+          await deleteAdminBlogArticle(id);
+          setArticles((prev) => prev.filter((a) => a.id !== id));
+          toast.success(`Article « ${title} » supprimé.`);
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : 'Suppression impossible.');
+        } finally {
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
   };
 
   const handleToggleStatus = async (art: BlogArticle) => {
@@ -316,14 +340,24 @@ export default function AdminBlogPage() {
       toast.error(`Impossible de supprimer « ${catName} » car des articles y sont rattachés.`);
       return;
     }
-    if (confirm(`Supprimer la catégorie « ${catName} » ?`)) {
-      deleteAdminBlogCategory(catId)
-        .then(() => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Supprimer la catégorie',
+      description: `Supprimer la catégorie « ${catName} » ?`,
+      variant: 'danger',
+      confirmLabel: 'Supprimer',
+      onConfirm: async () => {
+        try {
+          await deleteAdminBlogCategory(catId);
           setCategories((prev) => prev.filter((c) => c.id !== catId));
           toast.success(`Catégorie « ${catName} » supprimée.`);
-        })
-        .catch((err) => toast.error(err instanceof Error ? err.message : 'Suppression impossible.'));
-    }
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : 'Suppression impossible.');
+        } finally {
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
   };
 
   // Author Actions
@@ -350,15 +384,25 @@ export default function AdminBlogPage() {
     }
   };
 
-  const handleDeleteAuthor = async (auth: BlogAuthor) => {
-    if (!confirm(`Supprimer l'auteur « ${auth.name} » ?`)) return;
-    try {
-      await deleteAdminBlogAuthor(auth.id);
-      setAuthors((prev) => prev.filter((a) => a.id !== auth.id));
-      toast.success(`Auteur « ${auth.name} » supprimé.`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Suppression impossible.');
-    }
+  const handleDeleteAuthor = (auth: BlogAuthor) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Supprimer l'auteur",
+      description: `Supprimer l'auteur « ${auth.name} » ?`,
+      variant: 'danger',
+      confirmLabel: 'Supprimer',
+      onConfirm: async () => {
+        try {
+          await deleteAdminBlogAuthor(auth.id);
+          setAuthors((prev) => prev.filter((a) => a.id !== auth.id));
+          toast.success(`Auteur « ${auth.name} » supprimé.`);
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : 'Suppression impossible.');
+        } finally {
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
   };
 
   return (
@@ -1329,6 +1373,16 @@ export default function AdminBlogPage() {
         onOpenChange={setIsAuthorModalOpen}
         author={selectedAuthorForEdit}
         onSave={handleSaveAuthor}
+      />
+
+      <AdminConfirmModal
+        isOpen={confirmModal.isOpen}
+        onOpenChange={(open) => setConfirmModal((prev) => ({ ...prev, isOpen: open }))}
+        title={confirmModal.title}
+        description={confirmModal.description}
+        variant={confirmModal.variant}
+        confirmLabel={confirmModal.confirmLabel}
+        onConfirm={confirmModal.onConfirm}
       />
     </div>
   );

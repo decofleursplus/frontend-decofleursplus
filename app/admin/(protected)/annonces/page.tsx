@@ -7,6 +7,7 @@ import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { AdminConfirmModal } from '@/components/admin/admin-confirm-modal';
 import { getAnnouncementBar, updateAnnouncementBar } from '@/lib/api/admin/settings';
 import {
   getNotificationBroadcasts,
@@ -207,6 +208,7 @@ function SendAnnouncementSection({ canPickClients, onSent }: { canPickClients: b
   const [selected, setSelected] = useState<AdminCustomer[]>([]);
   const [channels, setChannels] = useState<AnnouncementChannel[]>(['IN_APP']);
   const [sending, setSending] = useState(false);
+  const [confirmSendOpen, setConfirmSendOpen] = useState(false);
 
   const toggleChannel = (c: AnnouncementChannel) =>
     setChannels((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
@@ -218,11 +220,7 @@ function SendAnnouncementSection({ canPickClients, onSent }: { canPickClients: b
         ? (SEGMENTS.find((s) => s.value === segment)?.label ?? segment).toLowerCase()
         : `${selected.length} client(s) choisi(s)`;
 
-  const send = async () => {
-    if (!title.trim() || !message.trim()) return void toast.error('Saisissez le titre et le message.');
-    if (channels.length === 0) return void toast.error('Choisissez au moins un canal.');
-    if (targetType === 'INDIVIDUAL' && selected.length === 0) return void toast.error('Ajoutez au moins un client.');
-    if (!window.confirm(`Envoyer l’annonce « ${title.trim()} » à ${audience} ? L’envoi est immédiat.`)) return;
+  const executeSend = async () => {
     setSending(true);
     try {
       const res = await sendBroadcastNotification({
@@ -248,6 +246,13 @@ function SendAnnouncementSection({ canPickClients, onSent }: { canPickClients: b
     } finally {
       setSending(false);
     }
+  };
+
+  const send = () => {
+    if (!title.trim() || !message.trim()) return void toast.error('Saisissez le titre et le message.');
+    if (channels.length === 0) return void toast.error('Choisissez au moins un canal.');
+    if (targetType === 'INDIVIDUAL' && selected.length === 0) return void toast.error('Ajoutez au moins un client.');
+    setConfirmSendOpen(true);
   };
 
   return (
@@ -335,6 +340,19 @@ function SendAnnouncementSection({ canPickClients, onSent }: { canPickClients: b
           Envoyer l’annonce
         </Button>
       </div>
+
+      <AdminConfirmModal
+        isOpen={confirmSendOpen}
+        onOpenChange={setConfirmSendOpen}
+        title="Envoyer l’annonce"
+        description={`Envoyer l’annonce « ${title.trim()} » à ${audience} ? L’envoi est immédiat.`}
+        confirmLabel="Envoyer maintenant"
+        variant="default"
+        onConfirm={async () => {
+          setConfirmSendOpen(false);
+          await executeSend();
+        }}
+      />
     </section>
   );
 }

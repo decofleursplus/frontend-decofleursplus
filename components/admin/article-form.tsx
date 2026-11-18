@@ -21,6 +21,7 @@ import {
   SheetFooter,
 } from '@/components/ui/sheet';
 import { ImageUploader } from '@/components/admin/image-uploader';
+import { AdminPromptModal } from '@/components/admin/admin-prompt-modal';
 import {
   ArrowLeft,
   Save,
@@ -157,6 +158,8 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showPresetsBar, setShowPresetsBar] = useState(false);
   const [wordCount, setWordCount] = useState(0);
+  const [linkModalOpen, setLinkModalOpen] = useState(false);
+  const savedSelectionRef = useRef<Range | null>(null);
 
   // Active formats in WYSIWYG
   const [activeFormats, setActiveFormats] = useState({
@@ -250,10 +253,13 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
   };
 
   const handleFormatLink = () => {
-    const url = window.prompt('Entrez l’adresse web (URL) du lien :', 'https://');
-    if (url && url.trim() && url !== 'https://') {
-      execCmd('createLink', url.trim());
+    const sel = typeof window !== 'undefined' ? window.getSelection() : null;
+    if (sel && sel.rangeCount > 0) {
+      savedSelectionRef.current = sel.getRangeAt(0).cloneRange();
+    } else {
+      savedSelectionRef.current = null;
     }
+    setLinkModalOpen(true);
   };
 
   const handleEditorInput = () => {
@@ -1139,6 +1145,30 @@ export function ArticleForm({ initialArticle, onSave }: ArticleFormProps) {
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      <AdminPromptModal
+        isOpen={linkModalOpen}
+        onOpenChange={setLinkModalOpen}
+        title="Insérer un lien hypertexte"
+        description="Entrez l’adresse web (URL) de destination pour la sélection."
+        label="Adresse URL"
+        placeholder="https://..."
+        defaultValue="https://"
+        confirmLabel="Insérer le lien"
+        onSubmit={(url) => {
+          if (savedSelectionRef.current && typeof window !== 'undefined') {
+            const sel = window.getSelection();
+            if (sel) {
+              sel.removeAllRanges();
+              sel.addRange(savedSelectionRef.current);
+            }
+          }
+          if (url && url.trim() && url.trim() !== 'https://') {
+            execCmd('createLink', url.trim());
+          }
+          setLinkModalOpen(false);
+        }}
+      />
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { Boxes, Plus, Search, Receipt, Trash2, Loader2, PackageCheck, Eye, Refre
 import { toast } from 'sonner';
 import { AdminDrawer } from '@/components/admin/admin-drawer';
 import { useAdminCan } from '@/components/admin/admin-sidebar-context';
+import { AdminConfirmModal } from '@/components/admin/admin-confirm-modal';
 import type { Supplier, SupplierOrder, SupplierOrderStatus } from '@/lib/admin/mock-data/types';
 import {
   ORDER_NEXT_STATUSES,
@@ -96,6 +97,13 @@ function SupplierOrdersScreen() {
   const [notes, setNotes] = useState('');
   const [lines, setLines] = useState<Line[]>([{ ...EMPTY_LINE }]);
   const [saving, setSaving] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{
+    title: string;
+    description: string;
+    confirmLabel?: string;
+    variant?: 'danger' | 'default';
+    onConfirm: () => void | Promise<void>;
+  } | null>(null);
 
   const load = useCallback(
     () =>
@@ -182,8 +190,7 @@ function SupplierOrdersScreen() {
     if (editingOrder) resetForm();
   };
 
-  const removeOrder = async (order: SupplierOrder) => {
-    if (!window.confirm(`Supprimer définitivement le bon de commande ${order.orderNumber} ?`)) return;
+  const executeRemoveOrder = async (order: SupplierOrder) => {
     setBusyId(order.id);
     try {
       await deleteSupplierOrder(order.id);
@@ -194,6 +201,19 @@ function SupplierOrdersScreen() {
     } finally {
       setBusyId(null);
     }
+  };
+
+  const removeOrder = (order: SupplierOrder) => {
+    setConfirmModal({
+      title: 'Supprimer le bon de commande',
+      description: `Supprimer définitivement le bon de commande ${order.orderNumber} ?`,
+      confirmLabel: 'Supprimer',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmModal(null);
+        await executeRemoveOrder(order);
+      },
+    });
   };
 
   const submit = async (status: 'brouillon' | 'validee') => {
@@ -242,8 +262,7 @@ function SupplierOrdersScreen() {
     }
   };
 
-  const changeStatus = async (order: SupplierOrder, status: SupplierOrderStatus) => {
-    if (status === 'annulee' && !window.confirm(`Annuler la commande ${order.orderNumber} ?`)) return;
+  const executeChangeStatus = async (order: SupplierOrder, status: SupplierOrderStatus) => {
     setBusyId(order.id);
     try {
       await changeSupplierOrderStatus(order.id, status);
@@ -254,6 +273,23 @@ function SupplierOrdersScreen() {
     } finally {
       setBusyId(null);
     }
+  };
+
+  const changeStatus = async (order: SupplierOrder, status: SupplierOrderStatus) => {
+    if (status === 'annulee') {
+      setConfirmModal({
+        title: 'Annuler la commande fournisseur',
+        description: `Voulez-vous vraiment annuler la commande ${order.orderNumber} ?`,
+        confirmLabel: 'Annuler la commande',
+        variant: 'danger',
+        onConfirm: async () => {
+          setConfirmModal(null);
+          await executeChangeStatus(order, status);
+        },
+      });
+      return;
+    }
+    await executeChangeStatus(order, status);
   };
 
   const allCount = counts ? Object.values(counts).reduce((a, b) => a + b, 0) : 0;
@@ -568,6 +604,18 @@ function SupplierOrdersScreen() {
           </label>
         </div>
       </AdminDrawer>
+
+      {confirmModal && (
+        <AdminConfirmModal
+          isOpen={!!confirmModal}
+          onOpenChange={(open) => !open && setConfirmModal(null)}
+          title={confirmModal.title}
+          description={confirmModal.description}
+          confirmLabel={confirmModal.confirmLabel}
+          variant={confirmModal.variant}
+          onConfirm={confirmModal.onConfirm}
+        />
+      )}
     </div>
   );
 }

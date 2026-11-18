@@ -61,6 +61,8 @@ import { AssignDriverDialog } from '@/components/admin/assign-driver-dialog';
 import { DeliveryDetailSheet, type DeliveryRescheduleBody } from '@/components/admin/delivery-detail-sheet';
 import { AddDriverDialog, DriverCredentialsDialog, type DriverFormValues } from '@/components/admin/add-driver-dialog';
 import { useAdminCan } from '@/components/admin/admin-sidebar-context';
+import { AdminConfirmModal } from '@/components/admin/admin-confirm-modal';
+import { AdminPromptModal } from '@/components/admin/admin-prompt-modal';
 import { CompleteDeliveryDialog } from '@/components/admin/complete-delivery-dialog';
 
 export default function AdminDeliveriesPage() {
@@ -140,6 +142,28 @@ export default function AdminDeliveriesPage() {
   });
   const [driverAccess, setDriverAccess] = useState<{ name: string; credentials: DriverAccessCredentials } | null>(null);
   const openDriverDialog = (driver: DeliveryDriver | null) => setDriverDialog((d) => ({ open: true, driver, key: d.key + 1 }));
+
+  // Modals remplaçant window.confirm et window.prompt
+  const [confirmModal, setConfirmModal] = useState<{
+    title: string;
+    description: string | React.ReactNode;
+    confirmLabel?: string;
+    variant?: 'danger' | 'default';
+    onConfirm: () => void | Promise<void>;
+  } | null>(null);
+
+  const [promptModal, setPromptModal] = useState<{
+    title: string;
+    description?: string;
+    label?: string;
+    placeholder?: string;
+    defaultValue?: string;
+    inputType?: 'text' | 'email' | 'textarea';
+    confirmLabel?: string;
+    variant?: 'danger' | 'default';
+    validate?: (val: string) => string | null;
+    onSubmit: (val: string) => void | Promise<void>;
+  } | null>(null);
 
   // Boutons affichés selon les droits du compte (Paramètres › Rôles & permissions)
   const can = useAdminCan();
@@ -281,13 +305,22 @@ export default function AdminDeliveriesPage() {
       syncSelected(deliveryId);
       handleOpenCompleteModal(delivery);
     } else if (newStatus === 'echec') {
-      const reason = window.prompt('Motif de l’échec de livraison (3 caractères minimum) :', '');
-      if (reason === null) return;
-      if (reason.trim().length < 3) {
-        toast.error('Indiquez un motif d’au moins 3 caractères.');
-        return;
-      }
-      if (await runAction(() => failAdminDelivery(deliveryId, { reason: reason.trim() }), 'Échec de livraison enregistré')) syncSelected(deliveryId);
+      setPromptModal({
+        title: 'Signaler un échec de livraison',
+        description: `Indiquez la raison pour laquelle la course ${delivery.deliveryNumber} n’a pas pu être livrée.`,
+        label: 'Motif de l’échec',
+        placeholder: 'ex : Client absent, adresse introuvable, téléphone injoignable…',
+        inputType: 'textarea',
+        confirmLabel: 'Enregistrer l’échec',
+        variant: 'danger',
+        validate: (val) => (val.trim().length < 3 ? 'Indiquez un motif d’au moins 3 caractères.' : null),
+        onSubmit: async (reason) => {
+          setPromptModal(null);
+          if (await runAction(() => failAdminDelivery(deliveryId, { reason: reason.trim() }), 'Échec de livraison enregistré')) {
+            syncSelected(deliveryId);
+          }
+        },
+      });
     } else if (newStatus === 'a_livrer') {
       syncSelected(deliveryId);
       handleOpenAssignModal(delivery);
@@ -347,46 +380,68 @@ export default function AdminDeliveriesPage() {
   };
 
   /** Donne l'accès à l'espace livreur (email demandé) ou génère un nouveau mot de passe temporaire. */
-  const handleDriverAccess = async (drv: DeliveryDriver) => {
-    let email: string | undefined;
+  const handleDriverAccess = (drv: DeliveryDriver) => {
     if (!drv.accountEmail) {
-      const input = window.prompt(`Email de connexion de ${drv.name} (il y recevra ses identifiants) :`, '');
-      if (input === null) return;
-      email = input.trim();
-      if (!/^\S+@\S+\.\S+$/.test(email)) {
-        toast.error('Adresse email invalide');
-        return;
-      }
-    } else if (
-      !window.confirm(`Générer un nouveau mot de passe temporaire pour ${drv.name} ? L’ancien ne fonctionnera plus.`)
-    ) {
-      return;
+      setPromptModal({
+        title: `Créer un accès pour ${drv.name}`,
+        description: `Saisissez l’adresse email de connexion du livreur. Il y recevra ses identifiants.`,
+        label: 'Email de connexion',
+        placeholder: 'livreur@decofleursplus.com',
+        inputType: 'email',
+        confirmLabel: 'Créer l’accès',
+        validate: (val) => (!/^\S+@\S+\.\S+$/.test(val.trim()) ? 'Adresse email invalide' : null),
+        onSubmit: async (input) => {
+          setPromptModal(null);
+          const email = input.trim();
+          const out: { credentials: DriverAccessCredentials | null } = { credentials: null };
+          const ok = await runAction(
+            async () => {
+              out.credentials = (await provisionAdminDriverAccess(drv.id, email)).credentials;
+            },
+            `Accès à l’espace livreur créé pour ${drv.name}`,
+          );
+          if (ok && out.credentials) setDriverAccess({ name: drv.name, credentials: out.credentials });
+        },
+      });
+    } else {
+      setConfirmModal({
+        title: 'Régénérer le mot de passe',
+        description: `Générer un nouveau mot de passe temporaire pour ${drv.name} ? L’ancien mot de passe ne fonctionnera plus.`,
+        confirmLabel: 'Régénérer',
+        variant: 'default',
+        onConfirm: async () => {
+          setConfirmModal(null);
+          const out: { credentials: DriverAccessCredentials | null } = { credentials: null };
+          const ok = await runAction(
+            async () => {
+              out.credentials = (await provisionAdminDriverAccess(drv.id)).credentials;
+            },
+            `Nouveau mot de passe généré pour ${drv.name}`,
+          );
+          if (ok && out.credentials) setDriverAccess({ name: drv.name, credentials: out.credentials });
+        },
+      });
     }
-    const out: { credentials: DriverAccessCredentials | null } = { credentials: null };
-    const ok = await runAction(
-      async () => {
-        out.credentials = (await provisionAdminDriverAccess(drv.id, email)).credentials;
-      },
-      drv.accountEmail ? `Nouveau mot de passe généré pour ${drv.name}` : `Accès à l’espace livreur créé pour ${drv.name}`,
-    );
-    if (ok && out.credentials) setDriverAccess({ name: drv.name, credentials: out.credentials });
   };
 
-  const handleDeleteDriver = async (drv: DeliveryDriver) => {
+  const handleDeleteDriver = (drv: DeliveryDriver) => {
     if (drv.activeDeliveriesCount > 0) {
       toast.error(`${drv.name} a des livraisons en cours : réassignez-les avant de le supprimer.`);
       return;
     }
-    if (
-      !window.confirm(
-        `Supprimer ${drv.name} ? S’il a déjà effectué des livraisons, il sera seulement désactivé pour conserver l’historique. Son accès à l’espace livreur sera coupé.`,
-      )
-    )
-      return;
-    await runAction(
-      () => deleteAdminDriver(drv.id),
-      (res) => (res.deleted ? `${drv.name} a été supprimé` : `${drv.name} a été désactivé (historique conservé)`),
-    );
+    setConfirmModal({
+      title: `Supprimer le livreur ${drv.name}`,
+      description: `Supprimer ${drv.name} ? S’il a déjà effectué des livraisons, il sera seulement désactivé pour conserver l’historique. Son accès à l’espace livreur sera coupé.`,
+      confirmLabel: 'Supprimer',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmModal(null);
+        await runAction(
+          () => deleteAdminDriver(drv.id),
+          (res) => (res.deleted ? `${drv.name} a été supprimé` : `${drv.name} a été désactivé (historique conservé)`),
+        );
+      },
+    });
   };
 
   const handleReactivateDriver = (drv: DeliveryDriver) =>
@@ -1432,6 +1487,35 @@ export default function AdminDeliveriesPage() {
           handleOpenCompleteModal(d);
         }}
       />
+
+      {confirmModal && (
+        <AdminConfirmModal
+          isOpen={!!confirmModal}
+          onOpenChange={(open) => !open && setConfirmModal(null)}
+          title={confirmModal.title}
+          description={confirmModal.description}
+          confirmLabel={confirmModal.confirmLabel}
+          variant={confirmModal.variant}
+          onConfirm={confirmModal.onConfirm}
+        />
+      )}
+
+      {promptModal && (
+        <AdminPromptModal
+          isOpen={!!promptModal}
+          onOpenChange={(open) => !open && setPromptModal(null)}
+          title={promptModal.title}
+          description={promptModal.description}
+          label={promptModal.label}
+          placeholder={promptModal.placeholder}
+          defaultValue={promptModal.defaultValue}
+          inputType={promptModal.inputType}
+          confirmLabel={promptModal.confirmLabel}
+          variant={promptModal.variant}
+          validate={promptModal.validate}
+          onSubmit={promptModal.onSubmit}
+        />
+      )}
     </div>
   );
 }

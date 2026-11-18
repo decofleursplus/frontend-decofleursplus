@@ -33,6 +33,8 @@ import {
 import { ApiClientError } from '@/lib/api/client';
 import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import { CreateQuoteDialog } from '@/components/admin/create-quote-dialog';
+import { AdminConfirmModal } from '@/components/admin/admin-confirm-modal';
+import { AdminPromptModal } from '@/components/admin/admin-prompt-modal';
 
 type QuoteLine = { description: string; qty: number; unitPrice: number; total: number };
 
@@ -288,6 +290,8 @@ export default function AdminDevisPage() {
   const [statusBusy, setStatusBusy] = useState<QuoteStatus | null>(null);
   const [pendingStatus, setPendingStatus] = useState<QuoteStatus | null>(null);
   const [confirmClose, setConfirmClose] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [fallbackLinkModal, setFallbackLinkModal] = useState<string | null>(null);
   const [justChanged, setJustChanged] = useState<QuoteStatus | null>(null);
   const [convertOpen, setConvertOpen] = useState(false);
   const [converting, setConverting] = useState(false);
@@ -380,9 +384,8 @@ export default function AdminDevisPage() {
   };
 
   /** Suppression d'une demande (doublon, spam…) : droit « supprimer » du module Devis. */
-  const removeQuote = async () => {
+  const executeRemoveQuote = async () => {
     if (!selectedQuote) return;
-    if (!window.confirm(`Supprimer définitivement la demande de devis ${selectedQuote.quoteNumber} de ${selectedQuote.clientName} ?`)) return;
     setDeleting(true);
     try {
       await deleteAdminQuote(selectedQuote.id);
@@ -396,13 +399,18 @@ export default function AdminDevisPage() {
     }
   };
 
+  const removeQuote = () => {
+    if (!selectedQuote) return;
+    setConfirmDeleteOpen(true);
+  };
+
   const copyClientLink = async (token: string) => {
     const url = `${window.location.origin}/devis/${token}`;
     try {
       await navigator.clipboard.writeText(url);
       toast.success('Lien du client copié');
     } catch {
-      window.prompt('Lien personnel du client :', url);
+      setFallbackLinkModal(url);
     }
   };
 
@@ -1172,6 +1180,33 @@ export default function AdminDevisPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {selectedQuote && (
+        <AdminConfirmModal
+          isOpen={confirmDeleteOpen}
+          onOpenChange={setConfirmDeleteOpen}
+          title="Supprimer la demande de devis"
+          description={`Supprimer définitivement la demande de devis ${selectedQuote.quoteNumber} de ${selectedQuote.clientName} ?`}
+          confirmLabel="Supprimer définitivement"
+          variant="danger"
+          onConfirm={async () => {
+            setConfirmDeleteOpen(false);
+            await executeRemoveQuote();
+          }}
+        />
+      )}
+
+      {fallbackLinkModal && (
+        <AdminPromptModal
+          isOpen={!!fallbackLinkModal}
+          onOpenChange={(open) => !open && setFallbackLinkModal(null)}
+          title="Lien du devis client"
+          description="Vous pouvez copier directement le lien ci-dessous :"
+          defaultValue={fallbackLinkModal}
+          confirmLabel="Fermer"
+          onSubmit={() => setFallbackLinkModal(null)}
+        />
+      )}
     </div>
   );
 }

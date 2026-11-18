@@ -11,6 +11,7 @@ import {
   type CustomerAddress,
 } from '@/lib/api/customer';
 import { ErrorState, LoadingState, Notice, SectionHeader, errorText, useResource } from './shared';
+import { ConfirmModal } from '@/components/ui/confirm-modal';
 
 type Draft = { name: string; street: string; city: string; phone: string; isDefault: boolean };
 const EMPTY: Draft = { name: '', street: '', city: '', phone: '', isDefault: false };
@@ -21,6 +22,7 @@ export function AdressesSection() {
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
+  const [addrToDelete, setAddrToDelete] = useState<CustomerAddress | null>(null);
 
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
 
@@ -70,8 +72,14 @@ export function AdressesSection() {
     }
   }
 
-  async function remove(addr: CustomerAddress) {
-    if (!window.confirm(`Supprimer l’adresse « ${addr.name} » ?`)) return;
+  function remove(addr: CustomerAddress) {
+    setAddrToDelete(addr);
+  }
+
+  async function confirmRemove() {
+    if (!addrToDelete) return;
+    const addr = addrToDelete;
+    setAddrToDelete(null);
     setMessage(null);
     try {
       await deleteCustomerAddress(addr.id);
@@ -167,6 +175,18 @@ export function AdressesSection() {
           )}
         </div>
       </form>
+
+      <ConfirmModal
+        isOpen={addrToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setAddrToDelete(null);
+        }}
+        title="Supprimer l’adresse"
+        description={addrToDelete ? `Supprimer l’adresse « ${addrToDelete.name} » ?` : ''}
+        variant="danger"
+        confirmLabel="Supprimer"
+        onConfirm={confirmRemove}
+      />
     </section>
   );
 }

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Printer, Truck, MapPin, CreditCard, User, Loader2, History, StickyNote, Save, Package, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAdminCan } from '@/components/admin/admin-sidebar-context';
+import { AdminPromptModal } from '@/components/admin/admin-prompt-modal';
 import {
   DELIVERY_MODE_LABELS,
   ORDER_ACTION_LABELS,
@@ -35,6 +36,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [adminNotes, setAdminNotes] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
   const [timeSlot, setTimeSlot] = useState('');
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   const apply = (o: AdminOrderDetail | null) => {
     setOrder(o);
@@ -88,17 +90,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     );
   }
 
-  const changeStatus = async (status: BackendOrderStatus) => {
-    let cancelReason: string | undefined;
-    if (status === 'CANCELLED') {
-      const reason = window.prompt('Motif de l’annulation (obligatoire) :', '');
-      if (reason === null) return;
-      if (reason.trim().length < 3) {
-        toast.error('Indiquez un motif d’annulation (3 caractères minimum).');
-        return;
-      }
-      cancelReason = reason.trim();
-    }
+  const executeStatusChange = async (status: BackendOrderStatus, cancelReason?: string) => {
+    if (!order) return;
     setBusy(true);
     try {
       apply(await changeAdminOrderStatus(order.id, status, { cancelReason }));
@@ -108,6 +101,14 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     } finally {
       setBusy(false);
     }
+  };
+
+  const changeStatus = async (status: BackendOrderStatus) => {
+    if (status === 'CANCELLED') {
+      setShowCancelModal(true);
+      return;
+    }
+    await executeStatusChange(status);
   };
 
   const saveDetails = async () => {
@@ -361,6 +362,23 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           </ol>
         </section>
       </div>
+
+      <AdminPromptModal
+        isOpen={showCancelModal}
+        onOpenChange={setShowCancelModal}
+        title="Annuler la commande"
+        description={`Indiquez le motif d’annulation pour la commande n° ${order.orderNumber}.`}
+        label="Motif de l’annulation (obligatoire)"
+        placeholder="ex : Demande du client, rupture de stock…"
+        inputType="textarea"
+        confirmLabel="Confirmer l’annulation"
+        variant="danger"
+        validate={(val) => (val.trim().length < 3 ? 'Indiquez un motif d’au moins 3 caractères.' : null)}
+        onSubmit={async (reason) => {
+          setShowCancelModal(false);
+          await executeStatusChange('CANCELLED', reason.trim());
+        }}
+      />
     </div>
   );
 }
