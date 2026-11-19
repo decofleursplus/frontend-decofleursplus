@@ -93,6 +93,7 @@ interface BackendProductResponse {
   isFeatured?: boolean;
   featured?: boolean;
   status?: string;
+  allowCustomQuote?: boolean;
   createdAt?: string;
   rating?: number;
   averageRating?: number;
@@ -172,6 +173,7 @@ function mapBackendToAdminProduct(p: BackendProductResponse): AdminProduct {
     images: normalizedImages.length > 0 ? normalizedImages : [primaryImage],
     description: p.description || '',
     featured: Boolean(p.isFeatured ?? p.featured),
+    allowCustomQuote: Boolean(p.allowCustomQuote),
     createdAt: p.createdAt ? new Date(p.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
     rating: p.rating ?? p.averageRating ?? 5,
     reviews: p.reviewsCount ?? p.reviews ?? 0,

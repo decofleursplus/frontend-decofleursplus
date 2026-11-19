@@ -106,6 +106,9 @@ function ProductStateBadge({ product }: { product: AdminProduct }) {
       )}
       {product.status === 'PROMO' && <Badge className="bg-[#fdf2f4] text-[#c1647a] border-none font-medium">Promo</Badge>}
       {product.status === 'ON_QUOTE' && <Badge className="bg-[#e5eaff] text-[#3d5a99] border-none font-medium">Sur devis</Badge>}
+      {product.status !== 'ON_QUOTE' && product.allowCustomQuote && (
+        <Badge className="bg-[#e5eaff] text-[#3d5a99] border-none font-medium">+ Sur mesure</Badge>
+      )}
     </span>
   );
 }

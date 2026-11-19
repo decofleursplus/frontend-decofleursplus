@@ -42,6 +42,8 @@ export type Product = {
   inStock: boolean;
   reference?: string;
   status: ProductStatus;
+  /** Choix « Sur mesure — sur devis » proposé à côté des tailles */
+  allowCustomQuote?: boolean;
   isNew: boolean;
   promotion: ProductPromotion | null;
   variants: ProductVariant[];
@@ -53,6 +55,16 @@ export const formatPrice = (price: number) => `${new Intl.NumberFormat('fr-FR').
 
 /** Produit vendu uniquement sur devis : il ne peut pas être ajouté au panier. */
 export const isQuoteOnly = (product: Pick<Product, 'status'>) => product.status === 'ON_QUOTE';
+
+/** Création demandable sur devis depuis sa fiche : entièrement « sur devis », ou avec l'option « sur mesure ». */
+export const isQuotable = (product: Pick<Product, 'status' | 'allowCustomQuote'>) =>
+  product.status === 'ON_QUOTE' || (Boolean(product.allowCustomQuote) && product.status !== 'HIDDEN');
+
+/** Lien vers le formulaire de devis pour une création (taille de référence facultative). */
+export function customQuoteHref(slug: string, referenceSize?: string): string {
+  const size = referenceSize?.trim();
+  return `/devis?produit=${encodeURIComponent(slug)}${size ? `&taille=${encodeURIComponent(size)}` : ''}`;
+}
 
 /** Première variante disponible (ou la première tout court si tout est épuisé). */
 export function defaultVariant(product: Pick<Product, 'variants'>): ProductVariant | null {

@@ -53,6 +53,12 @@ function QuoteCard({ quote, onUpdated }: { quote: QuoteItem; onUpdated: (q: Quot
           <div className="text-sm text-neutral-600">
             <strong>{quote.eventType}</strong> · {quote.eventLocation}
           </div>
+          {quote.productName && (
+            <div className="text-xs font-semibold text-[#c8436e] mt-0.5">
+              Sur mesure : {quote.productName}
+              {quote.referenceSize ? ` (taille de référence : ${quote.referenceSize})` : ''}
+            </div>
+          )}
           <div className="text-xs text-neutral-400 mt-1">
             Demandé le {formatDate(quote.createdAt)}
             {quote.eventDate ? ` · Événement le ${formatDate(quote.eventDate)}` : ''}

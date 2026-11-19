@@ -56,6 +56,7 @@ export interface ApiProduct {
   promotion?: { id: string; name: string; badgeText: string | null; discountPercentage: number } | null;
   inStock: boolean;
   status: ProductStatus;
+  allowCustomQuote?: boolean;
   isFeatured?: boolean;
   reference?: string | null;
   variants?: ApiProductVariant[];
@@ -104,6 +105,7 @@ export function mapApiProductToProduct(item: ApiProduct): Product {
     inStock: item.inStock,
     reference: item.reference ?? undefined,
     status: item.status,
+    allowCustomQuote: Boolean(item.allowCustomQuote),
     isNew: Boolean(item.isNew),
     promotion: item.promotion ?? null,
     variants: (item.variants ?? []).map((v) => ({

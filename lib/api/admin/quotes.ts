@@ -92,6 +92,7 @@ export function transformAdminQuote(raw: any): LandscapeQuote {
     qty: it.qty || it.quantity || 1,
     unitPrice: Number(it.unitPrice || it.price || 0),
     total: Number(it.total || (it.qty || 1) * (it.unitPrice || 0)),
+    productId: it.productId ?? null,
   })) : raw.quoteItems || [];
 
   return {
@@ -125,6 +126,9 @@ export function transformAdminQuote(raw: any): LandscapeQuote {
     convertedOrderId: raw.convertedOrderId ?? null,
     convertedOrderNumber: raw.convertedOrderNumber ?? null,
     publicToken: raw.publicToken ?? null,
+    productId: raw.productId ?? null,
+    productName: raw.productName ?? null,
+    referenceSize: raw.referenceSize ?? null,
   };
 }
 
@@ -259,7 +263,8 @@ export const QUOTE_NEXT_STATUSES: Record<string, QuoteStatus[]> = {
 export async function saveAdminQuoteProposal(
   id: string,
   body: {
-    items: { description: string; quantity: number; unitPrice: number }[];
+    /** `productId` : ligne de la création demandée sur mesure (seul produit accepté par le serveur) */
+    items: { description: string; quantity: number; unitPrice: number; productId?: string }[];
     adminNotes: string | null;
     /** AAAA-MM-JJ ou null pour effacer */
     eventDate?: string | null;
@@ -347,6 +352,9 @@ export interface AdminQuoteRecord {
   eventLocation: string;
   estimatedGuests: number | null;
   status: 'NEW' | 'UNDER_REVIEW' | 'SENT' | 'ACCEPTED' | 'REFUSED' | 'CONVERTED_TO_ORDER';
+  /** Création demandée sur mesure depuis sa fiche produit, et taille de référence */
+  productName: string | null;
+  referenceSize: string | null;
   items: { description: string; quantity: number; unitPrice: number }[];
   quotedAmount: number | null;
   sentAt: string | null;
