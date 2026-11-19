@@ -120,7 +120,7 @@ export async function generateMetadata({
     case 'contact':
       return constructMetadata({
         title: 'Contact & Atelier Floral à Saly Portudal | Décofleur Plus',
-        description: 'Contactez notre atelier floral : téléphone Saly, WhatsApp Dakar, adresse Rue des Palmiers à Saly Portudal, devis gratuit et horaires d’ouverture.',
+        description: 'Contactez notre atelier floral : téléphone Saly, WhatsApp Dakar, adresse route de Saly en face de la station Elton (Saly, M’bour), devis gratuit et horaires d’ouverture.',
         canonical: '/contact',
       });
     case 'conditions':
@@ -707,7 +707,7 @@ const PAYMENT_LABELS: [keyof Omit<PublicShopSettings['payments'], 'cashMaxAmount
 /** Coordonnées issues de Paramètres › Boutique ; repli sur la configuration du site si l'API ne répond pas. */
 function ContactPage({ settings }: { settings: PublicShopSettings | null }) {
   const shop = settings?.boutique;
-  const address = shop?.address ?? SITE_CONFIG.address.streetAddress;
+  const address = shop?.address ?? SITE_CONFIG.fullAddress;
   const phones = [shop?.phoneSaly ?? SITE_CONFIG.phoneSaly, shop?.phoneDakar ?? SITE_CONFIG.phoneDakar].filter(
     (p, i, all) => p && all.indexOf(p) === i,
   );
