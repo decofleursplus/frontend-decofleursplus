@@ -12,10 +12,11 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { UserPlus, Bike, Phone, Hash, ShieldCheck, Mail, Pencil, KeyRound, Copy } from 'lucide-react';
+import { UserPlus, Bike, Phone, Hash, ShieldCheck, Mail, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { RequiredStar } from '@/components/ui/required-star';
+import { AccountCredentialsDialog, type AccountCredentials } from './account-credentials-dialog';
 
 export interface DriverFormValues {
   name: string;
@@ -175,11 +176,7 @@ export function AddDriverDialog({ isOpen, onOpenChange, driver, onSubmit }: AddD
   );
 }
 
-export interface DriverCredentials {
-  email: string;
-  temporaryPassword: string;
-  emailSent?: boolean;
-}
+export type DriverCredentials = AccountCredentials;
 
 /** Identifiants affichés une seule fois après la création ou la réinitialisation de l'accès d'un livreur. */
 export function DriverCredentialsDialog({
@@ -192,56 +189,6 @@ export function DriverCredentialsDialog({
   onClose: () => void;
 }) {
   return (
-    <Dialog open={Boolean(credentials)} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-lg font-bold text-[#1e2a1f] flex items-center gap-2">
-            <KeyRound className="h-5 w-5 text-[#c1647a]" />
-            Accès de {driverName}
-          </DialogTitle>
-          <DialogDescription className="text-xs text-gray-500">
-            Mot de passe temporaire : {driverName} devra le changer à sa première connexion. Il ne sera plus affiché ensuite.
-          </DialogDescription>
-        </DialogHeader>
-        {credentials && (
-          <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs">
-            <div>
-              <span className="text-gray-500">Identifiant : </span>
-              <strong className="font-mono">{credentials.email}</strong>
-            </div>
-            <div>
-              <span className="text-gray-500">Mot de passe temporaire : </span>
-              <strong className="font-mono select-all">{credentials.temporaryPassword}</strong>
-            </div>
-            <div>
-              <span className="text-gray-500">Connexion : </span>
-              <span className="font-mono">/admin/connexion</span>
-            </div>
-            <p className={credentials.emailSent ? 'text-emerald-700' : 'text-amber-700'}>
-              {credentials.emailSent
-                ? 'Ses identifiants lui ont été envoyés par email.'
-                : 'L’email n’a pas pu être envoyé : transmettez-lui ces identifiants (WhatsApp, SMS…).'}
-            </p>
-          </div>
-        )}
-        <DialogFooter className="gap-2">
-          <Button
-            variant="outline"
-            className="text-xs gap-1.5"
-            onClick={() =>
-              credentials &&
-              void navigator.clipboard
-                ?.writeText(`Identifiant : ${credentials.email}\nMot de passe temporaire : ${credentials.temporaryPassword}`)
-                .then(() => toast.success('Identifiants copiés'))
-            }
-          >
-            <Copy className="h-3.5 w-3.5" /> Copier
-          </Button>
-          <Button onClick={onClose} className="bg-[#173f22] hover:bg-[#12311a] text-white text-xs">
-            J’ai noté
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <AccountCredentialsDialog credentials={credentials} accountName={driverName} loginPath="/admin/connexion" onClose={onClose} />
   );
 }

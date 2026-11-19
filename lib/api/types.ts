@@ -64,6 +64,8 @@ export interface ApiUser {
   provider?: 'email' | 'google' | 'facebook';
   isActive?: boolean;
   emailVerified?: boolean;
+  /** Mot de passe temporaire donné par l'équipe : à changer à la première connexion */
+  mustChangePassword?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
