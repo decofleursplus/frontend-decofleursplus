@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import {
   UploadCloud,
@@ -100,11 +101,24 @@ function ChoiceField({
   );
 }
 
+/** Création de la boutique demandée sur mesure depuis sa fiche (le devis lui est rattaché). */
+export interface CustomQuoteProduct {
+  slug: string;
+  name: string;
+  image: string;
+  /** Tailles proposées : choix de la taille de référence */
+  sizes: string[];
+}
+
 interface SharedDevisFormProps {
   initialServiceType?: DevisServiceType;
   initialPrestation?: string;
   /** Produit de la boutique à l'origine de la demande (`?produit=`) */
   initialProduct?: string;
+  /** Même produit, s'il se demande sur devis : encart « Création sur mesure » et devis rattaché */
+  customProduct?: CustomQuoteProduct | null;
+  /** Taille de référence choisie sur la fiche (`?taille=`) */
+  initialReferenceSize?: string;
   /** Réalisation ou inspiration citée (`?inspiration=`) */
   initialInspiration?: string;
   className?: string;
@@ -114,6 +128,8 @@ export function SharedDevisForm({
   initialServiceType = 'evenements',
   initialPrestation = '',
   initialProduct = '',
+  customProduct = null,
+  initialReferenceSize = '',
   initialInspiration = '',
   className = '',
 }: SharedDevisFormProps) {
@@ -167,9 +183,16 @@ export function SharedDevisForm({
   const [desiredDate, setDesiredDate] = useState('');
   const [location, setLocation] = useState('Saly Portudal');
   const [budget, setBudget] = useState('500 000 - 1 500 000 FCFA');
+  // Création demandée sur mesure : retirable, taille de référence parmi ses tailles (sinon aucune)
+  const [linkedProduct, setLinkedProduct] = useState<CustomQuoteProduct | null>(customProduct);
+  const [referenceSize, setReferenceSize] = useState(
+    () => customProduct?.sizes.find((size) => size.toLowerCase() === initialReferenceSize.trim().toLowerCase()) ?? '',
+  );
   const [description, setDescription] = useState(() => {
     const refs = [
-      initialProduct && `Inspiré de la création « ${initialProduct.replace(/-/g, ' ')} » de la boutique.`,
+      customProduct
+        ? `Je souhaite une version sur mesure de « ${customProduct.name} ».`
+        : initialProduct && `Inspiré de la création « ${initialProduct.replace(/-/g, ' ')} » de la boutique.`,
       initialInspiration && `Inspiré de la réalisation « ${initialInspiration} ».`,
     ].filter(Boolean);
     return refs.length ? `${refs.join('\n')}\n` : '';
@@ -260,6 +283,7 @@ export function SharedDevisForm({
         estimatedGuests: Number.isFinite(guests) && guests > 0 ? guests : undefined,
         inspirationImages,
         notes: description.trim(),
+        ...(linkedProduct ? { productSlug: linkedProduct.slug, referenceSize: referenceSize || undefined } : {}),
       });
       setSubmittedRef(quote.quoteNumber);
       setCurrentStep(4);
@@ -298,6 +322,47 @@ export function SharedDevisForm({
           >
             <PartyPopper size={14} />
             Événements &amp; Scénographie
+          </button>
+        </div>
+      )}
+
+      {/* ── Création de la boutique demandée sur mesure ── */}
+      {currentStep < 4 && linkedProduct && (
+        <div className="mb-6 flex items-center gap-3 rounded-2xl border border-[#e7e4dd] bg-[#faf8f5] p-3">
+          <Image
+            src={linkedProduct.image}
+            alt=""
+            width={64}
+            height={64}
+            className="h-16 w-16 shrink-0 rounded-xl object-cover"
+          />
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#c8436e]">Création sur mesure</p>
+            <p className="truncate text-sm font-semibold text-[#173f22]">{linkedProduct.name}</p>
+            {linkedProduct.sizes.length > 0 && (
+              <label className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-600">
+                Taille de référence
+                <select
+                  value={referenceSize}
+                  onChange={(e) => setReferenceSize(e.target.value)}
+                  className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-900"
+                >
+                  <option value="">Aucune en particulier</option>
+                  {linkedProduct.sizes.map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setLinkedProduct(null)}
+            className="shrink-0 text-xs font-medium text-gray-500 underline hover:text-gray-800"
+          >
+            Retirer
           </button>
         </div>
       )}

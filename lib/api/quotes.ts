@@ -17,6 +17,9 @@ export interface SubmitQuotePayload {
   notes?: string;
   estimatedGuests?: number;
   inspirationImages?: string[];
+  /** Création de la boutique demandée sur mesure (slug de sa fiche) et taille de référence choisie */
+  productSlug?: string;
+  referenceSize?: string;
 }
 
 export type QuoteStatus = 'NEW' | 'UNDER_REVIEW' | 'SENT' | 'ACCEPTED' | 'REFUSED' | 'CONVERTED_TO_ORDER';
@@ -37,6 +40,9 @@ export interface QuoteItem {
   estimatedGuests: number | null;
   details: string | null;
   inspirationImages: string[];
+  /** Création demandée sur mesure depuis sa fiche produit, et taille de référence choisie */
+  productName?: string | null;
+  referenceSize?: string | null;
   /** null tant que la proposition n'est pas envoyée */
   quotedAmount: number | null;
   /** Lignes de la proposition (vide tant qu'elle n'est pas envoyée) */
@@ -77,7 +83,7 @@ export async function submitQuote(payload: SubmitQuotePayload): Promise<QuoteIte
   if (payload.budget?.trim()) body.budget = payload.budget.trim();
   if (payload.email?.trim()) body.email = payload.email.trim();
   if (payload.notes?.trim()) body.notes = payload.notes.trim();
-  for (const key of ['prestationType', 'spaceType', 'surfaceArea', 'company'] as const) {
+  for (const key of ['prestationType', 'spaceType', 'surfaceArea', 'company', 'productSlug', 'referenceSize'] as const) {
     const value = payload[key]?.trim();
     if (value) body[key] = value;
   }

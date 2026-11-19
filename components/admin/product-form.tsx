@@ -72,6 +72,7 @@ export function ProductForm({ product }: { product?: AdminProductDto }) {
   const [subCategoryId, setSubCategoryId] = useState(product?.subCategory?.id ?? '');
   const [status, setStatus] = useState<AdminProductStatus>(product?.status ?? 'ACTIVE');
   const [isFeatured, setIsFeatured] = useState(product?.isFeatured ?? false);
+  const [allowCustomQuote, setAllowCustomQuote] = useState(product?.allowCustomQuote ?? false);
   const [basePrice, setBasePrice] = useState(product ? String(product.price) : '');
   const [compareAtPrice, setCompareAtPrice] = useState(product?.oldPrice ? String(product.oldPrice) : '');
   const [images, setImages] = useState<string[]>(product?.images ?? []);
@@ -126,6 +127,7 @@ export function ProductForm({ product }: { product?: AdminProductDto }) {
         compareAtPrice: oldPrice,
         isFeatured,
         status,
+        allowCustomQuote,
         featuredImage: primaryImage || images[0] || null,
         images,
         variants: rows.map((v) => ({
@@ -304,6 +306,23 @@ export function ProductForm({ product }: { product?: AdminProductDto }) {
           <label className="flex items-center gap-2 text-xs font-semibold">
             <input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} /> Mettre en avant (produits phares de l’accueil)
           </label>
+          {status !== 'ON_QUOTE' && (
+            <label className="flex items-start gap-2 text-xs font-semibold">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={allowCustomQuote}
+                onChange={(e) => setAllowCustomQuote(e.target.checked)}
+              />
+              <span>
+                Proposer aussi une version sur mesure (sur devis)
+                <span className="block mt-0.5 font-normal text-gray-500">
+                  Ajoute le choix « Sur mesure » à côté des tailles : le client demande un devis lié à ce produit. Une fois
+                  acceptée et convertie en commande, la création compte dans les ventes du produit.
+                </span>
+              </span>
+            </label>
+          )}
         </section>
       </div>
 

@@ -33,6 +33,8 @@ export interface AdminProductDto {
   image: string;
   images: string[];
   status: AdminProductStatus;
+  /** Choix « Sur mesure — sur devis » proposé à côté des tailles */
+  allowCustomQuote?: boolean;
   isFeatured: boolean;
   variants: AdminVariant[];
 }
@@ -52,6 +54,7 @@ export interface ProductPayload {
   compareAtPrice: number | null;
   isFeatured: boolean;
   status: AdminProductStatus;
+  allowCustomQuote: boolean;
   featuredImage: string | null;
   images: string[];
   variants: { id?: string; name: string; sku?: string; price: number; stockQuantity?: number; minStockAlert?: number }[];

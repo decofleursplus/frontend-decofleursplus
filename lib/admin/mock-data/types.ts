@@ -31,6 +31,8 @@ export type AdminProduct = {
   images: string[];
   description: string;
   featured: boolean;
+  /** Choix « Sur mesure — sur devis » proposé à côté des tailles */
+  allowCustomQuote?: boolean;
   createdAt: string;
   rating: number;
   reviews: number;
@@ -737,7 +739,12 @@ export type LandscapeQuote = {
   status: QuoteStatus;
   notes?: string;
   quoteAmount?: number;
-  quoteItems?: { description: string; qty: number; unitPrice: number; total: number }[];
+  /** `productId` : ligne de la création sur mesure (rattachée au produit dans la commande issue du devis) */
+  quoteItems?: { description: string; qty: number; unitPrice: number; total: number; productId?: string | null }[];
+  /** Création demandée sur mesure depuis sa fiche produit (id null si le produit a été supprimé) */
+  productId?: string | null;
+  productName?: string | null;
+  referenceSize?: string | null;
   /** Valeurs brutes éditables par l'équipe */
   estimatedGuests?: number | null;
   budgetRange?: string | null;
