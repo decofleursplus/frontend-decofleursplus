@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
 import { AdminNotificationsDropdown } from '@/components/admin/admin-notifications-dropdown';
+import { AdminHelpMenu } from '@/components/admin/admin-help-menu';
 import type { AdminSessionUser } from '@/lib/api/auth-token';
 import { logoutAdmin } from '@/app/admin/connexion/actions';
 import { AdminProfileDialog } from '@/components/admin/admin-profile-dialog';
@@ -59,6 +60,7 @@ export function AdminTopbar({ initialUser }: { initialUser?: AdminSessionUser | 
 
       {/* Right actions */}
       <div className="admin-topbar-actions flex items-center gap-2">
+        <AdminHelpMenu />
         <AdminNotificationsDropdown />
 
         {/* User Dropdown Menu (Accessible on both Mobile & Desktop) */}
