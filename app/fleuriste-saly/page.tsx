@@ -25,7 +25,7 @@ export const revalidate = 3600;
 export const metadata: Metadata = constructMetadata({
   title: 'Fleuriste à Saly, Magasin de Décoration & Wedding Planner | Déco Fleurs Plus',
   description:
-    'Déco Fleurs Plus (Déco Fleurs / Déco-Fleurs), artisan fleuriste, magasin de décoration & wedding planner à Saly-Portudal (Rue des Palmiers). Bouquets de roses fraîches, vases design, décoration d’intérieur et scénographie de mariages, livraison express en 2h.',
+    'Déco Fleurs Plus (Déco Fleurs / Déco-Fleurs), artisan fleuriste, magasin de décoration & wedding planner à Saly (route de Saly, en face de la station Elton). Bouquets de roses fraîches, vases design, décoration d’intérieur et scénographie de mariages, livraison express en 2h.',
   canonical: '/fleuriste-saly',
   keywords: [
     'deco fleurs saly',
@@ -56,7 +56,7 @@ export default function FleuristeSalyPage() {
     city: 'Saly Portudal',
     pageUrl: '/fleuriste-saly',
     description:
-      'Boutique et atelier artisanal Décofleur Plus à Saly Portudal, Rue des Palmiers. Vente et livraison express en 2h de bouquets de roses, plantes et décoration florale.',
+      'Boutique et atelier artisanal Décofleur Plus à Saly, route de Saly, en face de la station Elton. Vente et livraison express en 2h de bouquets de roses, plantes et décoration florale.',
     deliveryTime: 'Livraison express en 2h chrono ou retrait boutique',
     isPhysicalStore: true,
   });
@@ -95,7 +95,7 @@ export default function FleuristeSalyPage() {
               Votre Artisan Fleuriste &amp; Magasin de Décoration à Saly-Portudal
             </h1>
             <p className="text-white/90 text-sm sm:text-base leading-relaxed mb-6 font-medium">
-              Bienvenue chez <strong>Déco Fleurs Plus</strong> (également connu sous les noms <strong>Déco Fleurs</strong> ou <strong>Déco-Fleurs</strong> à Saly). Référence parmi les fleuristes et magasins de décoration à Saly-Portudal, notre boutique de la Rue des Palmiers vous accueille pour vos compositions florales sur mesure, vos vases design, la décoration de vos villas et événements, avec livraison express en 2h chrono.
+              Bienvenue chez <strong>Déco Fleurs Plus</strong> (également connu sous les noms <strong>Déco Fleurs</strong> ou <strong>Déco-Fleurs</strong> à Saly). Référence parmi les fleuristes et magasins de décoration à Saly-Portudal, notre boutique de la route de Saly (en face de la station Elton) vous accueille pour vos compositions florales sur mesure, vos vases design, la décoration de vos villas et événements, avec livraison express en 2h chrono.
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <Link
@@ -126,10 +126,10 @@ export default function FleuristeSalyPage() {
               Adresse de l’atelier
             </h3>
             <p className="text-neutral-700 text-xs sm:text-sm font-semibold mb-1">
-              {SITE_CONFIG.address.streetAddress}
+              {SITE_CONFIG.fullAddress}
             </p>
             <p className="text-neutral-500 text-xs">
-              À quelques minutes de la plage et du centre commercial de Saly.
+              Sur la route de Saly, juste en face de la station Elton.
             </p>
           </div>
 
@@ -298,7 +298,7 @@ export default function FleuristeSalyPage() {
                 Puis-je venir choisir mes fleurs directement à la boutique ?
               </h3>
               <p className="text-neutral-600 text-xs sm:text-sm leading-relaxed">
-                Oui, avec grand plaisir ! Notre boutique de la Rue des Palmiers vous accueille du lundi au samedi de 08h30 à 20h00 et le dimanche de 09h00 à 15h00. Vous pouvez y admirer nos arrivages de fleurs fraîches, nos plantes et choisir votre composition sur place.
+                Oui, avec grand plaisir ! Notre boutique de la route de Saly, en face de la station Elton, vous accueille du lundi au samedi de 08h30 à 20h00 et le dimanche de 09h00 à 15h00. Vous pouvez y admirer nos arrivages de fleurs fraîches, nos plantes et choisir votre composition sur place.
               </p>
             </div>
 
@@ -316,7 +316,7 @@ export default function FleuristeSalyPage() {
                 Où trouver un magasin de décoration et fleuriste à Saly-Portudal ?
               </h3>
               <p className="text-neutral-600 text-xs sm:text-sm leading-relaxed">
-                <strong>Déco Fleurs Plus</strong> (aussi recherché sous <strong>Déco Fleurs</strong>, <strong>Déco-Fleurs</strong> ou <strong>deco fleurs saly</strong>) est situé Rue des Palmiers à Saly-Portudal. C’est à la fois un atelier d’artisan fleuriste et un magasin de décoration proposant vases haut de gamme, bougies parfumées, plantes tropicales d’intérieur, et prestations de décoration pour villas et mariages.
+                <strong>Déco Fleurs Plus</strong> (aussi recherché sous <strong>Déco Fleurs</strong>, <strong>Déco-Fleurs</strong> ou <strong>deco fleurs saly</strong>) est situé sur la route de Saly, en face de la station Elton (Plus Code CXVW+PPH, Saly, M’bour). C’est à la fois un atelier d’artisan fleuriste et un magasin de décoration proposant vases haut de gamme, bougies parfumées, plantes tropicales d’intérieur, et prestations de décoration pour villas et mariages.
               </p>
             </div>
           </div>

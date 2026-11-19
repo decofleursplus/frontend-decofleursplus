@@ -98,6 +98,8 @@ export type AdminCustomer = {
   recentOrders?: AdminOrder[];
   /** Compte de connexion lié à la fiche CRM (null : fiche sans compte) */
   userId?: string | null;
+  /** Accès ouvert par l'équipe, mot de passe temporaire pas encore changé par le client */
+  accessPending?: boolean;
   /** Adresse saisie sur la fiche CRM (hors carnet d'adresses du compte) */
   crmAddress?: string;
 };

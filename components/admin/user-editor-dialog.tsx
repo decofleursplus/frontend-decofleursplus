@@ -34,6 +34,7 @@ import {
   createAdminStaffUser,
   updateAdminStaffUser,
   type CreatedStaffUser,
+  type UpdatedStaffUser,
   type RoleDefinition,
   type StaffRole,
   type StaffStatus,
@@ -80,8 +81,11 @@ interface UserEditorDialogProps {
   roles: RoleDefinition[];
   /** Le collaborateur édité est l'utilisateur connecté : rôle et statut verrouillés. */
   isSelf: boolean;
-  /** Appelé uniquement après réponse positive de l'API, avec l'objet renvoyé par le serveur. */
-  onSaved: (user: StaffUser | CreatedStaffUser, initialPassword: string | null) => void;
+  /**
+   * Appelé uniquement après réponse positive de l'API, avec l'objet renvoyé par le serveur et le mot de passe
+   * temporaire donné (création, ou nouveau mot de passe en modification), sinon null.
+   */
+  onSaved: (user: UpdatedStaffUser | CreatedStaffUser, temporaryPassword: string | null) => void;
 }
 
 function UserEditorForm({

@@ -29,17 +29,21 @@ export const SITE_CONFIG = {
   defaultOgImage: '/images/og-decofleur.png',
   gtmId: 'GTM-PNZS4HBX',
   
+  // Adresse de la fiche Google de la boutique (Plus Code CXVW+PPH) : à garder identique partout
   address: {
-    streetAddress: 'Rue des Palmiers, Saly Portudal',
-    addressLocality: 'Saly Portudal',
-    addressRegion: 'Thiès / Petite-Côte',
+    streetAddress: 'CXVW+PPH Route de Saly, en face de la station Elton, Saly',
+    addressLocality: "M'bour",
+    addressRegion: 'Thiès',
     postalCode: '23000',
     addressCountry: 'SN',
   },
-  
+  /** Adresse complète affichée (repli quand les paramètres de la boutique ne répondent pas) */
+  fullAddress: "CXVW+PPH Route de Saly, en face de la station Elton, Saly, M'bour, Sénégal",
+
+  // Centre du Plus Code 7C64CXVW+PPH
   geo: {
-    latitude: 14.4431,
-    longitude: -17.0272,
+    latitude: 14.44431,
+    longitude: -17.00314,
   },
   
   openingHoursSpecification: [

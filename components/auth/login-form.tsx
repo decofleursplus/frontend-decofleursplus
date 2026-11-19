@@ -5,13 +5,15 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Mail, LockKeyhole, Eye, EyeOff, ArrowRight, Loader2, KeyRound } from 'lucide-react';
 import { FloralMotifIcon } from '@/components/icons';
-import { useAuth } from '@/components/auth-provider';
+import { useAuth, type User } from '@/components/auth-provider';
 import { readRememberedReferralCode } from '@/lib/api/rewards';
 import { ApiClientError } from '@/lib/api/client';
 import { EmailVerificationStep } from './email-verification-step';
 import { GoogleSignInButton } from './google-sign-in-button';
 import { LoginCodeStep } from './login-code-step';
 import { requestLoginCode } from '@/lib/api/auth';
+
+const CHANGE_PASSWORD_PATH = '/compte/informations';
 
 export function LoginForm() {
   const router = useRouter();
@@ -36,7 +38,13 @@ export function LoginForm() {
   const [method, setMethod] = useState<'password' | 'code'>('password');
   const [codeStep, setCodeStep] = useState<{ cooldown: number; minutes: number } | null>(null);
 
-  function goToTarget(message: string) {
+  /** Mot de passe temporaire donné par l'équipe : le client choisit d'abord le sien. */
+  function goToTarget(message: string, signedIn?: User) {
+    if (signedIn?.mustChangePassword) {
+      setFeedback({ type: 'success', text: 'Connexion réussie ! Choisissez maintenant votre mot de passe.' });
+      router.push(`${CHANGE_PASSWORD_PATH}#mot-de-passe`);
+      return;
+    }
     setFeedback({ type: 'success', text: message });
     router.push(redirectTarget);
   }
@@ -103,8 +111,8 @@ export function LoginForm() {
     setFeedback(null);
 
     try {
-      await login(identifier, password, rememberMe);
-      goToTarget('Connexion réussie ! Redirection en cours…');
+      const signedIn = await login(identifier, password, rememberMe);
+      goToTarget('Connexion réussie ! Redirection en cours…', signedIn);
     } catch (err: unknown) {
       if (err instanceof ApiClientError && err.code === 'EMAIL_NOT_VERIFIED') {
         setPendingVerification({
@@ -147,7 +155,7 @@ export function LoginForm() {
         remember={rememberMe}
         initialCooldown={codeStep.cooldown}
         expiresInMinutes={codeStep.minutes}
-        onSignedIn={() => goToTarget('Connexion réussie ! Redirection en cours…')}
+        onSignedIn={(signedIn) => goToTarget('Connexion réussie ! Redirection en cours…', signedIn)}
         onBack={() => setCodeStep(null)}
       />
     );

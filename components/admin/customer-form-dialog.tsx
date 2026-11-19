@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader2, Mail, MapPin, Pencil, Phone, Save, UserPlus } from 'lucide-react';
+import { KeyRound, Loader2, Mail, MapPin, Pencil, Phone, Save, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -14,7 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { AdminCustomer } from '@/lib/admin/mock-data/types';
-import { createAdminCustomer, updateAdminCustomer } from '@/lib/api/admin/customers';
+import { createAdminCustomer, updateAdminCustomer, type ClientAccessCredentials } from '@/lib/api/admin/customers';
 import { ApiClientError } from '@/lib/api/client';
 
 import { RequiredStar } from '@/components/ui/required-star';
@@ -32,10 +32,16 @@ const EMAIL_PATTERN = /^\S+@\S+\.\S+$/;
 interface CustomerFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Fiche à modifier ; absente = création d'une fiche sans compte de connexion. */
+  /** Fiche à modifier ; absente = création (accès à l'espace client en option). */
   customer?: AdminCustomer | null;
-  /** Fiche créée ou enregistrée (`linkedAccount` : compte client existant lié à la création). */
-  onSaved: (customer: AdminCustomer, info: { created: boolean; linkedAccount: boolean }) => void;
+  /**
+   * Fiche créée ou enregistrée. `linkedAccount` : compte client existant lié à la création ;
+   * `credentials` : identifiants de l'accès ouvert à la création (à afficher une seule fois).
+   */
+  onSaved: (
+    customer: AdminCustomer,
+    info: { created: boolean; linkedAccount: boolean; credentials: ClientAccessCredentials | null },
+  ) => void;
 }
 
 /**
@@ -54,6 +60,7 @@ export function CustomerFormDialog({ open, onOpenChange, customer, onSaved }: Cu
   const [address, setAddress] = useState(customer ? customer.crmAddress ?? '' : '');
   const [segment, setSegment] = useState<SegmentValue>('PARTICULIER');
   const [notes, setNotes] = useState('');
+  const [createAccess, setCreateAccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -72,15 +79,16 @@ export function CustomerFormDialog({ open, onOpenChange, customer, onSaved }: Cu
     setSubmitting(true);
     try {
       if (!customer) {
-        const { customer: created, linkedAccount } = await createAdminCustomer({
+        const { customer: created, linkedAccount, credentials } = await createAdminCustomer({
           name: name.trim(),
           email: email.trim(),
           phone: phone.trim() || undefined,
           segment,
           address: address.trim() || null,
           notes: notes.trim() || null,
+          ...(createAccess ? { createAccess: true } : {}),
         });
-        onSaved(created, { created: true, linkedAccount });
+        onSaved(created, { created: true, linkedAccount, credentials });
       } else {
         // Seuls les champs modifiés sont envoyés
         const body: Parameters<typeof updateAdminCustomer>[1] = {};
@@ -93,7 +101,7 @@ export function CustomerFormDialog({ open, onOpenChange, customer, onSaved }: Cu
           return;
         }
         const updated = await updateAdminCustomer(customer.id, body);
-        onSaved(updated, { created: false, linkedAccount: false });
+        onSaved(updated, { created: false, linkedAccount: false, credentials: null });
       }
       onOpenChange(false);
     } catch (err) {
@@ -132,7 +140,7 @@ export function CustomerFormDialog({ open, onOpenChange, customer, onSaved }: Cu
                 ? hasAccount
                   ? 'Ce client a un compte : le nom et le téléphone sont aussi mis à jour sur son compte.'
                   : 'Identité et coordonnées de la fiche client.'
-                : 'Fiche d’un client au téléphone, en boutique ou d’une entreprise, sans compte de connexion. Si un compte client existe déjà avec cet email, la fiche lui est liée.'}
+                : 'Fiche d’un client au téléphone, en boutique ou d’une entreprise. Si un compte client existe déjà avec cet email, la fiche lui est liée.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -249,6 +257,32 @@ export function CustomerFormDialog({ open, onOpenChange, customer, onSaved }: Cu
                   maxLength={5000}
                 />
               </div>
+            )}
+
+            {!editing && (
+              <label
+                htmlFor="customer-create-access"
+                className="flex items-start gap-2.5 rounded-lg border border-[#e7e4dd] bg-[#faf8f4] p-3 cursor-pointer"
+              >
+                <input
+                  id="customer-create-access"
+                  type="checkbox"
+                  checked={createAccess}
+                  onChange={(e) => setCreateAccess(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-[#24582d]"
+                />
+                <span className="space-y-0.5">
+                  <span className="font-semibold text-gray-700 flex items-center gap-1.5">
+                    <KeyRound className="h-3.5 w-3.5 text-gray-400" />
+                    Ouvrir son accès à l’espace client
+                  </span>
+                  <span className="block text-[11px] text-gray-500 leading-relaxed">
+                    Le client reçoit par email son identifiant et un mot de passe temporaire, qu’il devra changer à sa
+                    première connexion (suivi des commandes, devis, fidélité). Vous pourrez aussi lui ouvrir l’accès plus
+                    tard depuis sa fiche.
+                  </span>
+                </span>
+              </label>
             )}
           </div>
 

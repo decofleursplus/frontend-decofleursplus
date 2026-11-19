@@ -7,7 +7,7 @@ import { changeCustomerPassword, getCustomerProfile, updateCustomerProfile } fro
 import { ErrorState, LoadingState, Notice, SectionHeader, errorText, useResource } from './shared';
 
 export function InformationsSection() {
-  const { updateUser } = useAuth();
+  const { user, updateUser } = useAuth();
   const { data: profile, error, loading, reload } = useResource(getCustomerProfile);
 
   const [firstName, setFirstName] = useState('');
@@ -24,10 +24,11 @@ export function InformationsSection() {
 
   useEffect(() => {
     if (!profile) return;
+    // Compte sans nom de famille ni téléphone (ouvert par l'équipe, Google) : champs vides, jamais null
     // eslint-disable-next-line react-hooks/set-state-in-effect -- formulaire initialisé avec le profil du serveur
-    setFirstName(profile.firstName);
-    setLastName(profile.lastName);
-    setPhone(profile.phone);
+    setFirstName(profile.firstName ?? '');
+    setLastName(profile.lastName ?? '');
+    setPhone(profile.phone ?? '');
   }, [profile]);
 
   async function saveProfile(e: FormEvent) {
@@ -55,6 +56,8 @@ export function InformationsSection() {
     setChanging(true);
     try {
       await changeCustomerPassword({ currentPassword, newPassword });
+      // Le mot de passe temporaire donné par l'équipe n'est plus exigé
+      if (user?.mustChangePassword) updateUser({ mustChangePassword: false });
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -103,12 +106,12 @@ export function InformationsSection() {
 
           <hr style={{ margin: '30px 0', borderColor: '#e5e7eb' }} />
 
-          <form className="account-form" onSubmit={changePassword} noValidate>
-            <h2>Modifier mon mot de passe</h2>
+          <form id="mot-de-passe" className="account-form" onSubmit={changePassword} noValidate>
+            <h2>{user?.mustChangePassword ? 'Choisir mon mot de passe' : 'Modifier mon mot de passe'}</h2>
             {passwordMsg && <Notice kind={passwordMsg.kind}>{passwordMsg.text}</Notice>}
             <div className="checkout-fields">
               <label>
-                Mot de passe actuel
+                {user?.mustChangePassword ? 'Mot de passe temporaire (reçu par e-mail)' : 'Mot de passe actuel'}
                 <input type="password" autoComplete="current-password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
               </label>
               <label>
