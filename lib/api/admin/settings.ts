@@ -150,8 +150,14 @@ export async function createAdminStaffUser(data: CreateStaffUserPayload): Promis
   return apiClient.post<CreatedStaffUser>('/admin/users', data, { useAdminToken: true });
 }
 
-export async function updateAdminStaffUser(id: string, data: UpdateStaffUserPayload): Promise<StaffUser> {
-  return apiClient.put<StaffUser>(`/admin/users/${id}`, data, { useAdminToken: true });
+/** Collaborateur mis à jour ; `passwordEmailSent` présent si un mot de passe temporaire a été donné. */
+export interface UpdatedStaffUser extends StaffUser {
+  /** false si l'email du nouveau mot de passe temporaire n'a pas pu être envoyé. */
+  passwordEmailSent?: boolean;
+}
+
+export async function updateAdminStaffUser(id: string, data: UpdateStaffUserPayload): Promise<UpdatedStaffUser> {
+  return apiClient.put<UpdatedStaffUser>(`/admin/users/${id}`, data, { useAdminToken: true });
 }
 
 export async function deleteAdminStaffUser(id: string): Promise<void> {

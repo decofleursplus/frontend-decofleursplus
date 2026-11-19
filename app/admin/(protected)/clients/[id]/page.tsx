@@ -2,13 +2,13 @@
 
 import { use, useState, useEffect } from 'react';
 import type { AdminCustomer } from '@/lib/admin/mock-data/types';
-import { getAdminCustomerById } from '@/lib/api/admin/customers';
+import { getAdminCustomerById, provideAdminCustomerAccess, type ClientAccessCredentials } from '@/lib/api/admin/customers';
 import { ApiClientError } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Mail, Phone, MapPin, Calendar, Star, ShoppingBag, Gift, Loader2, Trash2, Pencil, UserCheck } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, MapPin, Calendar, Star, ShoppingBag, Gift, Loader2, Trash2, Pencil, UserCheck, KeyRound } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -16,6 +16,8 @@ import { SendEmailDialog } from '@/components/admin/send-email-dialog';
 import { CustomerCrmCard } from '@/components/admin/customer-crm-card';
 import { DeleteCustomerDialog } from '@/components/admin/delete-customer-dialog';
 import { CustomerFormDialog } from '@/components/admin/customer-form-dialog';
+import { AccountCredentialsDialog } from '@/components/admin/account-credentials-dialog';
+import { ConfirmModal } from '@/components/admin/admin-confirm-modal';
 import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import { toast } from 'sonner';
 
@@ -32,6 +34,10 @@ export default function CustomerProfilePage({ params }: { params: Promise<{ id: 
   // Modification de l'identité et des coordonnées ; la clé remonte le formulaire à chaque ouverture
   const [editFormKey, setEditFormKey] = useState(0);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  // Accès à l'espace client : confirmation, appel en cours, identifiants affichés une seule fois
+  const [isAccessConfirmOpen, setIsAccessConfirmOpen] = useState(false);
+  const [providingAccess, setProvidingAccess] = useState(false);
+  const [accessCredentials, setAccessCredentials] = useState<ClientAccessCredentials | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -53,6 +59,20 @@ export default function CustomerProfilePage({ params }: { params: Promise<{ id: 
       active = false;
     };
   }, [id]);
+
+  const handleProvideAccess = async () => {
+    setProvidingAccess(true);
+    try {
+      const { customer: updated, credentials } = await provideAdminCustomerAccess(id);
+      setCustomer((prev) => (prev ? { ...prev, ...updated, recentOrders: prev.recentOrders } : updated));
+      setIsAccessConfirmOpen(false);
+      setAccessCredentials(credentials);
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : 'L’accès à l’espace client n’a pas pu être ouvert.');
+    } finally {
+      setProvidingAccess(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -212,10 +232,29 @@ export default function CustomerProfilePage({ params }: { params: Promise<{ id: 
                 <Calendar className="h-4 w-4 text-gray-400" />
                 <span>Client depuis {formatDate(customer.joinedAt)}</span>
               </div>
-              <div className="flex items-center gap-3 text-gray-600">
-                <UserCheck className="h-4 w-4 text-gray-400" />
-                <span>{customer.userId ? 'Compte client en ligne' : 'Fiche sans compte de connexion'}</span>
+              <div className="flex items-start gap-3 text-gray-600">
+                <UserCheck className="h-4 w-4 text-gray-400 mt-0.5" />
+                <span>
+                  {!customer.userId
+                    ? 'Fiche sans compte de connexion'
+                    : customer.accessPending
+                      ? 'Accès à l’espace client ouvert, pas encore activé par le client'
+                      : 'Compte client en ligne'}
+                </span>
               </div>
+              {(!customer.userId || customer.accessPending) && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  hidden={!canWrite}
+                  onClick={() => setIsAccessConfirmOpen(true)}
+                  className="w-full h-8 text-xs border-[#e7e4dd] text-gray-700 hover:text-[#24582d] hover:bg-[#edf8ef]"
+                >
+                  <KeyRound className="mr-1.5 h-3.5 w-3.5 text-[#24582d]" />
+                  {customer.userId ? 'Renvoyer des identifiants' : 'Ouvrir l’accès à l’espace client'}
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -325,6 +364,28 @@ export default function CustomerProfilePage({ params }: { params: Promise<{ id: 
         open={isEmailModalOpen}
         onOpenChange={setIsEmailModalOpen}
         customer={customer}
+      />
+
+      {/* Accès à l'espace client (droit Clients › Modifier) */}
+      <ConfirmModal
+        isOpen={isAccessConfirmOpen}
+        onOpenChange={(open) => !providingAccess && setIsAccessConfirmOpen(open)}
+        title={customer.userId ? 'Renvoyer des identifiants' : 'Ouvrir l’accès à l’espace client'}
+        description={
+          customer.userId
+            ? `Un nouveau mot de passe temporaire sera envoyé à ${customer.email}. Le précédent ne fonctionnera plus.`
+            : `Un compte client sera créé pour ${customer.email}, qui recevra par email son identifiant et un mot de passe temporaire à changer à la première connexion.`
+        }
+        confirmLabel={customer.userId ? 'Envoyer' : 'Ouvrir l’accès'}
+        loading={providingAccess}
+        onConfirm={handleProvideAccess}
+      />
+      <AccountCredentialsDialog
+        credentials={accessCredentials}
+        accountName={customer.name}
+        loginPath="/connexion"
+        title={`Espace client de ${customer.name}`}
+        onClose={() => setAccessCredentials(null)}
       />
 
       {/* Identité et coordonnées (droit Clients › Modifier) */}

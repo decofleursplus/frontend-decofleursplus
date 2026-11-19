@@ -22,6 +22,8 @@ export type User = {
   provider: 'google' | 'facebook' | 'email';
   createdAt?: string;
   role?: string;
+  /** Mot de passe temporaire donné par l'équipe : le client doit en choisir un nouveau */
+  mustChangePassword?: boolean;
 };
 
 type RegisterData = { name: string; email: string; phone: string; password: string; referralCode?: string };
@@ -58,6 +60,7 @@ function mapApiUserToUser(apiUser: ApiUser): User {
     provider: apiUser.provider || 'email',
     createdAt: apiUser.createdAt,
     role: apiUser.role,
+    mustChangePassword: Boolean(apiUser.mustChangePassword),
   };
 }
 

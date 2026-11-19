@@ -62,6 +62,7 @@ export function transformAdminCustomer(raw: any): AdminCustomer {
     internalRating: raw.internalRating ? Number(raw.internalRating) : undefined,
     recentOrders: Array.isArray(raw.recentOrders) ? raw.recentOrders.map(transformAdminOrder) : [],
     userId: raw.userId ?? null,
+    accessPending: Boolean(raw.accessPending),
     crmAddress: typeof raw.address === 'string' ? raw.address : '',
   };
 }
@@ -151,16 +152,44 @@ export interface CreateAdminCustomerBody {
   segment?: 'PARTICULIER' | 'ENTREPRISE' | 'VIP';
   address?: string | null;
   notes?: string | null;
+  /** Ouvre aussi l'accès à l'espace client (identifiants envoyés par email au client) */
+  createAccess?: boolean;
+}
+
+/** Identifiants de l'espace client ouvert par l'équipe, renvoyés une seule fois par l'API. */
+export interface ClientAccessCredentials {
+  email: string;
+  temporaryPassword: string;
+  emailSent: boolean;
 }
 
 /**
- * Crée une fiche client sans compte de connexion (POST /admin/customers). 409 si l'email est déjà utilisé par
- * une fiche ou un compte de l'équipe ; un compte client existant sans fiche y est lié (`linkedAccount`).
+ * Crée une fiche client (POST /admin/customers), avec l'accès à l'espace client si `createAccess`. 409 si
+ * l'email est déjà utilisé par une fiche ou un compte de l'équipe ; un compte client existant sans fiche y
+ * est lié (`linkedAccount`, sans nouveau mot de passe).
  */
-export async function createAdminCustomer(body: CreateAdminCustomerBody): Promise<{ customer: AdminCustomer; linkedAccount: boolean }> {
+export async function createAdminCustomer(
+  body: CreateAdminCustomerBody,
+): Promise<{ customer: AdminCustomer; linkedAccount: boolean; credentials: ClientAccessCredentials | null }> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const res = await apiClient.post<any>('/admin/customers', body, { useAdminToken: true });
-  return { customer: transformAdminCustomer(res), linkedAccount: Boolean(res?.linkedAccount) };
+  return {
+    customer: transformAdminCustomer(res),
+    linkedAccount: Boolean(res?.linkedAccount),
+    credentials: res?.credentials ?? null,
+  };
+}
+
+/**
+ * Ouvre l'accès à l'espace client d'une fiche, ou génère un nouveau mot de passe temporaire si le client ne
+ * l'a jamais activé (POST /admin/customers/:id/access). 409 si le client a déjà choisi son mot de passe.
+ */
+export async function provideAdminCustomerAccess(
+  id: string,
+): Promise<{ customer: AdminCustomer; credentials: ClientAccessCredentials }> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const res = await apiClient.post<any>(`/admin/customers/${id}/access`, {}, { useAdminToken: true });
+  return { customer: transformAdminCustomer(res.customer), credentials: res.credentials };
 }
 
 /** Envoie un email au client depuis le back-office (POST /admin/customers/:id/email). */

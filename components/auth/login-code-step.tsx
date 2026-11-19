@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, Clock, Loader2, MailCheck } from 'lucide-react';
 import { FloralMotifIcon } from '@/components/icons';
-import { useAuth } from '@/components/auth-provider';
+import { useAuth, type User } from '@/components/auth-provider';
 import { requestLoginCode } from '@/lib/api/auth';
 import { ApiClientError } from '@/lib/api/client';
 import { OtpInput, OTP_LENGTH } from './otp-input';
@@ -16,7 +16,7 @@ interface LoginCodeStepProps {
   initialCooldown: number;
   /** Durée de validité du code envoyé */
   expiresInMinutes: number;
-  onSignedIn: () => void;
+  onSignedIn: (user: User) => void;
   onBack: () => void;
 }
 
@@ -55,8 +55,7 @@ export function LoginCodeStep({ identifier, remember, initialCooldown, expiresIn
     setError(null);
     setInfo(null);
     try {
-      await loginWithCode(identifier, code, remember);
-      onSignedIn();
+      onSignedIn(await loginWithCode(identifier, code, remember));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Code incorrect. Veuillez réessayer.');
       setCode('');

@@ -58,6 +58,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { SendEmailDialog } from '@/components/admin/send-email-dialog';
 import { DeleteCustomerDialog } from '@/components/admin/delete-customer-dialog';
 import { CustomerFormDialog } from '@/components/admin/customer-form-dialog';
+import { AccountCredentialsDialog } from '@/components/admin/account-credentials-dialog';
+import type { ClientAccessCredentials } from '@/lib/api/admin/customers';
 import { useAdminCan } from '@/components/admin/admin-sidebar-context';
 import { toast } from 'sonner';
 
@@ -210,6 +212,8 @@ export default function AdminCustomersPage() {
   const router = useRouter();
   const [createFormKey, setCreateFormKey] = useState(0);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  // Identifiants de l'accès client ouvert à la création : affichés une seule fois
+  const [createdAccess, setCreatedAccess] = useState<{ name: string; credentials: ClientAccessCredentials } | null>(null);
   const openCreateDialog = () => {
     setCreateFormKey((k) => k + 1);
     setIsCreateModalOpen(true);
@@ -1100,15 +1104,26 @@ export default function AdminCustomersPage() {
         key={createFormKey}
         open={isCreateModalOpen}
         onOpenChange={setIsCreateModalOpen}
-        onSaved={(created, { linkedAccount }) => {
+        onSaved={(created, { linkedAccount, credentials }) => {
           toast.success('Fiche client créée', {
             description: linkedAccount
               ? `Un compte client existait avec cet email : la fiche de ${created.name} y est liée.`
-              : `${created.name} a été ajouté à la base clients.`,
+              : credentials
+                ? `${created.name} a été ajouté à la base clients, avec son accès à l’espace client.`
+                : `${created.name} a été ajouté à la base clients.`,
             action: { label: 'Ouvrir', onClick: () => router.push(`/admin/clients/${created.id}`) },
           });
+          if (credentials) setCreatedAccess({ name: created.name, credentials });
           void loadCustomers();
         }}
+      />
+
+      <AccountCredentialsDialog
+        credentials={createdAccess?.credentials ?? null}
+        accountName={createdAccess?.name ?? ''}
+        loginPath="/connexion"
+        title={createdAccess ? `Espace client de ${createdAccess.name}` : undefined}
+        onClose={() => setCreatedAccess(null)}
       />
 
       {/* Delete Customer Modal */}

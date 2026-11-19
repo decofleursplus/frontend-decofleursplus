@@ -33,11 +33,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { UserEditorDialog } from '@/components/admin/user-editor-dialog';
+import { AccountCredentialsDialog, type AccountCredentials } from '@/components/admin/account-credentials-dialog';
 import {
   deleteAdminStaffUser,
   getAdminStaffUsers,
   updateAdminStaffUser,
   type CreatedStaffUser,
+  type UpdatedStaffUser,
   type RoleDefinition,
   type StaffRole,
   type StaffStatus,
@@ -67,9 +69,12 @@ export function CollaborateursTab({
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [toDelete, setToDelete] = useState<StaffUser | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [createdCredentials, setCreatedCredentials] = useState<{ user: CreatedStaffUser; password: string } | null>(
-    null,
-  );
+  // Identifiants d'un compte créé ou d'un mot de passe temporaire donné : affichés une seule fois
+  const [shownCredentials, setShownCredentials] = useState<{
+    name: string;
+    credentials: AccountCredentials;
+    created: boolean;
+  } | null>(null);
 
   const load = useCallback(async () => {
     setLoadError(null);
@@ -118,12 +123,17 @@ export function CollaborateursTab({
       return list.some((u) => u.id === saved.id) ? list.map((u) => (u.id === saved.id ? saved : u)) : [saved, ...list];
     });
 
-  const handleSaved = (saved: StaffUser | CreatedStaffUser, initialPassword: string | null) => {
+  const handleSaved = (saved: UpdatedStaffUser | CreatedStaffUser, temporaryPassword: string | null) => {
     const isCreation = !editing;
     replaceUser(saved);
     setEditorOpen(false);
-    if (isCreation && initialPassword) {
-      setCreatedCredentials({ user: saved as CreatedStaffUser, password: initialPassword });
+    if (temporaryPassword) {
+      const emailSent = 'invitationSent' in saved ? saved.invitationSent : saved.passwordEmailSent;
+      setShownCredentials({
+        name: saved.name,
+        credentials: { email: saved.email, temporaryPassword, emailSent },
+        created: isCreation,
+      });
     } else {
       toast.success(`Collaborateur ${saved.name} mis à jour.`);
     }
@@ -500,56 +510,14 @@ export function CollaborateursTab({
         </DialogContent>
       </Dialog>
 
-      {/* Identifiants du compte créé : affichés une seule fois */}
-      <Dialog open={Boolean(createdCredentials)} onOpenChange={(open) => !open && setCreatedCredentials(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Compte créé</DialogTitle>
-            <DialogDescription>
-              Identifiants de {createdCredentials?.user.name}. Le mot de passe est temporaire : il devra le changer à sa
-              première connexion. Il ne sera plus affiché ensuite.
-            </DialogDescription>
-          </DialogHeader>
-          {createdCredentials && (
-            <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs">
-              <div>
-                <span className="text-gray-500">Identifiant : </span>
-                <strong className="font-mono">{createdCredentials.user.email}</strong>
-              </div>
-              <div>
-                <span className="text-gray-500">Mot de passe temporaire : </span>
-                <strong className="font-mono select-all">{createdCredentials.password}</strong>
-              </div>
-              <div>
-                <span className="text-gray-500">Connexion : </span>
-                <span className="font-mono">/admin/connexion</span>
-              </div>
-              <p className={createdCredentials.user.invitationSent ? 'text-emerald-700' : 'text-amber-700'}>
-                {createdCredentials.user.invitationSent
-                  ? 'Ses identifiants lui ont été envoyés par email.'
-                  : 'L’email n’a pas pu être envoyé : transmettez ces identifiants vous-même.'}
-              </p>
-            </div>
-          )}
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                if (!createdCredentials) return;
-                void navigator.clipboard
-                  ?.writeText(`Identifiant : ${createdCredentials.user.email}\nMot de passe : ${createdCredentials.password}`)
-                  .then(() => toast.success('Identifiants copiés.'))
-                  .catch(() => toast.error('Copie impossible : sélectionnez le texte manuellement.'));
-              }}
-            >
-              Copier
-            </Button>
-            <Button onClick={() => setCreatedCredentials(null)} className="bg-[#c1647a] hover:bg-[#a84d63] text-white">
-              Terminé
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Identifiants du compte créé ou du nouveau mot de passe temporaire : affichés une seule fois */}
+      <AccountCredentialsDialog
+        credentials={shownCredentials?.credentials ?? null}
+        accountName={shownCredentials?.name ?? ''}
+        loginPath="/admin/connexion"
+        title={shownCredentials ? (shownCredentials.created ? 'Compte créé' : 'Nouveau mot de passe temporaire') : undefined}
+        onClose={() => setShownCredentials(null)}
+      />
     </div>
   );
 }
