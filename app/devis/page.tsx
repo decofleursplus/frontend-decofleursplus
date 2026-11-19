@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { BotanicalCorners } from '@/components/botanical-corners';
-import { SharedDevisForm, DevisServiceType } from '@/components/shared-devis-form';
+import { SharedDevisForm, DevisServiceType, type CustomQuoteProduct } from '@/components/shared-devis-form';
+import { getProductBySlug } from '@/lib/api/catalog';
+import { isQuotable } from '@/lib/products';
 import { SiteFooter } from '@/components/site-footer';
 import { constructMetadata } from '@/lib/seo/metadata';
 import { Breadcrumbs } from '@/components/seo/breadcrumbs';
@@ -19,10 +21,13 @@ export const metadata: Metadata = constructMetadata({
   ],
 });
 
+/** `produit` : création demandée sur mesure (slug) ; `taille` : taille de référence choisie sur sa fiche. */
+type DevisSearchParams = { type?: string; prestation?: string; produit?: string; taille?: string; inspiration?: string };
+
 function DevisContent({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string; prestation?: string; produit?: string; inspiration?: string }>;
+  searchParams: Promise<DevisSearchParams>;
 }) {
   return (
     <Suspense fallback={<div className="text-center py-12 text-sm text-gray-500">Chargement du formulaire...</div>}>
@@ -31,10 +36,18 @@ function DevisContent({
   );
 }
 
+/** Création citée par le lien (`?produit=`), si elle se demande sur devis ; sinon aucun encart (lien périmé). */
+async function quotableProduct(slug: string): Promise<CustomQuoteProduct | null> {
+  if (!slug.trim()) return null;
+  const product = await getProductBySlug(slug.trim()).catch(() => null);
+  if (!product || !isQuotable(product)) return null;
+  return { slug: product.slug, name: product.name, image: product.image, sizes: product.variants.map((v) => v.name) };
+}
+
 async function DevisResolver({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string; prestation?: string; produit?: string; inspiration?: string }>;
+  searchParams: Promise<DevisSearchParams>;
 }) {
   const params = await searchParams;
   const initialType: DevisServiceType = params.type === 'paysagisme' ? 'paysagisme' : 'evenements';
@@ -45,13 +58,15 @@ async function DevisResolver({
       initialServiceType={initialType}
       initialPrestation={initialPrestation}
       initialProduct={params.produit ?? ''}
+      customProduct={await quotableProduct(params.produit ?? '')}
+      initialReferenceSize={params.taille ?? ''}
       initialInspiration={params.inspiration ?? ''}
     />
   );
 }
 
 export default async function DevisPage(props: {
-  searchParams: Promise<{ type?: string; prestation?: string; produit?: string; inspiration?: string }>;
+  searchParams: Promise<DevisSearchParams>;
 }) {
   return (
     <div className="relative min-h-screen bg-white text-[#1c2e20] flex flex-col justify-between overflow-x-hidden">

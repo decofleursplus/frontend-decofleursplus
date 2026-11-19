@@ -4,26 +4,32 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { Check, Heart, ShieldCheck, Truck, Flower2, Minus, Plus, Star, FileText } from 'lucide-react';
-import { defaultVariant, formatPrice, isQuoteOnly, type Product } from '@/lib/products';
+import { customQuoteHref, defaultVariant, formatPrice, isQuoteOnly, type Product } from '@/lib/products';
 import { useCart } from '@/components/cart-provider';
 import { ProductReviews } from '@/components/product-reviews';
 import { usePublicSettings } from '@/lib/hooks/use-public-settings';
 
 const MESSAGE_MAX = 500;
+/** Choix « Sur mesure » parmi les tailles (pas une variante : il mène au formulaire de devis) */
+const CUSTOM_CHOICE = 'sur-mesure';
 
 export function ProductDetail({ product }: { product: Product }) {
   const { add, favorites, toggleFavorite } = useCart();
   const { settings } = usePublicSettings();
   const isFavorite = favorites.includes(product.id);
   const quoteOnly = isQuoteOnly(product);
+  const customQuote = !quoteOnly && Boolean(product.allowCustomQuote);
 
   const images = product.images && product.images.length > 0 ? product.images : [product.image];
   const [selectedImage, setSelectedImage] = useState(images[0]);
 
   const [variantId, setVariantId] = useState(defaultVariant(product)?.id ?? '');
+  const custom = customQuote && variantId === CUSTOM_CHOICE;
   const variant = useMemo(() => product.variants.find((v) => v.id === variantId) ?? null, [product.variants, variantId]);
   const stock = variant?.stockQuantity ?? 0;
   const available = Boolean(variant) && stock > 0 && !quoteOnly;
+  // Taille de référence de la demande sur mesure : la dernière taille regardée, modifiable
+  const [referenceSize, setReferenceSize] = useState(defaultVariant(product)?.name ?? '');
 
   const [quantity, setQuantity] = useState(1);
   const [messageEnabled, setMessageEnabled] = useState(false);
@@ -41,7 +47,10 @@ export function ProductDetail({ product }: { product: Product }) {
   function selectVariant(id: string) {
     setVariantId(id);
     const next = product.variants.find((v) => v.id === id);
-    if (next) setQuantity((q) => Math.max(1, Math.min(q, next.stockQuantity || 1)));
+    if (next) {
+      setReferenceSize(next.name);
+      setQuantity((q) => Math.max(1, Math.min(q, next.stockQuantity || 1)));
+    }
   }
 
   function addItem() {
@@ -82,9 +91,9 @@ export function ProductDetail({ product }: { product: Product }) {
 
       <section className="detail-info">
         <div className="detail-meta-top">
-          {quoteOnly ? (
+          {quoteOnly || custom ? (
             <div className="stock-pill in-stock">
-              <FileText size={13} /> Réalisation sur devis
+              <FileText size={13} /> {custom ? 'Réalisation sur mesure' : 'Réalisation sur devis'}
             </div>
           ) : (
             <div className={`stock-pill ${available ? 'in-stock' : 'out-of-stock'}`}>
@@ -128,9 +137,11 @@ export function ProductDetail({ product }: { product: Product }) {
         </div>
 
         <div className="detail-pricing-row">
-          <strong className="detail-price">{formatPrice(unitPrice)}</strong>
-          {oldPrice && <span className="detail-old-price">{formatPrice(oldPrice)}</span>}
-          {!quoteOnly && (quantity > 1 || optionsTotal > 0) && <span className="detail-subtotal">Total : {formatPrice(total)}</span>}
+          <strong className="detail-price">{custom ? 'Prix sur devis' : formatPrice(unitPrice)}</strong>
+          {oldPrice && !custom && <span className="detail-old-price">{formatPrice(oldPrice)}</span>}
+          {!quoteOnly && !custom && (quantity > 1 || optionsTotal > 0) && (
+            <span className="detail-subtotal">Total : {formatPrice(total)}</span>
+          )}
         </div>
         {product.promotion && (
           <p className="text-xs font-semibold text-rose-700 mt-1">
@@ -151,7 +162,7 @@ export function ProductDetail({ product }: { product: Product }) {
           </div>
         ) : (
           <>
-            {product.variants.length > 1 && (
+            {(product.variants.length > 1 || customQuote) && (
               <fieldset className="size-choice">
                 <legend>Choisir la taille :</legend>
                 <div className="size-buttons-group">
@@ -169,10 +180,49 @@ export function ProductDetail({ product }: { product: Product }) {
                       <span className="size-btn-price">{v.stockQuantity > 0 ? formatPrice(v.price) : 'Épuisé'}</span>
                     </button>
                   ))}
+                  {customQuote && (
+                    <button
+                      type="button"
+                      className={`size-select-btn ${custom ? 'selected' : ''}`}
+                      onClick={() => selectVariant(CUSTOM_CHOICE)}
+                      aria-pressed={custom}
+                    >
+                      <span className="size-btn-name">Sur mesure</span>
+                      <span className="size-btn-price">Sur devis</span>
+                    </button>
+                  )}
                 </div>
               </fieldset>
             )}
 
+            {custom ? (
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 text-sm text-emerald-900 space-y-3">
+                <p>
+                  Une taille, des couleurs ou un budget particuliers ? Décrivez votre envie : nous vous envoyons une proposition
+                  chiffrée.
+                </p>
+                {product.variants.length > 0 && (
+                  <label className="block text-xs font-semibold">
+                    Taille de référence
+                    <select
+                      value={referenceSize}
+                      onChange={(e) => setReferenceSize(e.target.value)}
+                      className="mt-1 block w-full max-w-xs rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm font-normal text-[#1e2a1f]"
+                    >
+                      <option value="">Aucune en particulier</option>
+                      {product.variants.map((v) => (
+                        <option key={v.id} value={v.name}>
+                          {v.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                <Link href={customQuoteHref(product.slug, referenceSize)} className="button-pill-pink button-large inline-flex">
+                  Demander un devis
+                </Link>
+              </div>
+            ) : (
             <div className="customization-options">
               <label className="option-checkbox-row">
                 <input type="checkbox" checked={messageEnabled} onChange={(e) => setMessageEnabled(e.target.checked)} />
@@ -209,11 +259,12 @@ export function ProductDetail({ product }: { product: Product }) {
                 </span>
               </label>
             </div>
+            )}
           </>
         )}
 
         <div className="detail-add-row">
-          {!quoteOnly && (
+          {!quoteOnly && !custom && (
             <div className="quantity-control-box">
               <span className="qty-label">Quantité</span>
               <div className="quantity-stepper">
@@ -235,7 +286,7 @@ export function ProductDetail({ product }: { product: Product }) {
             </div>
           )}
 
-          {!quoteOnly && (
+          {!quoteOnly && !custom && (
             <button type="button" className="button-pill-pink button-large flex-1" onClick={addItem} disabled={!available}>
               {available ? 'Ajouter au panier' : product.inStock ? 'Taille épuisée' : 'En rupture'}
             </button>

@@ -36,7 +36,18 @@ import { CreateQuoteDialog } from '@/components/admin/create-quote-dialog';
 import { AdminConfirmModal } from '@/components/admin/admin-confirm-modal';
 import { AdminPromptModal } from '@/components/admin/admin-prompt-modal';
 
-type QuoteLine = { description: string; qty: number; unitPrice: number; total: number };
+/** `productId` : ligne de la création demandée sur mesure (rattachée au produit dans la commande issue du devis) */
+type QuoteLine = { description: string; qty: number; unitPrice: number; total: number; productId?: string | null };
+
+/** Ligne proposée pour la création demandée sur mesure depuis sa fiche produit. */
+const customLineFor = (q: LandscapeQuote): QuoteLine => ({
+  // « Sur mesure » est ajouté à la ligne de commande (emails, factures) : inutile de le répéter ici
+  description: `${q.productName ?? 'Création'}${q.referenceSize ? ` — réf. ${q.referenceSize}` : ''}`,
+  qty: 1,
+  unitPrice: 0,
+  total: 0,
+  productId: q.productId ?? null,
+});
 
 /** Cycle de vie affiché : Reçu → En cours d'étude → Devis envoyé → Accepté (ou Refusé à tout moment). */
 const STATUS_META: Record<QuoteStatus, { label: string; badge: string; dot: string }> = {
@@ -435,7 +446,9 @@ export default function AdminDevisPage() {
     );
 
   const addQuoteItem = () =>
-    setDraft((d) => (d ? { ...d, lines: [...d.lines, { description: '', qty: 1, unitPrice: 0, total: 0 }] } : d));
+    setDraft((d) => (d ? { ...d, lines: [...d.lines, { description: '', qty: 1, unitPrice: 0, total: 0, productId: null }] } : d));
+  const addCustomLine = () =>
+    setDraft((d) => (d && selectedQuote ? { ...d, lines: [...d.lines, customLineFor(selectedQuote)] } : d));
   const removeQuoteItem = (index: number) =>
     setDraft((d) => (d ? { ...d, lines: d.lines.filter((_, i) => i !== index) } : d));
 
@@ -448,7 +461,12 @@ export default function AdminDevisPage() {
     return {
       items: d.lines
         .filter((it) => it.description.trim().length >= 2)
-        .map((it) => ({ description: it.description.trim(), quantity: Math.max(1, Math.round(it.qty)), unitPrice: Math.max(0, it.unitPrice) })),
+        .map((it) => ({
+          description: it.description.trim(),
+          quantity: Math.max(1, Math.round(it.qty)),
+          unitPrice: Math.max(0, it.unitPrice),
+          ...(it.productId ? { productId: it.productId } : {}),
+        })),
       adminNotes: d.notes.trim() || null,
       eventDate: d.eventDate || null,
       ...(d.location.trim().length >= 2 ? { eventLocation: d.location.trim() } : {}),
@@ -666,6 +684,12 @@ export default function AdminDevisPage() {
                   <span className="text-muted-foreground">Prestation</span>
                   <span className="font-semibold text-foreground">{quote.prestationType}</span>
                 </div>
+                {quote.productName && (
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">Sur mesure</span>
+                    <span className="font-semibold text-[#c8436e] text-right">{quote.productName}</span>
+                  </div>
+                )}
                 {quote.spaceType && (
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Type de lieu</span>
@@ -742,6 +766,7 @@ export default function AdminDevisPage() {
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="font-medium text-foreground">{quote.prestationType}</div>
+                      {quote.productName && <div className="text-xs font-semibold text-[#c8436e]">Sur mesure : {quote.productName}</div>}
                       {quote.spaceType && <div className="text-xs text-muted-foreground">{quote.spaceType}</div>}
                     </td>
                     <td className="py-3.5 px-4 text-muted-foreground">{quote.location}</td>
@@ -968,6 +993,19 @@ export default function AdminDevisPage() {
             <section className="space-y-3">
               <div className="space-y-1">
                 <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Projet : {selectedQuote.prestationType}</h4>
+                {selectedQuote.productName && (
+                  <p className="text-xs text-foreground">
+                    Création sur mesure :{' '}
+                    {selectedQuote.productId ? (
+                      <Link href={`/admin/produits/${selectedQuote.productId}`} className="font-semibold text-[#c8436e] hover:underline">
+                        {selectedQuote.productName}
+                      </Link>
+                    ) : (
+                      <span className="font-semibold">{selectedQuote.productName} (produit supprimé)</span>
+                    )}
+                    {selectedQuote.referenceSize && <> · taille de référence : {selectedQuote.referenceSize}</>}
+                  </p>
+                )}
                 {(selectedQuote.spaceType || selectedQuote.surfaceArea) && (
                   <p className="text-xs text-foreground">
                     {[
@@ -1034,15 +1072,32 @@ export default function AdminDevisPage() {
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-bold text-[#173f22]">Proposition chiffrée</h4>
                 {!readOnly && (
-                  <button
-                    type="button"
-                    onClick={addQuoteItem}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#edf8ef] text-[#193e23] hover:bg-[#d8eedb] transition-colors"
-                  >
-                    <Plus size={14} /> Ajouter une ligne
-                  </button>
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    {selectedQuote.productId && !draft.lines.some((l) => l.productId) && (
+                      <button
+                        type="button"
+                        onClick={addCustomLine}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#fdf2f4] text-[#c8436e] hover:bg-[#fbe4ea] transition-colors"
+                      >
+                        <Plus size={14} /> Ligne « {selectedQuote.productName} »
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={addQuoteItem}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#edf8ef] text-[#193e23] hover:bg-[#d8eedb] transition-colors"
+                    >
+                      <Plus size={14} /> Ajouter une ligne
+                    </button>
+                  </div>
                 )}
               </div>
+              {selectedQuote.productId && !readOnly && (
+                <p className="text-[11px] text-muted-foreground">
+                  La ligne de la création est rattachée au produit : une fois le devis accepté et converti, elle compte dans ses
+                  ventes (statistiques, meilleures ventes).
+                </p>
+              )}
 
               {draft.lines.length === 0 && (
                 <p className="text-xs text-muted-foreground bg-[#faf8f5] border border-dashed border-border rounded-xl p-4 text-center">
@@ -1063,6 +1118,9 @@ export default function AdminDevisPage() {
                         placeholder="Ex. Arche florale de cérémonie"
                         className={`${inputCls} ${item.description.trim().length < 2 && !readOnly ? 'border-amber-300' : ''}`}
                       />
+                      {item.productId && (
+                        <span className="block text-[10.5px] font-semibold text-[#c8436e]">Création sur mesure · rattachée au produit</span>
+                      )}
                     </label>
                     <label className="col-span-3 sm:col-span-2 space-y-1">
                       <span className="text-[11px] font-semibold text-muted-foreground">Qté</span>

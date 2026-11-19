@@ -19,6 +19,9 @@ export interface QuoteDocumentSource {
   quoteNumber: string;
   status: QuoteStatus;
   eventType: string;
+  /** Création demandée sur mesure depuis sa fiche produit, et taille de référence */
+  productName?: string | null;
+  referenceSize?: string | null;
   eventDate: string | null;
   eventLocation: string;
   estimatedGuests: number | null;
@@ -73,6 +76,9 @@ export function buildQuoteDocument(
         title: 'Votre projet',
         lines: [
           quote.eventType,
+          quote.productName
+            ? `Sur mesure : ${quote.productName}${quote.referenceSize ? ` (taille de référence : ${quote.referenceSize})` : ''}`
+            : null,
           quote.eventDate ? `Le ${formatDocumentDate(quote.eventDate)}` : null,
           [quote.spaceType, quote.eventLocation].filter(Boolean).join(' — '),
           quote.surfaceArea ? `Surface : ${quote.surfaceArea}` : null,
