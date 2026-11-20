@@ -143,7 +143,7 @@ function PaymentFailedContent() {
 
           <p className="text-sm text-neutral-600 mb-4 leading-relaxed">
             La transaction auprès de votre opérateur (
-            <strong>{paymentLabels[order.paymentMethod] || 'NabooPay'}</strong>) n’a pas été finalisée ou a été annulée. Votre commande reste enregistrée : vous pouvez relancer le paiement, ou l’annuler pour retrouver vos articles dans le panier.
+            <strong>{paymentLabels[order.paymentMethod] || 'paiement en ligne'}</strong>) n’a pas été finalisée ou a été annulée. Votre commande reste enregistrée : vous pouvez relancer le paiement, ou l’annuler pour retrouver vos articles dans le panier.
           </p>
 
           {actionError && (
@@ -184,7 +184,7 @@ function PaymentFailedContent() {
               ) : (
                 <>
                   <RotateCw size={16} />
-                  <span>Réessayer le paiement maintenant ({paymentLabels[order.paymentMethod] || 'NabooPay'})</span>
+                  <span>Réessayer le paiement maintenant ({paymentLabels[order.paymentMethod] || 'paiement en ligne'})</span>
                 </>
               )}
             </button>

@@ -393,7 +393,10 @@ export type FinancialTransaction = {
   status: SettlementStatus;
   date: string;
   settlementDate?: string;
+  /** Référence chez l'agrégateur : transaction encaissée, sinon dernière tentative */
   gatewayRef?: string;
+  /** Agrégateur de la transaction (NabooPay, PayTech) */
+  gateway?: string;
   notes?: string;
 };
 
