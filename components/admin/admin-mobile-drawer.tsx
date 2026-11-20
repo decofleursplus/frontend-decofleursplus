@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { LogOut, X, ExternalLink, Download, Smartphone, CheckCircle2, Camera } from 'lucide-react';
-import { canAccessAdminPath, firstAccessiblePath, ROLE_LABELS, type StaffRole } from '@/lib/admin/access';
+import { canAccessAdminPath, firstAccessiblePath, roleLabel } from '@/lib/admin/access';
 import { ADMIN_NAV_GROUPS, isAdminNavActive } from '@/lib/admin/navigation';
 import { useAdminSidebar } from '@/components/admin/admin-sidebar-context';
 import { logoutAdmin } from '@/app/admin/connexion/actions';
@@ -197,7 +197,7 @@ export function AdminMobileDrawer({ initialUser }: { initialUser?: AdminSessionU
           </button>
           <div className="flex items-center gap-2 shrink-0">
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-              {(currentUser?.role && ROLE_LABELS[currentUser.role as StaffRole]) || currentUser?.role || 'Personnel'}
+              {roleLabel(currentUser?.role)}
             </span>
             <form action={logoutAdmin}>
               <button

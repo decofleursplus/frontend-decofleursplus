@@ -54,9 +54,9 @@ export function HeroMockup() {
 
             {/* Main heading */}
             <h1 className="font-serif text-[30px] lg:text-[36px] xl:text-[40px] font-normal leading-[1.1] tracking-tight mb-3">
-              <span className="text-[#173f22]">Des fleurs, </span>
+              <span className="text-[#173f22]">Offrez plus </span>
               <span className="relative inline-block text-[#173f22]">
-                des idées,
+                qu’un bouquet.
                 <svg
                   className="absolute -bottom-1 left-0 w-full"
                   height="5"
@@ -74,7 +74,7 @@ export function HeroMockup() {
               </span>
               <br />
               <span className="font-serif italic font-bold text-[#c8436e]">
-                des émotions
+                Créez une émotion
               </span>
             </h1>
 
@@ -180,9 +180,9 @@ export function HeroMockup() {
 
           {/* Headline */}
           <h1 className="font-serif text-[19px] sm:text-[22px] font-normal leading-[1.12] tracking-tight mb-2">
-            <span className="text-[#173f22]">Des fleurs, </span>
+            <span className="text-[#173f22]">Offrez plus </span>
             <span className="relative inline-block text-[#173f22]">
-              des idées,
+              qu’un bouquet.
               <svg
                 className="absolute -bottom-0.5 left-0 w-full"
                 height="4"
@@ -200,7 +200,7 @@ export function HeroMockup() {
             </span>
             <br />
             <span className="font-serif italic font-bold text-[#c8436e]">
-              des émotions
+              Créez une émotion
             </span>
           </h1>
 

@@ -21,7 +21,7 @@ import { LiveProductGrid, ZoneFeeSentence } from '@/components/storefront/live-d
 export const metadata: Metadata = constructMetadata({
   title: 'Fleuriste Dakar & Livraison de Fleurs Fraîches | Décofleur Plus',
   description:
-    'Livraison de fleurs à Dakar en 24h ouvrées par navette réfrigérée sécurisée. Bouquets de roses fraîches, décoration de mariage et scénographie florale aux Almadies, Plateau, Mermoz, Fann.',
+    'Livraison de fleurs à Dakar en 24h ouvrées par navette quotidienne. Bouquets de roses fraîches, décoration de mariage et scénographie florale aux Almadies, Plateau, Mermoz, Fann.',
   canonical: '/fleuriste-dakar',
   keywords: [
     'fleuriste dakar',
@@ -41,8 +41,8 @@ export default function FleuristeDakarPage() {
     city: 'Dakar',
     pageUrl: '/fleuriste-dakar',
     description:
-      'Service de livraison de bouquets et décoration florale d’exception à Dakar par Décofleur Plus. Acheminement frigorifique quotidien vers les Almadies, Plateau, Fann, Mermoz et Yoff.',
-    deliveryTime: '24h ouvrées par navette réfrigérée',
+      'Service de livraison de bouquets et décoration florale d’exception à Dakar par Décofleur Plus. Acheminement quotidien et soigné vers les Almadies, Plateau, Fann, Mermoz et Yoff.',
+    deliveryTime: '24h ouvrées par navette quotidienne',
     isPhysicalStore: false,
   });
 
@@ -74,7 +74,7 @@ export default function FleuristeDakarPage() {
           <div className="relative z-10 max-w-2xl text-white">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/15 backdrop-blur-md border border-white/25 rounded-full text-xs font-semibold text-white mb-4">
               <Sparkles size={13} className="text-[#fbb6ce]" />
-              Navette frigorifique quotidienne Petite-Côte → Dakar
+              Navette quotidienne Petite-Côte → Dakar
             </span>
             <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold leading-tight mb-4">
               Fleuriste de Prestige &amp; Livraison de Fleurs à Dakar
@@ -110,7 +110,7 @@ export default function FleuristeDakarPage() {
               Comment fonctionne notre service floral pour Dakar ?
             </h2>
             <p className="text-neutral-600 text-sm sm:text-base">
-              Pour garantir que vos fleurs arrivent aussi éclatantes qu’à la coupe, nous avons banni les transports ordinaires au profit d’une chaîne du froid maîtrisée.
+              Pour garantir que vos fleurs arrivent aussi éclatantes qu’à la coupe, nous soignons chaque étape, de la composition à la remise en main propre.
             </p>
           </div>
 
@@ -120,10 +120,10 @@ export default function FleuristeDakarPage() {
                 <Truck size={20} />
               </div>
               <h3 className="font-serif font-bold text-lg text-[#173f22] mb-2">
-                Navette réfrigérée sécurisée
+                Transport soigné et sécurisé
               </h3>
               <p className="text-neutral-600 text-xs sm:text-sm leading-relaxed">
-                Vos compositions voyagent en véhicule climatisé avec réserve d’eau nutritive, protégées de la chaleur et des embouteillages de l’autoroute à péage.
+                Vos compositions voyagent bien calées, avec une réserve d’eau nutritive et un emballage qui les protège de la chaleur pendant le trajet.
               </p>
             </div>
 
