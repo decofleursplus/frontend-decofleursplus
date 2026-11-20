@@ -1,6 +1,6 @@
 import { apiClient } from './client';
 
-export type PaymentProvider = 'NABOOPAY' | 'CASH';
+export type PaymentProvider = 'NABOOPAY' | 'PAYTECH' | 'CASH';
 
 export type PaymentMethod =
   | 'WAVE'

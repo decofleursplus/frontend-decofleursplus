@@ -206,10 +206,11 @@ export function TransactionDetailDialog({
 
             <div className="rounded-lg border border-gray-100 p-2.5">
               <span className="block text-[11px] font-medium text-gray-500 mb-0.5">
-                Réf Passerelle
+                {transaction.gateway ? `Réf ${transaction.gateway}` : 'Réf Passerelle'}
               </span>
               <div className="font-mono text-[11px] font-semibold text-gray-800 truncate" title={transaction.gatewayRef}>
-                {transaction.gatewayRef || 'Non applicable (Espèces)'}
+                {transaction.gatewayRef ||
+                  (transaction.paymentMethod === 'especes' ? 'Non applicable (Espèces)' : 'Aucune transaction en ligne')}
               </div>
             </div>
           </div>

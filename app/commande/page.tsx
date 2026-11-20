@@ -784,7 +784,7 @@ export default function CheckoutPage() {
               <div className="checkout-security-guarantee">
                 <ShieldCheck size={18} color="#15803D" />
                 <div>
-                  <strong>{payment === 'CASH_ON_DELIVERY' ? 'Paiement à la réception' : 'Paiement en ligne NabooPay'}</strong>
+                  <strong>{payment === 'CASH_ON_DELIVERY' ? 'Paiement à la réception' : 'Paiement en ligne sécurisé'}</strong>
                   <p>
                     {payment === 'CASH_ON_DELIVERY'
                       ? 'Vous réglez directement lors de la remise de votre commande.'

@@ -189,7 +189,7 @@ function ConfirmationContent() {
                 <div>
                   <strong className="block text-sm mb-1">Paiement validé avec succès</strong>
                   <p className="text-xs text-emerald-800 leading-relaxed">
-                    Votre transaction par {paymentLabels[order.paymentMethod] || 'NabooPay'} a été confirmée. Nos artisans fleuristes s’occupent de composer votre création.
+                    Votre transaction par {paymentLabels[order.paymentMethod] || 'paiement en ligne'} a été confirmée. Nos artisans fleuristes s’occupent de composer votre création.
                   </p>
                 </div>
               </div>
@@ -206,7 +206,7 @@ function ConfirmationContent() {
                   <div className="flex items-center justify-between">
                     <strong className="block text-sm">
                       {isPolling
-                        ? 'Vérification du paiement NabooPay...'
+                        ? 'Vérification du paiement...'
                         : 'Paiement en attente de validation'}
                     </strong>
                     <button
@@ -221,10 +221,10 @@ function ConfirmationContent() {
                   <p className="text-xs text-amber-800 mt-1 leading-relaxed">
                     {isPolling
                       ? 'Nous attendons la confirmation de votre opérateur de paiement (Wave / Orange Money). La page s’actualise automatiquement.'
-                      : 'Si vous avez finalisé le règlement sur NabooPay, cliquez sur "Actualiser". Sinon, vous pouvez relancer la session ci-dessous.'}
+                      : 'Si vous avez finalisé le règlement sur la page de paiement, cliquez sur "Actualiser". Sinon, vous pouvez relancer la session ci-dessous.'}
                   </p>
 
-                  {/* Bouton de relance NabooPay direct */}
+                  {/* Relance du paiement en ligne */}
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button
                       type="button"
@@ -235,11 +235,11 @@ function ConfirmationContent() {
                       {retryingPayment ? (
                         <>
                           <Loader2 size={13} className="animate-spin" />
-                          <span>Connexion à NabooPay...</span>
+                          <span>Connexion au paiement sécurisé...</span>
                         </>
                       ) : (
                         <>
-                          <span>Payer maintenant ({paymentLabels[order.paymentMethod] || 'NabooPay'})</span>
+                          <span>Payer maintenant ({paymentLabels[order.paymentMethod] || 'paiement en ligne'})</span>
                           <ExternalLink size={12} />
                         </>
                       )}

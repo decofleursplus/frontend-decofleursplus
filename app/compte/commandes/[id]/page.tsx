@@ -243,7 +243,7 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
                   Paiement de {formatPrice(order.totalAmount)} en attente
                 </strong>
                 <p className="text-xs text-amber-800">
-                  Cette commande n’a pas encore été réglée via {paymentLabels[order.paymentMethod] || 'NabooPay'}. Vous pouvez finaliser la transaction en toute sécurité.
+                  Cette commande n’a pas encore été réglée via {paymentLabels[order.paymentMethod] || 'paiement en ligne'}. Vous pouvez finaliser la transaction en toute sécurité.
                 </p>
               </div>
             </div>
@@ -262,7 +262,7 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
                   </>
                 ) : (
                   <>
-                    <span>Payer avec NabooPay</span>
+                    <span>Payer en ligne</span>
                     <ExternalLink size={13} />
                   </>
                 )}
@@ -388,7 +388,7 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
             </div>
           </section>
 
-          {/* Journal des transactions NabooPay */}
+          {/* Journal des transactions de paiement */}
           {payments.length > 0 && (
             <section className="account-panel">
               <div className="account-panel-heading">
@@ -406,7 +406,7 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
                     <div>
                       <div className="flex items-center gap-2">
                         <strong className="text-neutral-800">
-                          {p.provider === 'NABOOPAY' ? (paymentLabels[p.paymentMethod] || 'NabooPay') : 'Espèces'}
+                          {p.provider !== 'CASH' ? (paymentLabels[p.paymentMethod] || 'Paiement en ligne') : 'Espèces'}
                         </strong>
                         <span
                           className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
