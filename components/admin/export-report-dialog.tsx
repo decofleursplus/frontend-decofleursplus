@@ -113,10 +113,10 @@ export function ExportReportDialog({
       csvContent += `Période:;${periodLabel}\n`;
       csvContent += `Date d'export:;${generatedDate}\n\n`;
 
-      csvContent += `Date;Réf Transaction;Commande;Client;Téléphone;Moyen;Montant brut (FCFA);Frais (FCFA);Net (FCFA);Statut;Réf Passerelle\n`;
+      csvContent += `Date;Réf Transaction;Commande;Client;Téléphone;Moyen;Montant brut (FCFA);Frais (FCFA);Net (FCFA);Statut;Agrégateur;Réf Passerelle\n`;
       transactions.forEach((tx) => {
         const d = new Date(tx.date).toLocaleDateString('fr-FR');
-        csvContent += `${d};${tx.ref};${tx.orderRef};"${tx.customerName}";${tx.customerPhone};${tx.paymentMethod};${tx.grossAmount};${tx.gatewayFee};${tx.netAmount};${tx.status};${tx.gatewayRef || 'N/A'}\n`;
+        csvContent += `${d};${tx.ref};${tx.orderRef};"${tx.customerName}";${tx.customerPhone};${tx.paymentMethod};${tx.grossAmount};${tx.gatewayFee};${tx.netAmount};${tx.status};${tx.gateway || 'N/A'};${tx.gatewayRef || 'N/A'}\n`;
       });
     }
 

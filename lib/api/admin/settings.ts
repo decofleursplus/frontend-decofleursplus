@@ -39,8 +39,25 @@ export interface NotificationSettings {
 
 export type PaymentMethodKey = 'wave' | 'orangeMoney' | 'card' | 'cash';
 
+/** Agrégateurs de paiement en ligne pris en charge par le serveur. */
+export type PaymentGatewayCode = 'NABOOPAY' | 'PAYTECH';
+/** live : paiements réels ; test : environnement de test de l'agrégateur ; simulation : aucune clé sur le serveur. */
+export type PaymentGatewayMode = 'live' | 'test' | 'simulation';
+
+export interface PaymentGatewayStatus {
+  code: PaymentGatewayCode;
+  label: string;
+  /** Clés API présentes sur le serveur (Render) */
+  configured: boolean;
+  mode: PaymentGatewayMode;
+  /** Agrégateur utilisé pour les nouveaux paiements */
+  active: boolean;
+}
+
 /** Objet JSON libre côté serveur : un moyen jamais configuré est absent (considéré comme actif). */
 export interface PaymentSettings {
+  /** Agrégateur choisi ; absent = NabooPay s'il est configuré */
+  gateway?: PaymentGatewayCode;
   wave?: { enabled?: boolean };
   orangeMoney?: { enabled?: boolean };
   card?: { enabled?: boolean };
@@ -64,8 +81,10 @@ export interface AdminShopSettings {
   seo: SeoSettings;
   /** Choix « Prestation souhaitée » et « Type de lieu » du formulaire de devis, par type de projet */
   quoteForm: QuoteFormSettings;
-  /** État réel de l'agrégateur de paiement en ligne côté serveur. */
-  paymentGateway: { provider: string; configured: boolean };
+  /** Agrégateur réellement utilisé pour les nouveaux paiements. */
+  paymentGateway: { provider: string; code: PaymentGatewayCode | null; configured: boolean; mode: PaymentGatewayMode };
+  /** Agrégateurs disponibles et état de leurs clés sur le serveur. */
+  paymentGateways: PaymentGatewayStatus[];
   updatedAt: string;
 }
 
