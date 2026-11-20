@@ -51,6 +51,42 @@ export const HELP_GUIDES: HelpGuide[] = [
 
 export const helpGuideUrl = (guide: HelpGuide) => `${HELP_GUIDES_BASE_URL}/${guide.file}`;
 
+/**
+ * Vidéos de démonstration (une par module : MP4 1080p commenté et sous-titré, image d'aperçu JPG), publiées sur
+ * Cloudflare R2 à côté des guides. Générées par guide-utilisateur/video/ ; chaque nouvelle version va dans un
+ * nouveau dossier daté, puis HELP_VIDEOS_VERSION est mis à jour ici.
+ */
+export const HELP_VIDEOS_VERSION = '2026-11-19';
+
+const DEFAULT_VIDEOS_URL = `https://pub-69eb0dcdef4244f49946a2556c863719.r2.dev/guides/back-office/videos/${HELP_VIDEOS_VERSION}`;
+
+/** Dossier des vidéos ; NEXT_PUBLIC_ADMIN_VIDEOS_URL permet de le changer sans modifier le code. */
+export const HELP_VIDEOS_BASE_URL = (process.env.NEXT_PUBLIC_ADMIN_VIDEOS_URL || DEFAULT_VIDEOS_URL).replace(/\/+$/, '');
+
+export interface HelpVideo {
+  /** Fichier MP4 ; l'image d'aperçu porte le même nom en .jpg */
+  file: string;
+  seconds: number;
+}
+
+/** Vidéo de chaque guide (par identifiant de guide) ; les guides sans vidéo n'affichent que le PDF. */
+export const HELP_VIDEOS: Partial<Record<string, HelpVideo>> = {
+  'prise-en-main': { file: '01-prise-en-main.mp4', seconds: 288 },
+  commandes: { file: '02-commandes.mp4', seconds: 268 },
+  livraisons: { file: '03-livraisons.mp4', seconds: 267 },
+  'mes-livraisons': { file: '04-espace-livreur.mp4', seconds: 176 },
+};
+
+export const helpVideoFor = (guide: HelpGuide): HelpVideo | null => HELP_VIDEOS[guide.id] ?? null;
+export const helpVideoUrl = (video: HelpVideo) => `${HELP_VIDEOS_BASE_URL}/${video.file}`;
+export const helpVideoPosterUrl = (video: HelpVideo) => `${HELP_VIDEOS_BASE_URL}/${video.file.replace(/\.mp4$/, '.jpg')}`;
+
+/** « 4 min 48 » */
+export function formatVideoDuration(seconds: number): string {
+  const s = Math.max(0, Math.round(seconds));
+  return `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')}`;
+}
+
 /** Guide de l'écran affiché (le tableau de bord et les écrans sans guide propre renvoient à la prise en main). */
 export function helpGuideForPath(pathname: string): HelpGuide {
   const match = HELP_GUIDES.find((g) => g.path && (pathname === g.path || pathname.startsWith(`${g.path}/`)));

@@ -97,8 +97,8 @@ export const SITE_CONFIG = {
     },
     {
       name: 'Dakar & Environs',
-      type: 'Zone desservie par navette réfrigérée',
-      deliveryTime: '24h ouvrées / Navette frigorifique sécurisée',
+      type: 'Zone desservie par navette quotidienne',
+      deliveryTime: '24h ouvrées / Navette quotidienne',
       fee: 5000,
       freeAbove: 75000,
       neighborhoods: ['Plateau', 'Almadies', 'Fann', 'Yoff', 'Ouakam', 'Mermoz', 'Point E', 'Ngor'],
