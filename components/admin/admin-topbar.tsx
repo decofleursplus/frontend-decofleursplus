@@ -11,6 +11,7 @@ import { AdminHelpMenu } from '@/components/admin/admin-help-menu';
 import type { AdminSessionUser } from '@/lib/api/auth-token';
 import { logoutAdmin } from '@/app/admin/connexion/actions';
 import { AdminProfileDialog } from '@/components/admin/admin-profile-dialog';
+import { roleLabel } from '@/lib/admin/access';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -91,7 +92,7 @@ export function AdminTopbar({ initialUser }: { initialUser?: AdminSessionUser | 
                 {currentUser?.name || 'Admin'}
               </span>
               <span className="text-[10px] font-medium text-emerald-800 leading-none">
-                {currentUser?.role || 'Staff'}
+                {roleLabel(currentUser?.role)}
               </span>
             </div>
           </DropdownMenuTrigger>
@@ -110,7 +111,7 @@ export function AdminTopbar({ initialUser }: { initialUser?: AdminSessionUser | 
                 {currentUser?.email || 'admin@decofleursplus.com'}
               </p>
               <span className="inline-block mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                {currentUser?.role || 'ADMIN'}
+                {roleLabel(currentUser?.role)}
               </span>
             </div>
 

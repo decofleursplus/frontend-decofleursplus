@@ -103,3 +103,9 @@ export const ROLE_LABELS: Record<StaffRole, string> = {
   SALES: 'Commercial',
   ACCOUNTANT: 'Comptable',
 };
+
+/** Libellé français d'un rôle du personnel ; le code brut seulement s'il est inconnu. */
+export function roleLabel(role: string | null | undefined, fallback = 'Personnel'): string {
+  if (!role) return fallback;
+  return ROLE_LABELS[role as StaffRole] ?? role;
+}

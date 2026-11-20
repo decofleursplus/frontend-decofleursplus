@@ -105,7 +105,7 @@ export async function generateMetadata({
     case 'livraison':
       return constructMetadata({
         title: 'Livraison de Fleurs à Saly, Dakar, Somone & Petite-Côte | Décofleur Plus',
-        description: 'Modalités de livraison de fleurs fraîches : express 2h à Saly Portudal, le jour même à Somone et Mbour, et 24h par navette réfrigérée vers Dakar.',
+        description: 'Modalités de livraison de fleurs fraîches : express 2h à Saly Portudal, le jour même à Somone et Mbour, et en 24h vers Dakar.',
         canonical: '/livraison',
         image: '/images/livraison/camionnette.jpg',
         keywords: ['livraison fleurs dakar', 'livraison fleurs saly', 'livraison bouquet senegal', 'livraison somone'],
@@ -290,16 +290,16 @@ async function DeliveryPage() {
     },
     {
       step: '04',
-      title: 'Transport climatisé & Remise soignée',
-      desc: 'Acheminement en véhicule climatisé et remise en main propre avec le mot doux de votre choix (ou surprise anonyme).',
+      title: 'Transport soigné & Remise en main propre',
+      desc: 'Bouquet calé et hydraté pendant le trajet, puis remis en main propre avec le mot doux de votre choix (ou surprise anonyme).',
       icon: Truck,
     },
   ];
 
   const commitments = [
     {
-      title: 'Transport sous climatisation',
-      desc: 'Tous nos véhicules sont réfrigérés ou climatisés pour préserver les fleurs de la chaleur de la Petite Côte.',
+      title: 'Fleurs protégées de la chaleur',
+      desc: 'Réserve d’eau et emballage protecteur pour préserver la fraîcheur de vos fleurs malgré la chaleur de la Petite Côte.',
       icon: ShieldCheck,
     },
     {
@@ -345,7 +345,7 @@ async function DeliveryPage() {
                 <Clock size={14} /> 7j/7 de 08h00 à 20h00
               </span>
               <span className="delivery-stat-pill">
-                <Truck size={14} /> Véhicules climatisés
+                <Truck size={14} /> Remise en main propre
               </span>
               <span className="delivery-stat-pill">
                 <ShieldCheck size={14} /> Garantie fraîcheur 100%
