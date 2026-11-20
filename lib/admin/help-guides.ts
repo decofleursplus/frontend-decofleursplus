@@ -69,12 +69,33 @@ export interface HelpVideo {
   seconds: number;
 }
 
-/** Vidéo de chaque guide (par identifiant de guide) ; les guides sans vidéo n'affichent que le PDF. */
+/**
+ * Vidéo de chaque guide (par identifiant de guide) ; les guides sans vidéo n'affichent que le PDF
+ * (« Repères et aide » est une annexe sans écran à montrer).
+ */
 export const HELP_VIDEOS: Partial<Record<string, HelpVideo>> = {
   'prise-en-main': { file: '01-prise-en-main.mp4', seconds: 288 },
   commandes: { file: '02-commandes.mp4', seconds: 268 },
   livraisons: { file: '03-livraisons.mp4', seconds: 267 },
   'mes-livraisons': { file: '04-espace-livreur.mp4', seconds: 176 },
+  devis: { file: '05-devis.mp4', seconds: 350 },
+  messages: { file: '06-messages.mp4', seconds: 236 },
+  clients: { file: '07-clients.mp4', seconds: 317 },
+  abonnements: { file: '08-abonnements.mp4', seconds: 238 },
+  location: { file: '09-location.mp4', seconds: 260 },
+  paysagisme: { file: '10-paysagisme.mp4', seconds: 276 },
+  produits: { file: '11-produits.mp4', seconds: 429 },
+  stock: { file: '12-stock.mp4', seconds: 279 },
+  approvisionnements: { file: '13-approvisionnements.mp4', seconds: 400 },
+  fournisseurs: { file: '14-fournisseurs.mp4', seconds: 363 },
+  categories: { file: '15-categories.mp4', seconds: 266 },
+  avis: { file: '16-avis.mp4', seconds: 176 },
+  marketing: { file: '17-marketing.mp4', seconds: 467 },
+  annonces: { file: '18-annonces.mp4', seconds: 186 },
+  'cartes-cadeaux': { file: '19-cartes-cadeaux.mp4', seconds: 228 },
+  blog: { file: '20-blog.mp4', seconds: 320 },
+  rapports: { file: '21-rapports.mp4', seconds: 313 },
+  parametres: { file: '22-parametres.mp4', seconds: 582 },
 };
 
 export const helpVideoFor = (guide: HelpGuide): HelpVideo | null => HELP_VIDEOS[guide.id] ?? null;
