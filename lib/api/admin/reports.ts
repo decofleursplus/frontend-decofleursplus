@@ -151,3 +151,48 @@ export async function getAdminFinancialTransactions(params?: {
     };
   }
 }
+
+// ── Visiteurs & Audience ─────────────────────────────────────────────────
+
+export interface VisitorTotals {
+  /** Navigateurs distincts sur la période */
+  visitors: number;
+  /** Visites : un visiteur compte une visite par jour */
+  visits: number;
+  pageViews: number;
+  /** Navigateurs vus pour la première fois pendant la période */
+  newVisitors: number;
+}
+
+export interface VisitorReport {
+  periodLabel: string;
+  comparisonLabel: string;
+  from: string;
+  to: string;
+  /** Premier jour de mesure ; null tant qu'aucune visite n'a été enregistrée */
+  trackingSince: string | null;
+  current: VisitorTotals & { returningVisitors: number; pagesPerVisit: number };
+  previous: VisitorTotals;
+  /** Variations en % ; null quand la période précédente est à zéro */
+  deltas: { visitorsDelta: number | null; pageViewsDelta: number | null; newVisitorsDelta: number | null };
+  daily: { date: string; visitors: number; pageViews: number }[];
+  topPages: { path: string; views: number }[];
+  sources: { label: string; visits: number }[];
+  devices: { label: string; visits: number }[];
+}
+
+/**
+ * Visiteurs de la boutique sur la période des rapports (même sélecteur que les ventes).
+ * Endpoint: GET /api/v1/admin/reports/visitors
+ */
+export async function getAdminVisitorReport(params: {
+  preset: ReportPeriodPreset;
+  startDate?: string;
+  endDate?: string;
+}): Promise<VisitorReport> {
+  return apiClient.get<VisitorReport>('/admin/reports/visitors', {
+    params: { preset: params.preset, startDate: params.startDate, endDate: params.endDate },
+    useAdminToken: true,
+    cache: 'no-store',
+  });
+}
