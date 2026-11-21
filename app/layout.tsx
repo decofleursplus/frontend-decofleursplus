@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { APP_NAME, SITE_CONFIG, SITE_URL } from '@/lib/seo/config';
 import { getFloristSchema, getOrganizationSchema } from '@/lib/seo/schema';
 import { JsonLd } from '@/components/seo/json-ld';
+import { VisitTracker } from '@/components/analytics/visit-tracker';
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -150,6 +151,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             style={{ display: 'none', visibility: 'hidden' }}
           />
         </noscript>
+        <VisitTracker />
         <RootShell>{children}</RootShell>
       </body>
     </html>

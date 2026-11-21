@@ -46,6 +46,7 @@ import {
 import { toast } from 'sonner';
 import { ExportReportDialog } from '@/components/admin/export-report-dialog';
 import { TransactionDetailDialog } from '@/components/admin/transaction-detail-dialog';
+import { VisitorsReport } from '@/components/admin/visitors-report';
 
 import {
   Chart as ChartJS,
@@ -78,7 +79,7 @@ ChartJS.register(
 
 export default function AdminRapportsPage() {
   // Main tabs: 'sales' | 'finance'
-  const [activeTab, setActiveTab] = useState<'sales' | 'finance'>('sales');
+  const [activeTab, setActiveTab] = useState<'sales' | 'finance' | 'visitors'>('sales');
 
   // Period Preset
   const [selectedPeriod, setSelectedPeriod] = useState<ReportPeriodPreset>('this_month');
@@ -607,8 +608,30 @@ export default function AdminRapportsPage() {
             <Wallet className="h-4 w-4 shrink-0" />
             <span>Bilan Financier & Trésorerie</span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('visitors')}
+            className={`flex items-center gap-2 border-b-2 py-3 px-1 text-sm font-medium transition-colors shrink-0 whitespace-nowrap ${
+              activeTab === 'visitors'
+                ? 'border-[#c1647a] text-[#c1647a]'
+                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+            }`}
+          >
+            <Users className="h-4 w-4 shrink-0" />
+            <span>Visiteurs & Audience</span>
+          </button>
         </nav>
       </div>
+
+      {/* ── VOLET 3 : VISITEURS & AUDIENCE (fréquentation de la boutique) ── */}
+      {activeTab === 'visitors' && (
+        <VisitorsReport
+          preset={selectedPeriod}
+          startDate={selectedPeriod === 'custom' ? customStartDate : undefined}
+          endDate={selectedPeriod === 'custom' ? customEndDate : undefined}
+        />
+      )}
 
       {/* ═════════════════════════════════════════════════ */}
       {/* ── VOLET 1 : ANALYSE COMMERCIALE & VENTES ─────── */}
